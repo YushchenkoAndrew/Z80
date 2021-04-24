@@ -1,0 +1,6 @@
+c3 0c 20 4e 75 6d 62 65 72 3a 20 00 31 ff 1f 3e 
+00 d3 30 01 ff 00 af cd 40 20 c3 1d 20 3e 05 d3 
+30 01 ff 00 af cd 40 20 01 03 20 cd 4a 20 db 00 
+d3 10 c6 30 d3 30 01 ff 0f af cd 40 20 c3 1d 20 
+0b b8 c2 40 20 b9 c2 40 20 c9 0a d3 30 03 c5 01 
+ff 00 af cd 40 20 c1 0a fe 00 c2 4a 20 c9 
