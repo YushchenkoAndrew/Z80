@@ -1,7 +1,7 @@
-#pragma once
 #include "Lexer.h"
 
-void Lexer::scan() {
+namespace Interpreter {
+bool Lexer::scan() {
   while (!isAtEnd()) {
     nStart = nCurr;
 
@@ -11,6 +11,13 @@ void Lexer::scan() {
       case ':': addToken(TokenT::COLON); break;
       case '(': addToken(TokenT::LEFT_BRACE); break;
       case ')': addToken(TokenT::RIGHT_BRACE); break;
+
+      case '+': addToken(TokenT::PLUS); break;
+      case '-': addToken(TokenT::MINUS); break;
+      case '|': addToken(TokenT::BIT_OR); break;
+      case '&': addToken(TokenT::BIT_AND); break;
+      case '^': addToken(TokenT::BIT_XOR); break;
+      case '!': addToken(TokenT::BIT_NOT); break;
 
 
       case '"': case '\'': string(c); break;
@@ -31,9 +38,11 @@ void Lexer::scan() {
         break;
     }
 
-    if (err.length()) break;
+    if (err.length()) return true;
   }
 
   nStart = nCurr;
   addToken(TokenT::OP_EOF);
+  return err.length();
 }
+}; 

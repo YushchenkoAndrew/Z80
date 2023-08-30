@@ -4,13 +4,17 @@
 #include "include/Typelist.h"
 #include "include/Foreach.h"
 
+namespace Interpreter {
 /**
  * This code was hardly expired by the book {Creating Interpreters}
  * Check out this link for more info: http://www.craftinginterpreters.com/scanning.html#lexemes-and-tokens
  */
 enum TokenT {
   // Single char tokens
-  LEFT_BRACE = 1, RIGHT_BRACE, COMMA, COLON,
+  LEFT_BRACE = 1, RIGHT_BRACE, COMMA, COLON, PLUS, MINUS,
+  
+  // Bit operation in assignment
+  BIT_OR, BIT_AND, BIT_XOR, BIT_NOT,
 
   // Literals
   IDENTIFIER, STRING, NUMBER, 
@@ -36,6 +40,7 @@ enum TokenT {
 
   OP_EOF
 };
+
 
 typedef TypeList<
   AnyType<TokenT::OP_ORG,   std::string>, TypeList<
@@ -106,7 +111,11 @@ typedef TypeList<
   AnyType<TokenT::CMD_SLA,  std::string>, TypeList<
   AnyType<TokenT::CMD_SRL,  std::string>, TypeList<
   AnyType<TokenT::CMD_SUB,  std::string>, TypeList<
-  AnyType<TokenT::CMD_XOR,  std::string>, TypeList<
+  AnyType<TokenT::CMD_XOR,  std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   CommandList;
+
+
+typedef TypeList<
   AnyType<TokenT::REG_AF,   std::string>, TypeList<
   AnyType<TokenT::REG_BC,   std::string>, TypeList<
   AnyType<TokenT::REG_DE,   std::string>, TypeList<
@@ -134,8 +143,44 @@ typedef TypeList<
   AnyType<TokenT::REG_D$,   std::string>, TypeList<
   AnyType<TokenT::REG_E$,   std::string>, TypeList<
   AnyType<TokenT::REG_H$,   std::string>, TypeList<
-  AnyType<TokenT::REG_L$,   std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-   KeywordList;
+  AnyType<TokenT::REG_L$,   std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   RegisterList;
+
+
+typedef TypeList<
+  AnyType<TokenT::OP_ORG,   std::string>, TypeList<
+  AnyType<TokenT::OP_DB,    std::string>, TypeList<
+  AnyType<TokenT::OP_EQU,   std::string>, TypeList<
+  AnyType<TokenT::REG_AF,   std::string>, TypeList<
+  AnyType<TokenT::REG_BC,   std::string>, TypeList<
+  AnyType<TokenT::REG_DE,   std::string>, TypeList<
+  AnyType<TokenT::REG_HL,   std::string>, TypeList<
+  AnyType<TokenT::REG_IX,   std::string>, TypeList<
+  AnyType<TokenT::REG_IY,   std::string>, TypeList<
+  AnyType<TokenT::REG_SP,   std::string>, TypeList<
+  AnyType<TokenT::REG_PC,   std::string>, TypeList<
+  AnyType<TokenT::REG_AF$,  std::string>, TypeList<
+  AnyType<TokenT::REG_BC$,  std::string>, TypeList<
+  AnyType<TokenT::REG_DE$,  std::string>, TypeList<
+  AnyType<TokenT::REG_HL$,  std::string>, TypeList<
+  AnyType<TokenT::REG_A,    std::string>, TypeList<
+  AnyType<TokenT::REG_B,    std::string>, TypeList<
+  AnyType<TokenT::REG_C,    std::string>, TypeList<
+  AnyType<TokenT::REG_D,    std::string>, TypeList<
+  AnyType<TokenT::REG_E,    std::string>, TypeList<
+  AnyType<TokenT::REG_H,    std::string>, TypeList<
+  AnyType<TokenT::REG_L,    std::string>, TypeList<
+  AnyType<TokenT::REG_I,    std::string>, TypeList<
+  AnyType<TokenT::REG_R,    std::string>, TypeList<
+  AnyType<TokenT::REG_A$,   std::string>, TypeList<
+  AnyType<TokenT::REG_B$,   std::string>, TypeList<
+  AnyType<TokenT::REG_C$,   std::string>, TypeList<
+  AnyType<TokenT::REG_D$,   std::string>, TypeList<
+  AnyType<TokenT::REG_E$,   std::string>, TypeList<
+  AnyType<TokenT::REG_H$,   std::string>, TypeList<
+  AnyType<TokenT::REG_L$,   std::string>, CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    KeywordList;
+
 
 class Defs {
 
@@ -247,3 +292,4 @@ public:
     AnyType<TokenT::REG_L$,  std::string>::GetValue() = "L'";
   }
 };
+}

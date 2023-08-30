@@ -18,14 +18,14 @@ public:
         std::ifstream t("../RTC_Test/Test.asm");
         std::stringstream buffer;
         buffer << t.rdbuf();
+        // std::string s = buffer.str();
 
         // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
-        Lexer sLexer = Lexer(buffer.str());
-        sLexer.scan();
 
-        printf("%s\n", sLexer.err.c_str());
+        Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
+        if (lexer.scan()) printf("%s\n", lexer.error().c_str());
 
-        for (auto token : sLexer.vTokens) { token.print(); }
+        for (auto token : lexer.vTokens) { token.print(); }
 
 
         return true;
@@ -47,6 +47,8 @@ private:
 };
 
 int main() {
+    Interpreter::Defs::Init(); // Initialize types
+
     LuaScript luaConfig;
     if (!luaConfig.Init("src/lua/Config.lua")) return 0;
     if (!luaConfig.GetTable("Init")) return 0;

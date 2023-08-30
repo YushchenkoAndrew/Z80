@@ -30,9 +30,19 @@ struct foreach<TypeList<AnyType<T, std::string>, U>, F> {
   //   foreach<U, F>::Process();
 	// }
 
-	static inline int32_t Index() {
+	static inline int32_t Value2Key() {
 		if (F::template Compare<T>()) return T;
-    return foreach<U, F>::Index();
+    return foreach<U, F>::Value2Key();
+	}
+
+	static inline std::string Key2Value() {
+		if (F::template Compare(Int2Type<T>())) return AnyType<T, std::string>::GetValue();
+    return foreach<U, F>::Key2Value();
+	}
+
+	static inline bool Key2Bool() {
+		if (F::template Compare(Int2Type<T>())) return true;
+    return foreach<U, F>::Key2Value();
 	}
 };
 
@@ -43,8 +53,34 @@ struct foreach<TypeList<AnyType<T, std::string>, NullType>, F> {
   //   Commands::GetValue().Operation(Int2Type<-1>());
 	// }
 
-	static inline int32_t Index() {
+	static inline int32_t Value2Key() {
 		if (F::template Compare<T>()) return T;
     return -1;
+	}
+
+	static inline std::string Key2Value() {
+		if (F::template Compare(Int2Type<T>())) return AnyType<T, std::string>::GetValue();
+    return "";
+	}
+
+	static inline bool Key2Bool() {
+		if (F::template Compare(Int2Type<T>())) return true;
+    return false;
+	}
+};
+
+template<int32_t T, class U, int32_t F, class V>
+struct foreach<TypeList<AnyType<T, std::string>, U>, AnyType<F, V*>> {
+	static inline void Key2Process() {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return AnyType<F, V*>::GetValue()->Process(Int2Type<T>());
+    foreach<U, AnyType<F, V*>>::Key2Process();
+	}
+};
+
+template<int32_t T, int32_t F, class V>
+struct foreach<TypeList<AnyType<T, std::string>, NullType>,  AnyType<F, V*>> {
+	static inline void Key2Process() {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return AnyType<F, V*>::GetValue()->Process(Int2Type<T>());
+    AnyType<F, V*>::GetValue()->Process(Int2Type<-1>());
 	}
 };

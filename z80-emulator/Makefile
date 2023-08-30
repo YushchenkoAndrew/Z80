@@ -6,7 +6,7 @@ LIB=-I./
 INCLUDE=include/*.cpp lib/*.cpp
 LUA_SOURCE=$(SOURCE)/lua
 
-DIRS=Interpreter
+DIRS=Interpreter Interpreter/Expression
 TARGET=$(SOURCE)/*.cpp $(foreach dir, $(DIRS), $(addprefix $(SOURCE)/, $(dir))/*.cpp)
 COMPILED_TARGET=lua54/emsc/lua54.o
 

@@ -41,6 +41,11 @@ struct AnyType<T, int32_t> {
 	static inline bool Compare() {
 		return GetValue() == AnyType<U, int32_t>::GetValue();
 	}
+
+	template<int32_t U>
+	static inline bool Compare(Int2Type<U> val) {
+		return GetValue() == val.value;
+	}
 };
 
 template<int32_t T>

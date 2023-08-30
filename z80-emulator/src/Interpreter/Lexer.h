@@ -1,16 +1,25 @@
 #pragma once
 #include "Token.h"
 #include <vector>
+#include <array>
+#include <sstream>
 
+
+namespace Interpreter {
+
+/**
+ * This code was hardly expired by the book {Creating Interpreters}
+ * Check out this link for more info: http://www.craftinginterpreters.com/scanning.html#recognizing-lexemes
+ */
 class Lexer {
 public:
-  Lexer(std::string src): src(src) { Defs::Init(); }
+  Lexer(std::string src): src(src) {}
 
-  void scan(); 
+  bool scan(); 
 
 
 private:
-  void string(const char c) {
+  void string(const char &c) {
     while (!(peek() == c || isAtEnd())) {
       if (peek() == '\n' || peek() == '\r') nLine++;
       advance();
@@ -44,7 +53,7 @@ private:
     while (isAlphaNumeric(peek())) advance();
 
     AnyType<-1, std::string>::GetValue() = src.substr(nStart, nCurr - nStart);
-    int32_t type = foreach<KeywordList, AnyType<-1, std::string>>::Index();
+    int32_t type = foreach<KeywordList, AnyType<-1, std::string>>::Value2Key();
 
     if (type == -1) addToken(TokenT::IDENTIFIER);
     else addToken(static_cast<TokenT>(type));
@@ -68,17 +77,20 @@ private:
   }
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
-  inline bool isDigit(char c) { return c >= '0' && c <= '9'; }
-  inline bool isHexDigit(char c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
-  inline bool isAlpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
-  inline bool isAlphaNumeric(char c) { return isAlpha(c) || isDigit(c); }
+  inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
+  inline bool isHexDigit(const char &c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
+  inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || isDigit(c); }
 
-  
-// public:
-//   std::string errorMessage() {
-//     if (!error) return "";
-//     return sprintf(nullptr, "[Ln %d Col %d] Error: %s", nLine, nCurr, error);
-//   }
+
+public:
+  std::string error() {
+    if (!err.length()) return "";
+
+    std::stringstream ss;
+    ss << "[Ln " << nLine << " Col " << nCurr << "] Error: " << err;
+    return ss.str();
+  }
 
 
 private:
@@ -88,8 +100,10 @@ private:
   int32_t nCurr = 0; // index of the src, which is pointing to the curr char
   int32_t nLine = 1; // tracks current line position
 
+  std::string err;
 
 public:
-  std::string err;
   std::vector<Token> vTokens;
+};
+
 };
