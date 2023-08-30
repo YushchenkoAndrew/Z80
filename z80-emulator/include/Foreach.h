@@ -71,16 +71,16 @@ struct foreach<TypeList<AnyType<T, std::string>, NullType>, F> {
 
 template<int32_t T, class U, int32_t F, class V>
 struct foreach<TypeList<AnyType<T, std::string>, U>, AnyType<F, V*>> {
-	static inline void Key2Process() {
+	static inline auto Key2Process() {
 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return AnyType<F, V*>::GetValue()->Process(Int2Type<T>());
-    foreach<U, AnyType<F, V*>>::Key2Process();
+    return foreach<U, AnyType<F, V*>>::Key2Process();
 	}
 };
 
 template<int32_t T, int32_t F, class V>
-struct foreach<TypeList<AnyType<T, std::string>, NullType>,  AnyType<F, V*>> {
-	static inline void Key2Process() {
+struct foreach<TypeList<AnyType<T, std::string>, NullType>, AnyType<F, V*>> {
+	static inline auto Key2Process() {
 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return AnyType<F, V*>::GetValue()->Process(Int2Type<T>());
-    AnyType<F, V*>::GetValue()->Process(Int2Type<-1>());
+    return AnyType<F, V*>::GetValue()->Process(Int2Type<-1>());
 	}
 };

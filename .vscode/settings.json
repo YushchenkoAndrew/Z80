@@ -1,5 +1,6 @@
 {
   "deepscan.enable": true,
+  "color-highlight.enable": false,
   "files.associations": {
     "iostream": "cpp",
     "fstream": "cpp",

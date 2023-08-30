@@ -33,7 +33,7 @@ enum TokenT {
   CMD_LDD,  CMD_LDDR, CMD_LDI,  CMD_LDIR, CMD_NEG,   CMD_NOP,  CMD_OR,   CMD_OTDR, CMD_OTIR,  CMD_OUT, 
   CMD_OUTD, CMD_OUTI, CMD_POP,  CMD_PUSH, CMD_RES,   CMD_RET,  CMD_RETI, CMD_RETN, CMD_RL,    CMD_RLA, 
   CMD_RLC,  CMD_RLCA, CMD_RLD,  CMD_RR,   CMD_RRA,   CMD_RRC,  CMD_RRCA, CMD_RRD,  CMD_RST,   CMD_SBC, 
-  CMD_SCF,  CMD_SET,  CMD_SLA,  CMD_SRL,  CMD_SUB,   CMD_XOR,
+  CMD_SCF,  CMD_SET,  CMD_SLA,  CMD_SRA,  CMD_SRL,  CMD_SUB,   CMD_XOR,
 
   // Operations
   OP_ORG, OP_DB, OP_EQU,
@@ -109,9 +109,10 @@ typedef TypeList<
   AnyType<TokenT::CMD_SCF,  std::string>, TypeList<
   AnyType<TokenT::CMD_SET,  std::string>, TypeList<
   AnyType<TokenT::CMD_SLA,  std::string>, TypeList<
+  AnyType<TokenT::CMD_SRA,  std::string>, TypeList<
   AnyType<TokenT::CMD_SRL,  std::string>, TypeList<
   AnyType<TokenT::CMD_SUB,  std::string>, TypeList<
-  AnyType<TokenT::CMD_XOR,  std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::CMD_XOR,  std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    CommandList;
 
 
@@ -253,6 +254,7 @@ public:
     AnyType<TokenT::CMD_SCF,  std::string>::GetValue() = "SCF";
     AnyType<TokenT::CMD_SET,  std::string>::GetValue() = "SET";
     AnyType<TokenT::CMD_SLA,  std::string>::GetValue() = "SLA";
+    AnyType<TokenT::CMD_SRA,  std::string>::GetValue() = "SRA";
     AnyType<TokenT::CMD_SRL,  std::string>::GetValue() = "SRL";
     AnyType<TokenT::CMD_SUB,  std::string>::GetValue() = "SUB";
     AnyType<TokenT::CMD_XOR,  std::string>::GetValue() = "XOR";
