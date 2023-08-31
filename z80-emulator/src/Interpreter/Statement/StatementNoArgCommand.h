@@ -5,7 +5,7 @@ namespace Interpreter {
 
 class StatementNoArgCommand : public Statement {
 public:
-  StatementNoArgCommand(uint16_t o, TokenT t): opcode(o), type(t) {}
+  StatementNoArgCommand(uint16_t o, std::shared_ptr<Token> t): opcode(o), type(t->token) {}
 
   template<class T>
   T accept(StatementVisitor<T>* visitor) {

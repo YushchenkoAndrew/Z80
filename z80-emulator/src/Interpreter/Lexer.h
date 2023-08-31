@@ -21,7 +21,7 @@ public:
 private:
   void string(const char &c) {
     while (!(peek() == c || isAtEnd())) {
-      if (peek() == '\n' || peek() == '\r') nLine++;
+      if (peek() == '\n' || peek() == '\r') { nLine++; nCol = 1; }
       advance();
     }
 
@@ -59,7 +59,7 @@ private:
     else addToken(static_cast<TokenT>(type));
   }
 
-  inline const char advance() { return src[nCurr++]; }
+  inline const char advance() { nCol++; return src[nCurr++]; }
   inline const char peek() { return isAtEnd() ? '\0' : src[nCurr]; }
   inline const char peekPrev() { return !nCurr ? '\0' : src[nCurr - 1]; }
   inline const char peekNext() { return nCurr + 1 >= src.length() ? '\0' : src[nCurr + 1]; }
@@ -68,12 +68,21 @@ private:
     if (isAtEnd()) return false;
     if (src[nCurr] != expected) return false;
 
-    nCurr++;
+    nCol++; nCurr++;
     return true;
   }
 
   void addToken(TokenT type, std::string literal = "") {
-    vTokens.push_back(Token { type, src.substr(nStart, nCurr - nStart), literal, nStart, nLine });
+    const int32_t len = nCurr - nStart;
+    std::shared_ptr<Token> t = std::make_shared<Token>(Token(type, src.substr(nStart, len), literal, nCol - len, nLine));
+
+    vDst.push_back(t);
+    vTokens.push_back(t);
+  }
+
+  void addToken(olc::Pixel c = olc::BLACK) {
+    const int32_t len = nCurr - nStart;
+    vDst.push_back(std::make_shared<Token>(Token(TokenT::OP_NONE, src.substr(nStart, len), "", nCol - len, nLine, c)));
   }
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
@@ -98,12 +107,15 @@ private:
 
   int32_t nStart = 0; // index of the src, which is pointing to first char in the lexeme
   int32_t nCurr = 0; // index of the src, which is pointing to the curr char
+
+  int32_t nCol = 1; // tracks current line position
   int32_t nLine = 1; // tracks current line position
 
   std::string err;
 
 public:
-  std::vector<Token> vTokens;
+  std::vector<std::shared_ptr<Token>> vTokens;
+  std::vector<std::shared_ptr<Token>> vDst;
 };
 
 };

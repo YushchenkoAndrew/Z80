@@ -5,8 +5,8 @@ namespace Interpreter {
 
 class ExpressionUnary : public Expression {
 public:
-  ExpressionUnary(TokenT op, Expression right):
-    operation(op), right(right) {}
+  ExpressionUnary(std::shared_ptr<Token> op, Expression right):
+    operation(op->token), right(right) {}
   
   
   template<class T>

@@ -24,11 +24,12 @@ bool Lexer::scan() {
 
       case ';':
         while (peek() != '\n' && !isAtEnd()) advance();
+        addToken(olc::DARK_GREY);
         break;
 
 
-      case '\n': nLine++; break;
-      case ' ': case '\r': case '\t': break; // Ignore whitespace.
+      case '\n': nLine++; nCol = 1; break;
+      case ' ': case '\r': case '\t': addToken(); break; // Ignore whitespace.
 
       default:
         if (isDigit(c)) number();

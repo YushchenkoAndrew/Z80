@@ -1,8 +1,10 @@
 #pragma once
 #include <stdio.h>
 #include <string>
+#include <memory>
 #include "include/Typelist.h"
 #include "include/Foreach.h"
+#include "lib/olcPixelGameEngine.h"
 
 namespace Interpreter {
 /**
@@ -26,6 +28,9 @@ enum TokenT {
   REG_A,  REG_B,  REG_C,  REG_D,  REG_E,  REG_H,  REG_L, REG_I, REG_R, 
   REG_A$, REG_B$, REG_C$, REG_D$, REG_E$, REG_H$, REG_L$,
 
+  // Flags
+  FLAG_C, FLAG_M, FLAG_NC, FLAG_NZ, FLAG_P, FLAG_PE, FLAG_PO, FLAG_Z,
+
   // Command words
   CMD_ADC,  CMD_ADD,  CMD_AND,  CMD_BIT,  CMD_CALL,  CMD_CCF,  CMD_CP,   CMD_CPD,  CMD_CPDR,  CMD_CPI, 
   CMD_CPIR, CMD_CPL,  CMD_DAA,  CMD_DEC,  CMD_DI,    CMD_DJNZ, CMD_EI,   CMD_EX,   CMD_EXX,   CMD_HALT,
@@ -38,7 +43,7 @@ enum TokenT {
   // Operations
   OP_ORG, OP_DB, OP_EQU,
 
-  OP_EOF
+  OP_EOF, OP_NONE
 };
 
 
@@ -117,38 +122,6 @@ typedef TypeList<
 
 
 typedef TypeList<
-  AnyType<TokenT::REG_AF,   std::string>, TypeList<
-  AnyType<TokenT::REG_BC,   std::string>, TypeList<
-  AnyType<TokenT::REG_DE,   std::string>, TypeList<
-  AnyType<TokenT::REG_HL,   std::string>, TypeList<
-  AnyType<TokenT::REG_IX,   std::string>, TypeList<
-  AnyType<TokenT::REG_IY,   std::string>, TypeList<
-  AnyType<TokenT::REG_SP,   std::string>, TypeList<
-  AnyType<TokenT::REG_PC,   std::string>, TypeList<
-  AnyType<TokenT::REG_AF$,  std::string>, TypeList<
-  AnyType<TokenT::REG_BC$,  std::string>, TypeList<
-  AnyType<TokenT::REG_DE$,  std::string>, TypeList<
-  AnyType<TokenT::REG_HL$,  std::string>, TypeList<
-  AnyType<TokenT::REG_A,    std::string>, TypeList<
-  AnyType<TokenT::REG_B,    std::string>, TypeList<
-  AnyType<TokenT::REG_C,    std::string>, TypeList<
-  AnyType<TokenT::REG_D,    std::string>, TypeList<
-  AnyType<TokenT::REG_E,    std::string>, TypeList<
-  AnyType<TokenT::REG_H,    std::string>, TypeList<
-  AnyType<TokenT::REG_L,    std::string>, TypeList<
-  AnyType<TokenT::REG_I,    std::string>, TypeList<
-  AnyType<TokenT::REG_R,    std::string>, TypeList<
-  AnyType<TokenT::REG_A$,   std::string>, TypeList<
-  AnyType<TokenT::REG_B$,   std::string>, TypeList<
-  AnyType<TokenT::REG_C$,   std::string>, TypeList<
-  AnyType<TokenT::REG_D$,   std::string>, TypeList<
-  AnyType<TokenT::REG_E$,   std::string>, TypeList<
-  AnyType<TokenT::REG_H$,   std::string>, TypeList<
-  AnyType<TokenT::REG_L$,   std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-   RegisterList;
-
-
-typedef TypeList<
   AnyType<TokenT::OP_ORG,   std::string>, TypeList<
   AnyType<TokenT::OP_DB,    std::string>, TypeList<
   AnyType<TokenT::OP_EQU,   std::string>, TypeList<
@@ -179,7 +152,14 @@ typedef TypeList<
   AnyType<TokenT::REG_D$,   std::string>, TypeList<
   AnyType<TokenT::REG_E$,   std::string>, TypeList<
   AnyType<TokenT::REG_H$,   std::string>, TypeList<
-  AnyType<TokenT::REG_L$,   std::string>, CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::FLAG_C,   std::string>, TypeList<
+  AnyType<TokenT::FLAG_M,   std::string>, TypeList<
+  AnyType<TokenT::FLAG_NC,  std::string>, TypeList<
+  AnyType<TokenT::FLAG_NZ,  std::string>, TypeList<
+  AnyType<TokenT::FLAG_P,   std::string>, TypeList<
+  AnyType<TokenT::FLAG_PE,  std::string>, TypeList<
+  AnyType<TokenT::FLAG_PO,  std::string>, TypeList<
+  AnyType<TokenT::FLAG_Z,   std::string>,  CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     KeywordList;
 
 
@@ -292,6 +272,29 @@ public:
     AnyType<TokenT::REG_E$,  std::string>::GetValue() = "E'";
     AnyType<TokenT::REG_H$,  std::string>::GetValue() = "H'";
     AnyType<TokenT::REG_L$,  std::string>::GetValue() = "L'";
+
+    AnyType<TokenT::FLAG_C,  std::string>::GetValue() = "C";
+    AnyType<TokenT::FLAG_M,  std::string>::GetValue() = "M";
+    AnyType<TokenT::FLAG_NC, std::string>::GetValue() = "NC";
+    AnyType<TokenT::FLAG_NZ, std::string>::GetValue() = "NZ";
+    AnyType<TokenT::FLAG_P,  std::string>::GetValue() = "P";
+    AnyType<TokenT::FLAG_PE, std::string>::GetValue() = "PE";
+    AnyType<TokenT::FLAG_PO, std::string>::GetValue() = "PO";
+    AnyType<TokenT::FLAG_Z,  std::string>::GetValue() = "Z";
+  }
+
+
+  static inline uint16_t Reg2Mask(TokenT reg) {
+    switch (reg) {
+      case TokenT::REG_A: return 0b111;
+      case TokenT::REG_B: return 0b000;
+      case TokenT::REG_C: return 0b001;
+      case TokenT::REG_D: return 0b010;
+      case TokenT::REG_E: return 0b011;
+      case TokenT::REG_H: return 0b100;
+      case TokenT::REG_L: return 0b101;
+      default: return 0b000;
+    }
   }
 };
 }

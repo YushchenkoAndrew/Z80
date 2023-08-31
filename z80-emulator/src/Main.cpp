@@ -25,20 +25,35 @@ public:
         Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
         if (lexer.scan()) printf("%s\n", lexer.error().c_str());
 
-        for (auto token : lexer.vTokens) { token.print(); }
+        for (auto token : lexer.vTokens) { token->print(); }
 
 
         return true;
     }
 
     bool OnUserUpdate(float fElapsedTime) override {
-        // mMinecraft.Update(*this, fElapsedTime);
-
-
 	    Clear(olc::BLACK);
-        // mMinecraft.Draw(*this, fElapsedTime);
-        // return mMinecraft.IsFinished();
         return false;
+
+        // TODO: Text editor
+        // std::ifstream t("../RTC_Test/Test.asm");
+        // std::stringstream buffer;
+        // buffer << t.rdbuf();
+
+        // // mMinecraft.Update(*this, fElapsedTime);
+        // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
+        // if (lexer.scan()) printf("%s\n", lexer.error().c_str());
+
+
+        // // this->DrawString(10, 10, buffer.str());
+        // for (auto t : lexer.vDst) {
+        //     this->DrawString(t->col * 8, t->line * 12, t->lexeme, t->color);
+        // }
+
+
+        // // mMinecraft.Draw(*this, fElapsedTime);
+        // // return mMinecraft.IsFinished();
+        // return true;
     }
 
 private:
