@@ -150,33 +150,19 @@ public:
 
 
   // NOTE: One arg command
-  inline Statement Process(Int2Type<TokenT::CMD_AND>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt = addressRegisterOperation(0x00A6);
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
+  inline Statement Process(Int2Type<TokenT::CMD_RL>)  { return basicRegisterOperation<2>({ 0xCB16, 0xCB10 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_RLC>) { return basicRegisterOperation<2>({ 0xCB06, 0xCB00 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_RR>)  { return basicRegisterOperation<2>({ 0xCB1E, 0xCB18 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_RRC>) { return basicRegisterOperation<2>({ 0xCB0E, 0xCB08 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_SLA>) { return basicRegisterOperation<2>({ 0xCB26, 0xCB20 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_SRA>) { return basicRegisterOperation<2>({ 0xCB2E, 0xCB28 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_SRL>) { return basicRegisterOperation<2>({ 0xCB3E, 0xCB38 }); }
 
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0x00A0 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    return StatementOneArgCommand(0x00E6, peekPrev(), literal(1));
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_CP>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt = addressRegisterOperation(0x00BE);
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0x00B8 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    return StatementOneArgCommand(0x00FE, peekPrev(), literal(1));
-  }
+  inline Statement Process(Int2Type<TokenT::CMD_AND>) { return basicRegisterOperation<3>({ 0x00A6, 0x00A0, 0x00E6 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_CP>)  { return basicRegisterOperation<3>({ 0x00BE, 0x00B8, 0x00FE }); }
+  inline Statement Process(Int2Type<TokenT::CMD_OR>)  { return basicRegisterOperation<3>({ 0x00B6, 0x00B0, 0x00F6 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_SUB>) { return basicRegisterOperation<3>({ 0x0096, 0x0090, 0x00D6 }); }
+  inline Statement Process(Int2Type<TokenT::CMD_XOR>) { return basicRegisterOperation<3>({ 0x00AE, 0x00A8, 0x00EE }); }
 
   inline Statement Process(Int2Type<TokenT::CMD_DEC>) {
     if (match<1>({ TokenT::LEFT_BRACE })) {
@@ -203,7 +189,7 @@ public:
       case TokenT::REG_SP: return StatementNoArgCommand(0x003B, cmd);
     }
 
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'BC' | 'C' | 'D' | 'DE' | 'E' | 'H' | 'HL' | 'IX' | 'IY' | 'L' | 'SP'");
+    error(peekPrev(), "Expect register to be 'A' | 'B' | 'BC' | 'C' | 'D' | 'DE' | 'E' | 'H' | 'HL' | 'IX' | 'IY' | 'L' | 'SP'");
     return Statement();
   }
 
@@ -212,8 +198,14 @@ public:
   }
 
   inline Statement Process(Int2Type<TokenT::CMD_IM>) {
-    // TODO: 
-    return Statement();
+    return StatementLambda(literal(1), [](uint16_t val) {
+      switch (val) {
+        case 0x00: return 0xED46;
+        case 0x01: return 0xED56;
+        case 0x02: return 0xED5E;
+      }
+      return 0x00;
+    });
   }
 
   inline Statement Process(Int2Type<TokenT::CMD_INC>) {
@@ -241,22 +233,8 @@ public:
       case TokenT::REG_SP: return StatementNoArgCommand(0x0033, cmd);
     }
 
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'BC' | 'C' | 'D' | 'DE' | 'E' | 'H' | 'HL' | 'IX' | 'IY' | 'L' | 'SP'");
+    error(peekPrev(), "Expect register to be 'A' | 'B' | 'BC' | 'C' | 'D' | 'DE' | 'E' | 'H' | 'HL' | 'IX' | 'IY' | 'L' | 'SP'");
     return Statement();
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_OR>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt = addressRegisterOperation(0x00B6);
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0x00B0 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    return StatementOneArgCommand(0x00F6, peekPrev(), literal(1));
   }
 
   inline Statement Process(Int2Type<TokenT::CMD_POP>) {
@@ -269,7 +247,7 @@ public:
       case TokenT::REG_IY: return StatementNoArgCommand(0xFDE1, peekPrev());
     }
 
-    error(peekPrev(), "Expect to be 'AF' | 'BC' | 'DE' | 'HL' | 'IX' | 'IY'");
+    error(peekPrev(), "Expect register to be 'AF' | 'BC' | 'DE' | 'HL' | 'IX' | 'IY'");
     return Statement();
   }
 
@@ -283,7 +261,7 @@ public:
       case TokenT::REG_IY: return StatementNoArgCommand(0xFDE5, peekPrev());
     }
 
-    error(peekPrev(), "Expect to be 'AF' | 'BC' | 'DE' | 'HL' | 'IX' | 'IY'");
+    error(peekPrev(), "Expect register to be 'AF' | 'BC' | 'DE' | 'HL' | 'IX' | 'IY'");
     return Statement();
   }
 
@@ -304,196 +282,130 @@ public:
     return StatementNoArgCommand(0x00C9, cmd);
   }
 
-  inline Statement Process(Int2Type<TokenT::CMD_RL>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt;
-      switch (advance()->token) {
-        case TokenT::REG_HL: StatementNoArgCommand( 0xCB16, peekPrev()); break;
-        case TokenT::REG_IX: StatementOneArgCommand(0xDDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("22", TokenT::NUMBER))); break;
-        case TokenT::REG_IY: StatementOneArgCommand(0xFDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("22", TokenT::NUMBER))); break;
-        default: error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
-      }
-
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0xCB10 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
-    return Statement();
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_RLC>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt;
-      switch (advance()->token) {
-        case TokenT::REG_HL: StatementNoArgCommand( 0xCB06, peekPrev()); break;
-        case TokenT::REG_IX: StatementOneArgCommand(0xDDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("6", TokenT::NUMBER))); break;
-        case TokenT::REG_IY: StatementOneArgCommand(0xFDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("6", TokenT::NUMBER))); break;
-        default: error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
-      }
-
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0xCB00 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
-    return Statement();
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_RR>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt;
-      switch (advance()->token) {
-        case TokenT::REG_HL: StatementNoArgCommand( 0xCB1E, peekPrev()); break;
-        case TokenT::REG_IX: StatementOneArgCommand(0xDDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("30", TokenT::NUMBER))); break;
-        case TokenT::REG_IY: StatementOneArgCommand(0xFDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("30", TokenT::NUMBER))); break;
-        default: error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
-      }
-
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0xCB18 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
-    return Statement();
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_RRC>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt;
-      switch (advance()->token) {
-        case TokenT::REG_HL: StatementNoArgCommand( 0xCB0E, peekPrev()); break;
-        case TokenT::REG_IX: StatementOneArgCommand(0xDDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("14", TokenT::NUMBER))); break;
-        case TokenT::REG_IY: StatementOneArgCommand(0xFDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("14", TokenT::NUMBER))); break;
-        default: error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
-      }
-
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0xCB08 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
-    return Statement();
-  }
-
   inline Statement Process(Int2Type<TokenT::CMD_RST>) {
-    // TODO: 
-    return Statement();
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_SLA>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt;
-      switch (advance()->token) {
-        case TokenT::REG_HL: StatementNoArgCommand( 0xCB26, peekPrev()); break;
-        case TokenT::REG_IX: StatementOneArgCommand(0xDDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("38", TokenT::NUMBER))); break;
-        case TokenT::REG_IY: StatementOneArgCommand(0xFDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("38", TokenT::NUMBER))); break;
-        default: error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
+    return StatementLambda(literal(1), [](uint16_t val) {
+      switch (val) {
+        case 0x00: return 0x00C7;
+        case 0x08: return 0x00CF;
+        case 0x10: return 0x00D7;
+        case 0x18: return 0x00DF;
+        case 0x20: return 0x00E7;
+        case 0x28: return 0x00EF;
+        case 0x30: return 0x00F7;
+        case 0x38: return 0x00FF;
       }
-
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0xCB20 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
-    return Statement();
+      return 0x00;
+    });
   }
 
-  inline Statement Process(Int2Type<TokenT::CMD_SRA>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt;
-      switch (advance()->token) {
-        case TokenT::REG_HL: StatementNoArgCommand( 0xCB2E, peekPrev()); break;
-        case TokenT::REG_IX: StatementOneArgCommand(0xDDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("46", TokenT::NUMBER))); break;
-        case TokenT::REG_IY: StatementOneArgCommand(0xFDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("46", TokenT::NUMBER))); break;
-        default: error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
-      }
 
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0xCB28 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
-    return Statement();
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_SRL>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt;
-      switch (advance()->token) {
-        case TokenT::REG_HL: StatementNoArgCommand( 0xCB3E, peekPrev()); break;
-        case TokenT::REG_IX: StatementOneArgCommand(0xDDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("62", TokenT::NUMBER))); break;
-        case TokenT::REG_IY: StatementOneArgCommand(0xFDCB, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral("62", TokenT::NUMBER))); break;
-        default: error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
-      }
-
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0xCB38 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    error(peekPrev(), "Expect to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
-    return Statement();
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_SUB>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt = addressRegisterOperation(0x0096);
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0x0090 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    return StatementOneArgCommand(0x00D6, peekPrev(), literal(1));
-  }
-
-  inline Statement Process(Int2Type<TokenT::CMD_XOR>) {
-    if (match<1>({ TokenT::LEFT_BRACE })) {
-      Statement stmt = addressRegisterOperation(0x00AE);
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return stmt;
-    }
-
-    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(0x00A8 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
-    }
-
-    return StatementOneArgCommand(0x00EE, peekPrev(), literal(1));
-  }
 
   // NOTE: Two arg command
+  inline Statement Process(Int2Type<TokenT::CMD_ADC>) {
+    switch (advance()->token) {
+      case TokenT::REG_A:
+        consume(TokenT::COMMA, "Expect ',' after first expression.");
+        return basicRegisterOperation<3>({ 0x008E, 0x0088, 0x00CE });
+
+      case TokenT::REG_HL:
+        switch(advance()->token) {
+          case TokenT::REG_BC: return StatementNoArgCommand(0xED4A, peekPrev());
+          case TokenT::REG_DE: return StatementNoArgCommand(0xED5A, peekPrev());
+          case TokenT::REG_HL: return StatementNoArgCommand(0xED6A, peekPrev());
+          case TokenT::REG_SP: return StatementNoArgCommand(0xED7A, peekPrev());
+        }
+
+        error(peekPrev(), "Expect register to be 'BC' | 'DE' | 'HL' | 'SP'");
+        return Statement();
+    }
+
+    error(peekPrev(), "Expect register to be 'A' | 'HL'");
+    return Statement();
+  }
+
+  inline Statement Process(Int2Type<TokenT::CMD_ADD>) {
+    switch (advance()->token) {
+      case TokenT::REG_A:
+        consume(TokenT::COMMA, "Expect ',' after first expression.");
+        return basicRegisterOperation<3>({ 0x0086, 0x0080, 0x00C6 });
+
+      case TokenT::REG_IX:
+      case TokenT::REG_IY:
+        uint16_t mask = peekPrev()->token == TokenT::REG_IX ? 0xDD00 : 0xFD00;
+
+      case TokenT::REG_HL:
+        switch(advance()->token) {
+          case TokenT::REG_BC: return StatementNoArgCommand(0x0009 | mask, peekPrev());
+          case TokenT::REG_DE: return StatementNoArgCommand(0x0019 | mask, peekPrev());
+          case TokenT::REG_HL: return StatementNoArgCommand(0x0029 | mask, peekPrev());
+          case TokenT::REG_SP: return StatementNoArgCommand(0x0039 | mask, peekPrev());
+        }
+
+        error(peekPrev(), "Expect register to be 'BC' | 'DE' | 'HL' | 'SP'");
+        return Statement();
+    }
+
+    error(peekPrev(), "Expect register to be 'A' | 'HL' | 'IX' | 'IY'");
+    return Statement();
+  }
+
+  // TODO:
+  inline Statement Process(Int2Type<TokenT::CMD_BIT>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_CALL>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_EX>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_IN>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_JP>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_JR>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_LD>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_OUT>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_RES>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_SBC>) { return Statement(); }
+  inline Statement Process(Int2Type<TokenT::CMD_SET>) { return Statement(); }
 
 private:
+
+  template<int32_t T>
+  inline Statement basicRegisterOperation(std::array<uint16_t, T> opcode);
+
+  inline Statement basicRegisterOperation(std::array<uint16_t, 3> opcode) {
+    if (match<1>({ TokenT::LEFT_BRACE })) {
+      Statement stmt = addressRegisterOperation(opcode[0]);
+      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+      return stmt;
+    }
+
+    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
+      return StatementNoArgCommand(opcode[1] | Defs::Reg2Mask(peekPrev()->token), peekPrev());
+    }
+
+    return StatementOneArgCommand(opcode[2], peekPrev(), literal(1));
+  }
+
+  inline Statement basicRegisterOperation(std::array<uint16_t, 2> opcode) {
+    if (match<1>({ TokenT::LEFT_BRACE })) {
+      uint16_t code = opcode[0] & 0x00FF;
+      uint16_t command = ((opcode[1] & 0xFF00) >> 8);
+
+      Statement stmt;
+      switch (advance()->token) {
+        case TokenT::REG_HL: StatementNoArgCommand(opcode[0], peekPrev()); break;
+        case TokenT::REG_IX: StatementOneArgCommand(0xDD00 | command, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral(std::to_string(code), TokenT::NUMBER))); break;
+        case TokenT::REG_IY: StatementOneArgCommand(0xFD00 | command, peekPrev(), ExpressionGroup(offset(1), ExpressionLiteral(std::to_string(code), TokenT::NUMBER))); break;
+        default: error(peekPrev(), "Expect register to be 'HL' | 'IY+o' | 'IX+o'");
+      }
+
+      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+      return stmt;
+    }
+
+    if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
+      return StatementNoArgCommand(opcode[1] | Defs::Reg2Mask(peekPrev()->token), peekPrev());
+    }
+
+    error(peekPrev(), "Expect register to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
+    return Statement();
+  }
+
   inline Statement addressRegisterOperation(uint16_t opcode) {
     switch (advance()->token) {
       case TokenT::REG_HL: return StatementNoArgCommand( 0x0000 | opcode, peekPrev());
@@ -501,7 +413,7 @@ private:
       case TokenT::REG_IY: return StatementOneArgCommand(0xFD00 | opcode, peekPrev(), offset(1));
     }
 
-    error(peekPrev(), "Expect to be 'HL' | 'IY+o' | 'IX+o'");
+    error(peekPrev(), "Expect register to be 'HL' | 'IY+o' | 'IX+o'");
     return Statement();
   }
 
