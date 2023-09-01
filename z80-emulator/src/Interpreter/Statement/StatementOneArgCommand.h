@@ -5,8 +5,8 @@ namespace Interpreter {
 
 class StatementOneArgCommand : public Statement {
 public:
-  StatementOneArgCommand(uint16_t o, std::shared_ptr<Token> t, Expression a):
-    opcode(o), type(t->token), arg0(a) {}
+  StatementOneArgCommand(uint32_t o, std::shared_ptr<Token> t, Expression a):
+    opcode(o), command(t), arg(a) {}
 
   template<class T>
   T accept(StatementVisitor<T>* visitor) {
@@ -14,9 +14,10 @@ public:
   }
 
 public:
-  const uint16_t opcode;
-  const TokenT type;
-  const Expression arg0;
+  const uint32_t opcode;
+
+  Expression arg;
+  std::shared_ptr<Token> command;
 };
 
 };

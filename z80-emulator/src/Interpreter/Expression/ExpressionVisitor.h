@@ -1,5 +1,5 @@
 #pragma once
-#include "ExpressionGroup.h"
+#include "ExpressionBinary.h"
 
 
 namespace Interpreter {
@@ -11,7 +11,7 @@ public:
   T visitLiteral(ExpressionLiteral* expr);
   T visitBinary(ExpressionBinary* expr);
   T visitUnary(ExpressionUnary* expr);
-  T visitGroup(ExpressionGroup* expr);
+  // T visitGroup(ExpressionGroup* expr);
   // T visitList(expr: ConditionListExpression);
   // T visitVariable(expr: ConditionVariableExpression);
 };

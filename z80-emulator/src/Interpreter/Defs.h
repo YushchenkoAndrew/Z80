@@ -25,7 +25,7 @@ enum TokenT {
   REG_AF,  REG_BC,  REG_DE,  REG_HL, REG_IX, REG_IY, REG_SP, REG_PC,
   REG_AF$, REG_BC$, REG_DE$, REG_HL$,
 
-  REG_A,  REG_B,  REG_C,  REG_D,  REG_E,  REG_H,  REG_L, REG_I, REG_R, 
+  REG_A,  REG_B,  REG_C,  REG_D,  REG_E,  REG_H,  REG_L, REG_I, REG_R, REG_F,
   REG_A$, REG_B$, REG_C$, REG_D$, REG_E$, REG_H$, REG_L$,
 
   // Flags
@@ -283,8 +283,12 @@ public:
     AnyType<TokenT::FLAG_Z,  std::string>::GetValue() = "Z";
   }
 
+  static inline uint32_t Int2Mask(int32_t size) {
+    if (size == 0) return 0x00;
+    return (Int2Mask(size - 1) << 8) | 0xFF;
+  }
 
-  static inline uint16_t Reg2Mask(TokenT reg) {
+  static inline uint32_t Reg2Mask(TokenT reg) {
     switch (reg) {
       case TokenT::REG_A: return 0b111;
       case TokenT::REG_B: return 0b000;

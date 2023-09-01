@@ -1,5 +1,5 @@
 #pragma once
-#include "StatementOneArgCommand.h"
+#include "StatementVariable.h"
 
 
 namespace Interpreter {

@@ -5,8 +5,19 @@ namespace Interpreter {
 
 class StatementLambda : public Statement {
 public:
-  StatementLambda(Expression expr, std::function<uint16_t(uint16_t)> opcode):
-    expr(expr), opcode(opcode) {}
+  StatementLambda(
+    Expression expr,
+    std::shared_ptr<Token> t,
+    std::function<uint32_t(std::vector<uint32_t>& argv)> opcode,
+    std::vector<uint32_t> argv = {}
+  ): token(t), expr({ expr }), opcode(opcode), argv(argv) {}
+
+  StatementLambda(
+    std::vector<Expression> expr,
+    std::shared_ptr<Token> t,
+    std::function<uint32_t(std::vector<uint32_t>& argv)> opcode,
+    std::vector<uint32_t> argv = {}
+  ): token(t), expr(expr), opcode(opcode), argv(argv) {}
 
   template<class T>
   T accept(StatementVisitor<T>* visitor) {
@@ -14,8 +25,10 @@ public:
   }
 
 public:
-  const Expression expr;
-  const std::function<uint16_t(uint16_t)> opcode;
+  std::vector<Expression> expr;
+  std::vector<uint32_t> argv;
+  std::shared_ptr<Token> token;
+  const std::function<uint32_t(std::vector<uint32_t>& argv)> opcode;
 };
 
 };

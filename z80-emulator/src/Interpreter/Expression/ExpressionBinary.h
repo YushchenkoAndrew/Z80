@@ -6,7 +6,7 @@ namespace Interpreter {
 class ExpressionBinary : public Expression {
 public:
   ExpressionBinary(Expression left, std::shared_ptr<Token> op, Expression righ):
-    left(left), operation(op->token), right(righ) {}
+    left(left), operation(op), right(righ) {}
 
   template<class T>
   T accept(ExpressionVisitor<T>* visitor) {
@@ -14,9 +14,9 @@ public:
   }
 
 public:
-  const Expression left;
-  const Expression right;
-  const TokenT operation;
+  Expression left;
+  Expression right;
+  std::shared_ptr<Token> operation;
 };
 
 };
