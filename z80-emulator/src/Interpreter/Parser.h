@@ -56,10 +56,7 @@ private:
   Statement func() {
     std::shared_ptr<Token> label = peekPrev();
     consume(TokenT::COLON, "Expect ':' before expression.");
-    Expression expr = term();
-    // TODO:
-
-    return Statement();
+    return StatementVariable(label);
   }
 
   Statement variable() {
@@ -75,25 +72,25 @@ private:
     return foreach<CommandList, AnyType<-1, Parser*>>::Key2Process();
   }
 
-  inline Expression term() {
-    Expression expr = unary();
+  inline Expression term(int32_t size = 0) {
+    Expression expr = unary(size);
 
     while (match<5>({ TokenT::BIT_AND, TokenT::BIT_OR, TokenT::BIT_XOR, TokenT::PLUS, TokenT::MINUS })) {
       std::shared_ptr<Token> operation = peekPrev();
-      Expression right = unary();
+      Expression right = unary(size);
       expr = ExpressionBinary(expr, operation, right);
     }
 
     return expr;
   }
 
-  inline Expression unary() {
+  inline Expression unary(int32_t size = 0) {
     if (match<2>({ TokenT::MINUS, TokenT::BIT_NOT })) {
       std::shared_ptr<Token> operation = peekPrev();
-      return ExpressionUnary(operation, unary());
+      return ExpressionUnary(operation, unary(size));
     }
 
-    return literal();
+    return literal(size);
   }
 
   inline Expression offset(int32_t size = 0) {
@@ -107,8 +104,7 @@ private:
     }
 
     if (match<1>({ TokenT::IDENTIFIER })) {
-    // TODO:
-    //   return new ConditionVariableExpression(this.peekPrev());
+      return ExpressionVariable(peekPrev());
     }
 
     error(advance(), "Unknown token.");
@@ -119,6 +115,19 @@ public:
   Statement Process(Int2Type<T>) {
     error(peekPrev(), "Unknown operation");
     return Statement();
+  }
+
+
+  inline Statement Process(Int2Type<TokenT::OP_ORG>) { return StatementAddress(peekPrev(), literal(2)); }
+  inline Statement Process(Int2Type<TokenT::OP_DB>) {
+    std::shared_ptr<Token> cmd = peekPrev();
+    std::vector<Expression> data;
+
+    do {
+      data.push_back(term(1));
+    } while(match<1>({ TokenT::COMMA }));
+
+    return StatementAllocate(cmd, data);
   }
 
   // NOTE: No Arg Command
@@ -542,7 +551,7 @@ public:
           consume(TokenT::COMMA, "Expect ',' after expression.");
 
           if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-            return StatementNoArgCommand(0x70 | Defs::Reg2Mask(peekPrev()->token), peekPrev());
+            return StatementNoArgCommand(0x70 | Defs::Reg2Mask(peekPrev()->token), cmd);
           }
 
           return StatementOneArgCommand(0x36, peekPrev(), literal(1));
@@ -596,10 +605,130 @@ public:
       return Statement();
     }
 
-    // TODO: ...
-    // LD A,(BC)
-    // LD A,(DE)
-    // LD A,(HL)
+    switch (advance()->token) {
+      case TokenT::REG_A:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+
+        if (match<1>({ TokenT::LEFT_BRACE })) {
+          Statement stmt;
+          switch (peek()->token) {
+            case TokenT::REG_BC: advance(); stmt = StatementNoArgCommand(0x000A, cmd); break;
+            case TokenT::REG_DE: advance(); stmt = StatementNoArgCommand(0x001A, cmd); break;
+
+            case TokenT::REG_HL:
+            case TokenT::REG_IX: 
+            case TokenT::REG_IY: stmt = addressRegisterOperation(0x007E, cmd); break;
+          
+            default: stmt = StatementOneArgCommand(0x003A, cmd, literal(2)); break;
+          }
+
+          consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+          return stmt;
+        }
+
+        if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
+          return StatementNoArgCommand(0x0078 | Defs::Reg2Mask(peekPrev()->token), cmd);
+        }
+
+        if (match<1>({ TokenT::REG_I })) return StatementNoArgCommand(0xED57, cmd);
+        if (match<1>({ TokenT::REG_R })) return StatementNoArgCommand(0xED5F, cmd);
+
+        return StatementOneArgCommand(0x003E, cmd, literal(1));
+
+      case TokenT::REG_B:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        return basicRegisterOperation<3>({ 0x0046, 0x0040, 0x0006 }, cmd);
+
+      case TokenT::REG_C:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        return basicRegisterOperation<3>({ 0x004E, 0x0048, 0x000E }, cmd);
+
+      case TokenT::REG_D:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        return basicRegisterOperation<3>({ 0x0056, 0x0050, 0x0016 }, cmd);
+
+      case TokenT::REG_E:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        return basicRegisterOperation<3>({ 0x005E, 0x0058, 0x001E }, cmd);
+
+      case TokenT::REG_H:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        return basicRegisterOperation<3>({ 0x0066, 0x0060, 0x0026 }, cmd);
+
+      case TokenT::REG_L:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        return basicRegisterOperation<3>({ 0x006E, 0x0068, 0x002E }, cmd);
+
+      case TokenT::REG_I:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        consume(TokenT::REG_A, "Expect register 'A' after expression.");
+        return StatementNoArgCommand(0xED47, cmd);
+
+      case TokenT::REG_R:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        consume(TokenT::REG_A, "Expect register 'A' after expression.");
+        return StatementNoArgCommand(0xED4F, cmd);
+
+      case TokenT::REG_BC:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        if (match<1>({ TokenT::LEFT_BRACE })) {
+          Statement stmt = StatementOneArgCommand(0xED4B, cmd, literal(2));
+          consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+          return stmt;
+        }
+
+        return StatementOneArgCommand(0x0001, cmd, literal(2));
+
+      case TokenT::REG_HL:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        if (match<1>({ TokenT::LEFT_BRACE })) {
+          Statement stmt = StatementOneArgCommand(0x002A, cmd, literal(2));
+          consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+          return stmt;
+        }
+
+        return StatementOneArgCommand(0x0021, cmd, literal(2));
+
+
+      case TokenT::REG_IX:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        if (match<1>({ TokenT::LEFT_BRACE })) {
+          Statement stmt = StatementOneArgCommand(0xDD2A, cmd, literal(2));
+          consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+          return stmt;
+        }
+
+        return StatementOneArgCommand(0xDD21, cmd, literal(2));
+
+      case TokenT::REG_IY:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        if (match<1>({ TokenT::LEFT_BRACE })) {
+          Statement stmt = StatementOneArgCommand(0xFD2A, cmd, literal(2));
+          consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+          return stmt;
+        }
+
+        return StatementOneArgCommand(0xFD21, cmd, literal(2));
+
+      case TokenT::REG_SP: 
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        if (match<1>({ TokenT::LEFT_BRACE })) {
+          Statement stmt = StatementOneArgCommand(0x002A, cmd, literal(2));
+          consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+          return stmt;
+        }
+
+        switch (peek()->token) {
+          case TokenT::REG_HL: advance(); return StatementNoArgCommand(0x00F9, cmd);
+          case TokenT::REG_IX: advance(); return StatementNoArgCommand(0xDDF9, cmd);
+          case TokenT::REG_IY: advance(); return StatementNoArgCommand(0xFDF9, cmd);
+        }
+
+        return StatementOneArgCommand(0x0031, cmd, literal(2));
+
+    }
+
+    error(peekPrev(), "Expect register to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L' | 'I' | 'R' | 'BC' | 'DE' | 'HL' | 'SP'");
     return Statement();
   }
 
@@ -700,10 +829,10 @@ public:
 private:
 
   template<int32_t T>
-  inline Statement basicRegisterOperation(std::array<uint32_t, T> opcode) { return Statement(); }
+  inline Statement basicRegisterOperation(std::array<uint32_t, T> opcode, std::shared_ptr<Token> cmd = nullptr) { return Statement(); }
 
-  inline Statement basicRegisterOperation(std::array<uint32_t, 3> opcode) {
-    std::shared_ptr<Token> cmd = peekPrev();
+  inline Statement basicRegisterOperation(std::array<uint32_t, 3> opcode, std::shared_ptr<Token> _cmd = nullptr) {
+    std::shared_ptr<Token> cmd = _cmd == nullptr ? peekPrev() : _cmd;
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
       Statement stmt = addressRegisterOperation(opcode[0], cmd);
@@ -712,14 +841,14 @@ private:
     }
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(opcode[1] | Defs::Reg2Mask(peekPrev()->token), peekPrev());
+      return StatementNoArgCommand(opcode[1] | Defs::Reg2Mask(peekPrev()->token), cmd);
     }
 
     return StatementOneArgCommand(opcode[2], peekPrev(), literal(1));
   }
 
-  inline Statement basicRegisterOperation(std::array<uint32_t, 2> opcode) {
-    std::shared_ptr<Token> cmd = peekPrev();
+  inline Statement basicRegisterOperation(std::array<uint32_t, 2> opcode, std::shared_ptr<Token> _cmd = nullptr) {
+    std::shared_ptr<Token> cmd = _cmd == nullptr ? peekPrev() : _cmd;
     
     if (match<1>({ TokenT::LEFT_BRACE })) {
       Statement stmt = addressRegisterComplexOperation(opcode[0], cmd);
@@ -728,7 +857,7 @@ private:
     }
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(opcode[1] | Defs::Reg2Mask(peekPrev()->token), peekPrev());
+      return StatementNoArgCommand(opcode[1] | Defs::Reg2Mask(peekPrev()->token), cmd);
     }
 
     error(peekPrev(), "Expect register to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
@@ -784,7 +913,8 @@ private:
 
   inline void consume(TokenT type, std::string message) {
     if (check(type)) { advance(); return; }
-    error(peek(), message);
+    // error(peek(), message);
+    error(advance(), message);
   }
 
   void error(std::shared_ptr<Token> token, std::string message) {

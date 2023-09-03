@@ -50,7 +50,6 @@ enum TokenT {
 typedef TypeList<
   AnyType<TokenT::OP_ORG,   std::string>, TypeList<
   AnyType<TokenT::OP_DB,    std::string>, TypeList<
-  AnyType<TokenT::OP_EQU,   std::string>, TypeList<
   AnyType<TokenT::CMD_ADC,  std::string>, TypeList<
   AnyType<TokenT::CMD_ADD,  std::string>, TypeList<
   AnyType<TokenT::CMD_AND,  std::string>, TypeList<
@@ -117,13 +116,11 @@ typedef TypeList<
   AnyType<TokenT::CMD_SRA,  std::string>, TypeList<
   AnyType<TokenT::CMD_SRL,  std::string>, TypeList<
   AnyType<TokenT::CMD_SUB,  std::string>, TypeList<
-  AnyType<TokenT::CMD_XOR,  std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::CMD_XOR,  std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    CommandList;
 
 
 typedef TypeList<
-  AnyType<TokenT::OP_ORG,   std::string>, TypeList<
-  AnyType<TokenT::OP_DB,    std::string>, TypeList<
   AnyType<TokenT::OP_EQU,   std::string>, TypeList<
   AnyType<TokenT::REG_AF,   std::string>, TypeList<
   AnyType<TokenT::REG_BC,   std::string>, TypeList<
@@ -159,7 +156,7 @@ typedef TypeList<
   AnyType<TokenT::FLAG_P,   std::string>, TypeList<
   AnyType<TokenT::FLAG_PE,  std::string>, TypeList<
   AnyType<TokenT::FLAG_PO,  std::string>, TypeList<
-  AnyType<TokenT::FLAG_Z,   std::string>,  CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::FLAG_Z,   std::string>,  CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     KeywordList;
 
 
