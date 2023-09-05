@@ -41,9 +41,14 @@ public:
 private:
   inline void reset() { nCurr = 0; stmt.clear(); errors.clear(); }
 
+  template<class T>
+  inline void pushStmt(T declaration) { stmt.push_back(declaration); }
+  inline void pushStmt(StatementVariable declaration) { stmt.insert(stmt.begin() + nOffset++, declaration); }
+
   inline void program() {
-    while (isAtEnd()) stmt.push_back(declaration());
+    while (isAtEnd()) pushStmt(declaration());
   }
+
 
   Statement declaration() {
     if (match<1>({ TokenT::IDENTIFIER })) {
@@ -917,6 +922,7 @@ public:
 
 private:
   int32_t nCurr = 0; // index of the token, which is pointing to the curr token
+  int32_t nOffset = 0; // index of variable statement, which is pointing to the start of stmt arr
 };
 
 };

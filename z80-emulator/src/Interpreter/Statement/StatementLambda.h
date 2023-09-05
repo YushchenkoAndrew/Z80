@@ -7,15 +7,15 @@ class StatementLambda : public Statement {
 public:
   StatementLambda(
     Expression expr,
-    std::function<uint32_t(std::vector<uint32_t>& argv)> opcode,
+    std::function<uint32_t(std::vector<uint32_t>& argv)> lambda,
     std::vector<uint32_t> argv = {}
-  ): expr({ expr }), opcode(opcode), argv(argv) {}
+  ): expr({ expr }), lambda(lambda), argv(argv) {}
 
   StatementLambda(
     std::vector<Expression> expr,
-    std::function<uint32_t(std::vector<uint32_t>& argv)> opcode,
+    std::function<uint32_t(std::vector<uint32_t>& argv)> lambda,
     std::vector<uint32_t> argv = {}
-  ): expr(expr), opcode(opcode), argv(argv) {}
+  ): expr(expr), lambda(lambda), argv(argv) {}
 
   template<class T>
   inline T accept(Visitor<T>* visitor) {
@@ -25,7 +25,7 @@ public:
 public:
   std::vector<Expression> expr;
   std::vector<uint32_t> argv;
-  const std::function<uint32_t(std::vector<uint32_t>& argv)> opcode;
+  const std::function<uint32_t(std::vector<uint32_t>& argv)> lambda;
 };
 
 };

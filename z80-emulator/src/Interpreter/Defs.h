@@ -287,11 +287,6 @@ public:
     AnyType<TokenT::FLAG_Z,  std::string>::GetValue() = "Z";
   }
 
-  static inline uint32_t Int2Mask(int32_t size) {
-    if (size == 0) return 0x00;
-    return (Int2Mask(size - 1) << 8) | 0xFF;
-  }
-
   static inline uint32_t Reg2Mask(TokenT reg) {
     switch (reg) {
       case TokenT::REG_A: return 0b111;

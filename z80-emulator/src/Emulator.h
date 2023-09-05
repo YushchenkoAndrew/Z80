@@ -1,6 +1,6 @@
 #pragma once
 #include "lib/olcPixelGameEngine.h"
-#include "Interpreter/Parser.h"
+#include "Interpreter/Interpreter.h"
 
 class Emulator {
 
