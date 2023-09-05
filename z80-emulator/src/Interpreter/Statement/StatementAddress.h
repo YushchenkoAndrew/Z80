@@ -10,8 +10,8 @@ public:
     label(t), address(e) {}
 
   template<class T>
-  T accept(StatementVisitor<T>* visitor) {
-    // TODO
+  inline T accept(Visitor<T>* visitor) {
+    return visitor.visit(Int2Type<STMT_ADDRESS>(), this);
   }
 
 public:

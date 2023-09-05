@@ -3,13 +3,24 @@
 
 namespace Interpreter {
 
+
 template<class T>
-class ExpressionVisitor;
+class Visitor;
 
 class Expression {
 
   template<class T>
-  T accept(ExpressionVisitor<T>* visitor);
+  inline T accept(Visitor<T>* visitor) {
+    return visitor.visit(Int2Type<EXPR_UNKNOWN>(), this);
+  }
 };
 
+
+template<class T>
+class Visitor {
+public:
+
+  template <int32_t U>
+  T visit(Int2Type<U>, Expression* expr);
+};
 };

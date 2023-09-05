@@ -1,7 +1,9 @@
 #include "Lexer.h"
 
 namespace Interpreter {
-bool Lexer::scan() {
+bool Lexer::scan(std::string text) {
+  src = text; reset();
+
   while (!isAtEnd()) {
     nStart = nCurr;
 

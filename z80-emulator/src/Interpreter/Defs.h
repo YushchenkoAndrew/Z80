@@ -46,6 +46,13 @@ enum TokenT {
   OP_EOF, OP_NONE
 };
 
+enum VisitorT {
+  EXPR_BINARY, EXPR_LITERAL, EXPR_UNARY, EXPR_VARIABLE,
+  STMT_ADDRESS, STMT_ALLOCATE, STMT_LAMBDA, STMT_NO_ARG, STMT_ONE_ARG, STMT_VARIABLE,
+
+  EXPR_UNKNOWN, STMT_UNKNOWN
+};
+
 
 typedef TypeList<
   AnyType<TokenT::OP_ORG,   std::string>, TypeList<

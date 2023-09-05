@@ -5,16 +5,15 @@ namespace Interpreter {
 
 class StatementNoArgCommand : public Statement {
 public:
-  StatementNoArgCommand(uint32_t o, std::shared_ptr<Token> t): opcode(o), command(t) {}
+  StatementNoArgCommand(uint32_t o): opcode(o) {}
 
   template<class T>
-  T accept(StatementVisitor<T>* visitor) {
-    // TODO
+  inline T accept(Visitor<T>* visitor) {
+    return visitor.visit(Int2Type<STMT_NO_ARG>(), this);
   }
 
 public:
   const uint32_t opcode;
-  std::shared_ptr<Token> command;
 };
 
 };

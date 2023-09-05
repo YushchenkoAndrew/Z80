@@ -1,15 +1,14 @@
 #pragma once
-#include "src/Interpreter/Expression/ExpressionVisitor.h"
+#include "src/Interpreter/Expression/ExpressionVariable.h"
 
 namespace Interpreter {
 
-template<class T>
-class StatementVisitor;
-
-class Statement {
+class Statement : public Expression {
 
   template<class T>
-  T accept(StatementVisitor<T>* visitor);
+  inline T accept(Visitor<T>* visitor) {
+    return visitor.visit(Int2Type<STMT_UNKNOWN>(), this);
+  }
 };
 
 };

@@ -14,8 +14,8 @@ public:
   StatementVariable(std::shared_ptr<Token> t): label(t), type(ADDRESS) {}
 
   template<class T>
-  T accept(StatementVisitor<T>* visitor) {
-    // TODO
+  inline T accept(Visitor<T>* visitor) {
+    return visitor.visit(Int2Type<STMT_VARIABLE>(), this);
   }
 
 public:

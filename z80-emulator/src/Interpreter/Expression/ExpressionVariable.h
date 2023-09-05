@@ -1,5 +1,5 @@
 #pragma once
-#include "ExpressionBinary.h"
+#include "ExpressionUnary.h"
 
 namespace Interpreter {
 
@@ -10,9 +10,8 @@ public:
   
   
   template<class T>
-  T accept(ExpressionVisitor<T>* visitor) {
-    // TODO:
-    // return visitor.visitUnary(this);
+  inline T accept(Visitor<T>* visitor) {
+    return visitor.visit(Int2Type<EXPR_VARIABLE>(), this);
   }
 
 public:

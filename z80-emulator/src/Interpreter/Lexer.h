@@ -13,12 +13,18 @@ namespace Interpreter {
  */
 class Lexer {
 public:
-  Lexer(std::string src): src(src) {}
+  Lexer() {}
+  ~Lexer() { reset(); }
 
-  bool scan(); 
+  bool scan(std::string src); 
 
 
 private:
+  inline void reset() {
+    nStart = 0; nCurr = 0; nCol = 1; nLine = 1;
+    vTokens.clear(); vDst.clear(); err.clear();
+  }
+
   void string(const char &c) {
     while (!(peek() == c || isAtEnd())) {
       if (peek() == '\n' || peek() == '\r') { nLine++; nCol = 1; }
@@ -103,7 +109,7 @@ public:
 
 
 private:
-  const std::string src;
+  std::string src;
 
   int32_t nStart = 0; // index of the src, which is pointing to first char in the lexeme
   int32_t nCurr = 0; // index of the src, which is pointing to the curr char

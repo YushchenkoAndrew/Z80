@@ -10,8 +10,8 @@ public:
   
   
   template<class T>
-  T accept(ExpressionVisitor<T>* visitor) {
-    return visitor.visitUnary(this);
+  inline T accept(Visitor<T>* visitor) {
+    return visitor.visit(Int2Type<EXPR_UNARY>(), this);
   }
 
 public:
