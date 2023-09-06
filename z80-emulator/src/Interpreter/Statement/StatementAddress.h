@@ -7,7 +7,7 @@ namespace Interpreter {
 class StatementAddress : public Statement {
 public:
   StatementAddress(std::shared_ptr<Token> t, Expression e):
-    label(t), address(e) {}
+    label(t), expr(e) {}
 
   template<class T>
   inline T accept(Visitor<T>* visitor) {
@@ -15,7 +15,7 @@ public:
   }
 
 public:
-  Expression address;
+  Expression expr;
   std::shared_ptr<Token> label;
 };
 

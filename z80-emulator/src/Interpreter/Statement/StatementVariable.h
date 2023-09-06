@@ -5,9 +5,9 @@
 namespace Interpreter {
 
 class StatementVariable : public Statement {
+public:
   enum TypeT { ADDRESS, DEFINITION };
 
-public:
   StatementVariable(std::shared_ptr<Token> t, Expression a):
     label(t), definition(a), type(DEFINITION) {}
 

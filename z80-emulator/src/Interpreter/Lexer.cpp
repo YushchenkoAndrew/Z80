@@ -21,6 +21,10 @@ bool Lexer::scan(std::string text) {
       case '^': addToken(TokenT::BIT_XOR); break;
       case '~': addToken(TokenT::BIT_NOT); break;
 
+      case '.':
+       if (advance() != '.') { err = "Unexpected character."; break; }
+       addToken(TokenT::CONCATENATE); break;
+
 
       case '"': case '\'': string(c); break;
 

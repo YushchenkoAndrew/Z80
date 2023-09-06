@@ -15,7 +15,7 @@ namespace Interpreter {
  *  statement   -> COMMAND (expression)?  // NOTE: Grammar for each command will be hardcoded based on manual, this grammar is just a common example
  * 
  *  offset      -> '+' literal
- *  term        -> unary (('+' | '-' | '|' | '&' | '^') unary)*
+ *  term        -> unary (('+' | '-' | '|' | '&' | '^' | '..') unary)*
  *  unary       -> ('~' | '-') unary | literal
  * 
  *  expression  -> argument  (',' argument)?
@@ -86,7 +86,7 @@ private:
   inline Expression term(int32_t size = 0) {
     Expression expr = unary(size);
 
-    while (match<5>({ TokenT::BIT_AND, TokenT::BIT_OR, TokenT::BIT_XOR, TokenT::PLUS, TokenT::MINUS })) {
+    while (match<6>({ TokenT::BIT_AND, TokenT::BIT_OR, TokenT::BIT_XOR, TokenT::PLUS, TokenT::MINUS, TokenT::CONCATENATE })) {
       std::shared_ptr<Token> operation = peekPrev();
       Expression right = unary(size);
       expr = ExpressionBinary(expr, operation, right);
