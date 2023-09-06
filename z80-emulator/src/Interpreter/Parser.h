@@ -16,7 +16,7 @@ namespace Interpreter {
  * 
  *  offset      -> '+' literal
  *  term        -> unary (('+' | '-' | '|' | '&' | '^') unary)*
- *  unary       -> ('!' | '-') unary | literal
+ *  unary       -> ('~' | '-') unary | literal
  * 
  *  expression  -> argument  (',' argument)?
  *  argument    -> REGISTER | literal | "(" operation ")"

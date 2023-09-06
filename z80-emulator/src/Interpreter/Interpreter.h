@@ -16,10 +16,6 @@ public:
     // TODO: Throw error
   }
 
-  MemoryT visit(Int2Type<EXPR_BINARY>, ExpressionBinary* expr) {
-    // TODO:
-  }
-
   MemoryT visit(Int2Type<EXPR_LITERAL>, ExpressionLiteral* expr) {
     switch (expr->token->token) {
       case TokenT::NUMBER: {
@@ -46,8 +42,100 @@ public:
     return {};
   }
 
+  MemoryT visit(Int2Type<EXPR_BINARY>, ExpressionBinary* expr) {
+    MemoryT right = evaluate(&expr->right);
+    MemoryT left = evaluate(&expr->left);
+
+    int32_t diff = left.size() - right.size();
+    if (diff > 0) right.insert(right.begin(), diff, 0);
+    else if (diff < 0) left.insert(left.begin(), std::abs(diff), 0);
+
+    switch (expr->operation->token) {
+      case TokenT::PLUS:
+        for (int32_t i = left.size(); i >= 0; i--) {
+          uint16_t acc = left[i] + right[i];
+          uint8_t carry = (acc & 0xFF00) >> 8;
+
+          left[i] = acc & 0xFF;
+          if (!carry) continue;
+
+          if (!i) { left.insert(left.begin(), carry); break; }
+
+          left[i - 1] += carry;
+        }
+
+        return left;
+
+      case TokenT::MINUS:
+        for (int32_t i = left.size(); i >= 0; i--) {
+          uint16_t acc = left[i] + ~right[i] + 1;
+          uint8_t carry = (acc & 0xFF00) >> 8;
+
+          left[i] = acc & 0xFF;
+          if (!carry) continue;
+
+          if (i) { left[i - 1] += carry; continue; }
+
+          // NOTE: Check the sign
+          if (left[i] & 0x80 != 0) break;
+
+          // NOTE: Create 'singed' value
+          left.insert(left.begin(), carry); 
+          break;
+        }
+
+        return left;
+
+      case TokenT::BIT_OR:
+        for (int32_t i = 0; i < left.size(); i++)  left[i] |= right[i];
+        return left;
+
+      case TokenT::BIT_AND:
+        for (int32_t i = 0; i < left.size(); i++)  left[i] &= right[i];
+        return left;
+
+      case TokenT::BIT_XOR:
+        for (int32_t i = 0; i < left.size(); i++)  left[i] ^= right[i];
+        return left;
+
+
+    }
+
+    // TODO: Throw error
+    return {};
+  }
+
   MemoryT visit(Int2Type<EXPR_UNARY>, ExpressionUnary* expr) {
-    // TODO:
+    MemoryT right = evaluate(&expr->right);
+
+    switch (expr->operation->token) {
+      case TokenT::MINUS:
+        for (int32_t i = right.size(); i >= 0; i--) {
+          uint16_t acc = ~right[i] + 1;
+          uint8_t carry = (acc & 0xFF00) >> 8;
+
+          right[i] = acc & 0xFF;
+          if (!carry) continue;
+
+          if (i) { right[i - 1] += carry; continue; }
+
+          // NOTE: Check the sign
+          if (right[i] & 0x80 != 0) break;
+
+          // NOTE: Create 'singed' value
+          right.insert(right.begin(), carry); 
+          break;
+
+        }
+        return right;
+
+      case TokenT::BIT_NOT:
+        for (auto& val : right) val = val ^ 0xFF;
+        return right;
+    }
+
+    // TODO: Throw error
+    return {};
   }
 
   MemoryT visit(Int2Type<EXPR_VARIABLE>, ExpressionVariable* expr) {
@@ -59,7 +147,14 @@ public:
   }
 
   MemoryT visit(Int2Type<STMT_ALLOCATE>, StatementAllocate* stmt) {
-    // TODO:
+    MemoryT res;
+
+    for (auto expr : stmt->data) {
+      MemoryT bytes = evaluate(&expr);
+      res.insert(res.end(), bytes.begin(), bytes.end());
+    }
+
+    return res;
   }
 
   MemoryT visit(Int2Type<STMT_LAMBDA>, StatementLambda* stmt) {
@@ -80,7 +175,6 @@ public:
   }
 
   MemoryT visit(Int2Type<STMT_NO_ARG>, StatementNoArgCommand* stmt) {
-    if (stmt->opcode == 0x00) return { 0x00 };
     return Int2Bytes(stmt->opcode);
   }
 
@@ -102,6 +196,8 @@ private:
   }
 
   inline MemoryT Int2Bytes(uint32_t val) {
+    if (val == 0x00) return { 0x00 };
+
     std::array<uint8_t, 4> bytes = {
       (uint8_t)((val >> 24) & 0xFF),
       (uint8_t)((val >> 16) & 0xFF),

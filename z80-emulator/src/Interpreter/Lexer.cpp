@@ -19,7 +19,7 @@ bool Lexer::scan(std::string text) {
       case '|': addToken(TokenT::BIT_OR); break;
       case '&': addToken(TokenT::BIT_AND); break;
       case '^': addToken(TokenT::BIT_XOR); break;
-      case '!': addToken(TokenT::BIT_NOT); break;
+      case '~': addToken(TokenT::BIT_NOT); break;
 
 
       case '"': case '\'': string(c); break;
