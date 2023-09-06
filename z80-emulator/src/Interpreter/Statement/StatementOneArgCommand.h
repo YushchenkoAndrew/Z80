@@ -5,16 +5,15 @@ namespace Interpreter {
 
 class StatementOneArgCommand : public Statement {
 public:
-  StatementOneArgCommand(uint32_t o, Expression a):
+  StatementOneArgCommand(uint32_t o, std::shared_ptr<Expression> a):
     opcode(o), expr(a) {}
 
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<STMT_ONE_ARG>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitStmtOneArg(this);
   }
 
 public:
-  Expression expr;
+  std::shared_ptr<Expression> expr;
   const uint32_t opcode;
 };
 

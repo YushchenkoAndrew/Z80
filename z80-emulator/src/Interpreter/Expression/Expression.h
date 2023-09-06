@@ -3,24 +3,44 @@
 
 namespace Interpreter {
 
-class Expression;
+typedef std::vector<uint8_t> MemoryT;
 
-template<class T>
+class Expression;
+class ExpressionLiteral;
+class ExpressionBinary;
+class ExpressionUnary;
+class ExpressionVariable;
+
+class StatementAddress;
+class StatementAllocate;
+class StatementLambda;
+class StatementNoArgCommand;
+class StatementOneArgCommand;
+class StatementVariable;
+
 class Visitor {
 public:
+  virtual MemoryT visitExprLiteral(ExpressionLiteral* expr) { return {}; }
+  virtual MemoryT visitExprBinary(ExpressionBinary* expr) { return {}; }
+  virtual MemoryT visitExprUnary(ExpressionUnary* expr) { return {}; }
+  virtual MemoryT visitExprVariable(ExpressionVariable* expr) { return {}; }
 
-  template <int32_t U>
-  T visit(Int2Type<U>, Expression* expr);
+  virtual MemoryT visitStmtAddress(StatementAddress* stmt) { return {}; }
+  virtual MemoryT visitStmtAllocate(StatementAllocate* stmt) { return {}; }
+  virtual MemoryT visitStmtLambda(StatementLambda* stmt) { return {}; }
+  virtual MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) { return {}; }
+  virtual MemoryT visitStmtOneArg(StatementOneArgCommand* stmt) { return {}; }
+  virtual MemoryT visitStmtVariable(StatementVariable* stmt) { return {}; }
+
+  virtual MemoryT visitExprUnknown(Expression* expr) { return {}; }
 };
 
 class Expression {
-
 public:
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor->visit(Int2Type<EXPR_UNKNOWN>(), this);
+
+  inline virtual MemoryT accept(Visitor* visitor) {
+    return visitor->visitExprUnknown(this);
   }
 };
-
 
 };

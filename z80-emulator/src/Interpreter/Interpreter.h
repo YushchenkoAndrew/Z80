@@ -3,7 +3,7 @@
 
 namespace Interpreter {
 
-class Interpreter : public Visitor<MemoryT> {
+class Interpreter : public Visitor {
 public:
 
   Interpreter(): parser(Parser()) {}
@@ -17,8 +17,8 @@ public:
       return true;
     }
 
-    for (auto stmt : parser.stmt) {
-      env.insert(evaluate(&stmt));
+    for (auto& stmt : parser.stmt) {
+      env.insert(evaluate(stmt.get()));
     }
 
     if (env.unknown.size()) {
@@ -35,16 +35,15 @@ public:
 
   inline void reset() { errors.clear(); env.reset(); }
 
-  template <int32_t U>
-  MemoryT visit(Int2Type<U>, Expression* expr) {
+  MemoryT visitExprUnknown(Expression* expr) override {
     error(nullptr, "Unknown operation.");
     return {};
   }
 
-  MemoryT visit(Int2Type<EXPR_LITERAL>, ExpressionLiteral* expr) {
+  MemoryT visitExprLiteral(ExpressionLiteral* expr) override {
     switch (expr->token->token) {
       case TokenT::NUMBER: {
-        uint32_t num = std::stoul(expr->token->lexeme);
+        uint32_t num = std::stoul(expr->token->literal);
         if (expr->size && num & ~(0xFF << (expr->size * 8)) != 0) {
           error(expr->token, "Number byte size exceeded allowed size.");
           return {};
@@ -54,13 +53,13 @@ public:
       }
 
       case TokenT::STRING: {
-        if (expr->size && expr->token->lexeme.size() != expr->size) {
+        if (expr->size && expr->token->literal.size() != expr->size) {
           error(expr->token, "String byte size exceeded allowed size.");
           return {};
         }
 
         MemoryT bytes;
-        for (auto c : expr->token->lexeme) bytes.push_back((uint8_t)c);
+        for (auto c : expr->token->literal) bytes.push_back((uint8_t)c);
         return bytes;
       }
     }
@@ -69,9 +68,9 @@ public:
     return {};
   }
 
-  MemoryT visit(Int2Type<EXPR_BINARY>, ExpressionBinary* expr) {
-    MemoryT left = evaluate(&expr->left);
-    MemoryT right = evaluate(&expr->right);
+  MemoryT visitExprBinary(ExpressionBinary* expr) override {
+    MemoryT left = evaluate(expr->left.get());
+    MemoryT right = evaluate(expr->right.get());
 
     if (expr->operation->token == TokenT::CONCATENATE) {
       left.insert(left.end(), right.begin(), right.end());
@@ -137,8 +136,8 @@ public:
     return {};
   }
 
-  MemoryT visit(Int2Type<EXPR_UNARY>, ExpressionUnary* expr) {
-    MemoryT right = evaluate(&expr->right);
+  MemoryT visitExprUnary(ExpressionUnary* expr) override {
+    MemoryT right = evaluate(expr->right.get());
 
     switch (expr->operation->token) {
       case TokenT::MINUS:
@@ -170,12 +169,16 @@ public:
     return {};
   }
 
-  MemoryT visit(Int2Type<EXPR_VARIABLE>, ExpressionVariable* expr) {
-    return env.get(expr->token->lexeme);
+  MemoryT visitExprVariable(ExpressionVariable* expr) override {
+    auto bytes = env.get(expr->token->lexeme, expr->size);
+    if (bytes.size() == expr->size) return bytes;
+
+    error(expr->token, "Variable byte size exceeded allowed size.");
+    return {};
   }
 
-  MemoryT visit(Int2Type<STMT_ADDRESS>, StatementAddress* stmt) {
-    MemoryT expr = evaluate(&stmt->expr);
+  MemoryT visitStmtAddress(StatementAddress* stmt) override {
+    MemoryT expr = evaluate(stmt->expr.get());
     if (expr.size() > 2) {
       error(stmt->label, "Address byte size exceeded allowed size.");
       return {};
@@ -185,21 +188,21 @@ public:
     return {};
   }
 
-  MemoryT visit(Int2Type<STMT_ALLOCATE>, StatementAllocate* stmt) {
+  MemoryT visitStmtAllocate(StatementAllocate* stmt) override {
     MemoryT res;
 
-    for (auto expr : stmt->data) {
-      MemoryT bytes = evaluate(&expr);
+    for (auto& expr : stmt->data) {
+      MemoryT bytes = evaluate(expr.get());
       res.insert(res.end(), bytes.begin(), bytes.end());
     }
 
     return res;
   }
 
-  MemoryT visit(Int2Type<STMT_LAMBDA>, StatementLambda* stmt) {
+  MemoryT visitStmtLambda(StatementLambda* stmt) override {
     std::vector<uint32_t> argv;
-    for (auto expr : stmt->expr) {
-      for (auto byte : evaluate(&expr)) {
+    for (auto& expr : stmt->expr) {
+      for (auto byte : evaluate(expr.get())) {
         argv.push_back((uint32_t)byte);
       }
     }
@@ -212,26 +215,26 @@ public:
     return {};
   }
 
-  MemoryT visit(Int2Type<STMT_NO_ARG>, StatementNoArgCommand* stmt) {
+  MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) override {
     return Int2Bytes(stmt->opcode);
   }
 
-  MemoryT visit(Int2Type<STMT_ONE_ARG>, StatementOneArgCommand* stmt) {
-    MemoryT expr = evaluate(&stmt->expr);
+  MemoryT visitStmtOneArg(StatementOneArgCommand* stmt) override {
+    MemoryT expr = evaluate(stmt->expr.get());
     MemoryT result = Int2Bytes(stmt->opcode);
 
     result.insert(result.end(), expr.begin(), expr.end());
     return result;
   }
 
-  MemoryT visit(Int2Type<STMT_VARIABLE>, StatementVariable* stmt) {
+  MemoryT visitStmtVariable(StatementVariable* stmt) override {
     switch (stmt->type) {
       case StatementVariable::TypeT::ADDRESS:
         env.define(stmt->label->lexeme, Int2Bytes(env.addr));
         return {};
 
       case StatementVariable::TypeT::DEFINITION: 
-        env.define(stmt->label->lexeme, evaluate(&stmt->definition));
+        env.define(stmt->label->lexeme, evaluate(stmt->definition.get()));
         return {};
     }
 

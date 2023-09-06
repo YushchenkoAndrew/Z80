@@ -7,9 +7,8 @@ class StatementNoArgCommand : public Statement {
 public:
   StatementNoArgCommand(uint32_t o): opcode(o) {}
 
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<STMT_NO_ARG>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitStmtNoArg(this);
   }
 
 public:

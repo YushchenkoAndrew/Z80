@@ -6,16 +6,15 @@ namespace Interpreter {
 
 class StatementAddress : public Statement {
 public:
-  StatementAddress(std::shared_ptr<Token> t, Expression e):
+  StatementAddress(std::shared_ptr<Token> t, std::shared_ptr<Expression> e):
     label(t), expr(e) {}
 
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<STMT_ADDRESS>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitStmtAddress(this);
   }
 
 public:
-  Expression expr;
+  std::shared_ptr<Expression> expr;
   std::shared_ptr<Token> label;
 };
 

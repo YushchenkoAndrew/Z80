@@ -8,9 +8,8 @@ public:
   ExpressionLiteral(std::shared_ptr<Token> t, int32_t s): 
     token(t), size(s) {}
 
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<EXPR_LITERAL>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitExprLiteral(this);
   }
 
 public:

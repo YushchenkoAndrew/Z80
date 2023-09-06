@@ -8,18 +8,17 @@ class StatementVariable : public Statement {
 public:
   enum TypeT { ADDRESS, DEFINITION };
 
-  StatementVariable(std::shared_ptr<Token> t, Expression a):
+  StatementVariable(std::shared_ptr<Token> t, std::shared_ptr<Expression> a):
     label(t), definition(a), type(DEFINITION) {}
 
   StatementVariable(std::shared_ptr<Token> t): label(t), type(ADDRESS) {}
 
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<STMT_VARIABLE>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitStmtVariable(this);
   }
 
 public:
-  Expression definition;
+  std::shared_ptr<Expression> definition;
   std::shared_ptr<Token> label;
   const TypeT type;
 };

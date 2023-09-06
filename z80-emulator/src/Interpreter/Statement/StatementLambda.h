@@ -6,25 +6,24 @@ namespace Interpreter {
 class StatementLambda : public Statement {
 public:
   StatementLambda(
-    Expression expr,
+    std::shared_ptr<Expression> expr,
     std::function<uint32_t(std::vector<uint32_t>& argv)> lambda,
     std::vector<uint32_t> argv = {}
   ): expr({ expr }), lambda(lambda), argv(argv) {}
 
   StatementLambda(
-    std::vector<Expression> expr,
+    std::vector<std::shared_ptr<Expression>> expr,
     std::function<uint32_t(std::vector<uint32_t>& argv)> lambda,
     std::vector<uint32_t> argv = {}
   ): expr(expr), lambda(lambda), argv(argv) {}
 
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<STMT_LAMBDA>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitStmtLambda(this);
   }
 
 public:
-  std::vector<Expression> expr;
   std::vector<uint32_t> argv;
+  std::vector<std::shared_ptr<Expression>> expr;
   const std::function<uint32_t(std::vector<uint32_t>& argv)> lambda;
 };
 

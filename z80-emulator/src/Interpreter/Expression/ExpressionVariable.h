@@ -5,17 +5,17 @@ namespace Interpreter {
 
 class ExpressionVariable : public Expression {
 public:
-  ExpressionVariable(std::shared_ptr<Token> t):
-    token(t) {}
+  ExpressionVariable(std::shared_ptr<Token> t, int32_t s):
+    token(t), size(s) {}
   
   
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<EXPR_VARIABLE>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitExprVariable(this);
   }
 
 public:
   std::shared_ptr<Token> token;
+  const int32_t size;
 };
 
 };

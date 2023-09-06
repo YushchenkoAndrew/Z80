@@ -3,8 +3,6 @@
 
 namespace Interpreter {
 
-typedef std::vector<uint8_t> MemoryT;
-
 class Environment {
 public:
   inline void reset() { addr = 0x0000; memory.clear(); vars.clear(); unknown.clear(); }
@@ -24,15 +22,24 @@ public:
 
   inline void undefine(std::string key) {
     if (unknown.find(key) == unknown.end()) unknown[key] = {};
-    unknown[key].push_back(addr + 1);
+    unknown[key].push_back(addr + 2);
   }
 
 
   inline bool has(std::string key) { return vars.find(key) != vars.end(); }
-  inline MemoryT get(std::string key) { 
+  inline MemoryT get(std::string key, int32_t size) { 
     if (!key.compare("$")) return addr2Bytes();
-    if (has(key)) return vars[key];
-    return { 0x00, 0x00 };
+    if (has(key)) {
+      int32_t diff = vars[key].size() - size;
+      if (diff >= 0) return vars[key];
+
+      MemoryT res(std::abs(diff), 0x00);
+      res.insert(res.end(), vars[key].begin(), vars[key].end());
+      return res;
+    }
+
+    undefine(key);
+    return MemoryT(size, 0x00);
   }
 
   inline void allocate(std::string key, MemoryT address) {
@@ -47,13 +54,25 @@ public:
   }
 
 
-  inline void insert(MemoryT bytes) {
+  void insert(MemoryT bytes) {
     for (uint32_t i = 0; i < bytes.size(); i++) {
       uint32_t index = addr + i;
 
       if (index < memory.size()) memory[index] = bytes[i];
       else memory.push_back(bytes[i]);
     }
+
+    addr += bytes.size();
+  }
+
+  void save(std::string path) {
+    std::ofstream f; f.open(path);
+
+    for (auto byte : memory) {
+      f.write(reinterpret_cast<char*>(&byte), sizeof byte);
+    }
+
+    f.close();
   }
 
 private:

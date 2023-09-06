@@ -23,17 +23,21 @@ public:
         // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
 
         // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
-        Interpreter::Parser parser = Interpreter::Parser();
+        Interpreter::Interpreter interpreter = Interpreter::Interpreter();
 
-        bool err = parser.scan(buffer.str());
-        for (auto token : parser.lexer.vTokens) { token->print(); }
+        bool err = interpreter.scan(buffer.str());
+        // for (auto token : interpreter.parser.lexer.vTokens) { token->print(); }
 
         if (err) {
-            for (auto err : parser.errors) {
-                printf("%s\n", err.c_str());
+            for (auto err : interpreter.parser.errors) {
+                printf("%s", err.c_str());
             }
         }
 
+
+        printf("%d\n", interpreter.env.memory.size());
+        printf("%d\n", interpreter.parser.stmt.size());
+        interpreter.env.save("out.bin");
 
         return true;
     }

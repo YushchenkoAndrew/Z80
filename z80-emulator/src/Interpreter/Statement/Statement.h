@@ -4,11 +4,6 @@
 namespace Interpreter {
 
 class Statement : public Expression {
-public:
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<STMT_UNKNOWN>(), this);
-  }
 };
 
 };

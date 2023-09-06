@@ -6,15 +6,14 @@ namespace Interpreter {
 
 class StatementAllocate : public Statement {
 public:
-  StatementAllocate(std::vector<Expression> d): data(d) {}
+  StatementAllocate(std::vector<std::shared_ptr<Expression>> d): data(d) {}
 
-  template<class T>
-  inline T accept(Visitor<T>* visitor) {
-    return visitor.visit(Int2Type<STMT_ALLOCATE>(), this);
+  inline MemoryT accept(Visitor* visitor) override {
+    return visitor->visitStmtAllocate(this);
   }
 
 public:
-  std::vector<Expression> data;
+  std::vector<std::shared_ptr<Expression>> data;
 };
 
 };
