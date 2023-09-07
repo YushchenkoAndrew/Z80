@@ -22,10 +22,9 @@ public:
     }
 
     if (env.unknown.size()) {
+      std::stringstream ss;
       for (auto& pair : env.unknown) {
-        std::stringstream ss;
-        ss << "Unknown variable '" << pair.first << "'.";
-
+        ss.str(""); ss << "Unknown variable '" << pair.first << "'.";
         error(nullptr, ss.str());
       }
     }
@@ -44,7 +43,7 @@ public:
     switch (expr->token->token) {
       case TokenT::NUMBER: {
         uint32_t num = std::stoul(expr->token->literal);
-        if (expr->size && num & ~(0xFF << (expr->size * 8)) != 0) {
+        if (expr->size && (num & (0xFF << (expr->size * 8))) != 0) {
           error(expr->token, "Number byte size exceeded allowed size.");
           return {};
         }
@@ -209,13 +208,17 @@ public:
 
     argv.insert(argv.end(), stmt->argv.begin(), stmt->argv.end());
     auto opcode = stmt->lambda(argv);
-    if (opcode != 0x00) return Int2Bytes(opcode);
+    if (opcode == 0x00) {
+      error(nullptr, "Invalid lambda operation.");
+      return {};
+    }
 
-    error(nullptr, "Invalid lambda operation.");
-    return {};
+    env.bind(stmt->token);
+    return Int2Bytes(opcode);
   }
 
   MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) override {
+    env.bind(stmt->token);
     return Int2Bytes(stmt->opcode);
   }
 
@@ -224,6 +227,8 @@ public:
     MemoryT result = Int2Bytes(stmt->opcode);
 
     result.insert(result.end(), expr.begin(), expr.end());
+
+    env.bind(stmt->token);
     return result;
   }
 

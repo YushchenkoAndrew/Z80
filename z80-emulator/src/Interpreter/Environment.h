@@ -75,6 +75,8 @@ public:
     f.close();
   }
 
+  inline void bind(std::shared_ptr<Token> token) { tokens[addr] = token; }
+
 private:
   inline MemoryT addr2Bytes() { return { (uint8_t)((addr >>  8) & 0xFF), (uint8_t)(addr & 0xFF) }; }
 
@@ -84,6 +86,8 @@ public:
   uint32_t addr = 0x0000;
   std::unordered_map<std::string, MemoryT> vars;
   std::unordered_map<std::string, std::vector<uint32_t>> unknown; // This map points to places which need to be updated 
+
+  std::unordered_map<uint32_t, std::shared_ptr<Token>> tokens;
 };
 
 };

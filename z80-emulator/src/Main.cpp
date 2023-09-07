@@ -15,36 +15,41 @@ public:
     }
 
     bool OnUserCreate() override {
-        std::ifstream t("../RTC_Test/Test.asm");
+        std::ifstream f("../RTC_Test/Test.asm");
         std::stringstream buffer;
-        buffer << t.rdbuf();
+        buffer << f.rdbuf();
+        f.close();
         // std::string s = buffer.str();
 
         // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
 
         // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
-        Interpreter::Interpreter interpreter = Interpreter::Interpreter();
+        // Interpreter::Interpreter interpreter = Interpreter::Interpreter();
 
-        bool err = interpreter.scan(buffer.str());
+        bool err = emulator.interpreter.scan(buffer.str());
         // for (auto token : interpreter.parser.lexer.vTokens) { token->print(); }
 
         if (err) {
-            for (auto err : interpreter.parser.errors) {
+            printf("HAS AN ERROR %ld\n", emulator.interpreter.errors.size());
+
+            for (auto err : emulator.interpreter.errors) {
                 printf("%s", err.c_str());
             }
+        } else {
+            emulator.ROM.load(emulator.interpreter.env.memory);
         }
 
 
-        printf("%d\n", interpreter.env.memory.size());
-        printf("%d\n", interpreter.parser.stmt.size());
-        interpreter.env.save("out.bin");
+        // interpreter.env.save("out.bin");
 
         return true;
     }
 
     bool OnUserUpdate(float fElapsedTime) override {
 	    Clear(olc::BLACK);
-        return false;
+        // return false;
+        emulator.ROM.Draw(this);
+
 
         // TODO: Text editor
         // std::ifstream t("../RTC_Test/Test.asm");
@@ -64,11 +69,11 @@ public:
 
         // // mMinecraft.Draw(*this, fElapsedTime);
         // // return mMinecraft.IsFinished();
-        // return true;
+        return true;
     }
 
 private:
-    // Minecraft mMinecraft;
+    Emulator emulator;
     LuaScript& luaConfig;
 };
 

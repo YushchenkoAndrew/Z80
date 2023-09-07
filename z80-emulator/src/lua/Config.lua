@@ -1,6 +1,6 @@
 Init = {
   nScreenWidth = 255 * 2,
-  nScreenHeight = 255 * 2,
+  nScreenHeight = 255 * 1,
   nPixel = 2,
   cBackground = { 0, 0, 0 }
 }
