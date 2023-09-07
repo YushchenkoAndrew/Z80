@@ -22,7 +22,7 @@ public:
 private:
   inline void reset() {
     nStart = 0; nCurr = 0; nCol = 1; nLine = 1;
-    vTokens.clear(); vDst.clear(); err.clear();
+    tokens.clear(); dst.clear(); err.clear();
   }
 
   void string(const char &c) {
@@ -82,13 +82,12 @@ private:
     const int32_t len = nCurr - nStart;
     std::shared_ptr<Token> t = std::make_shared<Token>(Token(type, src.substr(nStart, len), literal, nCol - len, nLine));
 
-    vDst.push_back(t);
-    vTokens.push_back(t);
+    dst.push_back(t); tokens.push_back(t);
   }
 
   void addToken(olc::Pixel c = olc::BLACK) {
     const int32_t len = nCurr - nStart;
-    vDst.push_back(std::make_shared<Token>(Token(TokenT::OP_NONE, src.substr(nStart, len), "", nCol - len, nLine, c)));
+    dst.push_back(std::make_shared<Token>(Token(TokenT::OP_NONE, src.substr(nStart, len), "", nCol - len, nLine, c)));
   }
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
@@ -120,8 +119,8 @@ private:
   std::string err;
 
 public:
-  std::vector<std::shared_ptr<Token>> vTokens;
-  std::vector<std::shared_ptr<Token>> vDst;
+  std::vector<std::shared_ptr<Token>> dst;
+  std::vector<std::shared_ptr<Token>> tokens;
 };
 
 };

@@ -1,8 +1,13 @@
 Init = {
+  -- nScreenWidth = 255 * 2,
+  -- nScreenHeight = 255 * 1,
   nScreenWidth = 255 * 2,
-  nScreenHeight = 255 * 1,
+  nScreenHeight = 300,
   nPixel = 2,
-  cBackground = { 0, 0, 0 }
+  sColors = {
+    black = 0x0000,
+    gray = 0x000000,
+  }
 }
 
 -- sMenuConfig: assets/Menu.json

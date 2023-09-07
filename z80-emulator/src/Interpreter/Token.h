@@ -8,7 +8,7 @@ namespace Interpreter {
  */
 class Token {
 public:
-  Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line, olc::Pixel c = olc::WHITE):
+  Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line, olc::Pixel c = olc::GREY):
     token(t), lexeme(le), literal(li), col(col), line(line), color(c) {}
 
   void print() { 

@@ -1,10 +1,5 @@
 #pragma once
-#include <stdio.h>
-#include <string>
-#include <memory>
-#include "include/Typelist.h"
-#include "include/Foreach.h"
-#include "lib/olcPixelGameEngine.h"
+#include "src/Defs.h"
 
 namespace Interpreter {
 /**
@@ -13,7 +8,7 @@ namespace Interpreter {
  */
 enum TokenT {
   // Single char tokens
-  LEFT_BRACE = 1, RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE,
+  LEFT_BRACE = 0x0100, RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE,
   
   // Bit operation in assignment
   BIT_OR, BIT_AND, BIT_XOR, BIT_NOT,

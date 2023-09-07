@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <fstream>
 #include "Emulator.h"
-#include "include/LuaScript.h"
 
 // Check Memory Leaking
 //#define MEM_TRACK
@@ -23,21 +22,24 @@ public:
 
         // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
 
+
+        emulator.editor.temp(buffer.str());
+
         // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
         // Interpreter::Interpreter interpreter = Interpreter::Interpreter();
 
-        bool err = emulator.interpreter.scan(buffer.str());
-        // for (auto token : interpreter.parser.lexer.vTokens) { token->print(); }
+        // bool err = emulator.interpreter.scan(buffer.str());
+        // // for (auto token : interpreter.parser.lexer.vTokens) { token->print(); }
 
-        if (err) {
-            printf("HAS AN ERROR %ld\n", emulator.interpreter.errors.size());
+        // if (err) {
+        //     printf("HAS AN ERROR %ld\n", emulator.interpreter.errors.size());
 
-            for (auto err : emulator.interpreter.errors) {
-                printf("%s", err.c_str());
-            }
-        } else {
-            emulator.ROM.load(emulator.interpreter.env.memory);
-        }
+        //     for (auto err : emulator.interpreter.errors) {
+        //         printf("%s", err.c_str());
+        //     }
+        // } else {
+        //     emulator.ROM.load(emulator.interpreter.env.memory);
+        // }
 
 
         // interpreter.env.save("out.bin");
@@ -47,8 +49,8 @@ public:
 
     bool OnUserUpdate(float fElapsedTime) override {
 	    Clear(olc::BLACK);
-        // return false;
-        emulator.ROM.Draw(this);
+        // emulator.ROM.Draw(this);
+        emulator.editor.Draw(this, { ScreenWidth(), ScreenHeight() });
 
 
         // TODO: Text editor
@@ -78,7 +80,10 @@ private:
 };
 
 int main() {
-    Interpreter::Defs::Init(); // Initialize types
+    Defs::Init(); Interpreter::Defs::Init(); // Initialize types
+
+    // TODO: Create defs to load colors from lua
+
 
     LuaScript luaConfig;
     if (!luaConfig.Init("src/lua/Config.lua")) return 0;

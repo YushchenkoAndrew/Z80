@@ -915,8 +915,8 @@ private:
   }
 
 private:
-  inline std::shared_ptr<Token> peek() { return lexer.vTokens[nCurr]; }
-  inline std::shared_ptr<Token> peekPrev() { return lexer.vTokens[nCurr - 1]; }
+  inline std::shared_ptr<Token> peek() { return lexer.tokens[nCurr]; }
+  inline std::shared_ptr<Token> peekPrev() { return lexer.tokens[nCurr - 1]; }
   inline bool isAtEnd() { return peek()->token == TokenT::OP_EOF; }
   inline bool check(TokenT type) { return isAtEnd() ? false : peek()->token == type; }
 
