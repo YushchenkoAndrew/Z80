@@ -18,6 +18,7 @@ enum Colors {
 		WHITE, BLACK, BLANK
 };
 
+enum ModeT { NORMAL, INSERT };
 
 class Defs {
 
@@ -54,6 +55,8 @@ public:
     AnyType<WHITE,             std::string>::GetValue() = "WHITE";             AnyType<WHITE,             olc::Pixel>::GetValue() = olc::Pixel(255, 255, 255);
     AnyType<BLACK,             std::string>::GetValue() = "BLACK";             AnyType<BLACK,             olc::Pixel>::GetValue() = olc::Pixel(0, 0, 0);
     AnyType<BLANK,             std::string>::GetValue() = "BLANK";             AnyType<BLANK,             olc::Pixel>::GetValue() = olc::Pixel(0, 0, 0, 0);
+
+    AnyType<-1, ModeT>::GetValue() =  ModeT::NORMAL;
   }
 
   static void Load(LuaScript* config) {

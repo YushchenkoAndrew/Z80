@@ -49,6 +49,19 @@ struct AnyType<T, int32_t> {
 };
 
 template<int32_t T>
+struct AnyType<T, float> {
+	static inline float& GetValue() __attribute__((always_inline)) {
+		static float value = 0.;
+		return value;
+	}
+
+	template<int32_t U>
+	static inline bool Compare() {
+		return GetValue() == AnyType<U, float>::GetValue();
+	}
+};
+
+template<int32_t T>
 struct AnyType<T, std::string> {
 
 	#pragma always_inline

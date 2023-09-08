@@ -49,6 +49,12 @@ public:
 
     bool OnUserUpdate(float fElapsedTime) override {
 	    Clear(olc::BLACK);
+
+        AnyType<-1, float>::GetValue() = fElapsedTime;
+        // AnyType<-2, float>::GetValue() += fElapsedTime;
+        emulator.editor.Process(this);
+
+
         // emulator.ROM.Draw(this);
         emulator.editor.Draw(this, { ScreenWidth(), ScreenHeight() });
 

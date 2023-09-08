@@ -1,36 +1,42 @@
 #pragma once
-#include "src/Interpreter/Interpreter.h"
+#include "Vim.h"
 
 namespace Editor {
-
-class Editor {
+class Editor : public Vim {
 public:
 
   // TODO: Change this to more appropriate thing
-  void temp(std::string src) { lexer.scan(src); }
+  void temp(std::string src) { 
+    lexer.scan(src); cursor.lines.clear();
 
-  void Draw(olc::PixelGameEngine* GameEngine, olc::vi2d size, olc::vi2d absolute = olc::vi2d(0, 0)) {
-    olc::vi2d step = { 8, 12 };
-    olc::vi2d offset = { 0, 0 };
+    int32_t len = 0;
 
     for (auto& token : lexer.dst) {
-      olc::vi2d pos = absolute + olc::vi2d(token->col, token->line) * step + offset;
+      if (token->line == cursor.lines.size() + 1) { len += token->lexeme.size(); continue; }
+      cursor.lines.push_back(len); len = token->lexeme.size();
+
+      while (token->line != cursor.lines.size() + 1) cursor.lines.push_back(1);
+    }
+  }
+
+  void Draw(olc::PixelGameEngine* GameEngine, olc::vi2d size, olc::vi2d absolute = olc::vi2d(0, 0)) {
+    for (auto& token : lexer.dst) {
+      olc::vi2d pos = absolute + olc::vi2d(token->col, token->line) * vStep + vOffset;
 
       // TODO: With X
       if (pos.y > size.y) break;
       GameEngine->DrawString(pos, token->lexeme, token->color);
     }
-
-    // TODO: Add cursor
-  
-    olc::vi2d pos = absolute + vCurr * step + offset - olc::vi2d(1, 2);
-    GameEngine->FillRect(pos, { 8, 10 }, AnyType<WHITE, olc::Pixel>::GetValue());
+ 
+    cursor.Draw(GameEngine, [&](auto pos) { return absolute + pos * vStep + vOffset; });
   }
 
 private:
-  olc::vi2d vCurr = { 1, 1 };
-  Interpreter::Lexer lexer;
 
+  const olc::vi2d vStep = olc::vi2d(8, 12);
+  const olc::vi2d vOffset = olc::vi2d(0, 0);
+
+  Interpreter::Lexer lexer;
   Interpreter::Interpreter interpreter;
 };
 
