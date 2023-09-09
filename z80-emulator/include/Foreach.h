@@ -84,3 +84,18 @@ struct foreach<TypeList<AnyType<T, std::string>, NullType>, AnyType<F, V*>> {
     return AnyType<F, V*>::GetValue()->Process(Int2Type<-1>());
 	}
 };
+
+template<int32_t T, int32_t U, class V, int32_t F, class Y>
+struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, V>, AnyType<F, Y*>> {
+	static inline void Process() {
+    foreach<V, AnyType<F, Y*>>::Process();
+		AnyType<F, Y*>::GetValue()->Process(TypeList<Int2Type<T>, Int2Type<U>>());
+	}
+};
+
+template<int32_t T, int32_t U, int32_t F, class Y>
+struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, NullType>, AnyType<F, Y*>> {
+	static inline void Process() {
+		AnyType<F, Y*>::GetValue()->Process(TypeList<Int2Type<T>, Int2Type<U>>());
+	}
+};

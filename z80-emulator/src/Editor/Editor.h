@@ -7,16 +7,14 @@ public:
 
   // TODO: Change this to more appropriate thing
   void temp(std::string src) { 
-    lexer.scan(src); cursor.lines.clear();
+    lexer.scan(src); cursor.Load(lexer.dst);
+  }
 
-    int32_t len = 0;
+  void Process(olc::PixelGameEngine* GameEngine) {
+    Vim::Process(GameEngine);
 
-    for (auto& token : lexer.dst) {
-      if (token->line == cursor.lines.size() + 1) { len += token->lexeme.size(); continue; }
-      cursor.lines.push_back(len); len = token->lexeme.size();
-
-      while (token->line != cursor.lines.size() + 1) cursor.lines.push_back(1);
-    }
+    if (!AnyType<-1, bool>::GetValue()) return;
+    lexer.scan(cursor.Text()); cursor.Load(lexer.dst);
   }
 
   void Draw(olc::PixelGameEngine* GameEngine, olc::vi2d size, olc::vi2d absolute = olc::vi2d(0, 0)) {
