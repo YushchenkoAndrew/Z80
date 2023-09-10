@@ -91,11 +91,31 @@ struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, V>, AnyType<F, Y*>> 
     foreach<V, AnyType<F, Y*>>::Process();
 		AnyType<F, Y*>::GetValue()->Process(TypeList<Int2Type<T>, Int2Type<U>>());
 	}
+
+	static inline void Command() {
+		if (!AnyType<-1, int32_t>::Compare(Int2Type<U>())) return foreach<V, AnyType<F, Y*>>::Command();
+		AnyType<F, Y*>::GetValue()->Command(Int2Type<T>());
+	}
+
+	static inline bool Has() {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<U>())) return true;
+		return foreach<V, AnyType<F, Y*>>::Has();
+	}
 };
 
 template<int32_t T, int32_t U, int32_t F, class Y>
 struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, NullType>, AnyType<F, Y*>> {
 	static inline void Process() {
 		AnyType<F, Y*>::GetValue()->Process(TypeList<Int2Type<T>, Int2Type<U>>());
+	}
+
+	static inline void Command() {
+		if (!AnyType<-1, int32_t>::Compare(Int2Type<U>())) return;
+		AnyType<F, Y*>::GetValue()->Command(Int2Type<T>());
+	}
+
+	static inline bool Has() {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<U>())) return true;
+		return false;
 	}
 };

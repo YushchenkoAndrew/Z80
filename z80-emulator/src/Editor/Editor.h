@@ -2,19 +2,19 @@
 #include "Vim.h"
 
 namespace Editor {
-class Editor : public Vim {
+class Editor {
 public:
 
   // TODO: Change this to more appropriate thing
   void temp(std::string src) { 
-    lexer.scan(src); cursor.Load(lexer.dst);
+    lexer.scan(src); vim.Load(lexer.dst);
   }
 
   void Process(olc::PixelGameEngine* GameEngine) {
-    Vim::Process(GameEngine);
+    vim.Process(GameEngine);
 
-    if (!AnyType<-1, bool>::GetValue()) return;
-    lexer.scan(cursor.Text()); cursor.Load(lexer.dst);
+    if (!vim.bUpdated) return;
+    lexer.scan(vim.Text()); vim.Load(lexer.dst);
   }
 
   void Draw(olc::PixelGameEngine* GameEngine, olc::vi2d size, olc::vi2d absolute = olc::vi2d(0, 0)) {
@@ -26,13 +26,14 @@ public:
       GameEngine->DrawString(pos, token->lexeme, token->color);
     }
  
-    cursor.Draw(GameEngine, [&](auto pos) { return absolute + pos * vStep + vOffset; });
+    vim.Draw(GameEngine, [&](auto pos) { return absolute + pos * vStep + vOffset; });
   }
 
 private:
-
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(0, 0);
+
+  Vim vim;
 
   Interpreter::Lexer lexer;
   Interpreter::Interpreter interpreter;
