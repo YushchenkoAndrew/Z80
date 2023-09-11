@@ -7,7 +7,6 @@ namespace Editor {
  * This code was hardly expired by the next resource
  * Check out this link for more info: https://gist.github.com/countvajhula/0721a5fc40f2124097652071bb9f97fb
  *
- * TODO: Add 'r' verb
  * Grammar:
  *  command     -> phrase | motion | order
  * 
@@ -36,16 +35,18 @@ public:
     if ((fBlink += AnyType<-1, float>::GetValue()) > 1.2f) fBlink -= 1.2f;
     if (fBlink > 0.6f) return;
 
-    auto size = olc::vi2d();
-    auto pos = lambda(this->pos + olc::vi2d(1, 1)) - olc::vi2d(1, 2);
+    bool bSearch = search.first && std::get<1>(search.second) < 0;
+
+    auto size = bSearch ? olc::vi2d(std::get<0>(search.second).size(), 1) : olc::vi2d(1, 1);
+    auto pos = lambda((bSearch ?  std::get<3>(search.second) : this->pos) + olc::vi2d(1, 1)) - olc::vi2d(1, 2);
 
     switch (mode) {
-      case NORMAL:  size = olc::vi2d(8, 10); break;
-      case INSERT:  size = olc::vi2d(2, 10); break;
-      case REPLACE: size = olc::vi2d(8,  2); pos += olc::vi2d(0, 10); break;
+      case NORMAL:  size *= olc::vi2d(8, 10); break;
+      case INSERT:  size *= olc::vi2d(2, 10); break;
+      case REPLACE: size *= olc::vi2d(8,  2); pos += olc::vi2d(0, 10); break;
     }
 
-    GameEngine->FillRect(pos, size, AnyType<WHITE, olc::Pixel>::GetValue());
+    GameEngine->FillRect(pos, size, AnyType<GREY, olc::Pixel>::GetValue());
   }
 
   void Load(std::vector<std::shared_ptr<Interpreter::Token>>& dst) {
@@ -72,31 +73,24 @@ public:
   template<int32_t T>
   inline void Command(Int2Type<T>) {}
 
-  // TODO: Add next basic operation
-  // // phrase
-
-  // // noun
-  // CMD_b, CMD_B, CMD_e, CMD_E, CMD_gg, CMD_G, CMD_n, CMD_N, 
-  //  CMD_BACK_SLASH, CMD_QUESTION,
-
-  // // verb
-  // CMD_y,
-
   inline void Command(Int2Type<VimT::CMD_i>) { mode = INSERT; }
   inline void Command(Int2Type<VimT::CMD_R>) { mode = REPLACE; }
   inline void Command(Int2Type<VimT::CMD_I>) { Command(Int2Type<VimT::CMD_i>()); nLastX = pos.x = startAt(); }
   inline void Command(Int2Type<VimT::CMD_a>) { Command(Int2Type<VimT::CMD_i>()); nLastX = pos.x++; }
   inline void Command(Int2Type<VimT::CMD_A>) { Command(Int2Type<VimT::CMD_i>()); nLastX = pos.x = lines[pos.y].size(); }
 
+
   inline void Command(Int2Type<VimT::CMD_0>)         { nLastX = pos.x = 0; }
+  inline void Command(Int2Type<VimT::CMD_gg>)        { nLastX = pos.x = pos.y = 0; }
   inline void Command(Int2Type<VimT::CMD_CARET>)     { nLastX = pos.x = startAt(); }
   inline void Command(Int2Type<VimT::CMD_UNDERLINE>) { nLastX = pos.x = startAt(); }
+  inline void Command(Int2Type<VimT::CMD_G>)         { nLastX = pos.x = startAt(); pos.y = lines.size() - 1; }
   inline void Command(Int2Type<VimT::CMD_DOLLAR>)    { nLastX = pos.x = std::max((int32_t)lines[pos.y].size() - 1, 0); }
 
-  inline void Command(Int2Type<VimT::CMD_yy>) { buffer = { { lines[pos.y] }, true }; }
+  inline void Command(Int2Type<VimT::CMD_yy>) { printf("YES\n"); buffer = { { lines[pos.y] }, true }; }
 
   inline void Command(Int2Type<VimT::CMD_C>)  { Command(Int2Type<VimT::CMD_D>()); Command(Int2Type<VimT::CMD_A>()); }
-  inline void Command(Int2Type<VimT::CMD_c>)  { Command(Int2Type<VimT::CMD_d>()); Command(Int2Type<VimT::CMD_i>()); }
+  inline void Command(Int2Type<VimT::CMD_c>)  { Command(Int2Type<VimT::CMD_d>()); Command(Int2Type<VimT::CMD_O>()); }
   inline void Command(Int2Type<VimT::CMD_cc>) { Command(Int2Type<VimT::CMD_dd>()); Command(Int2Type<VimT::CMD_I>()); }
 
 
@@ -150,7 +144,13 @@ public:
 
   inline void Command(Int2Type<VimT::CMD_r>) {
     buffer = { { lines[pos.y].substr(nLastX = pos.x, 1) }, false };
-    lines[pos.y].replace(pos.x, 1, std::string(1 ,std::get<0>(search.second).back()));
+    lines[pos.y].replace(pos.x, 1, std::string(1, std::get<0>(search.second).back()));
+  }
+
+  inline void Command(Int2Type<VimT::CMD_SQUIGGLE>) { 
+    const char c = lines[pos.y][pos.x];
+    lines[pos.y].replace(pos.x, 1, std::string(1, islower(c) ? toupper(c) : tolower(c)));
+    Command(Int2Type<VimT::CMD_l>()); nLastX = pos.x;
   }
 
   inline void Command(Int2Type<VimT::CMD_d>) {
@@ -172,8 +172,26 @@ public:
     }
   }
 
+  inline void Command(Int2Type<VimT::CMD_y>) {
+    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
+    if (diff.y && (diff.x == 0 || nLastX != pos.x)) { 
+      buffer = { {}, true };
+      for (int32_t i = 0; i <= std::abs(diff.y); i++, pos.y += (diff.y > 0) * 2 - 1) {
+        if (diff.y > 0) buffer.first.push_back(lines[pos.y]);
+        else buffer.first.insert(buffer.first.begin(), lines[pos.y]);
+      }
+
+      pos.y += diff.y < 0;
+      int32_t lineEndsAt = mode == ModeT::NORMAL;
+      if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
+    } else if (diff.x)  {
+      buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.first) }, false };
+    }
+  }
+
   inline void Command(Int2Type<VimT::CMD_SEMICOLON>) {
     if (!std::get<0>(search.second).size()) return;
+    if (!std::get<0>(search.second).size() > 1) return;
 
     if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_f>());
     else Command(Int2Type<VimT::CMD_F>());
@@ -181,12 +199,14 @@ public:
 
   inline void Command(Int2Type<VimT::CMD_COMMA>) {
     if (!std::get<0>(search.second).size()) return;
+    if (!std::get<0>(search.second).size() > 1) return;
 
     if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_F>());
     else Command(Int2Type<VimT::CMD_f>());
   }
 
   inline void Command(Int2Type<VimT::CMD_f>) {
+    if (!std::get<0>(search.second).size()) return;
     if (search.first) std::get<2>(search.second) = true;
 
     auto charAt = lines[pos.y].find(std::get<0>(search.second)[0], pos.x + 1);
@@ -195,11 +215,68 @@ public:
   }
 
   inline void Command(Int2Type<VimT::CMD_F>) {
+    if (!std::get<0>(search.second).size()) return;
     if (search.first) std::get<2>(search.second) = false;
 
-    auto charAt = lines[pos.y].rfind(std::get<0>(search.second)[0], pos.x - 1);
+    auto charAt = lines[pos.y].rfind(std::get<0>(search.second)[0], std::max(pos.x - 1, 0));
     if (charAt == std::string::npos) return;
     nLastX = pos.x = charAt;
+  }
+
+  inline void Command(Int2Type<VimT::CMD_n>) {
+    if (!std::get<0>(search.second).size()) return;
+
+    if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_SLASH>());
+    else Command(Int2Type<VimT::CMD_QUESTION>());
+
+    nLastX = (pos = std::get<3>(search.second)).x;
+  }
+
+  inline void Command(Int2Type<VimT::CMD_N>) {
+    if (!std::get<0>(search.second).size()) return;
+
+    if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_QUESTION>());
+    else Command(Int2Type<VimT::CMD_SLASH>());
+
+    nLastX = (pos = std::get<3>(search.second)).x;
+  }
+
+  inline void Command(Int2Type<VimT::CMD_SLASH>) {
+    if (!std::get<0>(search.second).size()) return;
+    if (search.first) std::get<2>(search.second) = true;
+
+    std::vector<olc::vi2d> foundAt = {};
+
+    for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
+      auto charAt = lines[line].find(std::get<0>(search.second));
+      if (charAt == std::string::npos) continue;
+
+      if (line > pos.y || (line == pos.y && charAt > pos.x)) { 
+        foundAt.insert(foundAt.begin() + offset++, olc::vi2d(charAt, line));
+      } else foundAt.push_back(olc::vi2d(charAt, line));
+    }
+
+    if (!foundAt.size()) return error("Pattern '" + std::get<0>(search.second) + "' not found.");
+    std::get<3>(search.second) = foundAt.front();
+  }
+
+  inline void Command(Int2Type<VimT::CMD_QUESTION>) {
+    if (!std::get<0>(search.second).size()) return;
+    if (search.first) std::get<2>(search.second) = true;
+
+    std::vector<olc::vi2d> foundAt = {};
+
+    for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
+      auto charAt = lines[line].find(std::get<0>(search.second));
+      if (charAt == std::string::npos) continue;
+
+      if (line < pos.y || (line == pos.y && charAt < pos.x)) { 
+        foundAt.insert(foundAt.begin(), olc::vi2d(charAt, line));
+      } else foundAt.push_back(olc::vi2d(charAt, line));
+    }
+
+    if (!foundAt.size()) return error("Pattern '" + std::get<0>(search.second) + "' not found.");
+    std::get<3>(search.second) = foundAt.front();
   }
 
   inline void Command(Int2Type<VimT::CMD_w>) { 
@@ -211,8 +288,8 @@ public:
     }
 
     while (lines[pos.y][pos.x] == ' ') {
-     if (pos.x + 1 < lines[pos.y].size()) pos.x++;
-     else break;
+      if (pos.x + 1 < lines[pos.y].size()) pos.x++;
+      else break;
     }
 
     nLastX = pos.x;
@@ -226,36 +303,49 @@ public:
     }
 
     while (lines[pos.y][pos.x] == ' ') {
-     if (pos.x + 1 < lines[pos.y].size()) pos.x++;
-     else break;
+      if (pos.x + 1 < lines[pos.y].size()) pos.x++;
+      else break;
     }
 
     nLastX = pos.x;
   }
 
-  // TODO: Some is wrong with this function, fix it
+  // TODO: Create impl for this func
+  inline void Command(Int2Type<VimT::CMD_e>) { }
+
   inline void Command(Int2Type<VimT::CMD_b>) { 
     auto curr = lines[pos.y][pos.x];
-    while ((isAlpha(lines[pos.y][pos.x]) && isAlpha(curr)) || (!isAlpha(curr) && lines[pos.y][pos.x] == curr)) {
+    while (lines[pos.y][pos.x] == ' ' || lines[pos.y][pos.x] == curr) {
       if (pos.x - 1 >= 0) { pos.x--; continue; }
       if (pos.y - 1 >= 0) { pos.y--; pos.x = std::max((int32_t)lines[pos.y].size() - 1, 0); }
       break;
     }
 
     curr = lines[pos.y][pos.x];
-    while (lines[pos.y][pos.x] == ' ') {
-     if (pos.x - 1 >= 0) pos.x--;
-     else break;
+    while (isAlpha(lines[pos.y][pos.x])) {
+      if (pos.x - 1 >= 0) { pos.x--; continue; }
+      break;
     }
 
-    auto space = curr; curr = lines[pos.y][pos.x];
-    while (space == ' ' && ((isAlpha(lines[pos.y][pos.x]) && isAlpha(curr)) || (!isAlpha(curr) && lines[pos.y][pos.x] == curr))) {
+    nLastX = pos.x += isAlpha(curr);
+  }
+
+  inline void Command(Int2Type<VimT::CMD_B>) { 
+    auto curr = lines[pos.y][pos.x];
+    while (lines[pos.y][pos.x] == ' ' || lines[pos.y][pos.x] == curr) {
       if (pos.x - 1 >= 0) { pos.x--; continue; }
       if (pos.y - 1 >= 0) { pos.y--; pos.x = std::max((int32_t)lines[pos.y].size() - 1, 0); }
       break;
     }
 
-    nLastX = pos.x++;
+    curr = lines[pos.y][pos.x];
+    while (lines[pos.y][pos.x] != ' ') {
+      if (pos.x - 1 >= 0) { pos.x--; continue; }
+      if (pos.y - 1 >= 0) { pos.y--; pos.x = std::max((int32_t)lines[pos.y].size() - 1, 0); continue; }
+      break;
+    }
+
+    nLastX = pos.x += 1;
   }
 
   inline void Command(Int2Type<VimT::CMD_j>) {
@@ -301,13 +391,17 @@ public:
     if (!bUpdated) return;
     else bUpdated = false;
 
-    if (search.first) {
-      // TODO: Think about how to handle ENTER, ESC, etc...
-      std::get<0>(search.second).push_back(cmd.back());
-      if (std::get<0>(search.second).size() == std::get<1>(search.second)) return reset(); 
-    }
     
     printf("%s err: '%s'\n", cmd.c_str(), err.c_str());
+
+    if (search.first) {
+      // TODO: ADD ability to edit this string
+      std::get<0>(search.second).push_back(cmd.back());
+      // if (std::get<0>(search.second).size() == std::get<1>(search.second)) 
+      return reset(); 
+
+      return;
+    }
 
     if (nCurr == 0) {
       if (match<9>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R' })) { phrase(peekPrev()); return reset(); };
@@ -322,23 +416,17 @@ public:
       }
     }
 
-    if (match<26>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', 'E', '0', '$', '^', '_', 'g', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
+
+    if (match<26>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
       switch (peekPrev()) {
-        case 'g': search = { true, { "g", 1, true } }; break;
-        case 'r': search = { true, { "", 1, true } }; break;
-        case 'f': case 'F': search = { true, { "", 1, true } }; break;
-        // TODO: add other commands
+        case 'g': search = { true, { "", 1, true, {} } }; break;
+        case 'r': search = { true, { "", 1, true, {} } }; break;
+        case 'f': case 'F': search = { true, { "", 1, true, {} } }; break;
+        case '/': case '?': search = { true, { "", -1, true, {} } }; break;
       }
 
-      phrase(peekPrev()); // noun
-
-      number(); // number to repeat noun
-
-
-      // TODO: Update this
-      // auto prev = peek(nCurr - (peek(nCurr - 2) == 'g' ? 3 : 2));
-      auto prev = peek(nCurr - 2);
-      if (prev == 'c' || prev == 'd' || prev == 'y') phrase(prev); // verb
+      // (noun * number) + verb
+      phrase(peekPrev()); number(); verb(peek(nCurr - 2)); 
 
       return reset();
     }
@@ -349,12 +437,19 @@ public:
     if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_dd>()); number(); return reset(); } 
     if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<VimT::CMD_yy>()); number(); return reset(); } 
 
+    if (peekPrev() == 'g' && match<1>({ 'g' })) {  phrase(Int2Type<VimT::CMD_gg>()); number();  verb(peek(nCurr - 3)); return reset(); } 
+
     // verb
-    if (match<3>({ 'c', 'd', 'y' })) return;
+    if (match<4>({ 'c', 'd', 'y', 'g' })) return;
 
     error(peek(), "Invalid operation");
   }
 
+  inline void verb(const char c) {
+    switch (c) {
+      case 'c': case 'd': case 'y': return phrase(c);
+    }
+  }
 
   inline void phrase(const char c) {
     AnyType<-1, Vim*>::GetValue() = this;
@@ -366,7 +461,7 @@ public:
 
   template<int32_t T>
   inline void phrase(Int2Type<T> val) {
-    // TODO:
+    // TODO: add foreach support
     // bSync = foreach<VimCommands, AnyType<-1, Vim*>>::Has();
     bSync = bSync || true;
 
@@ -375,7 +470,7 @@ public:
   }
 
   inline void reset(bool exec = true) {
-    if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
+    // if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
 
     if (exec) {
       AnyType<-1, olc::vi2d>::GetValue() = pos;
@@ -383,6 +478,7 @@ public:
       else { std::thread t(lambda); t.detach(); }
     }
 
+    if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
     err.clear(); cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false;
   }
 
@@ -401,7 +497,7 @@ public:
 
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_2, '/',  '?'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_3, '`',  '~'); }
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_4, '[',  '{'); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_5, '\\', '|'); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_6, ']',  '}'); }
@@ -502,7 +598,14 @@ public:
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: reset(false); break;
+      case NORMAL: 
+        if (search.first) {
+          std::get<1>(search.second) = std::get<0>(search.second).size();
+          nLastX = (pos = std::get<3>(search.second)).x;
+        }
+
+        reset(search.first);
+        break;
 
       case INSERT: {
         std::string copy = lines[pos.y].substr(pos.x, lines[pos.y].size() - pos.x);
@@ -523,7 +626,7 @@ public:
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: reset(false); break;
+      case NORMAL: search.first = false; reset(false); break;
       case REPLACE: replaced.clear();
       case INSERT: {
         mode = NORMAL;
@@ -534,6 +637,12 @@ public:
       }
     }
   }
+
+  inline olc::vi2d Pos() { return olc::vi2d(pos); }
+  inline void MoveTo(olc::vi2d offset) {
+    // TODO: impl this by looping over diff x | y
+  }
+
 
 private:
   inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
@@ -599,13 +708,17 @@ private:
     reset(false); err = ss.str();
   }
 
+  void error(std::string message) {
+    std::stringstream ss; ss << "Error " << message << "\n"; err = ss.str();
+  }
+
 
 private:
   int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme
   int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
 
-  std::string replaced;
-  std::pair<std::vector<std::string>, bool> buffer; // second value is responsible to distinguish if buffer has a whole line or just a part of it
+  std::string replaced = "";
+  std::pair<std::vector<std::string>, bool> buffer = { { "" }, false }; // second value is responsible to distinguish if buffer has a whole line or just a part of it
   
   bool bSync = false; // Flag that define is lambda func is sync or async
   std::function<void(void)> lambda = []() {};
@@ -615,17 +728,17 @@ private:
   float fStrokeRepeat = 0.f;
 
   int32_t nLastX = 0; // Used for saving max x pos, when moving from line to line
+  olc::vi2d pos = olc::vi2d(0, 0);
+
   std::vector<std::string> lines;
 
 public: 
   ModeT mode = NORMAL;
   bool bUpdated = false;
 
-  olc::vi2d pos = olc::vi2d(0, 0);
-
   std::string cmd;
   std::string err;
 
-  std::pair<bool, std::tuple<std::string, int32_t, bool>> search = { false, { "", 0, false } }; // if first is true, then require one more "clock" to save after coming char
+  std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
 };
 };

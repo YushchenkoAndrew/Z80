@@ -18,6 +18,8 @@ public:
   }
 
   void Draw(olc::PixelGameEngine* GameEngine, olc::vi2d size, olc::vi2d absolute = olc::vi2d(0, 0)) {
+    vim.Draw(GameEngine, [&](auto pos) { return absolute + pos * vStep + vOffset; });
+
     for (auto& token : lexer.dst) {
       olc::vi2d pos = absolute + olc::vi2d(token->col, token->line) * vStep + vOffset;
 
@@ -25,8 +27,6 @@ public:
       if (pos.y > size.y) break;
       GameEngine->DrawString(pos, token->lexeme, token->color);
     }
- 
-    vim.Draw(GameEngine, [&](auto pos) { return absolute + pos * vStep + vOffset; });
   }
 
 private:
