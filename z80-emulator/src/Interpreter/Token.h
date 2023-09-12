@@ -8,8 +8,16 @@ namespace Interpreter {
  */
 class Token {
 public:
-  Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line, olc::Pixel c = olc::WHITE):
+  Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line, olc::Pixel c):
     token(t), lexeme(le), literal(li), col(col), line(line), color(c) {}
+
+  Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line):
+    token(t), lexeme(le), literal(li), col(col), line(line) {
+      AnyType<-2, olc::Pixel>::GetValue() = AnyType<Colors::WHITE, olc::Pixel>::GetValue();
+
+      AnyType<-1, int32_t>::GetValue() = token;
+      color = foreach<TokenColorList, AnyType<-1, int32_t>>::Key2Value();
+    }
 
   void print() { 
     AnyType<-1, int32_t>::GetValue() = token;

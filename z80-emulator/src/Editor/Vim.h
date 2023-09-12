@@ -58,6 +58,8 @@ public:
 
       while (token->line != lines.size() + 1) lines.push_back("");
     }
+
+    lines.push_back(line);
   }
 
   inline std::string Text() {
@@ -137,14 +139,19 @@ public:
     }
   }
 
+  // TODO: Fix bug with text disappearing when cursor at pos (0, 0)
   inline void Command(Int2Type<VimT::CMD_x>) {
     buffer = { { lines[pos.y].substr(nLastX = pos.x, 1) }, false };
-    lines[pos.y].erase(pos.x, buffer.first.front().size());
+    lines[pos.y].erase(pos.x, 1);
+
+    if (pos.x >= lines[pos.y].size()) nLastX = pos.x = std::max(pos.x - 1, 0);
   }
 
   inline void Command(Int2Type<VimT::CMD_r>) {
     buffer = { { lines[pos.y].substr(nLastX = pos.x, 1) }, false };
-    lines[pos.y].replace(pos.x, 1, std::string(1, std::get<0>(search.second).back()));
+
+    auto c = std::get<0>(search.second).back();
+    lines[pos.y].replace(pos.x, 1, std::string(1, c == '\0' ? ' ': c));
   }
 
   inline void Command(Int2Type<VimT::CMD_SQUIGGLE>) { 
@@ -354,7 +361,8 @@ public:
     pos.x = nLastX; nLastX = (pos += olc::vi2d(0, 1)).x;
     int32_t lineEndsAt = mode == ModeT::NORMAL;
 
-    if (pos.x > lines[pos.y].size() - lineEndsAt) pos.x = lines[pos.y].size() - lineEndsAt;
+    if (!lines[pos.y].size()) pos.x = 0;
+    else if (pos.x > lines[pos.y].size() - lineEndsAt) pos.x = lines[pos.y].size() - lineEndsAt;
     fBlink = 0.f;
   }
 
@@ -364,7 +372,8 @@ public:
     pos.x = nLastX; nLastX = (pos += olc::vi2d(0, -1)).x;
     int32_t lineEndsAt = mode == ModeT::NORMAL;
 
-    if (pos.x > lines[pos.y].size() - lineEndsAt) pos.x = lines[pos.y].size() - lineEndsAt;
+    if (!lines[pos.y].size()) pos.x = 0;
+    else if (pos.x > lines[pos.y].size() - lineEndsAt) pos.x = lines[pos.y].size() - lineEndsAt;
     fBlink = 0.f;
   }
 
@@ -453,7 +462,9 @@ public:
 
   inline void phrase(const char c) {
     AnyType<-1, Vim*>::GetValue() = this;
-    bSync = bSync || foreach<VimCommands, AnyType<-1, Vim*>>::Has();
+    AnyType<-1, int32_t>::GetValue() = c;
+
+    bSync = bSync || foreach<SyncVimCommands, AnyType<-1, Vim*>>::Has();
 
     auto operation = lambda;
     lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, AnyType<-1, Vim*>>::Command(); };
@@ -479,7 +490,7 @@ public:
     }
 
     if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
-    err.clear(); cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false;
+    err.clear(); cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false; bSync = false;
   }
 
   void Process(Int2Type<INSERT>, olc::PixelGameEngine* GameEngine) {
@@ -638,9 +649,21 @@ public:
     }
   }
 
-  inline olc::vi2d Pos() { return olc::vi2d(pos); }
+  inline int32_t GetLinesSize() { return lines.size(); }
+  inline olc::vi2d GetPos() { return olc::vi2d(pos); }
   inline void MoveTo(olc::vi2d offset) {
-    // TODO: impl this by looping over diff x | y
+    auto prev = pos;
+
+    for (int32_t i = 0; i < std::abs(offset.y); i++) {
+      if (offset.y > 0) Command(Int2Type<VimT::CMD_j>());
+      else Command(Int2Type<VimT::CMD_k>());
+    }
+
+    auto curr = pos - prev;
+    for (int32_t i = 0; i < std::abs(offset.x - curr.x); i++) {
+      if (offset.x - curr.x > 0) Command(Int2Type<VimT::CMD_l>());
+      else Command(Int2Type<VimT::CMD_h>());
+    }
   }
 
 

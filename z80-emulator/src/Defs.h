@@ -11,6 +11,7 @@ enum Colors {
 		GREY, DARK_GREY, VERY_DARK_GREY,
 		RED, DARK_RED, VERY_DARK_RED,
 		YELLOW, DARK_YELLOW, VERY_DARK_YELLOW,
+		ORANGE, DARK_ORANGE, VERY_DARK_ORANGE,
 		GREEN, DARK_GREEN, VERY_DARK_GREEN,
 		CYAN, DARK_CYAN, VERY_DARK_CYAN,
 		BLUE, DARK_BLUE, VERY_DARK_BLUE,
@@ -29,6 +30,10 @@ public:
     AnyType<RED,               std::string>::GetValue() = "RED";               AnyType<RED,               olc::Pixel>::GetValue() = olc::Pixel(255, 0, 0);
     AnyType<DARK_RED,          std::string>::GetValue() = "DARK_RED";          AnyType<DARK_RED,          olc::Pixel>::GetValue() = olc::Pixel(128, 0, 0);
     AnyType<VERY_DARK_RED,     std::string>::GetValue() = "VERY_DARK_RED";     AnyType<VERY_DARK_RED,     olc::Pixel>::GetValue() = olc::Pixel(64, 0, 0);
+
+    AnyType<ORANGE,            std::string>::GetValue() = "ORANGE";            AnyType<ORANGE,            olc::Pixel>::GetValue() = olc::Pixel(255, 128, 0);
+    AnyType<DARK_ORANGE,       std::string>::GetValue() = "DARK_ORANGE";       AnyType<DARK_ORANGE,       olc::Pixel>::GetValue() = olc::Pixel(128, 64, 0);
+    AnyType<VERY_DARK_ORANGE,  std::string>::GetValue() = "VERY_DARK_ORANGE";  AnyType<VERY_DARK_ORANGE,  olc::Pixel>::GetValue() = olc::Pixel(64, 32, 0);
 
     AnyType<YELLOW,            std::string>::GetValue() = "YELLOW";            AnyType<YELLOW,            olc::Pixel>::GetValue() = olc::Pixel(255, 255, 0);
     AnyType<DARK_YELLOW,       std::string>::GetValue() = "DARK_YELLOW";       AnyType<DARK_YELLOW,       olc::Pixel>::GetValue() = olc::Pixel(128, 128, 0);

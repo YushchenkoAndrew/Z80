@@ -30,12 +30,12 @@ bool Lexer::scan(std::string text) {
 
       case ';':
         while (peek() != '\n' && !isAtEnd()) advance();
-        addToken(olc::DARK_GREY);
+        addToken(AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
         break;
 
 
       case '\n': nLine++; nCol = 1; break;
-      case ' ': case '\r': case '\t': addToken(); break; // Ignore whitespace.
+      case ' ': case '\r': case '\t': addToken(olc::BLANK); break; // Ignore whitespace.
 
       default:
         if (isDigit(c)) number();

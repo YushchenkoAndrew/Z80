@@ -85,7 +85,7 @@ private:
     dst.push_back(t); tokens.push_back(t);
   }
 
-  void addToken(olc::Pixel c = olc::BLACK) {
+  void addToken(olc::Pixel c) {
     const int32_t len = nCurr - nStart;
     dst.push_back(std::make_shared<Token>(Token(TokenT::OP_NONE, src.substr(nStart, len), "", nCol - len, nLine, c)));
   }

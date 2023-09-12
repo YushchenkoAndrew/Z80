@@ -43,12 +43,13 @@ public:
 
 
         // interpreter.env.save("out.bin");
+        emulator.editor.size = { ScreenWidth(), ScreenHeight() };
 
         return true;
     }
 
     bool OnUserUpdate(float fElapsedTime) override {
-	    Clear(olc::BLACK);
+	    Clear(AnyType<Colors::BLACK, olc::Pixel>::GetValue());
 
         AnyType<-1, float>::GetValue() = fElapsedTime;
         // AnyType<-2, float>::GetValue() += fElapsedTime;
@@ -56,7 +57,7 @@ public:
 
 
         // emulator.ROM.Draw(this);
-        emulator.editor.Draw(this, { ScreenWidth(), ScreenHeight() });
+        emulator.editor.Draw(this);
 
 
         // TODO: Text editor
