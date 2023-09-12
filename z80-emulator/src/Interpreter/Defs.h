@@ -360,10 +360,10 @@ public:
     AnyType<TokenT::REG_SP,   std::string>::GetValue() = "SP";    AnyType<TokenT::REG_SP,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
     AnyType<TokenT::REG_PC,   std::string>::GetValue() = "PC";    AnyType<TokenT::REG_PC,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
 
-    AnyType<TokenT::REG_AF$,  std::string>::GetValue() = "AF'";   AnyType<TokenT::REG_AF$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_BC$,  std::string>::GetValue() = "BC'";   AnyType<TokenT::REG_BC$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_DE$,  std::string>::GetValue() = "DE'";   AnyType<TokenT::REG_DE$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_HL$,  std::string>::GetValue() = "HL'";   AnyType<TokenT::REG_HL$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_AF$,  std::string>::GetValue() = "AF'";   AnyType<TokenT::REG_AF$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_BC$,  std::string>::GetValue() = "BC'";   AnyType<TokenT::REG_BC$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_DE$,  std::string>::GetValue() = "DE'";   AnyType<TokenT::REG_DE$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_HL$,  std::string>::GetValue() = "HL'";   AnyType<TokenT::REG_HL$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
 
     AnyType<TokenT::REG_A,    std::string>::GetValue() = "A";     AnyType<TokenT::REG_A,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
     AnyType<TokenT::REG_B,    std::string>::GetValue() = "B";     AnyType<TokenT::REG_B,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
@@ -375,13 +375,13 @@ public:
     AnyType<TokenT::REG_I,    std::string>::GetValue() = "I";     AnyType<TokenT::REG_I,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
     AnyType<TokenT::REG_R,    std::string>::GetValue() = "R";     AnyType<TokenT::REG_R,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
 
-    AnyType<TokenT::REG_A$,   std::string>::GetValue() = "A'";    AnyType<TokenT::REG_A$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_B$,   std::string>::GetValue() = "B'";    AnyType<TokenT::REG_B$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_C$,   std::string>::GetValue() = "C'";    AnyType<TokenT::REG_C$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_D$,   std::string>::GetValue() = "D'";    AnyType<TokenT::REG_D$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_E$,   std::string>::GetValue() = "E'";    AnyType<TokenT::REG_E$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_H$,   std::string>::GetValue() = "H'";    AnyType<TokenT::REG_H$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_L$,   std::string>::GetValue() = "L'";    AnyType<TokenT::REG_L$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_ORANGE, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_A$,   std::string>::GetValue() = "A'";    AnyType<TokenT::REG_A$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_B$,   std::string>::GetValue() = "B'";    AnyType<TokenT::REG_B$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_C$,   std::string>::GetValue() = "C'";    AnyType<TokenT::REG_C$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_D$,   std::string>::GetValue() = "D'";    AnyType<TokenT::REG_D$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_E$,   std::string>::GetValue() = "E'";    AnyType<TokenT::REG_E$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_H$,   std::string>::GetValue() = "H'";    AnyType<TokenT::REG_H$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_L$,   std::string>::GetValue() = "L'";    AnyType<TokenT::REG_L$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
 
     AnyType<TokenT::FLAG_C,   std::string>::GetValue() = "C";     AnyType<TokenT::FLAG_C,   olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
     AnyType<TokenT::FLAG_M,   std::string>::GetValue() = "M";     AnyType<TokenT::FLAG_M,   olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();

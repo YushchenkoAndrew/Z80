@@ -89,12 +89,12 @@ private:
 int main() {
     Defs::Init(); Interpreter::Defs::Init(); // Initialize types
 
-    // TODO: Create defs to load colors from lua
-
-
     LuaScript luaConfig;
     if (!luaConfig.Init("src/lua/Config.lua")) return 0;
     if (!luaConfig.GetTable("Init")) return 0;
+
+    // TODO: Create defs to load colors from lua
+    // Defs::Load(&luaConfig);
 
     const int32_t nScreenWidth = luaConfig.GetTableValue<int32_t>(nullptr, "nScreenWidth");
     const int32_t nScreenHeight = luaConfig.GetTableValue<int32_t>(nullptr, "nScreenHeight");

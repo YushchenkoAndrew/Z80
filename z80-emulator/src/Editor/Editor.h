@@ -33,6 +33,9 @@ public:
   }
 
   void Draw(olc::PixelGameEngine* GameEngine) {
+    olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (vim.GetPos().y + 1 - vStartAt.y) * vStep.y + vOffset.y);
+    GameEngine->FillRect(pos, { size.x, 8 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
+
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
 
     for (auto& token : lexer.dst) {
