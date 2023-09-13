@@ -685,7 +685,9 @@ public:
     }
   }
 
-  inline int32_t GetLinesSize() { return lines.size(); }
+  inline int32_t GetLineSize() { return lines.size(); }
+  inline int32_t GetLineSize(int32_t i) { return lines[i].size(); }
+
   inline olc::vi2d GetPos() { return olc::vi2d(pos); }
   inline void MoveTo(olc::vi2d offset) {
     auto prev = pos;

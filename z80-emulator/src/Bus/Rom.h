@@ -7,7 +7,7 @@ namespace Bus {
  * EEPROM W27C512 
  *  65536 × 8 bits
  */
-class Rom {
+class Rom : public Window {
 public:
 
   void reset() { for (auto& bank : memory) bank = 0x00; }
@@ -18,7 +18,10 @@ public:
     for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];
   }
 
-  void Draw(olc::PixelGameEngine* GameEngine, olc::vi2d absolute = olc::vi2d(0, 0)) {
+  void Initialize(DimensionT) {}
+  void Process(olc::PixelGameEngine* GameEngine) {}
+
+  void Draw(olc::PixelGameEngine* GameEngine) {
     std::stringstream ss;
 
     olc::vi2d step = { 24, 8 };
@@ -50,6 +53,7 @@ public:
 
 
 private:
+  olc::vi2d absolute = olc::vi2d(0, 0);
   std::array<uint8_t, 65536> memory;
 };
 

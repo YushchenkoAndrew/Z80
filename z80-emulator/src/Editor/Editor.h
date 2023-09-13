@@ -2,12 +2,16 @@
 #include "Vim.h"
 
 namespace Editor {
-class Editor {
+class Editor : public Window {
 public:
 
   // TODO: Change this to more appropriate thing
   void temp(std::string src) { 
     lexer.scan(src); vim.Load(lexer.dst);
+  }
+
+  inline void Initialize(DimensionT dimensions) {
+    this->absolute = dimensions.first; this->size = dimensions.second;
   }
 
   void Process(olc::PixelGameEngine* GameEngine) {
@@ -23,8 +27,11 @@ public:
       vim.MoveTo((mouse - absolute) / vStep + vStartAt - vim.GetPos() - olc::vi2d(1 , 1));
     }
 
-    if (cursor.y - vStartAt.y + 3 > vMax.y && cursor.y < vim.GetLinesSize()) vStartAt.y++;
+    if (cursor.y - vStartAt.y + 3 > vMax.y && cursor.y < vim.GetLineSize()) vStartAt.y++;
     if ((cursor.y - vStartAt.y - 1 < 0 && cursor.y) || (!cursor.y && cursor.y != vStartAt.y)) vStartAt.y--;
+
+    if (cursor.x - vStartAt.x + 3 > vMax.x && cursor.x < vim.GetLineSize(cursor.y)) vStartAt.x++;
+    if ((cursor.x - vStartAt.x - 1 < 0 && cursor.x) || (!cursor.x && cursor.x != vStartAt.x)) vStartAt.x--;
       
     vim.Process(GameEngine);
 
@@ -38,20 +45,27 @@ public:
     GameEngine->FillRect(pos, { size.x, 8 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
 
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
+    olc::vi2d len = olc::vi2d(0, 0);
 
     for (auto& token : lexer.dst) {
       if (vStartAt.y >= token->line) continue;
+      if (token->line != len.y) len = olc::vi2d(0, token->line);
 
       olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
 
-      // TODO: With X
+      if (pos.x > size.x) continue;
       if (pos.y > size.y) break;
-      GameEngine->DrawString(pos, token->lexeme, token->color);
+
+      if (pos.x < size.x && pos.x + token->lexeme.size() * vStep.x > size.x) {
+        GameEngine->DrawString(pos, token->lexeme.substr(0, (size.x - pos.x) / vStep.x), token->color);
+      } else GameEngine->DrawString(pos, token->lexeme, token->color);
     }
   }
 
-
 private:
+  olc::vi2d size = olc::vi2d(0, 0);
+  olc::vi2d absolute = olc::vi2d(0, 0);
+
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(0, 0);
 
@@ -61,10 +75,6 @@ private:
 
   Interpreter::Lexer lexer;
   Interpreter::Interpreter interpreter;
-
-public:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
 };
 
 };

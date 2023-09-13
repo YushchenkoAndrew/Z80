@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string>
 #include <memory>
+#include <future>
 #include "include/Typelist.h"
 #include "include/Foreach.h"
 #include "lib/olcPixelGameEngine.h"
@@ -98,6 +99,7 @@ typedef TypeList<
     ColorList;
 
 
+
 class Defs {
 
 public:
@@ -168,4 +170,15 @@ public:
     // const int32_t nPixel = luaConfig.GetTableValue<int32_t>(nullptr, "nPixel");
 
   }
+};
+
+typedef std::pair<olc::vi2d, olc::vi2d> DimensionT;
+
+class Window {
+public:
+
+  virtual void Initialize(DimensionT) = 0;
+  virtual void Process(olc::PixelGameEngine* GameEngine) = 0;
+  virtual void Draw(olc::PixelGameEngine* GameEngine) = 0;
+
 };
