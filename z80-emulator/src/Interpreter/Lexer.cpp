@@ -22,11 +22,11 @@ bool Lexer::scan(std::string text) {
       case '~': addToken(TokenT::BIT_NOT); break;
 
       case '.':
-       if (advance() != '.') { err = "Unexpected character."; break; }
+       if (advance() != '.') { error("Unexpected character."); break; }
        addToken(TokenT::CONCATENATE); break;
 
 
-      case '"': case '\'': string(c); break;
+      case '"': string(c); break;
 
       case ';':
         while (peek() != '\n' && !isAtEnd()) advance();
@@ -40,16 +40,14 @@ bool Lexer::scan(std::string text) {
       default:
         if (isDigit(c)) number();
         else if (isAlpha(c)) identifier();
-        else err = std::string("Unexpected char '") + std::to_string(c) + std::string("'.");
+        else { addToken(TokenT::NONE); error(std::string("Unexpected char '") + std::string(1, c) + std::string("'.")); }
 
         break;
     }
-
-    if (err.length()) return true;
   }
 
   nStart = nCurr;
   addToken(TokenT::OP_EOF);
-  return err.length();
+  return errors.size();
 }
 }; 

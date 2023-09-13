@@ -8,7 +8,7 @@ namespace Interpreter {
  */
 enum TokenT {
   // Single char tokens
-  LEFT_BRACE = 0x0100, RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE,
+  NONE = 0x0100, LEFT_BRACE,  RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE,
   
   // Bit operation in assignment
   BIT_OR, BIT_AND, BIT_XOR, BIT_NOT,

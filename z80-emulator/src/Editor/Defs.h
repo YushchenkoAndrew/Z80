@@ -3,17 +3,6 @@
 
 namespace Editor {
 
-// NOTE: Think about this in a future !!!
-// class Cursor;
-
-// typedef TypeList<
-//   Cursor, NullType>
-//   // AnyType<TokenT::CMD_SRL,  std::string>, TypeList<
-//   // AnyType<TokenT::CMD_SUB,  std::string>, TypeList<
-//   // AnyType<TokenT::CMD_XOR,  std::string>, NullType>>>>
-//    CommandList2;
-
-
 enum VimT {
   CMD_NONE,
 
@@ -161,7 +150,7 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_c>,  Int2Type<'c'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_x>,  Int2Type<'x'>>, TypeList<
 
-  TypeList<Int2Type<VimT::CMD_SQUIGGLE>,  Int2Type<'x'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_SQUIGGLE>,  Int2Type<'~'>>, TypeList<
 
   TypeList<Int2Type<VimT::CMD_r>, Int2Type<'r'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_p>, Int2Type<'p'>>, TypeList<

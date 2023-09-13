@@ -30,6 +30,7 @@ public:
 
     if (!vim.bUpdated) return;
     lexer.scan(vim.Text()); vim.Load(lexer.dst);
+    for (auto& err : lexer.errors) printf("LEXER: %s", err.c_str());
   }
 
   void Draw(olc::PixelGameEngine* GameEngine) {

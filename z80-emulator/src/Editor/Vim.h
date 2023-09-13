@@ -92,7 +92,6 @@ public:
   inline void Command(Int2Type<VimT::CMD_yy>) { printf("YES\n"); buffer = { { lines[pos.y] }, true }; }
 
   inline void Command(Int2Type<VimT::CMD_C>)  { Command(Int2Type<VimT::CMD_D>()); Command(Int2Type<VimT::CMD_A>()); }
-  inline void Command(Int2Type<VimT::CMD_c>)  { Command(Int2Type<VimT::CMD_d>()); Command(Int2Type<VimT::CMD_O>()); }
   inline void Command(Int2Type<VimT::CMD_cc>) { Command(Int2Type<VimT::CMD_dd>()); Command(Int2Type<VimT::CMD_I>()); }
 
 
@@ -123,6 +122,63 @@ public:
     if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
   }
 
+  inline void Command(Int2Type<VimT::CMD_d>) {
+    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
+    if (diff.y && (diff.x == 0 || nLastX != pos.x)) { 
+      buffer = { {}, true };
+      for (int32_t i = 0; i <= std::abs(diff.y); i++, pos.y -= diff.y < 0) {
+        if (diff.y > 0) buffer.first.push_back(lines[pos.y]);
+        else buffer.first.insert(buffer.first.begin(), lines[pos.y]);
+        lines.erase(lines.begin() + pos.y);
+      }
+
+      pos.y += diff.y < 0;
+      int32_t lineEndsAt = mode == ModeT::NORMAL;
+      if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
+    } else if (diff.x && diff.y < 0)  {
+      buffer = { { lines[pos.y + diff.y].substr(pos.x + diff.x, lines[pos.y + diff.y].size() - pos.x - diff.x) }, false };
+      lines[pos.y + diff.y].erase(pos.x + diff.x, buffer.first.front().size());
+
+    } else if (diff.x && diff.y > 0) {
+      buffer = { { lines[pos.y + diff.y].substr(0, pos.x + diff.x) }, false };
+      lines[pos.y + diff.y].erase(0, buffer.first.front().size());
+
+      lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + diff.y].begin(), lines[pos.y + diff.y].end());
+      lines.erase(lines.begin() + pos.y + diff.y);
+
+    } else if (pos.x) {
+      if (diff.x < 0)  buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.first) }, false };
+      else buffer = { { lines[pos.y].substr(nLastX = pos.x, diff.x) }, false };
+
+      lines[pos.y].erase(pos.x, buffer.first.front().size());
+    } 
+  }
+
+  inline void Command(Int2Type<VimT::CMD_y>) {
+    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
+    if (diff.y && (diff.x == 0 || nLastX != pos.x)) { 
+      buffer = { {}, true };
+      for (int32_t i = 0; i <= std::abs(diff.y); i++, pos.y += (diff.y > 0) * 2 - 1) {
+        if (diff.y > 0) buffer.first.push_back(lines[pos.y]);
+        else buffer.first.insert(buffer.first.begin(), lines[pos.y]);
+      }
+
+      pos.y += diff.y < 0;
+      int32_t lineEndsAt = mode == ModeT::NORMAL;
+      if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
+    } else if (diff.x)  {
+      buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.first) }, false };
+    }
+  }
+
+  inline void Command(Int2Type<VimT::CMD_c>)  {
+    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
+    Command(Int2Type<VimT::CMD_d>());
+
+    if (diff.y && (diff.x == 0 || nLastX != pos.x)) Command(Int2Type<VimT::CMD_O>()); 
+    else Command(Int2Type<VimT::CMD_i>()); 
+  }
+
   inline void Command(Int2Type<VimT::CMD_p>) {
     if (!buffer.second) lines[pos.y].insert(++pos.x, buffer.first.front());
     else {
@@ -139,7 +195,6 @@ public:
     }
   }
 
-  // TODO: Fix bug with text disappearing when cursor at pos (0, 0)
   inline void Command(Int2Type<VimT::CMD_x>) {
     buffer = { { lines[pos.y].substr(nLastX = pos.x, 1) }, false };
     lines[pos.y].erase(pos.x, 1);
@@ -158,42 +213,6 @@ public:
     const char c = lines[pos.y][pos.x];
     lines[pos.y].replace(pos.x, 1, std::string(1, islower(c) ? toupper(c) : tolower(c)));
     Command(Int2Type<VimT::CMD_l>()); nLastX = pos.x;
-  }
-
-  inline void Command(Int2Type<VimT::CMD_d>) {
-    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
-    if (diff.y && (diff.x == 0 || nLastX != pos.x)) { 
-      buffer = { {}, true };
-      for (int32_t i = 0; i <= std::abs(diff.y); i++, pos.y -= diff.y < 0) {
-        if (diff.y > 0) buffer.first.push_back(lines[pos.y]);
-        else buffer.first.insert(buffer.first.begin(), lines[pos.y]);
-        lines.erase(lines.begin() + pos.y);
-      }
-
-      pos.y += diff.y < 0;
-      int32_t lineEndsAt = mode == ModeT::NORMAL;
-      if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
-    } else if (diff.x)  {
-      buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.first) }, false };
-      lines[pos.y].erase(pos.x, buffer.first.front().size());
-    }
-  }
-
-  inline void Command(Int2Type<VimT::CMD_y>) {
-    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
-    if (diff.y && (diff.x == 0 || nLastX != pos.x)) { 
-      buffer = { {}, true };
-      for (int32_t i = 0; i <= std::abs(diff.y); i++, pos.y += (diff.y > 0) * 2 - 1) {
-        if (diff.y > 0) buffer.first.push_back(lines[pos.y]);
-        else buffer.first.insert(buffer.first.begin(), lines[pos.y]);
-      }
-
-      pos.y += diff.y < 0;
-      int32_t lineEndsAt = mode == ModeT::NORMAL;
-      if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
-    } else if (diff.x)  {
-      buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.first) }, false };
-    }
   }
 
   inline void Command(Int2Type<VimT::CMD_SEMICOLON>) {
@@ -318,7 +337,21 @@ public:
   }
 
   // TODO: Create impl for this func
-  inline void Command(Int2Type<VimT::CMD_e>) { }
+  inline void Command(Int2Type<VimT::CMD_e>) {
+    auto curr = lines[pos.y][pos.x];
+    while ((isAlpha(lines[pos.y][pos.x]) && isAlpha(curr)) || (!isAlpha(curr) && lines[pos.y][pos.x] == curr)) {
+      if (pos.x + 1 < lines[pos.y].size()) { pos.x++; continue; }
+      if (pos.y + 1 < lines.size()) { pos.y++; pos.x = 0; }
+      break;
+    }
+
+    // while (lines[pos.y][pos.x] == ' ') {
+    //   if (pos.x + 1 < lines[pos.y].size()) pos.x++;
+    //   else break;
+    // }
+
+    nLastX = pos.x -= 1;
+  }
 
   inline void Command(Int2Type<VimT::CMD_b>) { 
     auto curr = lines[pos.y][pos.x];
@@ -334,7 +367,8 @@ public:
       break;
     }
 
-    nLastX = pos.x += isAlpha(curr);
+    // nLastX = pos.x += isAlpha(curr);
+    nLastX = pos.x += isAlpha(lines[pos.y][pos.x]) ? 0 : isAlpha(curr);
   }
 
   inline void Command(Int2Type<VimT::CMD_B>) { 
@@ -484,6 +518,8 @@ public:
     // if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
 
     if (exec) {
+      history.push_back(cmd); if (history.size() > HISTORY_SIZE) history.pop_front();
+
       AnyType<-1, olc::vi2d>::GetValue() = pos;
       if (bSync) { lambda(); bUpdated = true; }
       else { std::thread t(lambda); t.detach(); }
@@ -508,7 +544,7 @@ public:
 
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_2, '/',  '?'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_4, '[',  '{'); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_5, '\\', '|'); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_6, ']',  '}'); }
@@ -741,6 +777,7 @@ private:
   int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
 
   std::string replaced = "";
+  std::list<std::string> history = {};
   std::pair<std::vector<std::string>, bool> buffer = { { "" }, false }; // second value is responsible to distinguish if buffer has a whole line or just a part of it
   
   bool bSync = false; // Flag that define is lambda func is sync or async

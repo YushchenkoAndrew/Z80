@@ -33,7 +33,7 @@ public:
   bool scan(std::string src) {
     reset();
 
-    if (lexer.scan(src)) { errors.push_back(lexer.error()); return true; }
+    if (lexer.scan(src)) { errors.insert(errors.end(), lexer.errors.begin(), lexer.errors.end()); return true; }
     program();
     return errors.size();
   }

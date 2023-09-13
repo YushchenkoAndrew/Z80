@@ -22,16 +22,17 @@ public:
 private:
   inline void reset() {
     nStart = 0; nCurr = 0; nCol = 1; nLine = 1;
-    tokens.clear(); dst.clear(); err.clear();
+    tokens.clear(); dst.clear(); errors.clear();
   }
 
   void string(const char &c) {
-    while (!(peek() == c || isAtEnd())) {
-      if (peek() == '\n' || peek() == '\r') { nLine++; nCol = 1; }
+    while (peek() != c) {
+      if (peek() == '\n' || peek() == '\r') break;
       advance();
     }
 
-    if (isAtEnd()) { err = "Unclosed string."; return; } 
+    if (peek() != c) { addToken(TokenT::NONE); return error("Unclosed string.");  } 
+    
 
     advance(); // closing quote
     addToken(TokenT::STRING, src.substr(nStart + 1, nCurr - nStart - 1));
@@ -93,17 +94,14 @@ private:
   inline bool isAtEnd() { return nCurr >= src.length(); }
   inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
   inline bool isHexDigit(const char &c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
-  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
+  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '\''; }
   inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || isDigit(c); }
 
 
-public:
-  std::string error() {
-    if (!err.length()) return "";
-
+  inline void error(std::string message) {
     std::stringstream ss;
-    ss << "[Ln " << nLine << " Col " << nCurr << "] Error: " << err;
-    return ss.str();
+    ss << "[Ln " << nLine << " Col " << nCurr << "] Error: " << message << "\n";
+    errors.push_back(ss.str());
   }
 
 
@@ -116,11 +114,11 @@ private:
   int32_t nCol = 1; // tracks current line position
   int32_t nLine = 1; // tracks current line position
 
-  std::string err;
-
 public:
   std::vector<std::shared_ptr<Token>> dst;
   std::vector<std::shared_ptr<Token>> tokens;
+
+  std::vector<std::string> errors;
 };
 
 };

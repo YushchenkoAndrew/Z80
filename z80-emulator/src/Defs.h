@@ -7,6 +7,8 @@
 #include "lib/olcPixelGameEngine.h"
 #include "include/LuaScript.h"
 
+#define HISTORY_SIZE 100
+
 enum Colors {
 		GREY, DARK_GREY, VERY_DARK_GREY,
 		RED, DARK_RED, VERY_DARK_RED,
