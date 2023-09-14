@@ -10,7 +10,7 @@ enum VimT {
   CMD_i, CMD_I, CMD_a, CMD_A, CMD_o, CMD_O, CMD_C, CMD_D, CMD_r, CMD_R,
 
   // noun
-  CMD_h, CMD_j, CMD_k, CMD_l, CMD_w, CMD_W, CMD_b, CMD_B, CMD_e, CMD_0, CMD_gg, CMD_G, CMD_n, CMD_N, CMD_f, CMD_F,
+  CMD_h, CMD_j, CMD_k, CMD_l, CMD_w, CMD_W, CMD_b, CMD_B, CMD_e, CMD_0, CMD_gg, CMD_gd, CMD_G, CMD_n, CMD_N, CMD_f, CMD_F,
   CMD_CARET, CMD_DOLLAR, CMD_UNDERLINE, CMD_SLASH, CMD_QUESTION, CMD_COMMA, CMD_SEMICOLON, CMD_SQUIGGLE,
 
   // verb
@@ -126,7 +126,6 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_B>, Int2Type<'B'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_e>, Int2Type<'e'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_0>, Int2Type<'0'>>, TypeList<
-  TypeList<Int2Type<VimT::CMD_gg>,Int2Type<'g'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_G>, Int2Type<'G'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_n>, Int2Type<'n'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_N>, Int2Type<'N'>>, TypeList<
@@ -143,7 +142,7 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_SLASH>,      Int2Type<'/'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_QUESTION>,   Int2Type<'?'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_COMMA>,      Int2Type<','>>, TypeList<
-  TypeList<Int2Type<VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<Int2Type<VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    VimCommands; 
   
 typedef TypeList<

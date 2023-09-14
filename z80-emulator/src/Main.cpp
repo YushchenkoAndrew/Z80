@@ -7,7 +7,7 @@
 //#include "include/MemTrack.h"
 
 
-class App : public olc::PixelGameEngine {
+class App : public PixelGameEngine {
 public:
   App(LuaScript& config): luaConfig(config) {
     sAppName = "Z80 Emulator";
@@ -41,7 +41,7 @@ public:
     //   emulator.ROM.load(emulator.interpreter.env.memory);
     // }
 
-    auto rom = std::make_shared<Bus::Rom>();
+    auto rom = std::make_shared<Bus::Memory>();
     rom->load(interpreter.env.memory);
 
 
@@ -96,6 +96,10 @@ public:
     // // mMinecraft.Draw(*this, fElapsedTime);
     // // return mMinecraft.IsFinished();
     return true;
+  }
+
+  void Event(Int2Type<MEMORY_SELECT_CALLBACK>) override {
+    std::cout << "HELLO" << std::endl;
   }
 
 private:

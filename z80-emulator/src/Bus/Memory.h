@@ -17,7 +17,7 @@ namespace Bus {
  *  adverb      -> 'p' | 'x'
  *  phrase      -> 'i' | 'a' | 'r'
  */
-class Rom : public Window {
+class Memory : public Window {
 public:
   enum ModeT { NORMAL, REPLACE, CHARACTER };
 
@@ -31,7 +31,7 @@ public:
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
   }
 
-  void Process(olc::PixelGameEngine* GameEngine) {
+  void Process(PixelGameEngine* GameEngine) {
     bUpdated = false;
 
     switch (mode) {
@@ -42,7 +42,7 @@ public:
   }
 
 
-  void Draw(olc::PixelGameEngine* GameEngine) {
+  void Draw(PixelGameEngine* GameEngine) {
     switch (mode) {
       case NORMAL:    return Draw(Int2Type<NORMAL>(), GameEngine);
       case REPLACE:   return Draw(Int2Type<NORMAL>(), GameEngine);
@@ -51,10 +51,7 @@ public:
   }
 
 private:
-  template<int32_t T>
-  void Draw(Int2Type<T>, olc::PixelGameEngine* GameEngine) {}
-
-  void Draw(Int2Type<NORMAL>, olc::PixelGameEngine* GameEngine) {
+  void Draw(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
     for (int32_t i = 0; i < 0x10; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep + olc::vi2d(vOffset.x, 0);
       GameEngine->DrawString(pos, Int2Hex(i), AnyType<DARK_GREY, olc::Pixel>::GetValue());
@@ -75,7 +72,7 @@ private:
     GameEngine->DrawString(cursor, Int2Hex(memory[index()]), AnyType<BLACK, olc::Pixel>::GetValue());
   }
 
-  void Draw(Int2Type<CHARACTER>, olc::PixelGameEngine* GameEngine) {
+  void Draw(Int2Type<CHARACTER>, PixelGameEngine* GameEngine) {
     for (int32_t i = 0; i < 0x10; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * olc::vi2d(vStep.y, vStep.y) + olc::vi2d(vOffset.x, 0);
       GameEngine->DrawString(pos, Int2Hex(i, 1), AnyType<DARK_GREY, olc::Pixel>::GetValue());
@@ -119,6 +116,11 @@ public:
   inline void Command(Int2Type<Editor::VimT::CMD_gg>) { pos.y = pos.x = 0; }
   inline void Command(Int2Type<Editor::VimT::CMD_x>) { memory[index()] = 0x00; }
 
+  inline void Command(Int2Type<Editor::VimT::CMD_gd>) {
+    // TODO: Impl this event
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>());
+  }
+
   inline void Command(Int2Type<Editor::VimT::CMD_j>) {
     if (pos.y < (int32_t)memory.size() / 0x10) pos.y++;
   }
@@ -137,17 +139,14 @@ public:
 
 
 private:
-  template<int32_t T>
-  void Process(Int2Type<T>, olc::PixelGameEngine* GameEngine) { }
-
-  void Process(Int2Type<REPLACE>, olc::PixelGameEngine* GameEngine) {
-    AnyType<-1, olc::PixelGameEngine*>::GetValue() = GameEngine;
-    foreach<Editor::KeyEvent, Rom>::Process(this);
+  void Process(Int2Type<REPLACE>, PixelGameEngine* GameEngine) {
+    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
+    foreach<Editor::KeyEvent, Memory>::Process(this);
   }
 
-  void Process(Int2Type<NORMAL>, olc::PixelGameEngine* GameEngine) {
-    AnyType<-1, olc::PixelGameEngine*>::GetValue() = GameEngine;
-    foreach<Editor::KeyEvent, Rom>::Process(this);
+  void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
+    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
+    foreach<Editor::KeyEvent, Memory>::Process(this);
 
     if (!bUpdated) return;
     else bUpdated = false;
@@ -177,8 +176,8 @@ private:
 
     if (match<21>({ 'h', 'j', 'k', 'l', 'x', 'r', 'w', 'b', 'e', '0', '$', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
       switch (peekPrev()) {
+        case 'g': search = { true, { "", 1, true, {} } }; return;
         case 'r': search = { false, { "", 2, true, {} } }; break;
-        case 'g': search = { true, { "", 1, true, {} } }; break;
         case 'f': case 'F': search = { true, { "", 1, true, {} } }; break;
         case '/': case '?': search = { true, { "", -1, true, {} } }; break;
       }
@@ -192,6 +191,7 @@ private:
     // adverb
     if (match<2>({ 'p', 'P' })) { phrase(peekPrev()); number(); return reset(); }
     if (peekPrev() == 'g' && match<1>({ 'g' })) {  phrase(Int2Type<Editor::VimT::CMD_gg>()); number();  verb(peek(nCurr - 3)); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'd' })) {  phrase(Int2Type<Editor::VimT::CMD_gd>()); return reset(); } 
 
     // verb
     if (match<4>({ 'c', 'd', 'y', 'g' })) return;
@@ -211,7 +211,7 @@ private:
     bSync = bSync || true;
 
     auto operation = lambda;
-    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<RomCommands, Rom>::Command(this); };
+    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<RomCommands, Memory>::Command(this); };
   }
 
   template<int32_t T>
@@ -269,14 +269,14 @@ public:
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::COMMA>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::COMMA,  ',', '<'); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::MINUS>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::MINUS,  '-', '_'); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::UP>,    Int2Type<U>>) { if (AnyType<-1, olc::PixelGameEngine*>::GetValue()->GetKey(olc::Key::UP).bPressed) Command(Int2Type<Editor::VimT::CMD_k>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DOWN>,  Int2Type<U>>) { if (AnyType<-1, olc::PixelGameEngine*>::GetValue()->GetKey(olc::Key::DOWN).bPressed) Command(Int2Type<Editor::VimT::CMD_j>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::LEFT>,  Int2Type<U>>) { if (AnyType<-1, olc::PixelGameEngine*>::GetValue()->GetKey(olc::Key::LEFT).bPressed) Command(Int2Type<Editor::VimT::CMD_h>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<U>>) { if (AnyType<-1, olc::PixelGameEngine*>::GetValue()->GetKey(olc::Key::RIGHT).bPressed) Command(Int2Type<Editor::VimT::CMD_l>()); }
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::UP>,    Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::UP).bPressed) Command(Int2Type<Editor::VimT::CMD_k>()); }
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DOWN>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::DOWN).bPressed) Command(Int2Type<Editor::VimT::CMD_j>()); }
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::LEFT>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::LEFT).bPressed) Command(Int2Type<Editor::VimT::CMD_h>()); }
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::RIGHT).bPressed) Command(Int2Type<Editor::VimT::CMD_l>()); }
 
   template<int32_t U>
   void Process(TypeList<Int2Type<olc::Key::DEL>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, olc::PixelGameEngine*>::GetValue();
+    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     if (!GameEngine->GetKey(olc::Key::DEL).bPressed) return;
 
     bUpdated = true;
@@ -289,7 +289,7 @@ public:
 
   template<int32_t U>
   void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, olc::PixelGameEngine*>::GetValue();
+    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     if (!GameEngine->GetKey(olc::Key::BACK).bPressed) return;
 
     bUpdated = true;
@@ -305,7 +305,7 @@ public:
 
   template<int32_t U>
   void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, olc::PixelGameEngine*>::GetValue();
+    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     if (!GameEngine->GetKey(olc::Key::ENTER).bPressed) return;
 
     bUpdated = true;
@@ -327,7 +327,7 @@ public:
 
   template<int32_t U>
   void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, olc::PixelGameEngine*>::GetValue();
+    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     if (!GameEngine->GetKey(olc::Key::ESCAPE).bPressed) return;
 
     bUpdated = true;
@@ -342,7 +342,7 @@ public:
 
 private:
   inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
-    auto GameEngine = AnyType<-1, olc::PixelGameEngine*>::GetValue();
+    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     bool bPressed = GameEngine->GetKey(key).bPressed;
 
     if (GameEngine->GetKey(key).bReleased) fStrokeRepeat = .0f;

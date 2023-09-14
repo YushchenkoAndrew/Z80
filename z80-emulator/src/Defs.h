@@ -22,6 +22,7 @@ enum Colors {
 		WHITE, BLACK, BLANK
 };
 
+typedef std::pair<olc::vi2d, olc::vi2d> DimensionT;
 typedef TypeList<
   AnyType<GREY,              std::string>, TypeList<
   AnyType<DARK_GREY,         std::string>, TypeList<
@@ -172,13 +173,22 @@ public:
   }
 };
 
-typedef std::pair<olc::vi2d, olc::vi2d> DimensionT;
+enum Events {
+  MEMORY_SELECT_CALLBACK,
+};
+
+class PixelGameEngine : public olc::PixelGameEngine {
+  public:
+
+  virtual void Event(Int2Type<MEMORY_SELECT_CALLBACK>) = 0;
+};
+
 
 class Window {
 public:
 
   virtual void Initialize(DimensionT) = 0;
-  virtual void Process(olc::PixelGameEngine* GameEngine) = 0;
-  virtual void Draw(olc::PixelGameEngine* GameEngine) = 0;
+  virtual void Process(PixelGameEngine* GameEngine) = 0;
+  virtual void Draw(PixelGameEngine* GameEngine) = 0;
 
 };

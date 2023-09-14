@@ -14,7 +14,7 @@ public:
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
   }
 
-  void Process(olc::PixelGameEngine* GameEngine) {
+  void Process(PixelGameEngine* GameEngine) {
     auto nWheel = GameEngine->GetMouseWheel();
     if (nWheel > 0) vim.MoveTo({ 0, -1 });
     else if (nWheel < 0) vim.MoveTo({ 0, 1 });
@@ -40,7 +40,7 @@ public:
     for (auto& err : lexer.errors) printf("LEXER: %s", err.c_str());
   }
 
-  void Draw(olc::PixelGameEngine* GameEngine) {
+  void Draw(PixelGameEngine* GameEngine) {
     olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (vim.GetPos().y + 1 - vStartAt.y) * vStep.y + vOffset.y);
     GameEngine->FillRect(pos, { size.x, 8 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
 
