@@ -428,14 +428,13 @@ public:
 
   void Process(Int2Type<NORMAL>, olc::PixelGameEngine* GameEngine) {
     AnyType<-1, olc::PixelGameEngine*>::GetValue() = GameEngine;
-    AnyType<-1, Vim*>::GetValue() = this;
+    foreach<KeyEvent, Vim>::Process(this);
 
-    foreach<KeyEvent, AnyType<-1, Vim*>>::Process();
     if (!bUpdated) return;
     else bUpdated = false;
-
     
     printf("%s err: '%s'\n", cmd.c_str(), err.c_str());
+    err.clear(); 
 
     if (search.first) {
       // TODO: ADD ability to edit this string
@@ -445,6 +444,8 @@ public:
 
       return;
     }
+
+    // TODO: Add ability to run execution commands aka ':wq'
 
     if (nCurr == 0) {
       if (match<9>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R' })) { phrase(peekPrev()); return reset(); };
@@ -495,13 +496,11 @@ public:
   }
 
   inline void phrase(const char c) {
-    AnyType<-1, Vim*>::GetValue() = this;
     AnyType<-1, int32_t>::GetValue() = c;
-
-    bSync = bSync || foreach<SyncVimCommands, AnyType<-1, Vim*>>::Has();
+    bSync = bSync || foreach<SyncVimCommands, AnyType<-1, int32_t>>::Has();
 
     auto operation = lambda;
-    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, AnyType<-1, Vim*>>::Command(); };
+    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, Vim>::Command(this); };
   }
 
   template<int32_t T>
@@ -526,14 +525,12 @@ public:
     }
 
     if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
-    err.clear(); cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false; bSync = false;
+    cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false; bSync = false;
   }
 
   void Process(Int2Type<INSERT>, olc::PixelGameEngine* GameEngine) {
     AnyType<-1, olc::PixelGameEngine*>::GetValue() = GameEngine;
-    AnyType<-1, Vim*>::GetValue() = this;
-
-    foreach<KeyEvent, AnyType<-1, Vim*>>::Process();
+    foreach<KeyEvent, Vim>::Process(this);
   }
 
   template<int32_t T, int32_t U>
@@ -704,6 +701,29 @@ public:
     }
   }
 
+  inline std::string GetMode() {
+    switch (mode) {
+      case REPLACE: return "-- REPLACE --";
+      case INSERT: return "-- INSERT --";
+      case NORMAL: 
+        if (search.first && cmd.front() == '/') return cmd;
+        if (err.size()) return err;
+        return "-- NORMAL --";
+    }
+
+    return "";
+  }
+
+  inline std::string GetCmd() { 
+    if (search.first && cmd.front() == '/') return "";
+    return cmd;
+  }
+
+  inline std::string GetHumanizedPos() {
+    std::stringstream ss; ss << "Ln " << pos.y + 1 << ", Col " << pos.x + 1;
+    return ss.str();
+  }
+
 
 private:
   inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
@@ -775,11 +795,17 @@ private:
 
 
 private:
+  ModeT mode = NORMAL;
+
   int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme
   int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
 
-  std::string replaced = "";
+  std::string err;
+  std::string cmd;
   std::list<std::string> history = {};
+  std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
+
+  std::string replaced = "";
   std::pair<std::vector<std::string>, bool> buffer = { { "" }, false }; // second value is responsible to distinguish if buffer has a whole line or just a part of it
   
   bool bSync = false; // Flag that define is lambda func is sync or async
@@ -791,16 +817,9 @@ private:
 
   int32_t nLastX = 0; // Used for saving max x pos, when moving from line to line
   olc::vi2d pos = olc::vi2d(0, 0);
-
   std::vector<std::string> lines;
 
 public: 
-  ModeT mode = NORMAL;
   bool bUpdated = false;
-
-  std::string cmd;
-  std::string err;
-
-  std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
 };
 };

@@ -44,6 +44,12 @@ struct foreach<TypeList<AnyType<T, V>, U>, F> {
 		if (F::template Compare(Int2Type<T>())) return true;
     return foreach<U, F>::Key2Value();
 	}
+
+	static inline auto Key2Process(F* ref) {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
+    return foreach<U, F>::Key2Process(ref);
+	}
+
 };
 
 template<int32_t T, class V, class F>
@@ -67,55 +73,45 @@ struct foreach<TypeList<AnyType<T, V>, NullType>, F> {
 		if (F::template Compare(Int2Type<T>())) return true;
     return false;
 	}
-};
 
-template<int32_t T, class U, int32_t F, class V>
-struct foreach<TypeList<AnyType<T, std::string>, U>, AnyType<F, V*>> {
-	static inline auto Key2Process() {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return AnyType<F, V*>::GetValue()->Process(Int2Type<T>());
-    return foreach<U, AnyType<F, V*>>::Key2Process();
-	}
-};
-
-template<int32_t T, int32_t F, class V>
-struct foreach<TypeList<AnyType<T, std::string>, NullType>, AnyType<F, V*>> {
-	static inline auto Key2Process() {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return AnyType<F, V*>::GetValue()->Process(Int2Type<T>());
-    return AnyType<F, V*>::GetValue()->Process(Int2Type<-1>());
-	}
-};
-
-template<int32_t T, int32_t U, class V, int32_t F, class Y>
-struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, V>, AnyType<F, Y*>> {
-	static inline void Process() {
-    foreach<V, AnyType<F, Y*>>::Process();
-		AnyType<F, Y*>::GetValue()->Process(TypeList<Int2Type<T>, Int2Type<U>>());
+	static inline auto Key2Process(F* ref) {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
+    return ref->Process(Int2Type<-1>());
 	}
 
-	static inline void Command() {
-		if (!AnyType<-1, int32_t>::Compare(Int2Type<U>())) return foreach<V, AnyType<F, Y*>>::Command();
-		AnyType<F, Y*>::GetValue()->Command(Int2Type<T>());
+};
+
+template<int32_t T, int32_t U, class V, class Y>
+struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, V>, Y> {
+	static inline void Process(Y* ref) {
+    foreach<V, Y>::Process(ref);
+		ref->Process(TypeList<Int2Type<T>, Int2Type<U>>());
+	}
+
+	static inline void Command(Y* ref) {
+		if (!AnyType<-1, int32_t>::Compare(Int2Type<U>())) return foreach<V, Y>::Command(ref);
+		ref->Command(Int2Type<T>());
 	}
 
 	static inline bool Has() {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<U>())) return true;
-		return foreach<V, AnyType<F, Y*>>::Has();
+		if (Y::template Compare(Int2Type<U>())) return true;
+		return foreach<V, Y>::Has();
 	}
 };
 
-template<int32_t T, int32_t U, int32_t F, class Y>
-struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, NullType>, AnyType<F, Y*>> {
-	static inline void Process() {
-		AnyType<F, Y*>::GetValue()->Process(TypeList<Int2Type<T>, Int2Type<U>>());
+template<int32_t T, int32_t U, class Y>
+struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, NullType>, Y> {
+	static inline void Process(Y* ref) {
+		ref->Process(TypeList<Int2Type<T>, Int2Type<U>>());
 	}
 
-	static inline void Command() {
+	static inline void Command(Y* ref) {
 		if (!AnyType<-1, int32_t>::Compare(Int2Type<U>())) return;
-		AnyType<F, Y*>::GetValue()->Command(Int2Type<T>());
+		ref->Command(Int2Type<T>());
 	}
 
 	static inline bool Has() {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<U>())) return true;
+		if (Y::template Compare(Int2Type<U>())) return true;
 		return false;
 	}
 };

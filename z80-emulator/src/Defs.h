@@ -104,7 +104,7 @@ class Defs {
 
 public:
   static void Init() {
-    AnyType<GREY,              std::string>::GetValue() = "GRAY";              AnyType<GREY,              olc::Pixel>::GetValue() = olc::Pixel(192, 192, 192);
+    AnyType<GREY,              std::string>::GetValue() = "GRAY";              AnyType<GREY,              olc::Pixel>::GetValue() = olc::Pixel(0xAC, 0xB6, 0xC7);
     AnyType<DARK_GREY,         std::string>::GetValue() = "DARK_GREY";         AnyType<DARK_GREY,         olc::Pixel>::GetValue() = olc::Pixel(0x3A, 0x45, 0x56);
     AnyType<VERY_DARK_GREY,    std::string>::GetValue() = "VERY_DARK_GREY";    AnyType<VERY_DARK_GREY,    olc::Pixel>::GetValue() = olc::Pixel(0x18, 0x23, 0x2D);
 

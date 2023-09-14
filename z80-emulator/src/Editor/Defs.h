@@ -90,10 +90,15 @@ typedef TypeList<
   TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<']'>>, TypeList<
   TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<'\''>>, TypeList<
 
+  TypeList<Int2Type<olc::Key::NP_DIV>, Int2Type<'/'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP_MUL>, Int2Type<'*'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP_ADD>, Int2Type<'+'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP_SUB>, Int2Type<'-'>>, TypeList<
+
   TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<'='>>, TypeList<
   TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<'.'>>, TypeList<
   TypeList<Int2Type<olc::Key::COMMA>, Int2Type<','>>, TypeList<
-  TypeList<Int2Type<olc::Key::MINUS>, Int2Type<'-'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<Int2Type<olc::Key::MINUS>, Int2Type<'-'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    KeyEvent; 
 
 

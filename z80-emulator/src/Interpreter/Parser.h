@@ -79,10 +79,8 @@ private:
   }
 
   std::shared_ptr<Statement> statement() {
-    AnyType<-1, Parser*>::GetValue() = this;
     AnyType<-1, int32_t>::GetValue() = advance()->token;
-
-    return foreach<CommandList, AnyType<-1, Parser*>>::Key2Process();
+    return foreach<CommandList, Parser>::Key2Process(this);
   }
 
   inline std::shared_ptr<Expression> term(int32_t size = 0) {

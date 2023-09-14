@@ -11,7 +11,7 @@ public:
   }
 
   inline void Initialize(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
+    this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
   }
 
   void Process(olc::PixelGameEngine* GameEngine) {
@@ -22,7 +22,7 @@ public:
     auto vMax = size / vStep;
     auto cursor = vim.GetPos();
 
-    auto mouse = GameEngine->GetMousePos();
+    auto mouse = GameEngine->GetMousePos() - vOffset;
     if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x && mouse.y < absolute.y + size.y) {
       vim.MoveTo((mouse - absolute) / vStep + vStartAt - vim.GetPos() - olc::vi2d(1 , 1));
     }
@@ -54,12 +54,37 @@ public:
       olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
 
       if (pos.x > size.x) continue;
-      if (pos.y > size.y) break;
+      if (pos.y >= size.y - vStep.y) break;
 
       if (pos.x < size.x && pos.x + token->lexeme.size() * vStep.x > size.x) {
         GameEngine->DrawString(pos, token->lexeme.substr(0, (size.x - pos.x) / vStep.x), token->color);
       } else GameEngine->DrawString(pos, token->lexeme, token->color);
     }
+
+    auto cursor = vim.GetPos();
+    pos = (absolute + (cursor - vStartAt) * vStep + vOffset) / vStep; 
+
+    std::stringstream ss;
+    for (int32_t i = 0, max = size.y / vStep.y; i < max; i++) {
+      ss.str(""); ss << cursor.y - pos.y + i + 1; auto str = ss.str();
+      auto line = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y);
+
+      if (cursor.y - vStartAt.y == i) {
+        GameEngine->DrawString(line, str, AnyType<GREY, olc::Pixel>::GetValue());
+      } else GameEngine->DrawString(line, str, AnyType<DARK_GREY, olc::Pixel>::GetValue());
+    }
+
+    pos = olc::vi2d(absolute.x, absolute.y + size.y - vStep.y);
+    GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
+    GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), vim.GetMode(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+
+    auto humanizedPos = vim.GetHumanizedPos();
+
+    pos.x =  size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
+    GameEngine->DrawString(pos, humanizedPos, AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+
+    pos.x -= 5 * vStep.x;
+    GameEngine->DrawString(pos, vim.GetCmd(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
   }
 
 private:
@@ -67,7 +92,7 @@ private:
   olc::vi2d absolute = olc::vi2d(0, 0);
 
   const olc::vi2d vStep = olc::vi2d(8, 12);
-  const olc::vi2d vOffset = olc::vi2d(0, 0);
+  const olc::vi2d vOffset = olc::vi2d(24, 0);
 
   olc::vi2d vStartAt = olc::vi2d(0, 0);
 
