@@ -52,8 +52,9 @@ public:
 
     panels = {
       Panel(
-        std::pair(editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
-        // , std::pair(rom,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+        // std::tuple(true, editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+        // ,
+        std::tuple(true, rom,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
       )
     };
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Interpreter/Interpreter.h"
+#include "Defs.h"
 
 namespace Bus {
 

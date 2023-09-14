@@ -70,11 +70,11 @@ typedef TypeList<
   TypeList<Int2Type<olc::Key::NP8>, Int2Type<'8'>>, TypeList<
   TypeList<Int2Type<olc::Key::NP9>, Int2Type<'9'>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::TAB>, Int2Type<' '>>, TypeList<
+  TypeList<Int2Type<olc::Key::TAB>, Int2Type<'\t'>>, TypeList<
   TypeList<Int2Type<olc::Key::BACK>, Int2Type<' '>>, TypeList<
   TypeList<Int2Type<olc::Key::DEL>, Int2Type<' '>>, TypeList<
   TypeList<Int2Type<olc::Key::SPACE>, Int2Type<' '>>, TypeList<
-  TypeList<Int2Type<olc::Key::ENTER>, Int2Type<' '>>, TypeList<
+  TypeList<Int2Type<olc::Key::ENTER>, Int2Type<'\n'>>, TypeList<
   TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<' '>>, TypeList<
 
   TypeList<Int2Type<olc::Key::UP>, Int2Type<' '>>, TypeList<

@@ -426,6 +426,11 @@ public:
   template<int32_t T>
   void Process(Int2Type<T>, olc::PixelGameEngine* GameEngine) { }
 
+  void Process(Int2Type<INSERT>, olc::PixelGameEngine* GameEngine) {
+    AnyType<-1, olc::PixelGameEngine*>::GetValue() = GameEngine;
+    foreach<KeyEvent, Vim>::Process(this);
+  }
+
   void Process(Int2Type<NORMAL>, olc::PixelGameEngine* GameEngine) {
     AnyType<-1, olc::PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyEvent, Vim>::Process(this);
@@ -528,10 +533,6 @@ public:
     cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false; bSync = false;
   }
 
-  void Process(Int2Type<INSERT>, olc::PixelGameEngine* GameEngine) {
-    AnyType<-1, olc::PixelGameEngine*>::GetValue() = GameEngine;
-    foreach<KeyEvent, Vim>::Process(this);
-  }
 
   template<int32_t T, int32_t U>
   void Process(TypeList<Int2Type<T>, Int2Type<U>>) {

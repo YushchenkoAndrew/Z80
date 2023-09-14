@@ -4,7 +4,7 @@
 
 
 template <class T>
-using WindowT = std::pair<std::shared_ptr<T>, DimensionT>;
+using WindowT = std::tuple<bool, std::shared_ptr<T>, DimensionT>;
 
 class Panel {
 
@@ -13,8 +13,8 @@ public:
   Panel(Args ...args) { Init(args...); }
 
   void Initialize() {
-    if (rom.first != nullptr) rom.first->Initialize(rom.second);
-    if (editor.first != nullptr) editor.first->Initialize(editor.second);
+    if (std::get<1>(rom) != nullptr) std::get<1>(rom)->Initialize(std::get<2>(rom));
+    if (std::get<1>(editor) != nullptr) std::get<1>(editor)->Initialize(std::get<2>(editor));
   }
 
 
@@ -27,8 +27,8 @@ public:
 
     // for(auto& future : vFuture) future.wait();
 
-    if (rom.first != nullptr) rom.first->Process(GameEngine);
-    if (editor.first != nullptr) editor.first->Process(GameEngine);
+    if (std::get<0>(rom)) std::get<1>(rom)->Process(GameEngine);
+    if (std::get<0>(editor)) std::get<1>(editor)->Process(GameEngine);
   }
 
   void Draw(olc::PixelGameEngine* GameEngine) {
@@ -40,8 +40,8 @@ public:
 
     // for(auto& future : vFuture) future.wait();
 
-    if (rom.first != nullptr) rom.first->Draw(GameEngine);
-    if (editor.first != nullptr) editor.first->Draw(GameEngine);
+    if (std::get<1>(rom) != nullptr) std::get<1>(rom)->Draw(GameEngine);
+    if (std::get<1>(editor) != nullptr) std::get<1>(editor)->Draw(GameEngine);
   }
 
 private:
@@ -53,6 +53,6 @@ private:
   inline void Init(WindowT<Editor::Editor> e) { editor = e; }
 
 private:
-  WindowT<Bus::Rom> rom = { nullptr, {} };
-  WindowT<Editor::Editor> editor = { nullptr, {} };
+  WindowT<Bus::Rom> rom = { false, nullptr, {} };
+  WindowT<Editor::Editor> editor = { false, nullptr, {} };
 };
