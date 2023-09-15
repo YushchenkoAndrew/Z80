@@ -48,7 +48,7 @@ public:
           return {};
         }
 
-        return Int2Bytes(num);
+        return Int2Bytes(num, expr->size);
       }
 
       case TokenT::STRING: {
@@ -226,7 +226,12 @@ public:
     MemoryT expr = evaluate(stmt->expr.get());
     MemoryT result = Int2Bytes(stmt->opcode);
 
-    result.insert(result.end(), expr.begin(), expr.end());
+    result.insert(result.end(), expr.rbegin(), expr.rend());
+
+    if (stmt->opcode == 0x01) {
+      for (auto t : expr) printf("%02x ", t);
+      printf(" size = %d\n", ((ExpressionLiteral *)stmt->expr.get())->size);
+    }
 
     env.bind(stmt->token);
     return result;
@@ -252,9 +257,10 @@ private:
     return expr->accept(this);
   }
 
-  inline MemoryT Int2Bytes(uint32_t val) {
-    if (val == 0x00) return { 0x00 };
+  inline MemoryT Int2Bytes(uint32_t val, int32_t size = 0) {
+    if (val == 0x00) return MemoryT(size ? size : 1, 0x00);
 
+    MemoryT result;
     std::array<uint8_t, 4> bytes = {
       (uint8_t)((val >> 24) & 0xFF),
       (uint8_t)((val >> 16) & 0xFF),
@@ -262,10 +268,14 @@ private:
       (uint8_t)((val >>  0) & 0xFF),
     };
 
-    MemoryT result;
-    for (auto byte : bytes) {
-      if (byte == 0x00 && !result.size()) continue;
-      result.push_back(byte);
+
+    for (int32_t i = bytes.size() - size; size && i < bytes.size(); i++) {
+      result.push_back(bytes[i]);
+    }
+
+    for (int32_t i = 0; !size && i < bytes.size(); i++) {
+      if (bytes[i] == 0x00 && !result.size()) continue;
+      result.push_back(bytes[i]);
     }
 
     return result;

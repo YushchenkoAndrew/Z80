@@ -13,7 +13,7 @@ public:
 
     for (auto address : unknown[key]) {
       for (uint32_t i = 0; i < val.size(); i++) {
-        memory[address - i] = val[val.size() - i - 1];
+        memory[address + i] = val[i];
       }
     }
 
@@ -22,7 +22,7 @@ public:
 
   inline void undefine(std::string key) {
     if (unknown.find(key) == unknown.end()) unknown[key] = {};
-    unknown[key].push_back(addr + 2);
+    unknown[key].push_back(addr + 1);
   }
 
 

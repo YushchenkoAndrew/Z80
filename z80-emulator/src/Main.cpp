@@ -45,7 +45,7 @@ public:
     rom->load(interpreter.env.memory);
 
 
-    // interpreter.env.save("out.bin");
+    interpreter.env.save("out.bin");
     // emulator.editor.size = {  };
 
 
