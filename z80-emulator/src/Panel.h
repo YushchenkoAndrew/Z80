@@ -14,6 +14,7 @@ public:
 
   void Initialize() {
     if (std::get<1>(memory) != nullptr) std::get<1>(memory)->Initialize(std::get<2>(memory));
+    if (std::get<1>(lines)  != nullptr) std::get<1>(lines)->Initialize(std::get<2>(lines));
     if (std::get<1>(editor) != nullptr) std::get<1>(editor)->Initialize(std::get<2>(editor));
   }
 
@@ -28,6 +29,7 @@ public:
     // for(auto& future : vFuture) future.wait();
 
     if (std::get<0>(memory)) std::get<1>(memory)->Process(GameEngine);
+    if (std::get<0>(lines))  std::get<1>(lines)->Process(GameEngine);
     if (std::get<0>(editor)) std::get<1>(editor)->Process(GameEngine);
   }
 
@@ -41,6 +43,7 @@ public:
     // for(auto& future : vFuture) future.wait();
 
     if (std::get<1>(memory) != nullptr) std::get<1>(memory)->Draw(GameEngine);
+    if (std::get<1>(lines)  != nullptr) std::get<1>(lines)->Draw(GameEngine);
     if (std::get<1>(editor) != nullptr) std::get<1>(editor)->Draw(GameEngine);
   }
 
@@ -50,9 +53,11 @@ private:
 
   inline void Init() {}
   inline void Init(WindowT<Bus::Memory> m) { memory = m; }
+  inline void Init(WindowT<Window::Lines> l) { lines = l; }
   inline void Init(WindowT<Editor::Editor> e) { editor = e; }
 
 private:
   WindowT<Bus::Memory> memory = { false, nullptr, {} };
+  WindowT<Window::Lines> lines = { false, nullptr, {} };
   WindowT<Editor::Editor> editor = { false, nullptr, {} };
 };

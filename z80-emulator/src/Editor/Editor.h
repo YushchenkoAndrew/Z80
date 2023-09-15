@@ -2,7 +2,7 @@
 #include "Vim.h"
 
 namespace Editor {
-class Editor : public Window {
+class Editor : public Window::Window {
 public:
   Editor(): lexer(true) {}
 

@@ -17,7 +17,7 @@ namespace Bus {
  *  adverb      -> 'dd' | 'yy' | 'p' | 'P' | 'x'
  *  phrase      -> 'C' | ' ' | 'i' | 'a'
  */
-class Memory : public Window {
+class Memory : public Window::Window {
 public:
   enum ModeT { NORMAL, REPLACE, CHARACTER };
 

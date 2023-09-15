@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Defs.h"
+#include "src/Window/Lines.h"
 
 namespace Interpreter {
 /**
