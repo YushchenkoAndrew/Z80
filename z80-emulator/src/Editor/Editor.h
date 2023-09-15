@@ -81,7 +81,7 @@ public:
 
     auto humanizedPos = vim.GetHumanizedPos();
 
-    pos.x =  size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
+    pos.x = size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
     GameEngine->DrawString(pos, humanizedPos, AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
 
     pos.x -= 5 * vStep.x;

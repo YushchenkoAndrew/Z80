@@ -23,6 +23,7 @@ public:
 
   Memory(): mode(NORMAL) {}
   Memory(ModeT m): mode(m) {}
+  Memory(int32_t s): pages(s, 0) {}
 
 
   void load(std::vector<uint8_t> code) {
@@ -33,10 +34,24 @@ public:
 
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
+    pages.y = ((size.y - vOffset.y * 2) / (vStep.y * pages.x)) * pages.x;
   }
 
   void Process(PixelGameEngine* GameEngine) {
-    // TODO: Add mouse support options
+    auto nWheel = GameEngine->GetMouseWheel();
+    if (nWheel > 0) MoveTo({ 0, -1 });
+    else if (nWheel < 0) MoveTo({ 0, 1 });
+
+    auto nWidth = (mode == CHARACTER ? vStep.y : vStep.x) * pages.x;
+
+    auto mouse = GameEngine->GetMousePos() - vOffset;
+    if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + nWidth && mouse.y < absolute.y + pages.y * vStep.y) {
+      MoveTo((mouse - absolute) / olc::vi2d(mode == CHARACTER ? vStep.y : vStep.x, vStep.y) + vStartAt - pos);
+      Command(Int2Type<Editor::VimT::CMD_gd>());
+    }
+
+    if (pos.y - vStartAt.y >= pages.y && pos.y < (((int32_t)memory.size() - 1) / pages.x)) vStartAt.y += pages.y;
+    if (pos.y - vStartAt.y < 0 && pos.y) vStartAt.y -= pages.y;
 
     bUpdated = false;
 
@@ -55,60 +70,70 @@ public:
       case CHARACTER: Draw(Int2Type<CHARACTER>(), GameEngine); break;
     }
 
-    // TODO: Impl this 
-    // auto pos = olc::vi2d(absolute.x, absolute.y + size.y - vStep.y);
-    // GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
-    // GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), GetMode(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+    auto nWidth = (mode == CHARACTER ? vStep.y : vStep.x) * pages.x + vOffset.x;
 
-    // pos.x -= 5 * vStep.x;
-    // GameEngine->DrawString(pos, vim.GetCmd(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+    auto pos = olc::vi2d(absolute.x, absolute.y + vOffset.y + pages.y * vStep.y);
+    GameEngine->FillRect(pos - olc::vi2d(0, 2), { nWidth, 10 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
+    GameEngine->DrawString(pos, GetMode(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+
+    auto cmd = GetCmd();
+    pos.x = nWidth - ((int32_t)cmd.size() + 1) * vStep.y;
+    GameEngine->DrawString(pos, cmd, AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
   }
 
 private:
   void Draw(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    for (int32_t i = 0; i < 0x10; i++) {
+    for (int32_t i = 0; i < pages.x; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep + olc::vi2d(vOffset.x, 0);
-      GameEngine->DrawString(pos, Int2Hex(i), AnyType<DARK_GREY, olc::Pixel>::GetValue());
+      auto color = i == this->pos.x ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+
+      GameEngine->DrawString(pos, Int2Hex(i), color);
     }
 
-    for (int32_t i = 0, max = ((size.y - vOffset.y * 2) / (vStep.y << 4)) << 4; i < max; i++) {
+    for (int32_t i = 0; i < pages.y; i++) {
       olc::vi2d pos = absolute + olc::vi2d(0, i) * vStep + olc::vi2d(0, vOffset.y);
-      GameEngine->DrawString(pos, Int2Hex(i, 5), AnyType<DARK_GREY, olc::Pixel>::GetValue());
+      auto color = i + vStartAt.y == this->pos.y ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+
+      GameEngine->DrawString(pos, Int2Hex((i + vStartAt.y) * pages.x, 5), color);
       
-      for (int32_t j = 0; j < 0x10; j++) {
+      for (int32_t j = 0; j < pages.x; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * vStep + vOffset;
-        GameEngine->DrawString(pos, Int2Hex(memory[index(j, i)]), AnyType<WHITE, olc::Pixel>::GetValue());
+        GameEngine->DrawString(pos, Int2Hex(memory[index(j, i + vStartAt.y)]), AnyType<WHITE, olc::Pixel>::GetValue());
       }
     }
 
     bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
     auto pos = bSearch ? std::get<3>(search.second) : this->pos;
 
-    olc::vi2d cursor = absolute + pos * vStep + vOffset;
+    olc::vi2d cursor = absolute + (pos - vStartAt) * vStep + vOffset;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 18, 12 }, AnyType<GREY, olc::Pixel>::GetValue());
     GameEngine->DrawString(cursor, Int2Hex(memory[index(pos)]), AnyType<BLACK, olc::Pixel>::GetValue());
   }
 
   void Draw(Int2Type<CHARACTER>, PixelGameEngine* GameEngine) {
-    for (int32_t i = 0; i < 0x10; i++) {
+    for (int32_t i = 0; i < pages.x; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * olc::vi2d(vStep.y, vStep.y) + olc::vi2d(vOffset.x, 0);
-      GameEngine->DrawString(pos, Int2Hex(i, 1), AnyType<DARK_GREY, olc::Pixel>::GetValue());
+      auto color = i == this->pos.x ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+
+      GameEngine->DrawString(pos, Int2Hex(i, 1), color);
     }
 
-    for (int32_t i = 0, max = ((size.y - vOffset.y * 2) / (vStep.y << 4)) << 4; i < max; i++) {
+    for (int32_t i = 0; i < pages.y; i++) {
       olc::vi2d pos = absolute + olc::vi2d(0, i) * olc::vi2d(vStep.y, vStep.y) + olc::vi2d(0, vOffset.y);
-      GameEngine->DrawString(pos, Int2Hex(i, 5), AnyType<DARK_GREY, olc::Pixel>::GetValue());
+      auto color = i + vStartAt.y == this->pos.y ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+
+      GameEngine->DrawString(pos, Int2Hex((i + vStartAt.y) * pages.x, 5), color);
       
-      for (int32_t j = 0; j < 0x10; j++) {
+      for (int32_t j = 0; j < pages.x; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * olc::vi2d(vStep.y, vStep.y) + vOffset;
-        GameEngine->DrawString(pos, isprint(memory[index(j, i)]) ? std::string(1, memory[index(j, i)]) : ".", AnyType<WHITE, olc::Pixel>::GetValue());
+        GameEngine->DrawString(pos, isprint(memory[index(j, i + vStartAt.y)]) ? std::string(1, memory[index(j, i + vStartAt.y)]) : ".", AnyType<WHITE, olc::Pixel>::GetValue());
       }
     }
 
     bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
     auto pos = bSearch ? std::get<3>(search.second) : this->pos;
 
-    olc::vi2d cursor = absolute + pos * olc::vi2d(vStep.y, vStep.y) + vOffset;
+    olc::vi2d cursor = absolute + (pos - vStartAt) * olc::vi2d(vStep.y, vStep.y) + vOffset;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 12, 12 }, AnyType<GREY, olc::Pixel>::GetValue());
     GameEngine->DrawString(cursor, isprint(memory[index(pos)]) ? std::string(1, memory[index(pos)]) : ".", AnyType<BLACK, olc::Pixel>::GetValue());
   }
@@ -120,9 +145,9 @@ public:
   inline void Command(Int2Type<Editor::VimT::CMD_C>) { mode = mode == NORMAL ? CHARACTER : NORMAL; }
   inline void Command(Int2Type<Editor::VimT::CMD_r>) { mode = REPLACE; Command(Int2Type<Editor::VimT::CMD_x>()); }
   inline void Command(Int2Type<Editor::VimT::CMD_0>) { pos.x = 0; }
-  inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = 0x0F; }
-  inline void Command(Int2Type<Editor::VimT::CMD_gg>) { pos.y = pos.x = 0; }
-  inline void Command(Int2Type<Editor::VimT::CMD_G>) { pos.x = 0x0F; pos.y = ((int32_t)memory.size() - 1) >> 4;}
+  inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = pages.x - 1; }
+  inline void Command(Int2Type<Editor::VimT::CMD_gg>) { vStartAt.y = pos.y = pos.x = 0; }
+  inline void Command(Int2Type<Editor::VimT::CMD_G>) { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x;}
   inline void Command(Int2Type<Editor::VimT::CMD_x>) { memory[index()] = 0x00; }
   inline void Command(Int2Type<Editor::VimT::CMD_yy>) { buffer = { memory[index()] }; }
   inline void Command(Int2Type<Editor::VimT::CMD_e>) { Command(Int2Type<Editor::VimT::CMD_b>()); }
@@ -136,14 +161,8 @@ public:
     Command(Int2Type<Editor::VimT::CMD_r>()); 
   }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_SPACE>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_CALLBACK>());
-  }
-
-  inline void Command(Int2Type<Editor::VimT::CMD_gd>) {
-    // TODO: Impl this event
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>());
-  }
+  inline void Command(Int2Type<Editor::VimT::CMD_SPACE>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_CALLBACK>()); }
+  inline void Command(Int2Type<Editor::VimT::CMD_gd>)    { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>()); }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
     if (!std::get<0>(search.second).size()) return;
@@ -170,7 +189,7 @@ public:
     for (int32_t i = index() + 1; i < memory.size(); i++) {
       if (digit != memory[i]) continue;
 
-      pos.x = i & 0x0F; pos.y = (i >> 4);
+      pos.x = i & (pages.x - 1); pos.y = i / pages.x;
       break;
     }
   }
@@ -209,7 +228,7 @@ public:
 
     if (!foundAt.size()) return;
     int32_t index = foundAt.front();
-    std::get<3>(search.second) = olc::vi2d(index & 0x0F, (index >> 4));
+    std::get<3>(search.second) = olc::vi2d(index & (pages.x - 1), index / pages.x);
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
@@ -228,7 +247,7 @@ public:
 
     if (!foundAt.size()) return;
     int32_t index = foundAt.front();
-    std::get<3>(search.second) = olc::vi2d(index & 0x0F, (index >> 4));
+    std::get<3>(search.second) = olc::vi2d(index & (pages.x - 1), index / pages.x);
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_F>) { 
@@ -238,7 +257,7 @@ public:
     uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
     for (int32_t i = index() - 1; i >= 0; i--) {
       if (digit != memory[i]) continue;
-      pos.x = i & 0x0F; pos.y = (i >> 4);
+      pos.x = i & (pages.x - 1); pos.y = i / pages.x;
     }
   }
 
@@ -292,7 +311,7 @@ public:
 
 
   inline void Command(Int2Type<Editor::VimT::CMD_w>) { 
-    if (pos.x < 0x0F) return Command(Int2Type<Editor::VimT::CMD_l>());
+    if (pos.x < (pages.x - 1)) return Command(Int2Type<Editor::VimT::CMD_l>());
     Command(Int2Type<Editor::VimT::CMD_0>()); Command(Int2Type<Editor::VimT::CMD_j>());
   }
 
@@ -303,7 +322,7 @@ public:
 
 
   inline void Command(Int2Type<Editor::VimT::CMD_j>) {
-    if (pos.y < ((int32_t)memory.size() - 1) >> 4) pos.y++;
+    if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++;
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_k>) {
@@ -311,7 +330,7 @@ public:
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_l>) {
-    if (pos.x < 0x0F) pos.x++;
+    if (pos.x < (pages.x - 1)) pos.x++;
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_h>) {
@@ -477,7 +496,7 @@ public:
     switch (mode) {
       case NORMAL: case CHARACTER: reset(false); break;
       case REPLACE: 
-        memory[index()] = (memory[index()] >> 4) & 0xF0;
+        memory[index()] = (memory[index()] / pages.x) & 0xF0;
         if (std::get<0>(search.second).size()) std::get<0>(search.second).pop_back();
         break;
     }
@@ -519,6 +538,37 @@ public:
     }
   }
 
+  inline void MoveTo(olc::vi2d offset) {
+    for (int32_t i = 0; i < std::abs(offset.y); i++) {
+      if (offset.y > 0) Command(Int2Type<Editor::VimT::CMD_j>());
+      else Command(Int2Type<Editor::VimT::CMD_k>());
+    }
+
+    for (int32_t i = 0; i < std::abs(offset.x); i++) {
+      if (offset.x > 0) Command(Int2Type<Editor::VimT::CMD_l>());
+      else Command(Int2Type<Editor::VimT::CMD_h>());
+    }
+  }
+
+  inline std::string GetMode() {
+    switch (mode) {
+      case REPLACE: return "-- REPLACE --";
+      case CHARACTER: 
+        if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
+        return "-- CHARACTER --";
+
+      case NORMAL: 
+        if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
+        return "-- NORMAL --";
+    }
+
+    return "";
+  }
+
+  inline std::string GetCmd() { 
+    if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return "";
+    return cmd;
+  }
 
 private:
   inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
@@ -542,7 +592,7 @@ private:
       case REPLACE: {
         if (!isHex(c)) { memory[index()] = c & 0xFF; mode = NORMAL; break; }
 
-        memory[index()] = ((memory[index()] & 0x0F) << 4) | Hex2Int(c);
+        memory[index()] = ((memory[index()] & 0x0F) * pages.x) | Hex2Int(c);
 
         std::get<0>(search.second).push_back(c);
         if (std::get<0>(search.second).size() == std::get<1>(search.second)) mode = NORMAL;
@@ -573,7 +623,7 @@ private:
 
   inline int32_t index() { return index(pos.x, pos.y); }
   inline int32_t index(olc::vi2d pos) { return index(pos.x, pos.y); }
-  inline int32_t index(int32_t x, int32_t y) { return (y << 4) | x; }
+  inline int32_t index(int32_t x, int32_t y) { return (y * pages.x) | x; }
 
   inline uint8_t Hex2Int(const char c) { 
     if (isDigit(c)) return c - '0';
@@ -582,7 +632,7 @@ private:
     return 0;
   }
 
-  inline std::string Int2Hex(uint8_t i, int32_t width = 2) { 
+  inline std::string Int2Hex(int32_t i, int32_t width = 2) { 
     std::stringstream ss; ss << std::setfill('0') << std::setw(width) << std::hex << std::uppercase << +i;
     return ss.str();
   }
@@ -601,8 +651,10 @@ private:
 
 private:
   olc::vi2d size = olc::vi2d(0, 0);
+  olc::vi2d pages = olc::vi2d(0x10, 0);
   olc::vi2d absolute = olc::vi2d(0, 0);
 
+  olc::vi2d vStartAt = olc::vi2d(0, 0);
   const olc::vi2d vStep = olc::vi2d(20, 12);
   const olc::vi2d vOffset = olc::vi2d(44, 12);
 
