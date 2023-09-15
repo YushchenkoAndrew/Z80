@@ -98,9 +98,11 @@ public:
     return true;
   }
 
-  void Event(Int2Type<MEMORY_SELECT_CALLBACK>) override {
-    std::cout << "HELLO" << std::endl;
-  }
+  void Event(Int2Type<EDITOR_CALLBACK>) override { std::cout << "EDITOR_CALLBACK\n"; }
+  void Event(Int2Type<MEMORY_CALLBACK>) override { std::cout << "MEMORY_CALLBACK\n"; }
+
+  void Event(Int2Type<MEMORY_SELECT_CALLBACK>) override { std::cout << "MEMORY_SELECT_CALLBACK\n"; }
+
 
 private:
   int32_t nPanel = 0;

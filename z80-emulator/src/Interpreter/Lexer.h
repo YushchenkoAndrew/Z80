@@ -13,7 +13,9 @@ namespace Interpreter {
  */
 class Lexer {
 public:
-  Lexer() {}
+  Lexer(): bFullTokenSupport(false) {}
+  Lexer(bool f): bFullTokenSupport(f) {}
+
   ~Lexer() { reset(); }
 
   bool scan(std::string src); 
@@ -22,7 +24,7 @@ public:
 private:
   inline void reset() {
     nStart = 0; nCurr = 0; nCol = 1; nLine = 1;
-    tokens.clear(); dst.clear(); errors.clear();
+    tokens.clear(); errors.clear();
   }
 
   void string(const char &c) {
@@ -81,14 +83,13 @@ private:
 
   void addToken(TokenT type, std::string literal = "") {
     const int32_t len = nCurr - nStart;
-    std::shared_ptr<Token> t = std::make_shared<Token>(Token(type, src.substr(nStart, len), literal, nCol - len, nLine));
-
-    dst.push_back(t); tokens.push_back(t);
+    tokens.push_back(std::make_shared<Token>(Token(type, src.substr(nStart, len), literal, nCol - len, nLine)));
   }
 
   void addToken(olc::Pixel c) {
+    if (!bFullTokenSupport) return;
     const int32_t len = nCurr - nStart;
-    dst.push_back(std::make_shared<Token>(Token(TokenT::OP_NONE, src.substr(nStart, len), "", nCol - len, nLine, c)));
+    tokens.push_back(std::make_shared<Token>(Token(TokenT::OP_NONE, src.substr(nStart, len), "", nCol - len, nLine, c)));
   }
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
@@ -107,6 +108,7 @@ private:
 
 private:
   std::string src;
+  bool bFullTokenSupport;
 
   int32_t nStart = 0; // index of the src, which is pointing to first char in the lexeme
   int32_t nCurr = 0; // index of the src, which is pointing to the curr char
@@ -115,7 +117,6 @@ private:
   int32_t nLine = 1; // tracks current line position
 
 public:
-  std::vector<std::shared_ptr<Token>> dst;
   std::vector<std::shared_ptr<Token>> tokens;
 
   std::vector<std::string> errors;

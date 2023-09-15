@@ -4,9 +4,11 @@
 namespace Bus {
 
 typedef TypeList<
+  TypeList<Int2Type<Editor::VimT::CMD_i>, Int2Type<'i'>>, TypeList<
+  TypeList<Int2Type<Editor::VimT::CMD_a>, Int2Type<'a'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_r>, Int2Type<'r'>>, TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_o>, Int2Type<'o'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_p>, Int2Type<'p'>>, TypeList<
+  TypeList<Int2Type<Editor::VimT::CMD_P>, Int2Type<'P'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_h>, Int2Type<'h'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_j>, Int2Type<'j'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_k>, Int2Type<'k'>>, TypeList<
@@ -27,21 +29,17 @@ typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_c>,  Int2Type<'c'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_y>,  Int2Type<'y'>>, TypeList<
 
+  TypeList<Int2Type<Editor::VimT::CMD_SPACE>,      Int2Type<' '>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_DOLLAR>,     Int2Type<'$'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_SLASH>,      Int2Type<'/'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_QUESTION>,   Int2Type<'?'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_COMMA>,      Int2Type<','>>, TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<Int2Type<Editor::VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    RomCommands; 
   
 typedef TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_d>,  Int2Type<'d'>>, TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_c>,  Int2Type<'c'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_x>,  Int2Type<'x'>>, TypeList<
-
-  TypeList<Int2Type<Editor::VimT::CMD_r>, Int2Type<'r'>>, TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_P>, Int2Type<'P'>>, TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_p>, Int2Type<'p'>>, NullType>>>>>>
+  TypeList<Int2Type<Editor::VimT::CMD_r>, Int2Type<'r'>>, NullType>>
    SyncRomCommands; 
    
 

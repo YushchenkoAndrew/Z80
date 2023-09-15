@@ -12,14 +12,18 @@ namespace Bus {
  * 
  *  motion      -> NUMBER? verb? noun
  *  order       -> NUMBER? adverb
- *  noun        -> 'h' | 'j' | 'k' | 'l' | 'w' | 'b' | 'e' | '0' | '$' | 'gg' | 'G' | '/' | '?' | 'n' | 'N' | 'f' | 'F' | ',' | ';'
+ *  noun        -> 'h' | 'j' | 'k' | 'l' | 'w' | 'b' | 'r' | 'e' | '0' | '$' | 'gg'  | 'gd' | 'G' | '/' | '?' | 'n' | 'N' | 'f' | 'F' | ',' | ';'
  *  verb        -> 'c' | 'd' | 'y' 
- *  adverb      -> 'p' | 'x'
- *  phrase      -> 'i' | 'a' | 'r'
+ *  adverb      -> 'dd' | 'yy' | 'p' | 'P' | 'x'
+ *  phrase      -> 'C' | ' ' | 'i' | 'a'
  */
 class Memory : public Window {
 public:
   enum ModeT { NORMAL, REPLACE, CHARACTER };
+
+  Memory(): mode(NORMAL) {}
+  Memory(ModeT m): mode(m) {}
+
 
   void load(std::vector<uint8_t> code) {
     for (auto& bank : memory) bank = 0x00;
@@ -32,6 +36,8 @@ public:
   }
 
   void Process(PixelGameEngine* GameEngine) {
+    // TODO: Add mouse support options
+
     bUpdated = false;
 
     switch (mode) {
@@ -44,10 +50,18 @@ public:
 
   void Draw(PixelGameEngine* GameEngine) {
     switch (mode) {
-      case NORMAL:    return Draw(Int2Type<NORMAL>(), GameEngine);
-      case REPLACE:   return Draw(Int2Type<NORMAL>(), GameEngine);
-      case CHARACTER: return Draw(Int2Type<CHARACTER>(), GameEngine);
+      case NORMAL:    Draw(Int2Type<NORMAL>(), GameEngine); break;
+      case REPLACE:   Draw(Int2Type<NORMAL>(), GameEngine); break;
+      case CHARACTER: Draw(Int2Type<CHARACTER>(), GameEngine); break;
     }
+
+    // TODO: Impl this 
+    // auto pos = olc::vi2d(absolute.x, absolute.y + size.y - vStep.y);
+    // GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
+    // GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), GetMode(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+
+    // pos.x -= 5 * vStep.x;
+    // GameEngine->DrawString(pos, vim.GetCmd(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
   }
 
 private:
@@ -57,19 +71,22 @@ private:
       GameEngine->DrawString(pos, Int2Hex(i), AnyType<DARK_GREY, olc::Pixel>::GetValue());
     }
 
-    for (int32_t i = 0; i < 0x10; i++) {
+    for (int32_t i = 0, max = ((size.y - vOffset.y * 2) / (vStep.y << 4)) << 4; i < max; i++) {
       olc::vi2d pos = absolute + olc::vi2d(0, i) * vStep + olc::vi2d(0, vOffset.y);
       GameEngine->DrawString(pos, Int2Hex(i, 5), AnyType<DARK_GREY, olc::Pixel>::GetValue());
       
       for (int32_t j = 0; j < 0x10; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * vStep + vOffset;
-        GameEngine->DrawString(pos, Int2Hex(memory[(i << 4) | j]), AnyType<WHITE, olc::Pixel>::GetValue());
+        GameEngine->DrawString(pos, Int2Hex(memory[index(j, i)]), AnyType<WHITE, olc::Pixel>::GetValue());
       }
     }
 
+    bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
+    auto pos = bSearch ? std::get<3>(search.second) : this->pos;
+
     olc::vi2d cursor = absolute + pos * vStep + vOffset;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 18, 12 }, AnyType<GREY, olc::Pixel>::GetValue());
-    GameEngine->DrawString(cursor, Int2Hex(memory[index()]), AnyType<BLACK, olc::Pixel>::GetValue());
+    GameEngine->DrawString(cursor, Int2Hex(memory[index(pos)]), AnyType<BLACK, olc::Pixel>::GetValue());
   }
 
   void Draw(Int2Type<CHARACTER>, PixelGameEngine* GameEngine) {
@@ -78,33 +95,24 @@ private:
       GameEngine->DrawString(pos, Int2Hex(i, 1), AnyType<DARK_GREY, olc::Pixel>::GetValue());
     }
 
-    for (int32_t i = 0; i < 0x10; i++) {
+    for (int32_t i = 0, max = ((size.y - vOffset.y * 2) / (vStep.y << 4)) << 4; i < max; i++) {
       olc::vi2d pos = absolute + olc::vi2d(0, i) * olc::vi2d(vStep.y, vStep.y) + olc::vi2d(0, vOffset.y);
       GameEngine->DrawString(pos, Int2Hex(i, 5), AnyType<DARK_GREY, olc::Pixel>::GetValue());
       
       for (int32_t j = 0; j < 0x10; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * olc::vi2d(vStep.y, vStep.y) + vOffset;
-        GameEngine->DrawString(pos, isprint(memory[(i << 4) | j]) ? std::string(1, memory[(i << 4) | j]) : ".", AnyType<WHITE, olc::Pixel>::GetValue());
+        GameEngine->DrawString(pos, isprint(memory[index(j, i)]) ? std::string(1, memory[index(j, i)]) : ".", AnyType<WHITE, olc::Pixel>::GetValue());
       }
     }
 
+    bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
+    auto pos = bSearch ? std::get<3>(search.second) : this->pos;
+
     olc::vi2d cursor = absolute + pos * olc::vi2d(vStep.y, vStep.y) + vOffset;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 12, 12 }, AnyType<GREY, olc::Pixel>::GetValue());
-    GameEngine->DrawString(cursor, isprint(memory[index()]) ? std::string(1, memory[index()]) : ".", AnyType<BLACK, olc::Pixel>::GetValue());
+    GameEngine->DrawString(cursor, isprint(memory[index(pos)]) ? std::string(1, memory[index(pos)]) : ".", AnyType<BLACK, olc::Pixel>::GetValue());
   }
 
-
-  // // phrase
-
-  // // noun
-  //  CMD_w, CMD_b,  CMD_e,  CMD_G, CMD_n, CMD_N, CMD_f, CMD_F,
-  // CMD_DOLLAR, CMD_SLASH, CMD_QUESTION, CMD_COMMA, CMD_SEMICOLON,
-
-  // // verb
-  // CMD_c, CMD_d, CMD_y,
-
-  // // adverb
-  // CMD_p, CMD_P, 
 public:
   template<int32_t T>
   inline void Command(Int2Type<T>) {}
@@ -114,15 +122,188 @@ public:
   inline void Command(Int2Type<Editor::VimT::CMD_0>) { pos.x = 0; }
   inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = 0x0F; }
   inline void Command(Int2Type<Editor::VimT::CMD_gg>) { pos.y = pos.x = 0; }
+  inline void Command(Int2Type<Editor::VimT::CMD_G>) { pos.x = 0x0F; pos.y = ((int32_t)memory.size() - 1) >> 4;}
   inline void Command(Int2Type<Editor::VimT::CMD_x>) { memory[index()] = 0x00; }
+  inline void Command(Int2Type<Editor::VimT::CMD_yy>) { buffer = { memory[index()] }; }
+  inline void Command(Int2Type<Editor::VimT::CMD_e>) { Command(Int2Type<Editor::VimT::CMD_b>()); }
+  inline void Command(Int2Type<Editor::VimT::CMD_a>) { Command(Int2Type<Editor::VimT::CMD_w>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
+  inline void Command(Int2Type<Editor::VimT::CMD_c>) { Command(Int2Type<Editor::VimT::CMD_d>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_i>) { 
+    for (int32_t i = memory.size() - 1, size = index() + 1; i >= size; i--) memory[i] = memory[i - 1];
+
+    search = { false, { "", 2, true, {} } }; 
+    Command(Int2Type<Editor::VimT::CMD_r>()); 
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_SPACE>) { 
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_CALLBACK>());
+  }
 
   inline void Command(Int2Type<Editor::VimT::CMD_gd>) {
     // TODO: Impl this event
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>());
   }
 
+  inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
+    if (!std::get<0>(search.second).size()) return;
+    if (!std::get<0>(search.second).size() > 1) return;
+
+    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_f>());
+    else Command(Int2Type<Editor::VimT::CMD_F>());
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_COMMA>) {
+    if (!std::get<0>(search.second).size()) return;
+    if (!std::get<0>(search.second).size() > 1) return;
+
+    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_F>());
+    else Command(Int2Type<Editor::VimT::CMD_f>());
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_f>) { 
+    if (!std::get<0>(search.second).size()) return;
+    if (search.first) std::get<2>(search.second) = true;
+
+    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+    printf("%d\n", digit);
+    for (int32_t i = index() + 1; i < memory.size(); i++) {
+      if (digit != memory[i]) continue;
+
+      pos.x = i & 0x0F; pos.y = (i >> 4);
+      break;
+    }
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_n>) {
+    if (!std::get<0>(search.second).size()) return;
+
+    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_SLASH>());
+    else Command(Int2Type<Editor::VimT::CMD_QUESTION>());
+
+    pos = std::get<3>(search.second);
+  }
+
+  inline void Command(Int2Type<Editor:: VimT::CMD_N>) {
+    if (!std::get<0>(search.second).size()) return;
+
+    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_QUESTION>());
+    else Command(Int2Type<Editor::VimT::CMD_SLASH>());
+
+    pos = std::get<3>(search.second);
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_SLASH>) {
+    if (!std::get<0>(search.second).size()) return;
+    if (search.first) std::get<2>(search.second) = true;
+
+    std::vector<int32_t> foundAt = {};
+    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+
+    for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
+      if (memory[i] != digit) continue;
+
+      if (i - index() - 1 < 0) foundAt.push_back(i);
+      else foundAt.insert(foundAt.begin() + offset++, i);
+    }
+
+    if (!foundAt.size()) return;
+    int32_t index = foundAt.front();
+    std::get<3>(search.second) = olc::vi2d(index & 0x0F, (index >> 4));
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
+    if (!std::get<0>(search.second).size()) return;
+    if (search.first) std::get<2>(search.second) = false;
+
+    std::vector<int32_t> foundAt = {};
+    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+
+    for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
+      if (memory[i] != digit) continue;
+
+      if (index() - 1 - i > 0) foundAt.insert(foundAt.begin(), i);
+      else foundAt.insert(foundAt.end() - offset++, i);
+    }
+
+    if (!foundAt.size()) return;
+    int32_t index = foundAt.front();
+    std::get<3>(search.second) = olc::vi2d(index & 0x0F, (index >> 4));
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_F>) { 
+    if (!std::get<0>(search.second).size()) return;
+    if (search.first) std::get<2>(search.second) = false;
+
+    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+    for (int32_t i = index() - 1; i >= 0; i--) {
+      if (digit != memory[i]) continue;
+      pos.x = i & 0x0F; pos.y = (i >> 4);
+    }
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_P>) { 
+    int32_t offset = buffer.size(); if (!offset) return;
+
+    for (int32_t i = memory.size() - 1, size = index() + offset; i >= size; i--) memory[i] = memory[i - offset];
+    for (int32_t i = 0, j = index(); i < offset; i++) memory[j + i] = buffer[i];
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_p>) { 
+    if (!buffer.size()) return;
+
+    Command(Int2Type<Editor::VimT::CMD_w>()); 
+    Command(Int2Type<Editor::VimT::CMD_P>()); 
+
+    for (int32_t i = 0; i < buffer.size() - 1; i++) Command(Int2Type<Editor::VimT::CMD_w>()); 
+  }
+
+
+  inline void Command(Int2Type<Editor::VimT::CMD_dd>) { 
+    Command(Int2Type<Editor::VimT::CMD_yy>()); 
+
+    for (int32_t i = index(); i < memory.size() - 1; i++) memory[i] = memory[i + 1];
+    memory[memory.size() - 1] = 0x00;
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_y>) { 
+    auto diff = index(AnyType<-1, olc::vi2d>::GetValue()) - index(); if (diff == 0) return;
+    auto size = (int32_t)memory.size(); buffer = {};
+
+    for (int32_t i = 0, j = index(); diff > 0 && i < diff; i++) buffer.push_back(memory[i + j]);
+    for (int32_t i = 0, j = index(); diff < 0 && i < std::abs(diff); i++) buffer.push_back(memory[i + j + diff]);
+
+    if (diff < 0) pos = AnyType<-1, olc::vi2d>::GetValue();
+  }
+  
+  inline void Command(Int2Type<Editor::VimT::CMD_d>) { 
+    auto diff = index(AnyType<-1, olc::vi2d>::GetValue()) - index(); if (diff == 0) return;
+    auto size = (int32_t)memory.size(); buffer = {};
+
+    for (int32_t i = 0, j = index(); diff > 0 && i < diff; i++) buffer.push_back(memory[i + j]);
+    for (int32_t i = 0, j = index(); diff < 0 && i < std::abs(diff); i++) buffer.push_back(memory[i + j + diff]);
+
+    for (int32_t i = index(); diff > 0 && i < size - diff; i++) memory[i] = memory[i + diff];
+    for (int32_t i = index() + diff; diff < 0 && i < size + diff; i++) memory[i] = memory[i - diff];
+
+    for (int32_t i = 0; i < std::abs(diff); i++) memory[size - 1 - std::abs(diff) + i] = 0x00;
+    if (diff < 0) pos = AnyType<-1, olc::vi2d>::GetValue();
+  }
+
+
+  inline void Command(Int2Type<Editor::VimT::CMD_w>) { 
+    if (pos.x < 0x0F) return Command(Int2Type<Editor::VimT::CMD_l>());
+    Command(Int2Type<Editor::VimT::CMD_0>()); Command(Int2Type<Editor::VimT::CMD_j>());
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_b>) { 
+    if (pos.x > 0x00) return Command(Int2Type<Editor::VimT::CMD_h>());
+    Command(Int2Type<Editor::VimT::CMD_DOLLAR>()); Command(Int2Type<Editor::VimT::CMD_k>());
+  }
+
+
   inline void Command(Int2Type<Editor::VimT::CMD_j>) {
-    if (pos.y < (int32_t)memory.size() / 0x10) pos.y++;
+    if (pos.y < ((int32_t)memory.size() - 1) >> 4) pos.y++;
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_k>) {
@@ -161,7 +342,7 @@ private:
     }
 
     if (nCurr == 0) {
-      if (match<1>({ 'C' })) { phrase(peekPrev()); return reset(); };
+      if (match<4>({ 'i', 'a', 'C', ' ' })) { phrase(peekPrev()); return reset(); };
       if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
 
     } else {
@@ -190,8 +371,10 @@ private:
 
     // adverb
     if (match<2>({ 'p', 'P' })) { phrase(peekPrev()); number(); return reset(); }
-    if (peekPrev() == 'g' && match<1>({ 'g' })) {  phrase(Int2Type<Editor::VimT::CMD_gg>()); number();  verb(peek(nCurr - 3)); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'd' })) {  phrase(Int2Type<Editor::VimT::CMD_gd>()); return reset(); } 
+    if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_dd>(), false); number(); return reset(); } 
+    if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<Editor::VimT::CMD_yy>(), false); number(); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_gd>(), false); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<Editor::VimT::CMD_gg>()); number();  verb(peek(nCurr - 3)); return reset(); } 
 
     // verb
     if (match<4>({ 'c', 'd', 'y', 'g' })) return;
@@ -207,18 +390,15 @@ private:
 
   inline void phrase(const char c) {
     AnyType<-1, int32_t>::GetValue() = c;
-    // bSync = bSync || foreach<SyncRomCommands, AnyType<-1, int32_t>>::Has();
-    bSync = bSync || true;
+    bSync = bSync || foreach<SyncRomCommands, AnyType<-1, int32_t>>::Has();
 
     auto operation = lambda;
     lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<RomCommands, Memory>::Command(this); };
   }
 
   template<int32_t T>
-  inline void phrase(Int2Type<T> val) {
-    // TODO: add foreach support
-    // bSync = foreach<VimCommands, AnyType<-1, Vim*>>::Has();
-    bSync = bSync || true;
+  inline void phrase(Int2Type<T> val, bool isSync = true) {
+    bSync = bSync || isSync;
 
     auto operation = lambda;
     lambda = [=]() { operation(); Command(val); };
@@ -391,7 +571,9 @@ private:
   inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
   inline bool isHex(const char &c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
 
-  inline int32_t index() { return (pos.y << 4) + pos.x; }
+  inline int32_t index() { return index(pos.x, pos.y); }
+  inline int32_t index(olc::vi2d pos) { return index(pos.x, pos.y); }
+  inline int32_t index(int32_t x, int32_t y) { return (y << 4) | x; }
 
   inline uint8_t Hex2Int(const char c) { 
     if (isDigit(c)) return c - '0';
@@ -430,7 +612,7 @@ private:
   int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
   
   std::string cmd;
-  std::pair<std::vector<std::string>, bool> buffer = { { "" }, false }; // second value is responsible to distinguish if buffer has a whole line or just a part of it
+  std::vector<uint8_t> buffer = { }; 
   std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
   
   bool bSync = false; // Flag that define is lambda func is sync or async

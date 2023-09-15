@@ -15,7 +15,7 @@ namespace Editor {
  *  noun        -> 'h' | 'j' | 'k' | 'l' | 'w' | 'W' | 'b' | 'B' | 'e' | 'E' | '0' | '$' | '^' | '_' | 'gg' | 'G' | '/' | '?' | 'n' | 'N' | 'f' | 'F' | ',' | ';'
  *  verb        -> 'c' | 'd' | 'y' 
  *  adverb      -> 'dd' | 'cc' | 'yy' | 'p' | 'P'
- *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R'
+ *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R' | ' '
  */
 class Vim {
 public:
@@ -35,7 +35,7 @@ public:
     if ((fBlink += AnyType<-1, float>::GetValue()) > 1.2f) fBlink -= 1.2f;
     if (fBlink > 0.6f) return;
 
-    bool bSearch = search.first && std::get<1>(search.second) < 0;
+    bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
 
     auto size = bSearch ? olc::vi2d(std::get<0>(search.second).size(), 1) : olc::vi2d(1, 1);
     auto pos = lambda((bSearch ?  std::get<3>(search.second) : this->pos) + olc::vi2d(1, 1)) - olc::vi2d(1, 2);
@@ -94,6 +94,9 @@ public:
   inline void Command(Int2Type<VimT::CMD_C>)  { Command(Int2Type<VimT::CMD_D>()); Command(Int2Type<VimT::CMD_A>()); }
   inline void Command(Int2Type<VimT::CMD_cc>) { Command(Int2Type<VimT::CMD_dd>()); Command(Int2Type<VimT::CMD_I>()); }
 
+  inline void Command(Int2Type<VimT::CMD_SPACE>) { 
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_CALLBACK>());
+  }
 
   inline void Command(Int2Type<VimT::CMD_o>) { 
     Command(Int2Type<VimT::CMD_I>());
@@ -450,7 +453,7 @@ public:
     // TODO: Add ability to run execution commands aka ':wq'
 
     if (nCurr == 0) {
-      if (match<9>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R' })) { phrase(peekPrev()); return reset(); };
+      if (match<10>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', ' ' })) { phrase(peekPrev()); return reset(); };
       if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
 
     } else {
@@ -506,10 +509,8 @@ public:
   }
 
   template<int32_t T>
-  inline void phrase(Int2Type<T> val) {
-    // TODO: add foreach support
-    // bSync = foreach<VimCommands, AnyType<-1, Vim*>>::Has();
-    bSync = bSync || true;
+  inline void phrase(Int2Type<T> val, bool isSync = true) {
+    bSync = bSync || isSync;
 
     auto operation = lambda;
     lambda = [=]() { operation(); Command(val); };
@@ -704,7 +705,7 @@ public:
       case REPLACE: return "-- REPLACE --";
       case INSERT: return "-- INSERT --";
       case NORMAL: 
-        if (search.first && cmd.front() == '/') return cmd;
+        if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
         if (err.size()) return err;
         return "-- NORMAL --";
     }
@@ -713,7 +714,7 @@ public:
   }
 
   inline std::string GetCmd() { 
-    if (search.first && cmd.front() == '/') return "";
+    if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return "";
     return cmd;
   }
 

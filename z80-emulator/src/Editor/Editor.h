@@ -4,10 +4,11 @@
 namespace Editor {
 class Editor : public Window {
 public:
+  Editor(): lexer(true) {}
 
   // TODO: Change this to more appropriate thing
   void temp(std::string src) { 
-    lexer.scan(src); vim.Load(lexer.dst);
+    lexer.scan(src); vim.Load(lexer.tokens);
   }
 
   inline void Initialize(DimensionT dimensions) {
@@ -36,7 +37,7 @@ public:
     vim.Process(GameEngine);
 
     if (!vim.bUpdated) return;
-    lexer.scan(vim.Text()); vim.Load(lexer.dst);
+    lexer.scan(vim.Text()); vim.Load(lexer.tokens);
     for (auto& err : lexer.errors) printf("LEXER: %s", err.c_str());
   }
 
@@ -47,7 +48,7 @@ public:
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
     olc::vi2d len = olc::vi2d(0, 0);
 
-    for (auto& token : lexer.dst) {
+    for (auto& token : lexer.tokens) {
       if (vStartAt.y >= token->line) continue;
       if (token->line != len.y) len = olc::vi2d(0, token->line);
 
