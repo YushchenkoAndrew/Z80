@@ -28,19 +28,21 @@ typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_d>,  Int2Type<'d'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_c>,  Int2Type<'c'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_y>,  Int2Type<'y'>>, TypeList<
+  TypeList<Int2Type<Editor::VimT::CMD_u>,  Int2Type<'u'>>, TypeList<
+  TypeList<Int2Type<Editor::VimT::CMD_U>,  Int2Type<'U'>>, TypeList<
 
   TypeList<Int2Type<Editor::VimT::CMD_SPACE>,      Int2Type<' '>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_DOLLAR>,     Int2Type<'$'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_SLASH>,      Int2Type<'/'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_QUESTION>,   Int2Type<'?'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_COMMA>,      Int2Type<','>>, TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-   RomCommands; 
+  TypeList<Int2Type<Editor::VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   MemoryCommands; 
   
 typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_x>,  Int2Type<'x'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_r>, Int2Type<'r'>>, NullType>>
-   SyncRomCommands; 
+   SyncMemoryCommands; 
    
 
 };

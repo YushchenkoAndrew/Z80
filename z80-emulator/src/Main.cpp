@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <fstream>
+
+#define CMD_PRINT
 #include "Panel.h"
 
 // Check Memory Leaking
@@ -41,7 +43,7 @@ public:
     //   emulator.ROM.load(emulator.interpreter.env.memory);
     // }
 
-    auto rom = std::make_shared<Bus::Memory>();
+    auto rom = std::make_shared<Bus::Memory>(8);
     rom->load(interpreter.env.memory);
 
 
@@ -53,13 +55,14 @@ public:
     lines->lines = interpreter.errors;
 
 
+    auto offset = 200;
     panels = {
       Panel(
-        // std::tuple(true, editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+        std::tuple(true, editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth() - offset, ScreenHeight())))
+        ,
+        std::tuple(false, rom,  std::pair(olc::vi2d(ScreenWidth() - offset, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
         // ,
-        // std::tuple(true, rom,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
-        // ,
-        std::tuple(true, lines,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+        // std::tuple(true, lines,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
       )
     };
 
@@ -106,7 +109,8 @@ public:
   void Event(Int2Type<EDITOR_CALLBACK>) override { std::cout << "EDITOR_CALLBACK\n"; }
   void Event(Int2Type<MEMORY_CALLBACK>) override { std::cout << "MEMORY_CALLBACK\n"; }
 
-  void Event(Int2Type<MEMORY_SELECT_CALLBACK>) override { std::cout << "MEMORY_SELECT_CALLBACK\n"; }
+  void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index)  override { std::cout << "PANEL_SELECT_CALLBACK " << index << "\n" ; }
+  void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { std::cout << "MEMORY_SELECT_CALLBACK " << index << "\n"; }
 
 
 private:

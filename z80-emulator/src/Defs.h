@@ -99,8 +99,6 @@ typedef TypeList<
   AnyType<BLANK,             olc::Pixel>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>
     ColorList;
 
-
-
 class Defs {
 
 public:
@@ -176,7 +174,7 @@ public:
 enum Events {
   EDITOR_CALLBACK, MEMORY_CALLBACK,
 
-  MEMORY_SELECT_CALLBACK,
+  MEMORY_SELECT_CALLBACK, PANEL_SELECT_CALLBACK,
 };
 
 class PixelGameEngine : public olc::PixelGameEngine {
@@ -185,7 +183,8 @@ class PixelGameEngine : public olc::PixelGameEngine {
   virtual void Event(Int2Type<EDITOR_CALLBACK>) = 0;
   virtual void Event(Int2Type<MEMORY_CALLBACK>) = 0;
 
-  virtual void Event(Int2Type<MEMORY_SELECT_CALLBACK>) = 0;
+  virtual void Event(Int2Type<PANEL_SELECT_CALLBACK>, int32_t) = 0;
+  virtual void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t) = 0;
 };
 
 

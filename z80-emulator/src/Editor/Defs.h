@@ -4,10 +4,8 @@
 namespace Editor {
 
 enum VimT {
-  CMD_NONE,
-
   // phrase
-  CMD_i, CMD_I, CMD_a, CMD_A, CMD_o, CMD_O, CMD_C, CMD_D, CMD_r, CMD_R,
+  CMD_i, CMD_I, CMD_a, CMD_A, CMD_o, CMD_O, CMD_C, CMD_D, CMD_r, CMD_R, CMD_u, CMD_U,
 
   // noun
   CMD_h, CMD_j, CMD_k, CMD_l, CMD_w, CMD_W, CMD_b, CMD_B, CMD_e, CMD_0, CMD_gg, CMD_gd, CMD_G, CMD_n, CMD_N, CMD_f, CMD_F,
@@ -19,7 +17,11 @@ enum VimT {
   CMD_c, CMD_d, CMD_y,
 
   // adverb
-  CMD_cc, CMD_dd, CMD_yy, CMD_p, CMD_P, CMD_x
+  CMD_cc, CMD_dd, CMD_yy, CMD_p, CMD_P, CMD_x,
+  
+  
+  // Undefined CMD
+  CMD_NONE, CMD_z, CMD_q, CMD_NUMBER
 };
 
 typedef TypeList<
@@ -136,6 +138,8 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_d>,  Int2Type<'d'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_c>,  Int2Type<'c'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_y>,  Int2Type<'y'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_u>,  Int2Type<'u'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_U>,  Int2Type<'U'>>, TypeList<
 
   TypeList<Int2Type<VimT::CMD_SPACE>,      Int2Type<' '>>, TypeList<
   TypeList<Int2Type<VimT::CMD_SQUIGGLE>,   Int2Type<'~'>>, TypeList<
@@ -145,7 +149,7 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_SLASH>,      Int2Type<'/'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_QUESTION>,   Int2Type<'?'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_COMMA>,      Int2Type<','>>, TypeList<
-  TypeList<Int2Type<VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<Int2Type<VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    VimCommands; 
   
 typedef TypeList<

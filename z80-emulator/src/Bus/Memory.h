@@ -15,7 +15,7 @@ namespace Bus {
  *  noun        -> 'h' | 'j' | 'k' | 'l' | 'w' | 'b' | 'r' | 'e' | '0' | '$' | 'gg'  | 'gd' | 'G' | '/' | '?' | 'n' | 'N' | 'f' | 'F' | ',' | ';'
  *  verb        -> 'c' | 'd' | 'y' 
  *  adverb      -> 'dd' | 'yy' | 'p' | 'P' | 'x'
- *  phrase      -> 'C' | ' ' | 'i' | 'a'
+ *  phrase      -> 'C' | ' ' | 'i' | 'a' | 'u' | 'U'
  */
 class Memory : public Window::Window {
 public:
@@ -162,7 +162,7 @@ public:
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SPACE>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_CALLBACK>()); }
-  inline void Command(Int2Type<Editor::VimT::CMD_gd>)    { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>()); }
+  inline void Command(Int2Type<Editor::VimT::CMD_gd>)    { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>(), index()); }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
     if (!std::get<0>(search.second).size()) return;
@@ -185,7 +185,6 @@ public:
     if (search.first) std::get<2>(search.second) = true;
 
     uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
-    printf("%d\n", digit);
     for (int32_t i = index() + 1; i < memory.size(); i++) {
       if (digit != memory[i]) continue;
 
@@ -309,6 +308,9 @@ public:
     if (diff < 0) pos = AnyType<-1, olc::vi2d>::GetValue();
   }
 
+  // TODO: Impl undo/redo !!
+  inline void Command(Int2Type<Editor::VimT::CMD_u>) { }
+  inline void Command(Int2Type<Editor::VimT::CMD_U>) { }
 
   inline void Command(Int2Type<Editor::VimT::CMD_w>) { 
     if (pos.x < (pages.x - 1)) return Command(Int2Type<Editor::VimT::CMD_l>());
@@ -351,7 +353,9 @@ private:
     if (!bUpdated) return;
     else bUpdated = false;
     
-    printf("%s\n", cmd.c_str());
+    #ifdef CMD_PRINT
+    printf("Memory: %s\n", cmd.c_str());
+    #endif
 
     if (search.first) {
       // TODO: ADD ability to edit this string
@@ -361,7 +365,7 @@ private:
     }
 
     if (nCurr == 0) {
-      if (match<4>({ 'i', 'a', 'C', ' ' })) { phrase(peekPrev()); return reset(); };
+      if (match<6>({ 'i', 'a', 'C', ' ', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
       if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
 
     } else {
@@ -409,10 +413,10 @@ private:
 
   inline void phrase(const char c) {
     AnyType<-1, int32_t>::GetValue() = c;
-    bSync = bSync || foreach<SyncRomCommands, AnyType<-1, int32_t>>::Has();
+    bSync = bSync || foreach<SyncMemoryCommands, AnyType<-1, int32_t>>::Has();
 
     auto operation = lambda;
-    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<RomCommands, Memory>::Command(this); };
+    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<MemoryCommands, Memory>::Command(this); };
   }
 
   template<int32_t T>

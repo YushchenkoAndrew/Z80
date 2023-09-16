@@ -15,7 +15,7 @@ namespace Editor {
  *  noun        -> 'h' | 'j' | 'k' | 'l' | 'w' | 'W' | 'b' | 'B' | 'e' | 'E' | '0' | '$' | '^' | '_' | 'gg' | 'G' | '/' | '?' | 'n' | 'N' | 'f' | 'F' | ',' | ';'
  *  verb        -> 'c' | 'd' | 'y' 
  *  adverb      -> 'dd' | 'cc' | 'yy' | 'p' | 'P'
- *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R' | ' '
+ *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R' | ' ' | 'u' | 'U'
  */
 class Vim {
 public:
@@ -217,6 +217,10 @@ public:
     lines[pos.y].replace(pos.x, 1, std::string(1, islower(c) ? toupper(c) : tolower(c)));
     Command(Int2Type<VimT::CMD_l>()); nLastX = pos.x;
   }
+
+  // TODO: Impl undo/redo !!
+  inline void Command(Int2Type<VimT::CMD_u>) { }
+  inline void Command(Int2Type<VimT::CMD_U>) { }
 
   inline void Command(Int2Type<VimT::CMD_SEMICOLON>) {
     if (!std::get<0>(search.second).size()) return;
@@ -438,7 +442,10 @@ public:
     if (!bUpdated) return;
     else bUpdated = false;
     
-    printf("%s err: '%s'\n", cmd.c_str(), err.c_str());
+    #ifdef CMD_PRINT
+    printf("Vim: %s %s\n", cmd.c_str(), err.c_str());
+    #endif
+
     err.clear(); 
 
     if (search.first) {
@@ -453,7 +460,7 @@ public:
     // TODO: Add ability to run execution commands aka ':wq'
 
     if (nCurr == 0) {
-      if (match<10>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', ' ' })) { phrase(peekPrev()); return reset(); };
+      if (match<12>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', ' ', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
       if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
 
     } else {
