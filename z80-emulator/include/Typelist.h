@@ -19,6 +19,17 @@ struct TypeList {
 	inline TypeList() {}
 };
 
+template<class T>
+struct TypeList<T, std::string> {
+	std::string val;
+	inline TypeList() {}
+
+  std::string& operator = (std::string c) { return val = c; }
+  template<class U> std::string& operator = (TypeList<U, std::string>& list) { return val = list.val; }
+
+  std::string& operator ~ () { return val; }
+};
+
 
 template<int32_t T, class U>
 struct AnyType {
@@ -38,8 +49,13 @@ struct AnyType<T, int32_t> {
 	}
 
 	template<int32_t U>
-	static inline bool Compare() {
+	static inline bool Compare(Type2Type<int32_t>) {
 		return GetValue() == AnyType<U, int32_t>::GetValue();
+	}
+
+	template<int32_t U, class V>
+	static inline bool Compare(Type2Type<TypeList<V, int32_t>>) {
+		return GetValue() == AnyType<U, TypeList<V, int32_t>>::GetValue().val;
 	}
 
 	template<int32_t U>
@@ -56,7 +72,7 @@ struct AnyType<T, float> {
 	}
 
 	template<int32_t U>
-	static inline bool Compare() {
+	static inline bool Compare(Type2Type<float>) {
 		return GetValue() == AnyType<U, float>::GetValue();
 	}
 };
@@ -71,9 +87,17 @@ struct AnyType<T, std::string> {
 	}
 
 	template<int32_t U>
-	static inline bool Compare() {
+	static inline bool Compare(Type2Type<std::string>) {
 		auto a = GetValue();
 		auto b = AnyType<U, std::string>::GetValue();
+
+		return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](char a, char b) { return tolower(a) == tolower(b); });
+	}
+
+	template<int32_t U, class V>
+	static inline bool Compare(Type2Type<TypeList<V, std::string>>) {
+		auto a = GetValue();
+		auto b = AnyType<U, TypeList<V, std::string>>::GetValue().val;
 
 		return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](char a, char b) { return tolower(a) == tolower(b); });
 	}

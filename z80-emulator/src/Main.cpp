@@ -74,7 +74,7 @@ public:
   }
 
   bool OnUserUpdate(float fElapsedTime) override {
-	  Clear(AnyType<Colors::BLACK, olc::Pixel>::GetValue());
+	  Clear(~AnyType<Colors::BLACK, ColorT>::GetValue());
     AnyType<-1, float>::GetValue() = fElapsedTime;
 
     // AnyType<-2, float>::GetValue() += fElapsedTime;

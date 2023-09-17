@@ -46,7 +46,7 @@ public:
       case REPLACE: size *= olc::vi2d(8,  2); pos += olc::vi2d(0, 10); break;
     }
 
-    GameEngine->FillRect(pos, size, AnyType<GREY, olc::Pixel>::GetValue());
+    GameEngine->FillRect(pos, size, ~AnyType<GREY, ColorT>::GetValue());
   }
 
   void Load(std::vector<std::shared_ptr<Interpreter::Token>>& dst) {

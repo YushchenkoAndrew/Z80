@@ -31,7 +31,7 @@ struct foreach<TypeList<AnyType<T, V>, U>, F> {
 	// }
 
 	static inline int32_t Value2Key() {
-		if (F::template Compare<T>()) return T;
+		if (F::template Compare<T>(Type2Type<V>())) return T;
     return foreach<U, F>::Value2Key();
 	}
 
@@ -60,7 +60,7 @@ struct foreach<TypeList<AnyType<T, V>, NullType>, F> {
 	// }
 
 	static inline int32_t Value2Key() {
-		if (F::template Compare<T>()) return T;
+		if (F::template Compare<T>(Type2Type<V>())) return T;
     return -1;
 	}
 

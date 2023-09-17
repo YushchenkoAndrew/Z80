@@ -30,7 +30,7 @@ bool Lexer::scan(std::string text) {
 
       case ';':
         while (peek() != '\n' && !isAtEnd()) advance();
-        addToken(AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+        addToken(~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
         break;
 
 

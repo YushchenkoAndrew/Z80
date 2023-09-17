@@ -69,8 +69,8 @@ public:
 private:
   void Draw(Int2Type<Editor::VimT::CMD_q>, PixelGameEngine* GameEngine) {
     auto index = [&](auto tuple) {
-      auto color = std::get<0>(tuple) ? AnyType<BLUE, olc::Pixel>::GetValue() : AnyType<RED, olc::Pixel>::GetValue();
-      GameEngine->DrawString(std::get<2>(tuple).first , std::string(1, '0' + std::get<3>(tuple)), color, 4);
+      auto color = std::get<0>(tuple) ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
+      GameEngine->DrawString(std::get<2>(tuple).first , std::string(1, '0' + std::get<3>(tuple)), ~color, 4);
     };
 
     if (std::get<1>(memory) != nullptr) index(memory);

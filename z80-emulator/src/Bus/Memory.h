@@ -73,32 +73,32 @@ public:
     auto nWidth = (mode == CHARACTER ? vStep.y : vStep.x) * pages.x + vOffset.x;
 
     auto pos = olc::vi2d(absolute.x, absolute.y + vOffset.y + pages.y * vStep.y);
-    GameEngine->FillRect(pos - olc::vi2d(0, 2), { nWidth, 10 }, AnyType<Colors::VERY_DARK_GREY, olc::Pixel>::GetValue());
-    GameEngine->DrawString(pos, GetMode(), AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+    GameEngine->FillRect(pos - olc::vi2d(0, 2), { nWidth, 10 }, ~AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, GetMode(), ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
     auto cmd = GetCmd();
     pos.x = nWidth - ((int32_t)cmd.size() + 1) * vStep.y;
-    GameEngine->DrawString(pos, cmd, AnyType<Colors::DARK_GREY, olc::Pixel>::GetValue());
+    GameEngine->DrawString(pos, cmd, ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
   }
 
 private:
   void Draw(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
     for (int32_t i = 0; i < pages.x; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep + olc::vi2d(vOffset.x, 0);
-      auto color = i == this->pos.x ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+      auto color = i == this->pos.x ? AnyType<GREY, ColorT>::GetValue() : AnyType<DARK_GREY, ColorT>::GetValue();
 
-      GameEngine->DrawString(pos, Int2Hex(i), color);
+      GameEngine->DrawString(pos, Int2Hex(i), color.val);
     }
 
     for (int32_t i = 0; i < pages.y; i++) {
       olc::vi2d pos = absolute + olc::vi2d(0, i) * vStep + olc::vi2d(0, vOffset.y);
-      auto color = i + vStartAt.y == this->pos.y ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+      auto color = i + vStartAt.y == this->pos.y ? AnyType<GREY, ColorT>::GetValue() : AnyType<DARK_GREY, ColorT>::GetValue();
 
-      GameEngine->DrawString(pos, Int2Hex((i + vStartAt.y) * pages.x, 5), color);
+      GameEngine->DrawString(pos, Int2Hex((i + vStartAt.y) * pages.x, 5), color.val);
       
       for (int32_t j = 0; j < pages.x; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * vStep + vOffset;
-        GameEngine->DrawString(pos, Int2Hex(memory[index(j, i + vStartAt.y)]), AnyType<WHITE, olc::Pixel>::GetValue());
+        GameEngine->DrawString(pos, Int2Hex(memory[index(j, i + vStartAt.y)]), ~AnyType<WHITE, ColorT>::GetValue());
       }
     }
 
@@ -106,27 +106,27 @@ private:
     auto pos = bSearch ? std::get<3>(search.second) : this->pos;
 
     olc::vi2d cursor = absolute + (pos - vStartAt) * vStep + vOffset;
-    GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 18, 12 }, AnyType<GREY, olc::Pixel>::GetValue());
-    GameEngine->DrawString(cursor, Int2Hex(memory[index(pos)]), AnyType<BLACK, olc::Pixel>::GetValue());
+    GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 18, 12 }, ~AnyType<GREY, ColorT>::GetValue());
+    GameEngine->DrawString(cursor, Int2Hex(memory[index(pos)]), ~AnyType<BLACK, ColorT>::GetValue());
   }
 
   void Draw(Int2Type<CHARACTER>, PixelGameEngine* GameEngine) {
     for (int32_t i = 0; i < pages.x; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * olc::vi2d(vStep.y, vStep.y) + olc::vi2d(vOffset.x, 0);
-      auto color = i == this->pos.x ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+      auto color = i == this->pos.x ? AnyType<GREY, ColorT>::GetValue() : AnyType<DARK_GREY, ColorT>::GetValue();
 
-      GameEngine->DrawString(pos, Int2Hex(i, 1), color);
+      GameEngine->DrawString(pos, Int2Hex(i, 1), color.val);
     }
 
     for (int32_t i = 0; i < pages.y; i++) {
       olc::vi2d pos = absolute + olc::vi2d(0, i) * olc::vi2d(vStep.y, vStep.y) + olc::vi2d(0, vOffset.y);
-      auto color = i + vStartAt.y == this->pos.y ? AnyType<GREY, olc::Pixel>::GetValue() : AnyType<DARK_GREY, olc::Pixel>::GetValue();
+      auto color = i + vStartAt.y == this->pos.y ? AnyType<GREY, ColorT>::GetValue() : AnyType<DARK_GREY, ColorT>::GetValue();
 
-      GameEngine->DrawString(pos, Int2Hex((i + vStartAt.y) * pages.x, 5), color);
+      GameEngine->DrawString(pos, Int2Hex((i + vStartAt.y) * pages.x, 5), color.val);
       
       for (int32_t j = 0; j < pages.x; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * olc::vi2d(vStep.y, vStep.y) + vOffset;
-        GameEngine->DrawString(pos, isprint(memory[index(j, i + vStartAt.y)]) ? std::string(1, memory[index(j, i + vStartAt.y)]) : ".", AnyType<WHITE, olc::Pixel>::GetValue());
+        GameEngine->DrawString(pos, isprint(memory[index(j, i + vStartAt.y)]) ? std::string(1, memory[index(j, i + vStartAt.y)]) : ".", ~AnyType<WHITE, ColorT>::GetValue());
       }
     }
 
@@ -134,8 +134,8 @@ private:
     auto pos = bSearch ? std::get<3>(search.second) : this->pos;
 
     olc::vi2d cursor = absolute + (pos - vStartAt) * olc::vi2d(vStep.y, vStep.y) + vOffset;
-    GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 12, 12 }, AnyType<GREY, olc::Pixel>::GetValue());
-    GameEngine->DrawString(cursor, isprint(memory[index(pos)]) ? std::string(1, memory[index(pos)]) : ".", AnyType<BLACK, olc::Pixel>::GetValue());
+    GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 12, 12 }, ~AnyType<GREY, ColorT>::GetValue());
+    GameEngine->DrawString(cursor, isprint(memory[index(pos)]) ? std::string(1, memory[index(pos)]) : ".", ~AnyType<BLACK, ColorT>::GetValue());
   }
 
 public:

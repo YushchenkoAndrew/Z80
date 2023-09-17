@@ -18,7 +18,7 @@ public:
         if (i + offset > size.y / vStep.y) break;
 
         auto pos = olc::vi2d(absolute.x, absolute.y + (i + offset) * vStep.y);
-        GameEngine->DrawString(pos, lines[i].substr(j, size.x / vStep.x), AnyType<GREY, olc::Pixel>::GetValue());
+        GameEngine->DrawString(pos, lines[i].substr(j, size.x / vStep.x), ~AnyType<GREY, ColorT>::GetValue());
       }
     }
   }

@@ -13,15 +13,16 @@ public:
 
   Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line):
     token(t), lexeme(le), literal(li), col(col), line(line) {
-      AnyType<-2, olc::Pixel>::GetValue() = AnyType<Colors::WHITE, olc::Pixel>::GetValue();
+      AnyType<-2, TokenCOLOR>::GetValue() = AnyType<Colors::WHITE, ColorT>::GetValue();
 
       AnyType<-1, int32_t>::GetValue() = token;
-      color = foreach<TokenColorList, AnyType<-1, int32_t>>::Key2Value();
+      color = ~foreach<TokenColorList, AnyType<-1, int32_t>>::Key2Value();
     }
 
   void print() { 
     AnyType<-1, int32_t>::GetValue() = token;
-    std::string type = foreach<KeywordList, AnyType<-1, int32_t>>::Key2Value();
+    std::string type = ~foreach<KeywordList, AnyType<-1, int32_t>>::Key2Value();
+
 
     if (!type.length()) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", token, lexeme.c_str(), literal.c_str(), line, col);
     else printf("{ type: '%s'; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", type.c_str(), lexeme.c_str(), literal.c_str(), line, col);

@@ -13,10 +13,9 @@ namespace Bus {
 namespace Z80 {
 
 enum Instruction {
-  NONE = -1,
 
 //   0          1           2         3         4           5         6        7        8           9           A         B          C           D           E         F  
-    NOP,     LD_BC_NN,   LD_bc_A,   INC_BC,   INC_B,      DEC_B,   LD_B_N,   RLCA,    EX_AF_AF,  ADD_HL_BC,   LD_A_bc,   DEC_BC,    INC_C,      DEC_C,      LD_C_N,   RRCA,
+    NOP=0,   LD_BC_NN,   LD_bc_A,   INC_BC,   INC_B,      DEC_B,   LD_B_N,   RLCA,    EX_AF_AF,  ADD_HL_BC,   LD_A_bc,   DEC_BC,    INC_C,      DEC_C,      LD_C_N,   RRCA,
     DJNZ_D,  LD_DE_NN,   LD_de_A,   INC_DE,   INC_D,      DEC_D,   LD_D_N,   RLA,     JR_D,      ADD_HL_DE,   LD_A_de,   DEC_DE,    INC_E,      DEC_E,      LD_E_N,   RRA,
     JR_NZ_D, LD_HL_NN,   LD_nn_HL,  INC_HL,   INC_H,      DEC_H,   LD_H_N,   DAA,     JR_Z_D,    ADD_HL_HL,   LD_HL_nn,  DEC_HL,    INC_L,      DEC_L,      LD_L_N,   CPL,
     JR_NC_D, LD_SP_NN,   LD_nn_A,   INC_SP,   INC_hl,     DEC_hl,  LD_hl_n,  SCF,     JR_C_D,    ADD_HL_SP,   LD_A_nn,   DEC_SP,    INC_A,      DEC_A,      LD_A_N,   CCF,
@@ -38,10 +37,9 @@ enum Instruction {
  * All of those instructions start with code 0xCB
  */
 enum BitInstruction {
-  NONE = -1,
 
 //   0          1         2         3          4         5          6         7         8         9         A         B         C         D         E          F  
-    RLC_B,    RLC_C,    RLC_D,     RLC_E,    RLC_H,    RLC_L,    RLC_hl,    RLC_A,    RRC_B,    RRC_C,    RRC_D,    RRC_E,    RRC_H,    RRC_L,    RRC_hl,    RRC_A,
+    RLC_B=0,  RLC_C,    RLC_D,     RLC_E,    RLC_H,    RLC_L,    RLC_hl,    RLC_A,    RRC_B,    RRC_C,    RRC_D,    RRC_E,    RRC_H,    RRC_L,    RRC_hl,    RRC_A,
     RL_B,     RL_C,     RL_D,      RL_E,     RL_H,     RL_L,     RL_hl,     RL_A,     RR_B,     RR_C,     RR_D,     RR_E,     RR_H,     RR_L,     RR_hl,     RR_A,
     SLA_B,    SLA_C,    SLA_D,     SLA_E,    SLA_H,    SLA_L,    SLA_hl,    SLA_A,    SRA_B,    SRA_C,    SRA_D,    SRA_E,    SRA_H,    SRA_L,    SRA_hl,    SRA_A,
     SLL_B,    SLL_C,    SLL_D,     SLL_E,    SLL_H,    SLL_L,    SLL_hl,    SLL_A,    SRL_B,    SRL_C,    SRL_D,    SRL_E,    SRL_H,    SRL_L,    SRL_hl,    SRL_A,
@@ -61,38 +59,57 @@ enum BitInstruction {
 };
 
 
-  // TODO: Misc Instruction
-
 /**
  * All of those instructions start with code 0xDD
  */
 enum IxInstruction {
-  NONE = -1,
-
   ADD_IX_BC = 0x09, ADD_IX_DE = 0x19, LD_IX_NN = 0x21, LD_nn_IX = 0x22,  INC_IX = 0x23,   ADD_IX_IX = 0x29, LD_IX_nn = 0x2A,  DEC_IX = 0x2B, 
   INC_ixd = 0x34,   DEC_ixd = 0x35,   LD_ixd_N = 0x36, ADD_IX_SP = 0x39, LD_B_ixd = 0x46, LD_C_ixd = 0x4E,  LD_D_ixd = 0x56,  LD_E_ixd = 0x5E, LD_H_ixd = 0x66, LD_L_ixd = 0x6E,
   LD_ixd_B = 0x70,  LD_ixd_C = 0x71,  LD_ixd_D = 0x72, LD_ixd_E = 0x73,  LD_ixd_H = 0x74, LD_ixd_L = 0x75,  LD_ixd_A = 0x77,  LD_A_ixd = 0x7E, 
   ADD_A_ixd = 0x86, ADC_A_ixd = 0x8E, SUB_ixd = 0x96,  SBC_A_ixd = 0x9E, AND_ixd = 0xA6,  XOR_ixd = 0xAE,   OR_ixd = 0xB6,    CP_ixd = 0xBE,
   POP_IX = 0xE1,    EX_sp_IX = 0xE3,  PUSH_IX = 0xE5,  JP_ix = 0xE9,     LD_SP_IX = 0xF9, 
 
-  // TODO:
   IxBitInstr = Instruction::BIT_INSTR
+};
+
+/**
+ * All of those instructions start with code 0xDDCB
+ */
+enum IxBitInstruction {
+  RLC_ixd = 0x06,   RRC_ixd = 0x0E,   RL_ixd = 0x16,    RR_ixd = 0x1E,    SLA_ixd = 0x26,   SRA_ixd = 0x2E,   SLL_ixd = 0x36,   SRL_ixd = 0x3E,
+  BIT_0_ixd = 0x46, BIT_1_ixd = 0x4E, BIT_2_ixd = 0x56, BIT_3_ixd = 0x5E, BIT_4_ixd = 0x66, BIT_5_ixd = 0x6E, BIT_6_ixd = 0x76, BIT_7_ixd = 0x7E,
+  RES_0_ixd = 0x86, RES_1_ixd = 0x8E, RES_2_ixd = 0x96, RES_3_ixd = 0x9E, RES_4_ixd = 0xA6, RES_5_ixd = 0xAE, RES_6_ixd = 0xB6, RES_7_ixd = 0xBE,
+  SET_0_ixd = 0xC6, SET_1_ixd = 0xCE, SET_2_ixd = 0xD6, SET_3_ixd = 0xDE, SET_4_ixd = 0xE6, SET_5_ixd = 0xEE, SET_6_ixd = 0xF6, SET_7_ixd = 0xFE,
 };
 
 /**
  * All of those instructions start with code 0xFD
  */
 enum IyInstruction {
-  NONE = -1,
-
   ADD_IY_BC = 0x09, ADD_IY_DE = 0x19, LD_IY_NN = 0x21, LD_nn_IY = 0x22,  INC_IY = 0x23,   ADD_IY_IY = 0x29, LD_IY_nn = 0x2A,  DEC_IY = 0x2B, 
   INC_iyd = 0x34,   DEC_iyd = 0x35,   LD_iyd_N = 0x36, ADD_IY_SP = 0x39, LD_B_iyd = 0x46, LD_C_iyd = 0x4E,  LD_D_iyd = 0x56,  LD_E_iyd = 0x5E, LD_H_iyd = 0x66, LD_L_iyd = 0x6E,
   LD_iyd_B = 0x70,  LD_iyd_C = 0x71,  LD_iyd_D = 0x72, LD_iyd_E = 0x73,  LD_iyd_H = 0x74, LD_iyd_L = 0x75,  LD_iyd_A = 0x77,  LD_A_iyd = 0x7E, 
   ADD_A_iyd = 0x86, ADC_A_iyd = 0x8E, SUB_iyd = 0x96,  SBC_A_iyd = 0x9E, AND_iyd = 0xA6,  XOR_iyd = 0xAE,   OR_iyd = 0xB6,    CP_iyd = 0xBE,
   POP_IY = 0xE1,    EX_sp_IY = 0xE3,  PUSH_IY = 0xE5,  JP_iy = 0xE9,     LD_SP_IY = 0xF9, 
 
-  // TODO:
   IyBitInstr = Instruction::BIT_INSTR
+};
+
+/**
+ * All of those instructions start with code 0xFDCB
+ */
+enum IyBitInstruction {
+  RLC_iyd = 0x06,   RRC_iyd = 0x0E,   RL_iyd = 0x16,    RR_iyd = 0x1E,    SLA_iyd = 0x26,   SRA_iyd = 0x2E,   SLL_iyd = 0x36,   SRL_iyd = 0x3E,
+  BIT_0_iyd = 0x46, BIT_1_iyd = 0x4E, BIT_2_iyd = 0x56, BIT_3_iyd = 0x5E, BIT_4_iyd = 0x66, BIT_5_iyd = 0x6E, BIT_6_iyd = 0x76, BIT_7_iyd = 0x7E,
+  RES_0_iyd = 0x86, RES_1_iyd = 0x8E, RES_2_iyd = 0x96, RES_3_iyd = 0x9E, RES_4_iyd = 0xA6, RES_5_iyd = 0xAE, RES_6_iyd = 0xB6, RES_7_iyd = 0xBE,
+  SET_0_iyd = 0xC6, SET_1_iyd = 0xCE, SET_2_iyd = 0xD6, SET_3_iyd = 0xDE, SET_4_iyd = 0xE6, SET_5_iyd = 0xEE, SET_6_iyd = 0xF6, SET_7_iyd = 0xFE,
+};
+
+/**
+ * All of those instructions start with code 0xED
+ */
+enum MiscInstruction {
+  // TODO: Misc Instruction
 };
 
 };
@@ -139,4 +156,12 @@ typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_r>, Int2Type<'r'>>, NullType>>
    SyncMemoryCommands; 
    
+
+class Defs {
+
+public:
+  static void Init() {
+    // TODO: Add mnemonics for instruction
+  }
+};
 };

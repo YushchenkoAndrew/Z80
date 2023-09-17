@@ -8,7 +8,7 @@ namespace Interpreter {
  */
 enum TokenT {
   // Single char tokens
-  NONE = 0x0100, LEFT_BRACE,  RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE,
+  NONE, LEFT_BRACE,  RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE,
   
   // Bit operation in assignment
   BIT_OR, BIT_AND, BIT_XOR, BIT_NOT,
@@ -41,361 +41,364 @@ enum TokenT {
   OP_EOF, OP_NONE
 };
 
+typedef TypeList<TokenT, std::string> TokenSTR;
+typedef TypeList<TokenT, olc::Pixel> TokenCOLOR;
+
 typedef TypeList<
-  AnyType<TokenT::OP_ORG,   std::string>, TypeList<
-  AnyType<TokenT::OP_DB,    std::string>, TypeList<
-  AnyType<TokenT::CMD_ADC,  std::string>, TypeList<
-  AnyType<TokenT::CMD_ADD,  std::string>, TypeList<
-  AnyType<TokenT::CMD_AND,  std::string>, TypeList<
-  AnyType<TokenT::CMD_BIT,  std::string>, TypeList<
-  AnyType<TokenT::CMD_CALL, std::string>, TypeList<
-  AnyType<TokenT::CMD_CCF,  std::string>, TypeList<
-  AnyType<TokenT::CMD_CP,   std::string>, TypeList<
-  AnyType<TokenT::CMD_CPD,  std::string>, TypeList<
-  AnyType<TokenT::CMD_CPDR, std::string>, TypeList<
-  AnyType<TokenT::CMD_CPI,  std::string>, TypeList<
-  AnyType<TokenT::CMD_CPIR, std::string>, TypeList<
-  AnyType<TokenT::CMD_CPL,  std::string>, TypeList<
-  AnyType<TokenT::CMD_DAA,  std::string>, TypeList<
-  AnyType<TokenT::CMD_DEC,  std::string>, TypeList<
-  AnyType<TokenT::CMD_DI,   std::string>, TypeList<
-  AnyType<TokenT::CMD_DJNZ, std::string>, TypeList<
-  AnyType<TokenT::CMD_EI,   std::string>, TypeList<
-  AnyType<TokenT::CMD_EX,   std::string>, TypeList<
-  AnyType<TokenT::CMD_EXX,  std::string>, TypeList<
-  AnyType<TokenT::CMD_HALT, std::string>, TypeList<
-  AnyType<TokenT::CMD_IM,   std::string>, TypeList<
-  AnyType<TokenT::CMD_IN,   std::string>, TypeList<
-  AnyType<TokenT::CMD_INC,  std::string>, TypeList<
-  AnyType<TokenT::CMD_IND,  std::string>, TypeList<
-  AnyType<TokenT::CMD_INDR, std::string>, TypeList<
-  AnyType<TokenT::CMD_INI,  std::string>, TypeList<
-  AnyType<TokenT::CMD_INIR, std::string>, TypeList<
-  AnyType<TokenT::CMD_JP,   std::string>, TypeList<
-  AnyType<TokenT::CMD_JR,   std::string>, TypeList<
-  AnyType<TokenT::CMD_LD,   std::string>, TypeList<
-  AnyType<TokenT::CMD_LDD,  std::string>, TypeList<
-  AnyType<TokenT::CMD_LDDR, std::string>, TypeList<
-  AnyType<TokenT::CMD_LDI,  std::string>, TypeList<
-  AnyType<TokenT::CMD_LDIR, std::string>, TypeList<
-  AnyType<TokenT::CMD_NEG,  std::string>, TypeList<
-  AnyType<TokenT::CMD_NOP,  std::string>, TypeList<
-  AnyType<TokenT::CMD_OR,   std::string>, TypeList<
-  AnyType<TokenT::CMD_OTDR, std::string>, TypeList<
-  AnyType<TokenT::CMD_OTIR, std::string>, TypeList<
-  AnyType<TokenT::CMD_OUT,  std::string>, TypeList<
-  AnyType<TokenT::CMD_OUTD, std::string>, TypeList<
-  AnyType<TokenT::CMD_OUTI, std::string>, TypeList<
-  AnyType<TokenT::CMD_POP,  std::string>, TypeList<
-  AnyType<TokenT::CMD_PUSH, std::string>, TypeList<
-  AnyType<TokenT::CMD_RES,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RET,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RETI, std::string>, TypeList<
-  AnyType<TokenT::CMD_RETN, std::string>, TypeList<
-  AnyType<TokenT::CMD_RL,   std::string>, TypeList<
-  AnyType<TokenT::CMD_RLA,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RLC,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RLCA, std::string>, TypeList<
-  AnyType<TokenT::CMD_RLD,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RR,   std::string>, TypeList<
-  AnyType<TokenT::CMD_RRA,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RRC,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RRCA, std::string>, TypeList<
-  AnyType<TokenT::CMD_RRD,  std::string>, TypeList<
-  AnyType<TokenT::CMD_RST,  std::string>, TypeList<
-  AnyType<TokenT::CMD_SBC,  std::string>, TypeList<
-  AnyType<TokenT::CMD_SCF,  std::string>, TypeList<
-  AnyType<TokenT::CMD_SET,  std::string>, TypeList<
-  AnyType<TokenT::CMD_SLA,  std::string>, TypeList<
-  AnyType<TokenT::CMD_SRA,  std::string>, TypeList<
-  AnyType<TokenT::CMD_SRL,  std::string>, TypeList<
-  AnyType<TokenT::CMD_SUB,  std::string>, TypeList<
-  AnyType<TokenT::CMD_XOR,  std::string>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::OP_ORG,   TokenSTR>, TypeList<
+  AnyType<TokenT::OP_DB,    TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_ADC,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_ADD,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_AND,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_BIT,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CALL, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CCF,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CP,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CPD,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CPDR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CPI,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CPIR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_CPL,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_DAA,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_DEC,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_DI,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_DJNZ, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_EI,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_EX,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_EXX,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_HALT, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_IM,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_IN,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_INC,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_IND,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_INDR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_INI,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_INIR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_JP,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_JR,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_LD,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_LDD,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_LDDR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_LDI,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_LDIR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_NEG,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_NOP,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_OR,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_OTDR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_OTIR, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_OUT,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_OUTD, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_OUTI, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_POP,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_PUSH, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RES,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RET,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RETI, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RETN, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RL,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RLA,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RLC,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RLCA, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RLD,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RR,   TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RRA,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RRC,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RRCA, TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RRD,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_RST,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_SBC,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_SCF,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_SET,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_SLA,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_SRA,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_SRL,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_SUB,  TokenSTR>, TypeList<
+  AnyType<TokenT::CMD_XOR,  TokenSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    CommandList;
 
 
 typedef TypeList<
-  AnyType<TokenT::OP_EQU,   std::string>, TypeList<
-  AnyType<TokenT::REG_AF,   std::string>, TypeList<
-  AnyType<TokenT::REG_BC,   std::string>, TypeList<
-  AnyType<TokenT::REG_DE,   std::string>, TypeList<
-  AnyType<TokenT::REG_HL,   std::string>, TypeList<
-  AnyType<TokenT::REG_IX,   std::string>, TypeList<
-  AnyType<TokenT::REG_IY,   std::string>, TypeList<
-  AnyType<TokenT::REG_SP,   std::string>, TypeList<
-  AnyType<TokenT::REG_PC,   std::string>, TypeList<
-  AnyType<TokenT::REG_AF$,  std::string>, TypeList<
-  AnyType<TokenT::REG_BC$,  std::string>, TypeList<
-  AnyType<TokenT::REG_DE$,  std::string>, TypeList<
-  AnyType<TokenT::REG_HL$,  std::string>, TypeList<
-  AnyType<TokenT::REG_A,    std::string>, TypeList<
-  AnyType<TokenT::REG_B,    std::string>, TypeList<
-  AnyType<TokenT::REG_C,    std::string>, TypeList<
-  AnyType<TokenT::REG_D,    std::string>, TypeList<
-  AnyType<TokenT::REG_E,    std::string>, TypeList<
-  AnyType<TokenT::REG_H,    std::string>, TypeList<
-  AnyType<TokenT::REG_L,    std::string>, TypeList<
-  AnyType<TokenT::REG_I,    std::string>, TypeList<
-  AnyType<TokenT::REG_R,    std::string>, TypeList<
-  AnyType<TokenT::REG_A$,   std::string>, TypeList<
-  AnyType<TokenT::REG_B$,   std::string>, TypeList<
-  AnyType<TokenT::REG_C$,   std::string>, TypeList<
-  AnyType<TokenT::REG_D$,   std::string>, TypeList<
-  AnyType<TokenT::REG_E$,   std::string>, TypeList<
-  AnyType<TokenT::REG_H$,   std::string>, TypeList<
-  AnyType<TokenT::FLAG_C,   std::string>, TypeList<
-  AnyType<TokenT::FLAG_M,   std::string>, TypeList<
-  AnyType<TokenT::FLAG_NC,  std::string>, TypeList<
-  AnyType<TokenT::FLAG_NZ,  std::string>, TypeList<
-  AnyType<TokenT::FLAG_P,   std::string>, TypeList<
-  AnyType<TokenT::FLAG_PE,  std::string>, TypeList<
-  AnyType<TokenT::FLAG_PO,  std::string>, TypeList<
-  AnyType<TokenT::FLAG_Z,   std::string>,  CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::OP_EQU,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_AF,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_BC,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_DE,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_HL,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_IX,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_IY,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_SP,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_PC,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_AF$,  TokenSTR>, TypeList<
+  AnyType<TokenT::REG_BC$,  TokenSTR>, TypeList<
+  AnyType<TokenT::REG_DE$,  TokenSTR>, TypeList<
+  AnyType<TokenT::REG_HL$,  TokenSTR>, TypeList<
+  AnyType<TokenT::REG_A,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_B,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_C,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_D,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_E,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_H,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_L,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_I,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_R,    TokenSTR>, TypeList<
+  AnyType<TokenT::REG_A$,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_B$,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_C$,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_D$,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_E$,   TokenSTR>, TypeList<
+  AnyType<TokenT::REG_H$,   TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_C,   TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_M,   TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_NC,  TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_NZ,  TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_P,   TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_PE,  TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_PO,  TokenSTR>, TypeList<
+  AnyType<TokenT::FLAG_Z,   TokenSTR>,  CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     KeywordList;
 
 
 typedef TypeList<
-  AnyType<TokenT::OP_ORG,   olc::Pixel>, TypeList<
-  AnyType<TokenT::OP_DB,    olc::Pixel>, TypeList<
-  AnyType<TokenT::OP_EQU,   olc::Pixel>, TypeList<
+  AnyType<TokenT::OP_ORG,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::OP_DB,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::OP_EQU,   TokenCOLOR>, TypeList<
 
-  AnyType<TokenT::CMD_ADC,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_ADD,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_AND,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_BIT,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CALL, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CCF,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CP,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CPD,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CPDR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CPI,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CPIR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_CPL,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_DAA,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_DEC,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_DI,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_DJNZ, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_EI,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_EX,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_EXX,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_HALT, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_IM,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_IN,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_INC,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_IND,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_INDR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_INI,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_INIR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_JP,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_JR,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_LD,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_LDD,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_LDDR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_LDI,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_LDIR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_NEG,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_NOP,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_OR,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_OTDR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_OTIR, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_OUT,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_OUTD, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_OUTI, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_POP,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_PUSH, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RES,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RET,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RETI, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RETN, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RL,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RLA,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RLC,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RLCA, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RLD,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RR,   olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RRA,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RRC,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RRCA, olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RRD,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_RST,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_SBC,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_SCF,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_SET,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_SLA,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_SRA,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_SRL,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_SUB,  olc::Pixel>, TypeList<
-  AnyType<TokenT::CMD_XOR,  olc::Pixel>, TypeList<
+  AnyType<TokenT::CMD_ADC,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_ADD,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_AND,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_BIT,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CALL, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CCF,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CP,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CPD,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CPDR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CPI,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CPIR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_CPL,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_DAA,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_DEC,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_DI,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_DJNZ, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_EI,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_EX,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_EXX,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_HALT, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_IM,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_IN,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_INC,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_IND,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_INDR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_INI,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_INIR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_JP,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_JR,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_LD,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_LDD,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_LDDR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_LDI,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_LDIR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_NEG,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_NOP,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_OR,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_OTDR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_OTIR, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_OUT,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_OUTD, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_OUTI, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_POP,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_PUSH, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RES,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RET,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RETI, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RETN, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RL,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RLA,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RLC,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RLCA, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RLD,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RR,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RRA,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RRC,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RRCA, TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RRD,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_RST,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_SBC,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_SCF,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_SET,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_SLA,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_SRA,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_SRL,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_SUB,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::CMD_XOR,  TokenCOLOR>, TypeList<
 
-  AnyType<TokenT::REG_AF,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_BC,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_DE,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_HL,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_IX,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_IY,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_SP,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_PC,   olc::Pixel>, TypeList<
+  AnyType<TokenT::REG_AF,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_BC,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_DE,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_HL,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_IX,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_IY,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_SP,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_PC,   TokenCOLOR>, TypeList<
 
-  AnyType<TokenT::REG_AF$,  olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_BC$,  olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_DE$,  olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_HL$,  olc::Pixel>, TypeList<
+  AnyType<TokenT::REG_AF$,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_BC$,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_DE$,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_HL$,  TokenCOLOR>, TypeList<
 
-  AnyType<TokenT::REG_A,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_B,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_C,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_D,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_E,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_H,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_L,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_I,    olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_R,    olc::Pixel>, TypeList<
+  AnyType<TokenT::REG_A,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_B,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_C,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_D,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_E,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_H,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_L,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_I,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_R,    TokenCOLOR>, TypeList<
 
-  AnyType<TokenT::REG_A$,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_B$,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_C$,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_D$,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_E$,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_H$,   olc::Pixel>, TypeList<
-  AnyType<TokenT::REG_L$,   olc::Pixel>, TypeList<
+  AnyType<TokenT::REG_A$,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_B$,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_C$,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_D$,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_E$,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_H$,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::REG_L$,   TokenCOLOR>, TypeList<
 
-  AnyType<TokenT::FLAG_C,   olc::Pixel>, TypeList<
-  AnyType<TokenT::FLAG_M,   olc::Pixel>, TypeList<
-  AnyType<TokenT::FLAG_NC,  olc::Pixel>, TypeList<
-  AnyType<TokenT::FLAG_NZ,  olc::Pixel>, TypeList<
-  AnyType<TokenT::FLAG_P,   olc::Pixel>, TypeList<
-  AnyType<TokenT::FLAG_PE,  olc::Pixel>, TypeList<
-  AnyType<TokenT::FLAG_PO,  olc::Pixel>, TypeList<
-  AnyType<TokenT::FLAG_Z,   olc::Pixel>, TypeList<
+  AnyType<TokenT::FLAG_C,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::FLAG_M,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::FLAG_NC,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::FLAG_NZ,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::FLAG_P,   TokenCOLOR>, TypeList<
+  AnyType<TokenT::FLAG_PE,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::FLAG_PO,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::FLAG_Z,   TokenCOLOR>, TypeList<
   
-  AnyType<TokenT::NUMBER,  olc::Pixel>, TypeList<
-  AnyType<TokenT::STRING,  olc::Pixel>, TypeList<
-  AnyType<TokenT::IDENTIFIER, olc::Pixel>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::NUMBER,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::STRING,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::IDENTIFIER, TokenCOLOR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     TokenColorList;
 
 class Defs {
 
 public:
   static void Init() {
-    AnyType<TokenT::OP_ORG,   std::string>::GetValue() = "ORG";   AnyType<TokenT::OP_ORG,   olc::Pixel>::GetValue() = AnyType<Colors::CYAN,    olc::Pixel>::GetValue();
-    AnyType<TokenT::OP_DB,    std::string>::GetValue() = "DB";    AnyType<TokenT::OP_DB,    olc::Pixel>::GetValue() = AnyType<Colors::CYAN,    olc::Pixel>::GetValue();
-    AnyType<TokenT::OP_EQU,   std::string>::GetValue() = "EQU";   AnyType<TokenT::OP_EQU,   olc::Pixel>::GetValue() = AnyType<Colors::CYAN,    olc::Pixel>::GetValue();
+    AnyType<TokenT::OP_ORG,   TokenSTR>::GetValue() = "ORG";   AnyType<TokenT::OP_ORG,   TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
+    AnyType<TokenT::OP_DB,    TokenSTR>::GetValue() = "DB";    AnyType<TokenT::OP_DB,    TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
+    AnyType<TokenT::OP_EQU,   TokenSTR>::GetValue() = "EQU";   AnyType<TokenT::OP_EQU,   TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
 
-    AnyType<TokenT::CMD_ADC,  std::string>::GetValue() = "ADC";   AnyType<TokenT::CMD_ADC,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_ADD,  std::string>::GetValue() = "ADD";   AnyType<TokenT::CMD_ADD,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_AND,  std::string>::GetValue() = "AND";   AnyType<TokenT::CMD_AND,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_BIT,  std::string>::GetValue() = "BIT";   AnyType<TokenT::CMD_BIT,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CALL, std::string>::GetValue() = "CALL";  AnyType<TokenT::CMD_CALL, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CCF,  std::string>::GetValue() = "CCF";   AnyType<TokenT::CMD_CCF,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CP,   std::string>::GetValue() = "CP";    AnyType<TokenT::CMD_CP,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CPD,  std::string>::GetValue() = "CPD";   AnyType<TokenT::CMD_CPD,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CPDR, std::string>::GetValue() = "CPDR";  AnyType<TokenT::CMD_CPDR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CPI,  std::string>::GetValue() = "CPI";   AnyType<TokenT::CMD_CPI,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CPIR, std::string>::GetValue() = "CPIR";  AnyType<TokenT::CMD_CPIR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_CPL,  std::string>::GetValue() = "CPL";   AnyType<TokenT::CMD_CPL,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_DAA,  std::string>::GetValue() = "DAA";   AnyType<TokenT::CMD_DAA,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_DEC,  std::string>::GetValue() = "DEC";   AnyType<TokenT::CMD_DEC,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_DI,   std::string>::GetValue() = "DI";    AnyType<TokenT::CMD_DI,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_DJNZ, std::string>::GetValue() = "DJNZ";  AnyType<TokenT::CMD_DJNZ, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_EI,   std::string>::GetValue() = "EI";    AnyType<TokenT::CMD_EI,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_EX,   std::string>::GetValue() = "EX";    AnyType<TokenT::CMD_EX,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_EXX,  std::string>::GetValue() = "EXX";   AnyType<TokenT::CMD_EXX,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_HALT, std::string>::GetValue() = "HALT";  AnyType<TokenT::CMD_HALT, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_IM,   std::string>::GetValue() = "IM";    AnyType<TokenT::CMD_IM,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_IN,   std::string>::GetValue() = "IN";    AnyType<TokenT::CMD_IN,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_INC,  std::string>::GetValue() = "INC";   AnyType<TokenT::CMD_INC,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_IND,  std::string>::GetValue() = "IND";   AnyType<TokenT::CMD_IND,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_INDR, std::string>::GetValue() = "INDR";  AnyType<TokenT::CMD_INDR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_INI,  std::string>::GetValue() = "INI";   AnyType<TokenT::CMD_INI,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_INIR, std::string>::GetValue() = "INIR";  AnyType<TokenT::CMD_INIR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_JP,   std::string>::GetValue() = "JP";    AnyType<TokenT::CMD_JP,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_JR,   std::string>::GetValue() = "JR";    AnyType<TokenT::CMD_JR,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_LD,   std::string>::GetValue() = "LD";    AnyType<TokenT::CMD_LD,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_LDD,  std::string>::GetValue() = "LDD";   AnyType<TokenT::CMD_LDD,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_LDDR, std::string>::GetValue() = "LDDR";  AnyType<TokenT::CMD_LDDR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_LDI,  std::string>::GetValue() = "LDI";   AnyType<TokenT::CMD_LDI,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_LDIR, std::string>::GetValue() = "LDIR";  AnyType<TokenT::CMD_LDIR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_NEG,  std::string>::GetValue() = "NEG";   AnyType<TokenT::CMD_NEG,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_NOP,  std::string>::GetValue() = "NOP";   AnyType<TokenT::CMD_NOP,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_OR,   std::string>::GetValue() = "OR";    AnyType<TokenT::CMD_OR,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_OTDR, std::string>::GetValue() = "OTDR";  AnyType<TokenT::CMD_OTDR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_OTIR, std::string>::GetValue() = "OTIR";  AnyType<TokenT::CMD_OTIR, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_OUT,  std::string>::GetValue() = "OUT";   AnyType<TokenT::CMD_OUT,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_OUTD, std::string>::GetValue() = "OUTD";  AnyType<TokenT::CMD_OUTD, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_OUTI, std::string>::GetValue() = "OUTI";  AnyType<TokenT::CMD_OUTI, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_POP,  std::string>::GetValue() = "POP";   AnyType<TokenT::CMD_POP,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_PUSH, std::string>::GetValue() = "PUSH";  AnyType<TokenT::CMD_PUSH, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RES,  std::string>::GetValue() = "RES";   AnyType<TokenT::CMD_RES,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RET,  std::string>::GetValue() = "RET";   AnyType<TokenT::CMD_RET,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RETI, std::string>::GetValue() = "RETI";  AnyType<TokenT::CMD_RETI, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RETN, std::string>::GetValue() = "RETN";  AnyType<TokenT::CMD_RETN, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RL,   std::string>::GetValue() = "RL";    AnyType<TokenT::CMD_RL,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RLA,  std::string>::GetValue() = "RLA";   AnyType<TokenT::CMD_RLA,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RLC,  std::string>::GetValue() = "RLC";   AnyType<TokenT::CMD_RLC,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RLCA, std::string>::GetValue() = "RLCA";  AnyType<TokenT::CMD_RLCA, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RLD,  std::string>::GetValue() = "RLD";   AnyType<TokenT::CMD_RLD,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RR,   std::string>::GetValue() = "RR";    AnyType<TokenT::CMD_RR,   olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RRA,  std::string>::GetValue() = "RRA";   AnyType<TokenT::CMD_RRA,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RRC,  std::string>::GetValue() = "RRC";   AnyType<TokenT::CMD_RRC,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RRCA, std::string>::GetValue() = "RRCA";  AnyType<TokenT::CMD_RRCA, olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RRD,  std::string>::GetValue() = "RRD";   AnyType<TokenT::CMD_RRD,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_RST,  std::string>::GetValue() = "RST";   AnyType<TokenT::CMD_RST,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_SBC,  std::string>::GetValue() = "SBC";   AnyType<TokenT::CMD_SBC,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_SCF,  std::string>::GetValue() = "SCF";   AnyType<TokenT::CMD_SCF,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_SET,  std::string>::GetValue() = "SET";   AnyType<TokenT::CMD_SET,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_SLA,  std::string>::GetValue() = "SLA";   AnyType<TokenT::CMD_SLA,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_SRA,  std::string>::GetValue() = "SRA";   AnyType<TokenT::CMD_SRA,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_SRL,  std::string>::GetValue() = "SRL";   AnyType<TokenT::CMD_SRL,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_SUB,  std::string>::GetValue() = "SUB";   AnyType<TokenT::CMD_SUB,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
-    AnyType<TokenT::CMD_XOR,  std::string>::GetValue() = "XOR";   AnyType<TokenT::CMD_XOR,  olc::Pixel>::GetValue() = AnyType<Colors::MAGENTA, olc::Pixel>::GetValue();
+    AnyType<TokenT::CMD_ADC,  TokenSTR>::GetValue() = "ADC";   AnyType<TokenT::CMD_ADC,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_ADD,  TokenSTR>::GetValue() = "ADD";   AnyType<TokenT::CMD_ADD,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_AND,  TokenSTR>::GetValue() = "AND";   AnyType<TokenT::CMD_AND,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_BIT,  TokenSTR>::GetValue() = "BIT";   AnyType<TokenT::CMD_BIT,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CALL, TokenSTR>::GetValue() = "CALL";  AnyType<TokenT::CMD_CALL, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CCF,  TokenSTR>::GetValue() = "CCF";   AnyType<TokenT::CMD_CCF,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CP,   TokenSTR>::GetValue() = "CP";    AnyType<TokenT::CMD_CP,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CPD,  TokenSTR>::GetValue() = "CPD";   AnyType<TokenT::CMD_CPD,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CPDR, TokenSTR>::GetValue() = "CPDR";  AnyType<TokenT::CMD_CPDR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CPI,  TokenSTR>::GetValue() = "CPI";   AnyType<TokenT::CMD_CPI,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CPIR, TokenSTR>::GetValue() = "CPIR";  AnyType<TokenT::CMD_CPIR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_CPL,  TokenSTR>::GetValue() = "CPL";   AnyType<TokenT::CMD_CPL,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_DAA,  TokenSTR>::GetValue() = "DAA";   AnyType<TokenT::CMD_DAA,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_DEC,  TokenSTR>::GetValue() = "DEC";   AnyType<TokenT::CMD_DEC,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_DI,   TokenSTR>::GetValue() = "DI";    AnyType<TokenT::CMD_DI,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_DJNZ, TokenSTR>::GetValue() = "DJNZ";  AnyType<TokenT::CMD_DJNZ, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_EI,   TokenSTR>::GetValue() = "EI";    AnyType<TokenT::CMD_EI,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_EX,   TokenSTR>::GetValue() = "EX";    AnyType<TokenT::CMD_EX,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_EXX,  TokenSTR>::GetValue() = "EXX";   AnyType<TokenT::CMD_EXX,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_HALT, TokenSTR>::GetValue() = "HALT";  AnyType<TokenT::CMD_HALT, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_IM,   TokenSTR>::GetValue() = "IM";    AnyType<TokenT::CMD_IM,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_IN,   TokenSTR>::GetValue() = "IN";    AnyType<TokenT::CMD_IN,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_INC,  TokenSTR>::GetValue() = "INC";   AnyType<TokenT::CMD_INC,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_IND,  TokenSTR>::GetValue() = "IND";   AnyType<TokenT::CMD_IND,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_INDR, TokenSTR>::GetValue() = "INDR";  AnyType<TokenT::CMD_INDR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_INI,  TokenSTR>::GetValue() = "INI";   AnyType<TokenT::CMD_INI,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_INIR, TokenSTR>::GetValue() = "INIR";  AnyType<TokenT::CMD_INIR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_JP,   TokenSTR>::GetValue() = "JP";    AnyType<TokenT::CMD_JP,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_JR,   TokenSTR>::GetValue() = "JR";    AnyType<TokenT::CMD_JR,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_LD,   TokenSTR>::GetValue() = "LD";    AnyType<TokenT::CMD_LD,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_LDD,  TokenSTR>::GetValue() = "LDD";   AnyType<TokenT::CMD_LDD,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_LDDR, TokenSTR>::GetValue() = "LDDR";  AnyType<TokenT::CMD_LDDR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_LDI,  TokenSTR>::GetValue() = "LDI";   AnyType<TokenT::CMD_LDI,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_LDIR, TokenSTR>::GetValue() = "LDIR";  AnyType<TokenT::CMD_LDIR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_NEG,  TokenSTR>::GetValue() = "NEG";   AnyType<TokenT::CMD_NEG,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_NOP,  TokenSTR>::GetValue() = "NOP";   AnyType<TokenT::CMD_NOP,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_OR,   TokenSTR>::GetValue() = "OR";    AnyType<TokenT::CMD_OR,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_OTDR, TokenSTR>::GetValue() = "OTDR";  AnyType<TokenT::CMD_OTDR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_OTIR, TokenSTR>::GetValue() = "OTIR";  AnyType<TokenT::CMD_OTIR, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_OUT,  TokenSTR>::GetValue() = "OUT";   AnyType<TokenT::CMD_OUT,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_OUTD, TokenSTR>::GetValue() = "OUTD";  AnyType<TokenT::CMD_OUTD, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_OUTI, TokenSTR>::GetValue() = "OUTI";  AnyType<TokenT::CMD_OUTI, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_POP,  TokenSTR>::GetValue() = "POP";   AnyType<TokenT::CMD_POP,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_PUSH, TokenSTR>::GetValue() = "PUSH";  AnyType<TokenT::CMD_PUSH, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RES,  TokenSTR>::GetValue() = "RES";   AnyType<TokenT::CMD_RES,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RET,  TokenSTR>::GetValue() = "RET";   AnyType<TokenT::CMD_RET,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RETI, TokenSTR>::GetValue() = "RETI";  AnyType<TokenT::CMD_RETI, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RETN, TokenSTR>::GetValue() = "RETN";  AnyType<TokenT::CMD_RETN, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RL,   TokenSTR>::GetValue() = "RL";    AnyType<TokenT::CMD_RL,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RLA,  TokenSTR>::GetValue() = "RLA";   AnyType<TokenT::CMD_RLA,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RLC,  TokenSTR>::GetValue() = "RLC";   AnyType<TokenT::CMD_RLC,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RLCA, TokenSTR>::GetValue() = "RLCA";  AnyType<TokenT::CMD_RLCA, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RLD,  TokenSTR>::GetValue() = "RLD";   AnyType<TokenT::CMD_RLD,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RR,   TokenSTR>::GetValue() = "RR";    AnyType<TokenT::CMD_RR,   TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RRA,  TokenSTR>::GetValue() = "RRA";   AnyType<TokenT::CMD_RRA,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RRC,  TokenSTR>::GetValue() = "RRC";   AnyType<TokenT::CMD_RRC,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RRCA, TokenSTR>::GetValue() = "RRCA";  AnyType<TokenT::CMD_RRCA, TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RRD,  TokenSTR>::GetValue() = "RRD";   AnyType<TokenT::CMD_RRD,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_RST,  TokenSTR>::GetValue() = "RST";   AnyType<TokenT::CMD_RST,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_SBC,  TokenSTR>::GetValue() = "SBC";   AnyType<TokenT::CMD_SBC,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_SCF,  TokenSTR>::GetValue() = "SCF";   AnyType<TokenT::CMD_SCF,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_SET,  TokenSTR>::GetValue() = "SET";   AnyType<TokenT::CMD_SET,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_SLA,  TokenSTR>::GetValue() = "SLA";   AnyType<TokenT::CMD_SLA,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_SRA,  TokenSTR>::GetValue() = "SRA";   AnyType<TokenT::CMD_SRA,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_SRL,  TokenSTR>::GetValue() = "SRL";   AnyType<TokenT::CMD_SRL,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_SUB,  TokenSTR>::GetValue() = "SUB";   AnyType<TokenT::CMD_SUB,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
+    AnyType<TokenT::CMD_XOR,  TokenSTR>::GetValue() = "XOR";   AnyType<TokenT::CMD_XOR,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
 
-    // Registers
+    // Registers.val
 
-    AnyType<TokenT::REG_AF,   std::string>::GetValue() = "AF";    AnyType<TokenT::REG_AF,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_BC,   std::string>::GetValue() = "BC";    AnyType<TokenT::REG_BC,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_DE,   std::string>::GetValue() = "DE";    AnyType<TokenT::REG_DE,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_HL,   std::string>::GetValue() = "HL";    AnyType<TokenT::REG_HL,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_IX,   std::string>::GetValue() = "IX";    AnyType<TokenT::REG_IX,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_IY,   std::string>::GetValue() = "IY";    AnyType<TokenT::REG_IY,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_SP,   std::string>::GetValue() = "SP";    AnyType<TokenT::REG_SP,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_PC,   std::string>::GetValue() = "PC";    AnyType<TokenT::REG_PC,   olc::Pixel>::GetValue() = AnyType<Colors::ORANGE,  olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_AF,   TokenSTR>::GetValue() = "AF";    AnyType<TokenT::REG_AF,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
+    AnyType<TokenT::REG_BC,   TokenSTR>::GetValue() = "BC";    AnyType<TokenT::REG_BC,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
+    AnyType<TokenT::REG_DE,   TokenSTR>::GetValue() = "DE";    AnyType<TokenT::REG_DE,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
+    AnyType<TokenT::REG_HL,   TokenSTR>::GetValue() = "HL";    AnyType<TokenT::REG_HL,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
+    AnyType<TokenT::REG_IX,   TokenSTR>::GetValue() = "IX";    AnyType<TokenT::REG_IX,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
+    AnyType<TokenT::REG_IY,   TokenSTR>::GetValue() = "IY";    AnyType<TokenT::REG_IY,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
+    AnyType<TokenT::REG_SP,   TokenSTR>::GetValue() = "SP";    AnyType<TokenT::REG_SP,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
+    AnyType<TokenT::REG_PC,   TokenSTR>::GetValue() = "PC";    AnyType<TokenT::REG_PC,   TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE,  ColorT>::GetValue();
 
-    AnyType<TokenT::REG_AF$,  std::string>::GetValue() = "AF'";   AnyType<TokenT::REG_AF$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_BC$,  std::string>::GetValue() = "BC'";   AnyType<TokenT::REG_BC$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_DE$,  std::string>::GetValue() = "DE'";   AnyType<TokenT::REG_DE$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_HL$,  std::string>::GetValue() = "HL'";   AnyType<TokenT::REG_HL$,  olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_AF$,  TokenSTR>::GetValue() = "AF'";   AnyType<TokenT::REG_AF$,  TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_BC$,  TokenSTR>::GetValue() = "BC'";   AnyType<TokenT::REG_BC$,  TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_DE$,  TokenSTR>::GetValue() = "DE'";   AnyType<TokenT::REG_DE$,  TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_HL$,  TokenSTR>::GetValue() = "HL'";   AnyType<TokenT::REG_HL$,  TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
 
-    AnyType<TokenT::REG_A,    std::string>::GetValue() = "A";     AnyType<TokenT::REG_A,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_B,    std::string>::GetValue() = "B";     AnyType<TokenT::REG_B,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_C,    std::string>::GetValue() = "C";     AnyType<TokenT::REG_C,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_D,    std::string>::GetValue() = "D";     AnyType<TokenT::REG_D,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_E,    std::string>::GetValue() = "E";     AnyType<TokenT::REG_E,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_H,    std::string>::GetValue() = "H";     AnyType<TokenT::REG_H,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_L,    std::string>::GetValue() = "L";     AnyType<TokenT::REG_L,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_I,    std::string>::GetValue() = "I";     AnyType<TokenT::REG_I,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_R,    std::string>::GetValue() = "R";     AnyType<TokenT::REG_R,    olc::Pixel>::GetValue() = AnyType<Colors::ORANGE, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_A,    TokenSTR>::GetValue() = "A";     AnyType<TokenT::REG_A,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_B,    TokenSTR>::GetValue() = "B";     AnyType<TokenT::REG_B,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_C,    TokenSTR>::GetValue() = "C";     AnyType<TokenT::REG_C,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_D,    TokenSTR>::GetValue() = "D";     AnyType<TokenT::REG_D,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_E,    TokenSTR>::GetValue() = "E";     AnyType<TokenT::REG_E,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_H,    TokenSTR>::GetValue() = "H";     AnyType<TokenT::REG_H,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_L,    TokenSTR>::GetValue() = "L";     AnyType<TokenT::REG_L,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_I,    TokenSTR>::GetValue() = "I";     AnyType<TokenT::REG_I,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
+    AnyType<TokenT::REG_R,    TokenSTR>::GetValue() = "R";     AnyType<TokenT::REG_R,    TokenCOLOR>::GetValue() = AnyType<Colors::ORANGE, ColorT>::GetValue();
 
-    AnyType<TokenT::REG_A$,   std::string>::GetValue() = "A'";    AnyType<TokenT::REG_A$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_B$,   std::string>::GetValue() = "B'";    AnyType<TokenT::REG_B$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_C$,   std::string>::GetValue() = "C'";    AnyType<TokenT::REG_C$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_D$,   std::string>::GetValue() = "D'";    AnyType<TokenT::REG_D$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_E$,   std::string>::GetValue() = "E'";    AnyType<TokenT::REG_E$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_H$,   std::string>::GetValue() = "H'";    AnyType<TokenT::REG_H$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::REG_L$,   std::string>::GetValue() = "L'";    AnyType<TokenT::REG_L$,   olc::Pixel>::GetValue() = AnyType<Colors::DARK_YELLOW, olc::Pixel>::GetValue();
+    AnyType<TokenT::REG_A$,   TokenSTR>::GetValue() = "A'";    AnyType<TokenT::REG_A$,   TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_B$,   TokenSTR>::GetValue() = "B'";    AnyType<TokenT::REG_B$,   TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_C$,   TokenSTR>::GetValue() = "C'";    AnyType<TokenT::REG_C$,   TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_D$,   TokenSTR>::GetValue() = "D'";    AnyType<TokenT::REG_D$,   TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_E$,   TokenSTR>::GetValue() = "E'";    AnyType<TokenT::REG_E$,   TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_H$,   TokenSTR>::GetValue() = "H'";    AnyType<TokenT::REG_H$,   TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::REG_L$,   TokenSTR>::GetValue() = "L'";    AnyType<TokenT::REG_L$,   TokenCOLOR>::GetValue() = AnyType<Colors::DARK_YELLOW, ColorT>::GetValue();
 
-    AnyType<TokenT::FLAG_C,   std::string>::GetValue() = "C";     AnyType<TokenT::FLAG_C,   olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
-    AnyType<TokenT::FLAG_M,   std::string>::GetValue() = "M";     AnyType<TokenT::FLAG_M,   olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
-    AnyType<TokenT::FLAG_NC,  std::string>::GetValue() = "NC";    AnyType<TokenT::FLAG_NC,  olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
-    AnyType<TokenT::FLAG_NZ,  std::string>::GetValue() = "NZ";    AnyType<TokenT::FLAG_NZ,  olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
-    AnyType<TokenT::FLAG_P,   std::string>::GetValue() = "P";     AnyType<TokenT::FLAG_P,   olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
-    AnyType<TokenT::FLAG_PE,  std::string>::GetValue() = "PE";    AnyType<TokenT::FLAG_PE,  olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
-    AnyType<TokenT::FLAG_PO,  std::string>::GetValue() = "PO";    AnyType<TokenT::FLAG_PO,  olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
-    AnyType<TokenT::FLAG_Z,   std::string>::GetValue() = "Z";     AnyType<TokenT::FLAG_Z,   olc::Pixel>::GetValue() = AnyType<Colors::BLUE,   olc::Pixel>::GetValue();
+    AnyType<TokenT::FLAG_C,   TokenSTR>::GetValue() = "C";     AnyType<TokenT::FLAG_C,   TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
+    AnyType<TokenT::FLAG_M,   TokenSTR>::GetValue() = "M";     AnyType<TokenT::FLAG_M,   TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
+    AnyType<TokenT::FLAG_NC,  TokenSTR>::GetValue() = "NC";    AnyType<TokenT::FLAG_NC,  TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
+    AnyType<TokenT::FLAG_NZ,  TokenSTR>::GetValue() = "NZ";    AnyType<TokenT::FLAG_NZ,  TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
+    AnyType<TokenT::FLAG_P,   TokenSTR>::GetValue() = "P";     AnyType<TokenT::FLAG_P,   TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
+    AnyType<TokenT::FLAG_PE,  TokenSTR>::GetValue() = "PE";    AnyType<TokenT::FLAG_PE,  TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
+    AnyType<TokenT::FLAG_PO,  TokenSTR>::GetValue() = "PO";    AnyType<TokenT::FLAG_PO,  TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
+    AnyType<TokenT::FLAG_Z,   TokenSTR>::GetValue() = "Z";     AnyType<TokenT::FLAG_Z,   TokenCOLOR>::GetValue() = AnyType<Colors::BLUE,   ColorT>::GetValue();
 
     // Literals
-    AnyType<TokenT::NUMBER,     olc::Pixel>::GetValue() = AnyType<Colors::RED,    olc::Pixel>::GetValue();
-    AnyType<TokenT::STRING,     olc::Pixel>::GetValue() = AnyType<Colors::YELLOW, olc::Pixel>::GetValue();
-    AnyType<TokenT::IDENTIFIER, olc::Pixel>::GetValue() = AnyType<Colors::WHITE,  olc::Pixel>::GetValue();
+    AnyType<TokenT::NUMBER,     TokenCOLOR>::GetValue() = AnyType<Colors::RED,    ColorT>::GetValue();
+    AnyType<TokenT::STRING,     TokenCOLOR>::GetValue() = AnyType<Colors::YELLOW, ColorT>::GetValue();
+    AnyType<TokenT::IDENTIFIER, TokenCOLOR>::GetValue() = AnyType<Colors::WHITE,  ColorT>::GetValue();
   }
 
   static inline uint32_t Reg2Mask(TokenT reg) {
