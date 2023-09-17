@@ -1,5 +1,5 @@
 #pragma once
-#include "Bus.h"
+#include "Defs.h"
 
 namespace Bus {
 
