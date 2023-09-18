@@ -109,7 +109,13 @@ enum IyBitInstruction {
  * All of those instructions start with code 0xED
  */
 enum MiscInstruction {
-  // TODO: Misc Instruction
+  IN_B_c = 0x40,    OUT_c_B = 0x41,  SBC_HL_BC = 0x42, LD_nn_BC = 0x43, NEG = 0x44,       RETN = 0x45,     IM_0 = 0x46,       LD_I_A = 0x47,  IN_C_c = 0x48,    OUT_c_C = 0x49,  ADC_HL_BC = 0x4A, LD_BC_nn = 0x4B, RTI = 0x4D, LD_R_A = 0x4F,
+  IN_D_c = 0x50,    OUT_c_D = 0x51,  SBC_HL_DE = 0x52, LD_nn_DE = 0x53, IM_1 = 0x56,      LD_A_I = 0x57,   IN_E_c = 0x58,     OUT_c_E = 0x59, ADC_HL_DE = 0x5A, LD_DE_nn = 0x5B, IM_2 = 0x5E,      LD_A_R = 0x5F,
+  IN_H_c = 0x60,    OUT_c_H = 0x61,  SBC_HL_HL = 0x62, RRD = 0x67,      IN_L_c = 0x68,    OUT_c_L = 0x69,  ADC_HL_HL = 0x6A, RLD = 0x6F,
+  SBC_HL_SP = 0x72, LD_nn_SP = 0x73, IN_A_c = 0x78,    OUT_c_A = 0x79,  ADC_HL_SP = 0x7A, LD_SP_nn = 0x7B,
+
+  LDI = 0xA0,  CPI = 0xA1,  INI = 0xA2,  OUTI = 0xA3,   LDD = 0xA8,  CPD = 0xA9,  IND = 0xAA,  OUTD = 0xAB,
+  LDIR = 0xB0, CPIR = 0xB1, INIR = 0xB2, OTIR = 0xB3,   LDDR = 0xB8, CPDR = 0xB9, INDR = 0xBA, OTDR = 0xBB,
 };
 
 typedef TypeList<Instruction, std::string> InstrSTR;
@@ -465,8 +471,40 @@ typedef TypeList<
   AnyType<IyBitInstruction::SET_4_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_5_iyd, IyBitSTR>, TypeList<
   AnyType<IyBitInstruction::BIT_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_7_iyd, IyBitSTR>, TypeList<
   AnyType<IyBitInstruction::RES_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_7_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::SET_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_7_iyd, IyBitSTR>,  NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<IyBitInstruction::SET_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_7_iyd, IyBitSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     IyBitInstructions;
+
+typedef TypeList<
+  AnyType<MiscInstruction::IN_B_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_B,  MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IN_D_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_D,  MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IN_H_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_H,  MiscSTR>, TypeList<
+  AnyType<MiscInstruction::SBC_HL_SP, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_nn_DE, MiscSTR>, TypeList<
+  AnyType<MiscInstruction::SBC_HL_BC, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_nn_BC, MiscSTR>, TypeList<
+  AnyType<MiscInstruction::SBC_HL_DE, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_nn_SP, MiscSTR>, TypeList<
+  AnyType<MiscInstruction::SBC_HL_HL, MiscSTR>, TypeList<AnyType<MiscInstruction::RRD,      MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IN_A_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_A,  MiscSTR>, TypeList<
+  AnyType<MiscInstruction::NEG,       MiscSTR>, TypeList<AnyType<MiscInstruction::RETN,     MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IM_1,      MiscSTR>, TypeList<AnyType<MiscInstruction::LD_A_I,   MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IN_L_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_L,  MiscSTR>, TypeList<
+  AnyType<MiscInstruction::ADC_HL_SP, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_SP_nn, MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IM_0,      MiscSTR>, TypeList<AnyType<MiscInstruction::LD_I_A,   MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IN_E_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_E,  MiscSTR>, TypeList<
+  AnyType<MiscInstruction::ADC_HL_HL, MiscSTR>, TypeList<AnyType<MiscInstruction::RLD,      MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IN_C_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_C,  MiscSTR>, TypeList<
+  AnyType<MiscInstruction::ADC_HL_BC, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_BC_nn, MiscSTR>, TypeList<
+  AnyType<MiscInstruction::RTI,       MiscSTR>, TypeList<AnyType<MiscInstruction::LD_R_A,   MiscSTR>, TypeList<
+  AnyType<MiscInstruction::ADC_HL_DE, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_DE_nn, MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IM_2,      MiscSTR>, TypeList<AnyType<MiscInstruction::LD_A_R,   MiscSTR>, TypeList<
+  AnyType<MiscInstruction::LDI,       MiscSTR>, TypeList<AnyType<MiscInstruction::CPI,      MiscSTR>, TypeList<
+  AnyType<MiscInstruction::LDIR,      MiscSTR>, TypeList<AnyType<MiscInstruction::CPIR,     MiscSTR>, TypeList<
+  AnyType<MiscInstruction::INI,       MiscSTR>, TypeList<AnyType<MiscInstruction::OUTI,     MiscSTR>, TypeList<
+  AnyType<MiscInstruction::INIR,      MiscSTR>, TypeList<AnyType<MiscInstruction::OTIR,     MiscSTR>, TypeList<
+  AnyType<MiscInstruction::LDD,       MiscSTR>, TypeList<AnyType<MiscInstruction::CPD,      MiscSTR>, TypeList<
+  AnyType<MiscInstruction::LDDR,      MiscSTR>, TypeList<AnyType<MiscInstruction::CPDR,     MiscSTR>, TypeList<
+  AnyType<MiscInstruction::IND,       MiscSTR>, TypeList<AnyType<MiscInstruction::OUTD,     MiscSTR>, TypeList<
+  AnyType<MiscInstruction::INDR,      MiscSTR>, TypeList<AnyType<MiscInstruction::OTDR,     MiscSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    MiscMInstructions;
+
 
 };
 
@@ -620,7 +658,7 @@ public:
     AnyType<Z80::XOR_D,    Z80::InstrSTR>::GetValue() = "XOR D";             AnyType<Z80::XOR_E,     Z80::InstrSTR>::GetValue() = "XOR E";
     AnyType<Z80::CP_D,     Z80::InstrSTR>::GetValue() = "CP D";              AnyType<Z80::CP_E,      Z80::InstrSTR>::GetValue() = "CP E";
     AnyType<Z80::JP_Z_NN,  Z80::InstrSTR>::GetValue() = "JP Z, 0x%04x";      AnyType<Z80::BIT_INSTR, Z80::InstrSTR>::GetValue() = "";
-    AnyType<Z80::JP_C_NN,  Z80::InstrSTR>::GetValue() = "JP C, 0x%04x";      AnyType<Z80::IN_A_n,    Z80::InstrSTR>::GetValue() = "IN A, 0x%02x";
+    AnyType<Z80::JP_C_NN,  Z80::InstrSTR>::GetValue() = "JP C, 0x%04x";      AnyType<Z80::IN_A_n,    Z80::InstrSTR>::GetValue() = "IN A, (0x%02x)";
     AnyType<Z80::JP_PE_NN, Z80::InstrSTR>::GetValue() = "JP PE, 0x%04x";     AnyType<Z80::EX_DE_HL,  Z80::InstrSTR>::GetValue() = "EX DE, HL";
     AnyType<Z80::JP_M_NN,  Z80::InstrSTR>::GetValue() = "JP M, 0x%04x";      AnyType<Z80::EI,        Z80::InstrSTR>::GetValue() = "EI";
 
@@ -886,7 +924,39 @@ public:
     AnyType<Z80::RES_6_iyd, Z80::IyBitSTR>::GetValue() = "RES 6, (IY+%d)";  AnyType<Z80::RES_7_iyd, Z80::IyBitSTR>::GetValue() = "RES 7, (IY+%d)";
     AnyType<Z80::SET_6_iyd, Z80::IyBitSTR>::GetValue() = "SET 6, (IY+%d)";  AnyType<Z80::SET_7_iyd, Z80::IyBitSTR>::GetValue() = "SET 7, (IY+%d)";
 
-    // TODO: Misc Instruction
+    
+
+    // Misc Instruction
+    AnyType<Z80::IN_B_c,    Z80::MiscSTR>::GetValue() = "IN B, (C)";  AnyType<Z80::OUT_c_B,  Z80::MiscSTR>::GetValue() = "OUT (C), B";
+    AnyType<Z80::IN_D_c,    Z80::MiscSTR>::GetValue() = "IN D, (C)";  AnyType<Z80::OUT_c_D,  Z80::MiscSTR>::GetValue() = "OUT (C), D";
+    AnyType<Z80::IN_H_c,    Z80::MiscSTR>::GetValue() = "IN H, (C)";  AnyType<Z80::OUT_c_H,  Z80::MiscSTR>::GetValue() = "OUT (C), H";
+    AnyType<Z80::SBC_HL_SP, Z80::MiscSTR>::GetValue() = "SBC HL, SP"; AnyType<Z80::LD_nn_DE, Z80::MiscSTR>::GetValue() = "LD (0x%04x), DE";
+    AnyType<Z80::SBC_HL_BC, Z80::MiscSTR>::GetValue() = "SBC HL, BC"; AnyType<Z80::LD_nn_BC, Z80::MiscSTR>::GetValue() = "LD (0x%04x), BC";
+    AnyType<Z80::SBC_HL_DE, Z80::MiscSTR>::GetValue() = "SBC HL, DE"; AnyType<Z80::LD_nn_SP, Z80::MiscSTR>::GetValue() = "LD (0x%04x), SP";
+    AnyType<Z80::SBC_HL_HL, Z80::MiscSTR>::GetValue() = "SBC HL, HL"; AnyType<Z80::RRD,      Z80::MiscSTR>::GetValue() = "RRD";
+    AnyType<Z80::IN_A_c,    Z80::MiscSTR>::GetValue() = "IN A, (C)";  AnyType<Z80::OUT_c_A,  Z80::MiscSTR>::GetValue() = "OUT (C), A";
+    AnyType<Z80::NEG,       Z80::MiscSTR>::GetValue() = "NEG";        AnyType<Z80::RETN,     Z80::MiscSTR>::GetValue() = "RETN";
+    AnyType<Z80::IM_1,      Z80::MiscSTR>::GetValue() = "IM 1";       AnyType<Z80::LD_A_I,   Z80::MiscSTR>::GetValue() = "LD A, I";
+    AnyType<Z80::IN_L_c,    Z80::MiscSTR>::GetValue() = "IN L, (C)";  AnyType<Z80::OUT_c_L,  Z80::MiscSTR>::GetValue() = "OUT (C), L";
+    AnyType<Z80::ADC_HL_SP, Z80::MiscSTR>::GetValue() = "ADC HL, SP"; AnyType<Z80::LD_SP_nn, Z80::MiscSTR>::GetValue() = "LD SP, (0x%04x)";
+    AnyType<Z80::IM_0,      Z80::MiscSTR>::GetValue() = "IM 0";       AnyType<Z80::LD_I_A,   Z80::MiscSTR>::GetValue() = "LD I, A";
+    AnyType<Z80::IN_E_c,    Z80::MiscSTR>::GetValue() = "IN E, (C)";  AnyType<Z80::OUT_c_E,  Z80::MiscSTR>::GetValue() = "OUT (C), E";
+    AnyType<Z80::ADC_HL_HL, Z80::MiscSTR>::GetValue() = "ADC HL, HL"; AnyType<Z80::RLD,      Z80::MiscSTR>::GetValue() = "RLD";
+    AnyType<Z80::IN_C_c,    Z80::MiscSTR>::GetValue() = "IN C, (C)";  AnyType<Z80::OUT_c_C,  Z80::MiscSTR>::GetValue() = "OUT (C), C";
+    AnyType<Z80::ADC_HL_BC, Z80::MiscSTR>::GetValue() = "ADC HL, BC"; AnyType<Z80::LD_BC_nn, Z80::MiscSTR>::GetValue() = "LD BC, (0x%04x)";
+    AnyType<Z80::RTI,       Z80::MiscSTR>::GetValue() = "RTI";        AnyType<Z80::LD_R_A,   Z80::MiscSTR>::GetValue() = "LD R, A";
+    AnyType<Z80::ADC_HL_DE, Z80::MiscSTR>::GetValue() = "ADC HL, DE"; AnyType<Z80::LD_DE_nn, Z80::MiscSTR>::GetValue() = "LD DE, (0x%04x)";
+    AnyType<Z80::IM_2,      Z80::MiscSTR>::GetValue() = "IM 2";       AnyType<Z80::LD_A_R,   Z80::MiscSTR>::GetValue() = "LD A, R";
+    AnyType<Z80::LDI,       Z80::MiscSTR>::GetValue() = "LDI";        AnyType<Z80::CPI,      Z80::MiscSTR>::GetValue() = "CPI";
+    AnyType<Z80::LDIR,      Z80::MiscSTR>::GetValue() = "LDIR";       AnyType<Z80::CPIR,     Z80::MiscSTR>::GetValue() = "CPIR";
+    AnyType<Z80::INI,       Z80::MiscSTR>::GetValue() = "INI";        AnyType<Z80::OUTI,     Z80::MiscSTR>::GetValue() = "OUTI";
+    AnyType<Z80::INIR,      Z80::MiscSTR>::GetValue() = "INIR";       AnyType<Z80::OTIR,     Z80::MiscSTR>::GetValue() = "OTIR";
+    AnyType<Z80::LDD,       Z80::MiscSTR>::GetValue() = "LDD";        AnyType<Z80::CPD,      Z80::MiscSTR>::GetValue() = "CPD";
+    AnyType<Z80::LDDR,      Z80::MiscSTR>::GetValue() = "LDDR";       AnyType<Z80::CPDR,     Z80::MiscSTR>::GetValue() = "CPDR";
+    AnyType<Z80::IND,       Z80::MiscSTR>::GetValue() = "IND";        AnyType<Z80::OUTD,     Z80::MiscSTR>::GetValue() = "OUTD";
+    AnyType<Z80::INDR,      Z80::MiscSTR>::GetValue() = "INDR";       AnyType<Z80::OTDR,     Z80::MiscSTR>::GetValue() = "OTDR";
+
+
   }
 };
 };

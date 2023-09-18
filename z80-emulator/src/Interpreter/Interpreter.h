@@ -228,11 +228,6 @@ public:
 
     result.insert(result.end(), expr.rbegin(), expr.rend());
 
-    if (stmt->opcode == 0x01) {
-      for (auto t : expr) printf("%02x ", t);
-      printf(" size = %d\n", ((ExpressionLiteral *)stmt->expr.get())->size);
-    }
-
     env.bind(stmt->token);
     return result;
   }
