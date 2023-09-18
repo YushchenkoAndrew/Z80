@@ -112,6 +112,362 @@ enum MiscInstruction {
   // TODO: Misc Instruction
 };
 
+typedef TypeList<Instruction, std::string> InstrSTR;
+typedef TypeList<BitInstruction, std::string> BitSTR;
+typedef TypeList<IxInstruction, std::string> IxSTR;
+typedef TypeList<IyInstruction, std::string> IySTR;
+typedef TypeList<MiscInstruction, std::string> MiscSTR;
+typedef TypeList<IxBitInstruction, std::string> IxBitSTR;
+typedef TypeList<IyBitInstruction, std::string> IyBitSTR;
+
+typedef TypeList<
+  AnyType<Instruction::NOP,       InstrSTR>, TypeList<AnyType<Instruction::LD_BC_NN,  InstrSTR>, TypeList<
+  AnyType<Instruction::DJNZ_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_DE_NN,  InstrSTR>, TypeList<
+  AnyType<Instruction::JR_NZ_D,   InstrSTR>, TypeList<AnyType<Instruction::LD_HL_NN,  InstrSTR>, TypeList<
+  AnyType<Instruction::JR_NC_D,   InstrSTR>, TypeList<AnyType<Instruction::LD_SP_NN,  InstrSTR>, TypeList<
+  AnyType<Instruction::LD_B_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_B_C,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_D_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_D_C,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_H_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_H_C,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_hl_B,   InstrSTR>, TypeList<AnyType<Instruction::LD_hl_C,   InstrSTR>, TypeList<
+  AnyType<Instruction::ADD_A_B,   InstrSTR>, TypeList<AnyType<Instruction::ADD_A_C,   InstrSTR>, TypeList<
+  AnyType<Instruction::SUB_B,     InstrSTR>, TypeList<AnyType<Instruction::SUB_C,     InstrSTR>, TypeList<
+  AnyType<Instruction::AND_B,     InstrSTR>, TypeList<AnyType<Instruction::AND_C,     InstrSTR>, TypeList<
+  AnyType<Instruction::OR_B,      InstrSTR>, TypeList<AnyType<Instruction::OR_C,      InstrSTR>, TypeList<
+  AnyType<Instruction::RET_NZ,    InstrSTR>, TypeList<AnyType<Instruction::POP_BC,    InstrSTR>, TypeList<
+  AnyType<Instruction::RET_NC,    InstrSTR>, TypeList<AnyType<Instruction::POP_DE,    InstrSTR>, TypeList<
+  AnyType<Instruction::RET_PO,    InstrSTR>, TypeList<AnyType<Instruction::POP_HL,    InstrSTR>, TypeList<
+  AnyType<Instruction::RET_P,     InstrSTR>, TypeList<AnyType<Instruction::POP_AF,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_bc_A,   InstrSTR>, TypeList<AnyType<Instruction::INC_BC,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_de_A,   InstrSTR>, TypeList<AnyType<Instruction::INC_DE,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_nn_HL,  InstrSTR>, TypeList<AnyType<Instruction::INC_HL,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_nn_A,   InstrSTR>, TypeList<AnyType<Instruction::INC_SP,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_B_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_B_E,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_D_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_D_E,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_H_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_H_E,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_hl_D,   InstrSTR>, TypeList<AnyType<Instruction::LD_hl_E,   InstrSTR>, TypeList<
+  AnyType<Instruction::ADD_A_D,   InstrSTR>, TypeList<AnyType<Instruction::ADD_A_E,   InstrSTR>, TypeList<
+  AnyType<Instruction::SUB_D,     InstrSTR>, TypeList<AnyType<Instruction::SUB_E,     InstrSTR>, TypeList<
+  AnyType<Instruction::AND_D,     InstrSTR>, TypeList<AnyType<Instruction::AND_E,     InstrSTR>, TypeList<
+  AnyType<Instruction::OR_D,      InstrSTR>, TypeList<AnyType<Instruction::OR_E,      InstrSTR>, TypeList<
+  AnyType<Instruction::JP_NZ_NN,  InstrSTR>, TypeList<AnyType<Instruction::JP_NN,     InstrSTR>, TypeList<
+  AnyType<Instruction::JP_NC_NN,  InstrSTR>, TypeList<AnyType<Instruction::OUT_n_A,   InstrSTR>, TypeList<
+  AnyType<Instruction::JP_PO_NN,  InstrSTR>, TypeList<AnyType<Instruction::EX_sp_HL,  InstrSTR>, TypeList<
+  AnyType<Instruction::JP_P_NN,   InstrSTR>, TypeList<AnyType<Instruction::DI,        InstrSTR>, TypeList<
+  AnyType<Instruction::INC_B,     InstrSTR>, TypeList<AnyType<Instruction::DEC_B,     InstrSTR>, TypeList<
+  AnyType<Instruction::INC_D,     InstrSTR>, TypeList<AnyType<Instruction::DEC_D,     InstrSTR>, TypeList<
+  AnyType<Instruction::INC_H,     InstrSTR>, TypeList<AnyType<Instruction::DEC_H,     InstrSTR>, TypeList<
+  AnyType<Instruction::INC_hl,    InstrSTR>, TypeList<AnyType<Instruction::DEC_hl,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_B_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_B_L,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_D_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_D_L,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_H_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_H_L,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_hl_H,   InstrSTR>, TypeList<AnyType<Instruction::LD_hl_L,   InstrSTR>, TypeList<
+  AnyType<Instruction::ADD_A_H,   InstrSTR>, TypeList<AnyType<Instruction::ADD_A_L,   InstrSTR>, TypeList<
+  AnyType<Instruction::SUB_H,     InstrSTR>, TypeList<AnyType<Instruction::SUB_L,     InstrSTR>, TypeList<
+  AnyType<Instruction::AND_H,     InstrSTR>, TypeList<AnyType<Instruction::AND_L,     InstrSTR>, TypeList<
+  AnyType<Instruction::OR_H,      InstrSTR>, TypeList<AnyType<Instruction::OR_L,      InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_NZ_NN,InstrSTR>, TypeList<AnyType<Instruction::PUSH_BC,   InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_NC_NN,InstrSTR>, TypeList<AnyType<Instruction::PUSH_DE,   InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_PO_NN,InstrSTR>, TypeList<AnyType<Instruction::PUSH_HL,   InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_P_NN, InstrSTR>, TypeList<AnyType<Instruction::PUSH_AF,   InstrSTR>, TypeList<
+  AnyType<Instruction::LD_B_N,    InstrSTR>, TypeList<AnyType<Instruction::RLCA,      InstrSTR>, TypeList<
+  AnyType<Instruction::LD_D_N,    InstrSTR>, TypeList<AnyType<Instruction::RLA,       InstrSTR>, TypeList<
+  AnyType<Instruction::LD_H_N,    InstrSTR>, TypeList<AnyType<Instruction::DAA,       InstrSTR>, TypeList<
+  AnyType<Instruction::LD_hl_n,   InstrSTR>, TypeList<AnyType<Instruction::SCF,       InstrSTR>, TypeList<
+  AnyType<Instruction::LD_B_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_B_A,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_D_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_D_A,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_H_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_H_A,    InstrSTR>, TypeList<
+  AnyType<Instruction::HALT,      InstrSTR>, TypeList<AnyType<Instruction::LD_hl_A,   InstrSTR>, TypeList<
+  AnyType<Instruction::ADD_A_hl,  InstrSTR>, TypeList<AnyType<Instruction::ADD_A_A,   InstrSTR>, TypeList<
+  AnyType<Instruction::SUB_hl,    InstrSTR>, TypeList<AnyType<Instruction::SUB_A,     InstrSTR>, TypeList<
+  AnyType<Instruction::AND_hl,    InstrSTR>, TypeList<AnyType<Instruction::AND_A,     InstrSTR>, TypeList<
+  AnyType<Instruction::OR_hl,     InstrSTR>, TypeList<AnyType<Instruction::OR_A,      InstrSTR>, TypeList<
+  AnyType<Instruction::ADD_A_N,   InstrSTR>, TypeList<AnyType<Instruction::RST_00h,   InstrSTR>, TypeList<
+  AnyType<Instruction::SUB_N,     InstrSTR>, TypeList<AnyType<Instruction::RST_10h,   InstrSTR>, TypeList<
+  AnyType<Instruction::AND_N,     InstrSTR>, TypeList<AnyType<Instruction::RST_20h,   InstrSTR>, TypeList<
+  AnyType<Instruction::OR_N,      InstrSTR>, TypeList<AnyType<Instruction::RST_30h,   InstrSTR>, TypeList<
+  AnyType<Instruction::EX_AF_AF,  InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_BC, InstrSTR>, TypeList<
+  AnyType<Instruction::JR_D,      InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_DE, InstrSTR>, TypeList<
+  AnyType<Instruction::JR_Z_D,    InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_HL, InstrSTR>, TypeList<
+  AnyType<Instruction::JR_C_D,    InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_SP, InstrSTR>, TypeList<
+  AnyType<Instruction::LD_C_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_C_C,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_E_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_E_C,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_L_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_L_C,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_A_C,    InstrSTR>, TypeList<
+  AnyType<Instruction::ADC_A_B,   InstrSTR>, TypeList<AnyType<Instruction::ADC_A_C,   InstrSTR>, TypeList<
+  AnyType<Instruction::SBC_A_B,   InstrSTR>, TypeList<AnyType<Instruction::SBC_A_C,   InstrSTR>, TypeList<
+  AnyType<Instruction::XOR_B,     InstrSTR>, TypeList<AnyType<Instruction::XOR_C,     InstrSTR>, TypeList<
+  AnyType<Instruction::CP_B,      InstrSTR>, TypeList<AnyType<Instruction::CP_C,      InstrSTR>, TypeList<
+  AnyType<Instruction::RET_Z,     InstrSTR>, TypeList<AnyType<Instruction::RET,       InstrSTR>, TypeList<
+  AnyType<Instruction::RET_C,     InstrSTR>, TypeList<AnyType<Instruction::EXX,       InstrSTR>, TypeList<
+  AnyType<Instruction::RET_PE,    InstrSTR>, TypeList<AnyType<Instruction::JP_hl,     InstrSTR>, TypeList<
+  AnyType<Instruction::RET_M,     InstrSTR>, TypeList<AnyType<Instruction::JP_SP_HL,  InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_bc,   InstrSTR>, TypeList<AnyType<Instruction::DEC_BC,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_de,   InstrSTR>, TypeList<AnyType<Instruction::DEC_DE,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_HL_nn,  InstrSTR>, TypeList<AnyType<Instruction::DEC_HL,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_nn,   InstrSTR>, TypeList<AnyType<Instruction::DEC_SP,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_C_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_C_E,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_E_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_E_E,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_L_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_L_E,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_A_E,    InstrSTR>, TypeList<
+  AnyType<Instruction::ADC_A_D,   InstrSTR>, TypeList<AnyType<Instruction::ADC_A_E,   InstrSTR>, TypeList<
+  AnyType<Instruction::SBC_A_D,   InstrSTR>, TypeList<AnyType<Instruction::SBC_A_E,   InstrSTR>, TypeList<
+  AnyType<Instruction::XOR_D,     InstrSTR>, TypeList<AnyType<Instruction::XOR_E,     InstrSTR>, TypeList<
+  AnyType<Instruction::CP_D,      InstrSTR>, TypeList<AnyType<Instruction::CP_E,      InstrSTR>, TypeList<
+  AnyType<Instruction::JP_Z_NN,   InstrSTR>, TypeList<AnyType<Instruction::BIT_INSTR, InstrSTR>, TypeList<
+  AnyType<Instruction::JP_C_NN,   InstrSTR>, TypeList<AnyType<Instruction::IN_A_n,    InstrSTR>, TypeList<
+  AnyType<Instruction::JP_PE_NN,  InstrSTR>, TypeList<AnyType<Instruction::EX_DE_HL,  InstrSTR>, TypeList<
+  AnyType<Instruction::JP_M_NN,   InstrSTR>, TypeList<AnyType<Instruction::EI,        InstrSTR>, TypeList<
+  AnyType<Instruction::INC_C,     InstrSTR>, TypeList<AnyType<Instruction::DEC_C,     InstrSTR>, TypeList<
+  AnyType<Instruction::INC_E,     InstrSTR>, TypeList<AnyType<Instruction::DEC_E,     InstrSTR>, TypeList<
+  AnyType<Instruction::INC_L,     InstrSTR>, TypeList<AnyType<Instruction::DEC_L,     InstrSTR>, TypeList<
+  AnyType<Instruction::INC_A,     InstrSTR>, TypeList<AnyType<Instruction::DEC_A,     InstrSTR>, TypeList<
+  AnyType<Instruction::LD_C_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_C_L,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_E_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_E_L,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_L_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_L_L,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_A_L,    InstrSTR>, TypeList<
+  AnyType<Instruction::ADC_A_H,   InstrSTR>, TypeList<AnyType<Instruction::ADC_A_L,   InstrSTR>, TypeList<
+  AnyType<Instruction::SBC_A_H,   InstrSTR>, TypeList<AnyType<Instruction::SBC_A_L,   InstrSTR>, TypeList<
+  AnyType<Instruction::XOR_H,     InstrSTR>, TypeList<AnyType<Instruction::XOR_L,     InstrSTR>, TypeList<
+  AnyType<Instruction::CP_H,      InstrSTR>, TypeList<AnyType<Instruction::CP_L,      InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_Z_NN, InstrSTR>, TypeList<AnyType<Instruction::CALL_NN,   InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_C_NN, InstrSTR>, TypeList<AnyType<Instruction::IX_INSTR,  InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_PE_NN,InstrSTR>, TypeList<AnyType<Instruction::MISC_INSTR,InstrSTR>, TypeList<
+  AnyType<Instruction::CALL_M_NN, InstrSTR>, TypeList<AnyType<Instruction::IY_INSTR,  InstrSTR>, TypeList<
+  AnyType<Instruction::LD_C_N,    InstrSTR>, TypeList<AnyType<Instruction::RRCA,      InstrSTR>, TypeList<
+  AnyType<Instruction::LD_E_N,    InstrSTR>, TypeList<AnyType<Instruction::RRA,       InstrSTR>, TypeList<
+  AnyType<Instruction::LD_L_N,    InstrSTR>, TypeList<AnyType<Instruction::CPL,       InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_N,    InstrSTR>, TypeList<AnyType<Instruction::CCF,       InstrSTR>, TypeList<
+  AnyType<Instruction::LD_C_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_C_A,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_E_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_E_A,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_L_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_L_A,    InstrSTR>, TypeList<
+  AnyType<Instruction::LD_A_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_A_A,    InstrSTR>, TypeList<
+  AnyType<Instruction::ADC_A_hl,  InstrSTR>, TypeList<AnyType<Instruction::ADC_A_A,   InstrSTR>, TypeList<
+  AnyType<Instruction::SBC_A_hl,  InstrSTR>, TypeList<AnyType<Instruction::SBC_A_A,   InstrSTR>, TypeList<
+  AnyType<Instruction::XOR_hl,    InstrSTR>, TypeList<AnyType<Instruction::XOR_A,     InstrSTR>, TypeList<
+  AnyType<Instruction::CP_hl,     InstrSTR>, TypeList<AnyType<Instruction::CP_A,      InstrSTR>, TypeList<
+  AnyType<Instruction::ADC_A_N,   InstrSTR>, TypeList<AnyType<Instruction::RST_08h,   InstrSTR>, TypeList<
+  AnyType<Instruction::SBC_A_N,   InstrSTR>, TypeList<AnyType<Instruction::RST_18h,   InstrSTR>, TypeList<
+  AnyType<Instruction::XOR_N,     InstrSTR>, TypeList<AnyType<Instruction::RST_28h,   InstrSTR>, TypeList<
+  AnyType<Instruction::CP_N,      InstrSTR>, TypeList<AnyType<Instruction::RST_38h,   InstrSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    Instructions;
+
+
+typedef TypeList<
+  AnyType<BitInstruction::RLC_B,   BitSTR>, TypeList<AnyType<BitInstruction::RLC_C,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RL_B,    BitSTR>, TypeList<AnyType<BitInstruction::RL_C,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SLA_B,   BitSTR>, TypeList<AnyType<BitInstruction::SLA_C,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SLL_B,   BitSTR>, TypeList<AnyType<BitInstruction::SLL_C,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_0_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_2_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_4_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_6_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_0_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_0_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_2_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_2_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_4_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_4_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_6_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_6_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_0_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_0_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_2_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_2_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_4_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_4_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_6_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_6_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RLC_D,   BitSTR>, TypeList<AnyType<BitInstruction::RLC_E,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RL_D,    BitSTR>, TypeList<AnyType<BitInstruction::RL_E,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SLA_D,   BitSTR>, TypeList<AnyType<BitInstruction::SLA_E,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SLL_D,   BitSTR>, TypeList<AnyType<BitInstruction::SLL_E,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_0_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_2_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_4_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_6_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_0_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_0_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_2_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_2_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_4_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_4_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_6_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_6_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_0_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_0_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_2_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_2_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_4_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_4_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_6_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_6_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RLC_H,   BitSTR>, TypeList<AnyType<BitInstruction::RLC_L,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RL_H,    BitSTR>, TypeList<AnyType<BitInstruction::RL_L,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SLA_H,   BitSTR>, TypeList<AnyType<BitInstruction::SLA_L,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SLL_H,   BitSTR>, TypeList<AnyType<BitInstruction::SLL_L,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_0_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_2_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_4_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_6_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_0_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_0_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_2_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_2_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_4_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_4_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_6_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_6_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_0_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_0_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_2_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_2_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_4_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_4_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_6_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_6_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RLC_hl,  BitSTR>, TypeList<AnyType<BitInstruction::RLC_A,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RL_hl,   BitSTR>, TypeList<AnyType<BitInstruction::RL_A,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SLA_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SLA_A,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SLL_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SLL_A,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_0_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_2_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_4_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_6_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_0_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_0_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_2_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_2_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_4_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_4_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_6_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_6_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_0_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_0_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_2_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_2_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_4_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_4_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_6_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_6_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RRC_B,   BitSTR>, TypeList<AnyType<BitInstruction::RRC_C,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RR_B,    BitSTR>, TypeList<AnyType<BitInstruction::RR_C,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SRA_B,   BitSTR>, TypeList<AnyType<BitInstruction::SRA_C,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SRL_B,   BitSTR>, TypeList<AnyType<BitInstruction::SRL_C,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_1_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_3_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_5_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_7_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_1_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_1_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_3_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_3_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_5_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_5_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_7_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_7_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_1_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_1_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_3_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_3_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_5_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_5_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_7_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_7_C, BitSTR>, TypeList<
+  AnyType<BitInstruction::RRC_D,   BitSTR>, TypeList<AnyType<BitInstruction::RRC_E,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RR_D,    BitSTR>, TypeList<AnyType<BitInstruction::RR_E,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SRA_D,   BitSTR>, TypeList<AnyType<BitInstruction::SRA_E,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SRL_D,   BitSTR>, TypeList<AnyType<BitInstruction::SRL_E,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_1_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_3_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_5_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_7_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_1_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_1_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_3_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_3_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_5_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_5_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_7_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_7_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_1_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_1_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_3_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_3_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_5_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_5_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_7_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_7_E, BitSTR>, TypeList<
+  AnyType<BitInstruction::RRC_H,   BitSTR>, TypeList<AnyType<BitInstruction::RRC_L,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RR_H,    BitSTR>, TypeList<AnyType<BitInstruction::RR_L,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SRA_H,   BitSTR>, TypeList<AnyType<BitInstruction::SRA_L,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SRL_H,   BitSTR>, TypeList<AnyType<BitInstruction::SRL_L,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_1_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_3_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_5_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_7_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_1_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_1_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_3_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_3_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_5_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_5_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_7_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_7_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_1_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_1_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_3_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_3_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_5_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_5_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_7_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_7_L, BitSTR>, TypeList<
+  AnyType<BitInstruction::RRC_hl,  BitSTR>, TypeList<AnyType<BitInstruction::RRC_A,   BitSTR>, TypeList<
+  AnyType<BitInstruction::RR_hl,   BitSTR>, TypeList<AnyType<BitInstruction::RR_A,    BitSTR>, TypeList<
+  AnyType<BitInstruction::SRA_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SRA_A,   BitSTR>, TypeList<
+  AnyType<BitInstruction::SRL_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SRL_A,   BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_1_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_3_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_5_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::BIT_7_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_1_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_1_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_3_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_3_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_5_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_5_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::RES_7_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_7_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_1_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_1_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_3_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_3_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_5_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_5_A, BitSTR>, TypeList<
+  AnyType<BitInstruction::SET_7_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_7_A, BitSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    BitInstructions;
+
+typedef TypeList<
+  AnyType<IxInstruction::ADD_IX_BC, IxSTR>, TypeList<AnyType<IxInstruction::ADD_IX_DE, IxSTR>, TypeList<
+  AnyType<IxInstruction::INC_ixd,   IxSTR>, TypeList<AnyType<IxInstruction::DEC_ixd,   IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_ixd_B,  IxSTR>, TypeList<AnyType<IxInstruction::LD_ixd_C,  IxSTR>, TypeList<
+  AnyType<IxInstruction::ADD_A_ixd, IxSTR>, TypeList<AnyType<IxInstruction::ADC_A_ixd, IxSTR>, TypeList<
+  AnyType<IxInstruction::POP_IX,    IxSTR>, TypeList<AnyType<IxInstruction::EX_sp_IX,  IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_IX_NN,  IxSTR>, TypeList<AnyType<IxInstruction::LD_nn_IX,  IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_ixd_N,  IxSTR>, TypeList<AnyType<IxInstruction::ADD_IX_SP, IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_ixd_D,  IxSTR>, TypeList<AnyType<IxInstruction::LD_ixd_E,  IxSTR>, TypeList<
+  AnyType<IxInstruction::SUB_ixd,   IxSTR>, TypeList<AnyType<IxInstruction::SBC_A_ixd, IxSTR>, TypeList<
+  AnyType<IxInstruction::PUSH_IX,   IxSTR>, TypeList<AnyType<IxInstruction::JP_ix,     IxSTR>, TypeList<
+  AnyType<IxInstruction::INC_IX,    IxSTR>, TypeList<AnyType<IxInstruction::ADD_IX_IX, IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_B_ixd,  IxSTR>, TypeList<AnyType<IxInstruction::LD_C_ixd,  IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_ixd_H,  IxSTR>, TypeList<AnyType<IxInstruction::LD_ixd_L,  IxSTR>, TypeList<
+  AnyType<IxInstruction::AND_ixd,   IxSTR>, TypeList<AnyType<IxInstruction::XOR_ixd,   IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_IX_nn,  IxSTR>, TypeList<AnyType<IxInstruction::DEC_IX,    IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_D_ixd,  IxSTR>, TypeList<AnyType<IxInstruction::LD_E_ixd,  IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_H_ixd,  IxSTR>, TypeList<AnyType<IxInstruction::LD_L_ixd,  IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_ixd_A,  IxSTR>, TypeList<AnyType<IxInstruction::LD_A_ixd,  IxSTR>, TypeList<
+  AnyType<IxInstruction::OR_ixd,    IxSTR>, TypeList<AnyType<IxInstruction::CP_ixd,    IxSTR>, TypeList<
+  AnyType<IxInstruction::LD_SP_IX,  IxSTR>, TypeList<AnyType<IxInstruction::IxBitInstr,IxSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    IxInstructions;
+
+typedef TypeList<
+  AnyType<IxBitInstruction::RLC_ixd,   IxBitSTR>, TypeList<AnyType<IxBitInstruction::RRC_ixd,   IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::RL_ixd,    IxBitSTR>, TypeList<AnyType<IxBitInstruction::RR_ixd,    IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::SLA_ixd,   IxBitSTR>, TypeList<AnyType<IxBitInstruction::SRA_ixd,   IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::SLL_ixd,   IxBitSTR>, TypeList<AnyType<IxBitInstruction::SRL_ixd,   IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::BIT_0_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_1_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::RES_0_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_1_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::SET_0_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_1_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::BIT_2_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_3_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::RES_2_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_3_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::SET_2_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_3_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::BIT_4_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_5_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::RES_4_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_5_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::SET_4_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_5_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::BIT_6_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_7_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::RES_6_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_7_ixd, IxBitSTR>, TypeList<
+  AnyType<IxBitInstruction::SET_6_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_7_ixd, IxBitSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    IxBitInstructions;
+
+
+typedef TypeList<
+  AnyType<IyInstruction::ADD_IY_BC, IySTR>, TypeList<AnyType<IyInstruction::ADD_IY_DE, IySTR>, TypeList<
+  AnyType<IyInstruction::INC_iyd,   IySTR>, TypeList<AnyType<IyInstruction::DEC_iyd,   IySTR>, TypeList<
+  AnyType<IyInstruction::LD_iyd_B,  IySTR>, TypeList<AnyType<IyInstruction::LD_iyd_C,  IySTR>, TypeList<
+  AnyType<IyInstruction::ADD_A_iyd, IySTR>, TypeList<AnyType<IyInstruction::ADC_A_iyd, IySTR>, TypeList<
+  AnyType<IyInstruction::POP_IY,    IySTR>, TypeList<AnyType<IyInstruction::EX_sp_IY,  IySTR>, TypeList<
+  AnyType<IyInstruction::LD_IY_NN,  IySTR>, TypeList<AnyType<IyInstruction::LD_nn_IY,  IySTR>, TypeList<
+  AnyType<IyInstruction::LD_iyd_N,  IySTR>, TypeList<AnyType<IyInstruction::ADD_IY_SP, IySTR>, TypeList<
+  AnyType<IyInstruction::LD_iyd_D,  IySTR>, TypeList<AnyType<IyInstruction::LD_iyd_E,  IySTR>, TypeList<
+  AnyType<IyInstruction::SUB_iyd,   IySTR>, TypeList<AnyType<IyInstruction::SBC_A_iyd, IySTR>, TypeList<
+  AnyType<IyInstruction::PUSH_IY,   IySTR>, TypeList<AnyType<IyInstruction::JP_iy,     IySTR>, TypeList<
+  AnyType<IyInstruction::INC_IY,    IySTR>, TypeList<AnyType<IyInstruction::ADD_IY_IY, IySTR>, TypeList<
+  AnyType<IyInstruction::LD_B_iyd,  IySTR>, TypeList<AnyType<IyInstruction::LD_C_iyd,  IySTR>, TypeList<
+  AnyType<IyInstruction::LD_iyd_H,  IySTR>, TypeList<AnyType<IyInstruction::LD_iyd_L,  IySTR>, TypeList<
+  AnyType<IyInstruction::AND_iyd,   IySTR>, TypeList<AnyType<IyInstruction::XOR_iyd,   IySTR>, TypeList<
+  AnyType<IyInstruction::LD_IY_nn,  IySTR>, TypeList<AnyType<IyInstruction::DEC_IY,    IySTR>, TypeList<
+  AnyType<IyInstruction::LD_D_iyd,  IySTR>, TypeList<AnyType<IyInstruction::LD_E_iyd,  IySTR>, TypeList<
+  AnyType<IyInstruction::LD_H_iyd,  IySTR>, TypeList<AnyType<IyInstruction::LD_L_iyd,  IySTR>, TypeList<
+  AnyType<IyInstruction::LD_iyd_A,  IySTR>, TypeList<AnyType<IyInstruction::LD_A_iyd,  IySTR>, TypeList<
+  AnyType<IyInstruction::OR_iyd,    IySTR>, TypeList<AnyType<IyInstruction::CP_iyd,    IySTR>, TypeList<
+  AnyType<IyInstruction::LD_SP_IY,  IySTR>, TypeList<AnyType<IyInstruction::IyBitInstr,IySTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    IyInstructions;
+
+typedef TypeList<
+  AnyType<IyBitInstruction::RLC_iyd,   IyBitSTR>, TypeList<AnyType<IyBitInstruction::RRC_iyd,   IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::RL_iyd,    IyBitSTR>, TypeList<AnyType<IyBitInstruction::RR_iyd,    IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::SLA_iyd,   IyBitSTR>, TypeList<AnyType<IyBitInstruction::SRA_iyd,   IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::SLL_iyd,   IyBitSTR>, TypeList<AnyType<IyBitInstruction::SRL_iyd,   IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::BIT_0_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_1_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::RES_0_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_1_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::SET_0_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_1_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::BIT_2_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_3_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::RES_2_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_3_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::SET_2_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_3_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::BIT_4_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_5_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::RES_4_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_5_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::SET_4_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_5_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::BIT_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_7_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::RES_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_7_iyd, IyBitSTR>, TypeList<
+  AnyType<IyBitInstruction::SET_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_7_iyd, IyBitSTR>,  NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    IyBitInstructions;
+
 };
 
 
@@ -161,7 +517,376 @@ class Defs {
 
 public:
   static void Init() {
-    // TODO: Add mnemonics for instruction
+    AnyType<Z80::NOP,     Z80::InstrSTR>::GetValue() = "NOP";                AnyType<Z80::LD_BC_NN, Z80::InstrSTR>::GetValue() = "LD BC, 0x%04x";
+    AnyType<Z80::DJNZ_D,  Z80::InstrSTR>::GetValue() = "DJNZ D";             AnyType<Z80::LD_DE_NN, Z80::InstrSTR>::GetValue() = "LD DE, 0x%04x";
+    AnyType<Z80::JR_NZ_D, Z80::InstrSTR>::GetValue() = "JR NZ, D";           AnyType<Z80::LD_HL_NN, Z80::InstrSTR>::GetValue() = "LD HL, 0x%04x";
+    AnyType<Z80::JR_NC_D, Z80::InstrSTR>::GetValue() = "JR NZ, D";           AnyType<Z80::LD_SP_NN, Z80::InstrSTR>::GetValue() = "LD SP, 0x%04x";
+    AnyType<Z80::LD_B_B,  Z80::InstrSTR>::GetValue() = "LD B, B";            AnyType<Z80::LD_B_C,   Z80::InstrSTR>::GetValue() = "LD B, C";
+    AnyType<Z80::LD_D_B,  Z80::InstrSTR>::GetValue() = "LD D, B";            AnyType<Z80::LD_D_C,   Z80::InstrSTR>::GetValue() = "LD D, C";
+    AnyType<Z80::LD_H_B,  Z80::InstrSTR>::GetValue() = "LD H, B";            AnyType<Z80::LD_H_C,   Z80::InstrSTR>::GetValue() = "LD H, C";
+    AnyType<Z80::LD_hl_B, Z80::InstrSTR>::GetValue() = "LD (HL), B";         AnyType<Z80::LD_hl_C,  Z80::InstrSTR>::GetValue() = "LD (HL), C";
+    AnyType<Z80::ADD_A_B, Z80::InstrSTR>::GetValue() = "ADD A, B";           AnyType<Z80::ADD_A_C,  Z80::InstrSTR>::GetValue() = "ADD A, C";
+    AnyType<Z80::SUB_B,   Z80::InstrSTR>::GetValue() = "SUB B";              AnyType<Z80::SUB_C,    Z80::InstrSTR>::GetValue() = "SUB C";
+    AnyType<Z80::AND_B,   Z80::InstrSTR>::GetValue() = "AND B";              AnyType<Z80::AND_C,    Z80::InstrSTR>::GetValue() = "AND C";
+    AnyType<Z80::OR_B,    Z80::InstrSTR>::GetValue() = "OR B";               AnyType<Z80::OR_C,     Z80::InstrSTR>::GetValue() = "OR C";
+    AnyType<Z80::RET_NZ,  Z80::InstrSTR>::GetValue() = "RET NZ";             AnyType<Z80::POP_BC,   Z80::InstrSTR>::GetValue() = "POP BC";
+    AnyType<Z80::RET_NC,  Z80::InstrSTR>::GetValue() = "RET NC";             AnyType<Z80::POP_DE,   Z80::InstrSTR>::GetValue() = "POP DE";
+    AnyType<Z80::RET_PO,  Z80::InstrSTR>::GetValue() = "RET PO";             AnyType<Z80::POP_HL,   Z80::InstrSTR>::GetValue() = "POP HL";
+    AnyType<Z80::RET_P,   Z80::InstrSTR>::GetValue() = "RET P";              AnyType<Z80::POP_AF,   Z80::InstrSTR>::GetValue() = "POP AF";
+
+    
+    AnyType<Z80::LD_bc_A,  Z80::InstrSTR>::GetValue() = "LD (BC), A";        AnyType<Z80::INC_BC,   Z80::InstrSTR>::GetValue() = "INC_BC";
+    AnyType<Z80::LD_de_A,  Z80::InstrSTR>::GetValue() = "LD (DE), A";        AnyType<Z80::INC_DE,   Z80::InstrSTR>::GetValue() = "INC DE";
+    AnyType<Z80::LD_nn_HL, Z80::InstrSTR>::GetValue() = "LD (0x%04x), HL";   AnyType<Z80::INC_HL,   Z80::InstrSTR>::GetValue() = "INC HL";
+    AnyType<Z80::LD_nn_A,  Z80::InstrSTR>::GetValue() = "LD (nn), A";        AnyType<Z80::INC_SP,   Z80::InstrSTR>::GetValue() = "INC SP";
+    AnyType<Z80::LD_B_D,   Z80::InstrSTR>::GetValue() = "LD B, D";           AnyType<Z80::LD_B_E,   Z80::InstrSTR>::GetValue() = "LD B, E";
+    AnyType<Z80::LD_D_D,   Z80::InstrSTR>::GetValue() = "LD D, D";           AnyType<Z80::LD_D_E,   Z80::InstrSTR>::GetValue() = "LD D, E";
+    AnyType<Z80::LD_H_D,   Z80::InstrSTR>::GetValue() = "LD H, D";           AnyType<Z80::LD_H_E,   Z80::InstrSTR>::GetValue() = "LD H, E";
+    AnyType<Z80::LD_hl_D,  Z80::InstrSTR>::GetValue() = "LD (HL), D";        AnyType<Z80::LD_hl_E,  Z80::InstrSTR>::GetValue() = "LD (HL), E";
+    AnyType<Z80::ADD_A_D,  Z80::InstrSTR>::GetValue() = "ADD A, D";          AnyType<Z80::ADD_A_E,  Z80::InstrSTR>::GetValue() = "ADD A, E";
+    AnyType<Z80::SUB_D,    Z80::InstrSTR>::GetValue() = "SUB D";             AnyType<Z80::SUB_E,    Z80::InstrSTR>::GetValue() = "SUB E";
+    AnyType<Z80::AND_D,    Z80::InstrSTR>::GetValue() = "AND D";             AnyType<Z80::AND_E,    Z80::InstrSTR>::GetValue() = "AND E";
+    AnyType<Z80::OR_D,     Z80::InstrSTR>::GetValue() = "OR D";              AnyType<Z80::OR_E,     Z80::InstrSTR>::GetValue() = "OR E";
+    AnyType<Z80::JP_NZ_NN, Z80::InstrSTR>::GetValue() = "JP NZ, 0x%04x";     AnyType<Z80::JP_NN,    Z80::InstrSTR>::GetValue() = "JP 0x%04x";
+    AnyType<Z80::JP_NC_NN, Z80::InstrSTR>::GetValue() = "JP NC, 0x%04x";     AnyType<Z80::OUT_n_A,  Z80::InstrSTR>::GetValue() = "OUT (0x%02x), A";
+    AnyType<Z80::JP_PO_NN, Z80::InstrSTR>::GetValue() = "JP PO, 0x%04x";     AnyType<Z80::EX_sp_HL, Z80::InstrSTR>::GetValue() = "EX (SP), HL";
+    AnyType<Z80::JP_P_NN,  Z80::InstrSTR>::GetValue() = "JP P, 0x%04x";      AnyType<Z80::DI,       Z80::InstrSTR>::GetValue() = "DI";
+
+
+    AnyType<Z80::INC_B,      Z80::InstrSTR>::GetValue() = "INC B";           AnyType<Z80::DEC_B,   Z80::InstrSTR>::GetValue() = "DEC B";
+    AnyType<Z80::INC_D,      Z80::InstrSTR>::GetValue() = "INC D";           AnyType<Z80::DEC_D,   Z80::InstrSTR>::GetValue() = "DEC D";
+    AnyType<Z80::INC_H,      Z80::InstrSTR>::GetValue() = "INC H";           AnyType<Z80::DEC_H,   Z80::InstrSTR>::GetValue() = "DEC H";
+    AnyType<Z80::INC_hl,     Z80::InstrSTR>::GetValue() = "INC (HL)";        AnyType<Z80::DEC_hl,  Z80::InstrSTR>::GetValue() = "DEC (HL)";
+    AnyType<Z80::LD_B_H,     Z80::InstrSTR>::GetValue() = "LD B, H";         AnyType<Z80::LD_B_L,  Z80::InstrSTR>::GetValue() = "LD B, L";
+    AnyType<Z80::LD_D_H,     Z80::InstrSTR>::GetValue() = "LD D, H";         AnyType<Z80::LD_D_L,  Z80::InstrSTR>::GetValue() = "LD D, L";
+    AnyType<Z80::LD_H_H,     Z80::InstrSTR>::GetValue() = "LD H, H";         AnyType<Z80::LD_H_L,  Z80::InstrSTR>::GetValue() = "LD H, L";
+    AnyType<Z80::LD_hl_H,    Z80::InstrSTR>::GetValue() = "LD (HL), H";      AnyType<Z80::LD_hl_L, Z80::InstrSTR>::GetValue() = "LD (HL), L";
+    AnyType<Z80::ADD_A_H,    Z80::InstrSTR>::GetValue() = "ADD A, H";        AnyType<Z80::ADD_A_L, Z80::InstrSTR>::GetValue() = "ADD A, L";
+    AnyType<Z80::SUB_H,      Z80::InstrSTR>::GetValue() = "SUB H";           AnyType<Z80::SUB_L,   Z80::InstrSTR>::GetValue() = "SUB L";
+    AnyType<Z80::AND_H,      Z80::InstrSTR>::GetValue() = "AND H";           AnyType<Z80::AND_L,   Z80::InstrSTR>::GetValue() = "AND L";
+    AnyType<Z80::OR_H,       Z80::InstrSTR>::GetValue() = "OR H";            AnyType<Z80::OR_L,    Z80::InstrSTR>::GetValue() = "OR L";
+    AnyType<Z80::CALL_NZ_NN, Z80::InstrSTR>::GetValue() = "CALL NZ, 0x%04x"; AnyType<Z80::PUSH_BC, Z80::InstrSTR>::GetValue() = "PUSH BC";
+    AnyType<Z80::CALL_NC_NN, Z80::InstrSTR>::GetValue() = "CALL NC, 0x%04x"; AnyType<Z80::PUSH_DE, Z80::InstrSTR>::GetValue() = "PUSH DE";
+    AnyType<Z80::CALL_PO_NN, Z80::InstrSTR>::GetValue() = "CALL PO, 0x%04x"; AnyType<Z80::PUSH_HL, Z80::InstrSTR>::GetValue() = "PUSH HL";
+    AnyType<Z80::CALL_P_NN,  Z80::InstrSTR>::GetValue() = "CALL P, 0x%04x";  AnyType<Z80::PUSH_AF, Z80::InstrSTR>::GetValue() = "PUSH AF";
+
+
+    AnyType<Z80::LD_B_N,   Z80::InstrSTR>::GetValue() = "LD B, 0x%02x";      AnyType<Z80::RLCA,    Z80::InstrSTR>::GetValue() = "RLCA";
+    AnyType<Z80::LD_D_N,   Z80::InstrSTR>::GetValue() = "LD D, 0x%02x";      AnyType<Z80::RLA,     Z80::InstrSTR>::GetValue() = "RLA";
+    AnyType<Z80::LD_H_N,   Z80::InstrSTR>::GetValue() = "LD H, 0x%02x";      AnyType<Z80::DAA,     Z80::InstrSTR>::GetValue() = "DAA";
+    AnyType<Z80::LD_hl_n,  Z80::InstrSTR>::GetValue() = "LD (HL), 0x%02x";   AnyType<Z80::SCF,     Z80::InstrSTR>::GetValue() = "SCF";
+    AnyType<Z80::LD_B_hl,  Z80::InstrSTR>::GetValue() = "LD B, (HL)";        AnyType<Z80::LD_B_A,  Z80::InstrSTR>::GetValue() = "LD B, A";
+    AnyType<Z80::LD_D_hl,  Z80::InstrSTR>::GetValue() = "LD D, (HL)";        AnyType<Z80::LD_D_A,  Z80::InstrSTR>::GetValue() = "LD D, A";
+    AnyType<Z80::LD_H_hl,  Z80::InstrSTR>::GetValue() = "LD H, (HL)";        AnyType<Z80::LD_H_A,  Z80::InstrSTR>::GetValue() = "LD H, A";
+    AnyType<Z80::HALT,     Z80::InstrSTR>::GetValue() = "HALT";              AnyType<Z80::LD_hl_A, Z80::InstrSTR>::GetValue() = "LD (HL), A";
+    AnyType<Z80::ADD_A_hl, Z80::InstrSTR>::GetValue() = "ADD A, (HL)";       AnyType<Z80::ADD_A_A, Z80::InstrSTR>::GetValue() = "ADD A, A";
+    AnyType<Z80::SUB_hl,   Z80::InstrSTR>::GetValue() = "SUB (HL)";          AnyType<Z80::SUB_A,   Z80::InstrSTR>::GetValue() = "SUB A";
+    AnyType<Z80::AND_hl,   Z80::InstrSTR>::GetValue() = "AND (HL)";          AnyType<Z80::AND_A,   Z80::InstrSTR>::GetValue() = "AND A";
+    AnyType<Z80::OR_hl,    Z80::InstrSTR>::GetValue() = "OR (HL)";           AnyType<Z80::OR_A,    Z80::InstrSTR>::GetValue() = "OR A";
+    AnyType<Z80::ADD_A_N,  Z80::InstrSTR>::GetValue() = "ADD A, 0x%02x";     AnyType<Z80::RST_00h, Z80::InstrSTR>::GetValue() = "RST 0x00";
+    AnyType<Z80::SUB_N,    Z80::InstrSTR>::GetValue() = "SUB 0x%02x";        AnyType<Z80::RST_10h, Z80::InstrSTR>::GetValue() = "RST 0x10";
+    AnyType<Z80::AND_N,    Z80::InstrSTR>::GetValue() = "AND 0x%02x";        AnyType<Z80::RST_20h, Z80::InstrSTR>::GetValue() = "RST 0x20";
+    AnyType<Z80::OR_N,     Z80::InstrSTR>::GetValue() = "OR 0x%02x";         AnyType<Z80::RST_30h, Z80::InstrSTR>::GetValue() = "RST 0x30";
+
+
+    AnyType<Z80::EX_AF_AF, Z80::InstrSTR>::GetValue() = "EX AF, AF'";        AnyType<Z80::ADD_HL_BC, Z80::InstrSTR>::GetValue() = "ADD HL, BC";
+    AnyType<Z80::JR_D,     Z80::InstrSTR>::GetValue() = "JR D";              AnyType<Z80::ADD_HL_DE, Z80::InstrSTR>::GetValue() = "ADD HL, DE";
+    AnyType<Z80::JR_Z_D,   Z80::InstrSTR>::GetValue() = "JR Z, D";           AnyType<Z80::ADD_HL_HL, Z80::InstrSTR>::GetValue() = "ADD HL, HL";
+    AnyType<Z80::JR_C_D,   Z80::InstrSTR>::GetValue() = "JR C, D";           AnyType<Z80::ADD_HL_SP, Z80::InstrSTR>::GetValue() = "ADD HL, SP";
+    AnyType<Z80::LD_C_B,   Z80::InstrSTR>::GetValue() = "LD C, B";           AnyType<Z80::LD_C_C,    Z80::InstrSTR>::GetValue() = "LD C, C";
+    AnyType<Z80::LD_E_B,   Z80::InstrSTR>::GetValue() = "LD E, B";           AnyType<Z80::LD_E_C,    Z80::InstrSTR>::GetValue() = "LD E, C";
+    AnyType<Z80::LD_L_B,   Z80::InstrSTR>::GetValue() = "LD L, B";           AnyType<Z80::LD_L_C,    Z80::InstrSTR>::GetValue() = "LD L, C";
+    AnyType<Z80::LD_A_B,   Z80::InstrSTR>::GetValue() = "LD A, B";           AnyType<Z80::LD_A_C,    Z80::InstrSTR>::GetValue() = "LD A, C";
+    AnyType<Z80::ADC_A_B,  Z80::InstrSTR>::GetValue() = "ADC A, B";          AnyType<Z80::ADC_A_C,   Z80::InstrSTR>::GetValue() = "ADC A, C";
+    AnyType<Z80::SBC_A_B,  Z80::InstrSTR>::GetValue() = "SBC A, B";          AnyType<Z80::SBC_A_C,   Z80::InstrSTR>::GetValue() = "SBC A, C";
+    AnyType<Z80::XOR_B,    Z80::InstrSTR>::GetValue() = "XOR B";             AnyType<Z80::XOR_C,     Z80::InstrSTR>::GetValue() = "XOR C";
+    AnyType<Z80::CP_B,     Z80::InstrSTR>::GetValue() = "CP B";              AnyType<Z80::CP_C,      Z80::InstrSTR>::GetValue() = "CP C";
+    AnyType<Z80::RET_Z,    Z80::InstrSTR>::GetValue() = "RET Z";             AnyType<Z80::RET,       Z80::InstrSTR>::GetValue() = "RET";
+    AnyType<Z80::RET_C,    Z80::InstrSTR>::GetValue() = "RET C";             AnyType<Z80::EXX,       Z80::InstrSTR>::GetValue() = "EXX";
+    AnyType<Z80::RET_PE,   Z80::InstrSTR>::GetValue() = "RET PE";            AnyType<Z80::JP_hl,     Z80::InstrSTR>::GetValue() = "JP (HL)";
+    AnyType<Z80::RET_M,    Z80::InstrSTR>::GetValue() = "RET M";             AnyType<Z80::JP_SP_HL,  Z80::InstrSTR>::GetValue() = "JP SP, HL";
+
+
+    AnyType<Z80::LD_A_bc,  Z80::InstrSTR>::GetValue() = "LD A, (BC)";        AnyType<Z80::DEC_BC,    Z80::InstrSTR>::GetValue() = "DEC BC";
+    AnyType<Z80::LD_A_de,  Z80::InstrSTR>::GetValue() = "LD A, (DE)";        AnyType<Z80::DEC_DE,    Z80::InstrSTR>::GetValue() = "DEC DE";
+    AnyType<Z80::LD_HL_nn, Z80::InstrSTR>::GetValue() = "LD HL, (0x%04x)";   AnyType<Z80::DEC_HL,    Z80::InstrSTR>::GetValue() = "DEC HL";
+    AnyType<Z80::LD_A_nn,  Z80::InstrSTR>::GetValue() = "LD A, (0x%04x)";    AnyType<Z80::DEC_SP,    Z80::InstrSTR>::GetValue() = "DEC SP";
+    AnyType<Z80::LD_C_D,   Z80::InstrSTR>::GetValue() = "LD C, D";           AnyType<Z80::LD_C_E,    Z80::InstrSTR>::GetValue() = "LD C, E";
+    AnyType<Z80::LD_E_D,   Z80::InstrSTR>::GetValue() = "LD E, D";           AnyType<Z80::LD_E_E,    Z80::InstrSTR>::GetValue() = "LD E, E";
+    AnyType<Z80::LD_L_D,   Z80::InstrSTR>::GetValue() = "LD L, D";           AnyType<Z80::LD_L_E,    Z80::InstrSTR>::GetValue() = "LD L, E";
+    AnyType<Z80::LD_A_D,   Z80::InstrSTR>::GetValue() = "LD A, D";           AnyType<Z80::LD_A_E,    Z80::InstrSTR>::GetValue() = "LD A, E";
+    AnyType<Z80::ADC_A_D,  Z80::InstrSTR>::GetValue() = "ADC A, D";          AnyType<Z80::ADC_A_E,   Z80::InstrSTR>::GetValue() = "ADC A, E";
+    AnyType<Z80::SBC_A_D,  Z80::InstrSTR>::GetValue() = "SBC A, D";          AnyType<Z80::SBC_A_E,   Z80::InstrSTR>::GetValue() = "SBC A, E";
+    AnyType<Z80::XOR_D,    Z80::InstrSTR>::GetValue() = "XOR D";             AnyType<Z80::XOR_E,     Z80::InstrSTR>::GetValue() = "XOR E";
+    AnyType<Z80::CP_D,     Z80::InstrSTR>::GetValue() = "CP D";              AnyType<Z80::CP_E,      Z80::InstrSTR>::GetValue() = "CP E";
+    AnyType<Z80::JP_Z_NN,  Z80::InstrSTR>::GetValue() = "JP Z, 0x%04x";      AnyType<Z80::BIT_INSTR, Z80::InstrSTR>::GetValue() = "";
+    AnyType<Z80::JP_C_NN,  Z80::InstrSTR>::GetValue() = "JP C, 0x%04x";      AnyType<Z80::IN_A_n,    Z80::InstrSTR>::GetValue() = "IN A, 0x%02x";
+    AnyType<Z80::JP_PE_NN, Z80::InstrSTR>::GetValue() = "JP PE, 0x%04x";     AnyType<Z80::EX_DE_HL,  Z80::InstrSTR>::GetValue() = "EX DE, HL";
+    AnyType<Z80::JP_M_NN,  Z80::InstrSTR>::GetValue() = "JP M, 0x%04x";      AnyType<Z80::EI,        Z80::InstrSTR>::GetValue() = "EI";
+
+
+    AnyType<Z80::INC_C,      Z80::InstrSTR>::GetValue() = "INC C";           AnyType<Z80::DEC_C,      Z80::InstrSTR>::GetValue() = "DEC C";
+    AnyType<Z80::INC_E,      Z80::InstrSTR>::GetValue() = "INC E";           AnyType<Z80::DEC_E,      Z80::InstrSTR>::GetValue() = "DEC E";
+    AnyType<Z80::INC_L,      Z80::InstrSTR>::GetValue() = "INC L";           AnyType<Z80::DEC_L,      Z80::InstrSTR>::GetValue() = "DEC L";
+    AnyType<Z80::INC_A,      Z80::InstrSTR>::GetValue() = "INC A";           AnyType<Z80::DEC_A,      Z80::InstrSTR>::GetValue() = "DEC A";
+    AnyType<Z80::LD_C_H,     Z80::InstrSTR>::GetValue() = "LD C, H";         AnyType<Z80::LD_C_L,     Z80::InstrSTR>::GetValue() = "LD C, L";
+    AnyType<Z80::LD_E_H,     Z80::InstrSTR>::GetValue() = "LD E, H";         AnyType<Z80::LD_E_L,     Z80::InstrSTR>::GetValue() = "LD E, L";
+    AnyType<Z80::LD_L_H,     Z80::InstrSTR>::GetValue() = "LD L, H";         AnyType<Z80::LD_L_L,     Z80::InstrSTR>::GetValue() = "LD L, L";
+    AnyType<Z80::LD_A_H,     Z80::InstrSTR>::GetValue() = "LD A, H";         AnyType<Z80::LD_A_L,     Z80::InstrSTR>::GetValue() = "LD A, L";
+    AnyType<Z80::ADC_A_H,    Z80::InstrSTR>::GetValue() = "ADC A, H";        AnyType<Z80::ADC_A_L,    Z80::InstrSTR>::GetValue() = "ADC A, L";
+    AnyType<Z80::SBC_A_H,    Z80::InstrSTR>::GetValue() = "SBC A, H";        AnyType<Z80::SBC_A_L,    Z80::InstrSTR>::GetValue() = "SBC A, L";
+    AnyType<Z80::XOR_H,      Z80::InstrSTR>::GetValue() = "XOR H";           AnyType<Z80::XOR_L,      Z80::InstrSTR>::GetValue() = "XOR L";
+    AnyType<Z80::CP_H,       Z80::InstrSTR>::GetValue() = "CP H";            AnyType<Z80::CP_L,       Z80::InstrSTR>::GetValue() = "CP L";
+    AnyType<Z80::CALL_Z_NN,  Z80::InstrSTR>::GetValue() = "CALL Z, 0x%04x";  AnyType<Z80::CALL_NN,    Z80::InstrSTR>::GetValue() = "CALL 0x%04x";
+    AnyType<Z80::CALL_C_NN,  Z80::InstrSTR>::GetValue() = "CALL C, 0x%04x";  AnyType<Z80::IX_INSTR,   Z80::InstrSTR>::GetValue() = "";
+    AnyType<Z80::CALL_PE_NN, Z80::InstrSTR>::GetValue() = "CALL PE, 0x%04x"; AnyType<Z80::MISC_INSTR, Z80::InstrSTR>::GetValue() = "";
+    AnyType<Z80::CALL_M_NN,  Z80::InstrSTR>::GetValue() = "CALL M, 0x%04x";  AnyType<Z80::IY_INSTR,   Z80::InstrSTR>::GetValue() = "";
+
+
+    AnyType<Z80::LD_C_N,   Z80::InstrSTR>::GetValue() = "LD C, 0x%02x";      AnyType<Z80::RRCA,    Z80::InstrSTR>::GetValue() = "RRCA";
+    AnyType<Z80::LD_E_N,   Z80::InstrSTR>::GetValue() = "LD E, 0x%02x";      AnyType<Z80::RRA,     Z80::InstrSTR>::GetValue() = "RRA";
+    AnyType<Z80::LD_L_N,   Z80::InstrSTR>::GetValue() = "LD L, 0x%02x";      AnyType<Z80::CPL,     Z80::InstrSTR>::GetValue() = "CPL";
+    AnyType<Z80::LD_A_N,   Z80::InstrSTR>::GetValue() = "LD A, 0x%02x";      AnyType<Z80::CCF,     Z80::InstrSTR>::GetValue() = "CCF";
+    AnyType<Z80::LD_C_hl,  Z80::InstrSTR>::GetValue() = "LD C, (HL)";        AnyType<Z80::LD_C_A,  Z80::InstrSTR>::GetValue() = "LD C, A";
+    AnyType<Z80::LD_E_hl,  Z80::InstrSTR>::GetValue() = "LD E, (HL)";        AnyType<Z80::LD_E_A,  Z80::InstrSTR>::GetValue() = "LD E, A";
+    AnyType<Z80::LD_L_hl,  Z80::InstrSTR>::GetValue() = "LD L, (HL)";        AnyType<Z80::LD_L_A,  Z80::InstrSTR>::GetValue() = "LD L, A";
+    AnyType<Z80::LD_A_hl,  Z80::InstrSTR>::GetValue() = "LD A, (HL)";        AnyType<Z80::LD_A_A,  Z80::InstrSTR>::GetValue() = "LD A, A";
+    AnyType<Z80::ADC_A_hl, Z80::InstrSTR>::GetValue() = "ADC A, (HL)";       AnyType<Z80::ADC_A_A, Z80::InstrSTR>::GetValue() = "ADC A, A";
+    AnyType<Z80::SBC_A_hl, Z80::InstrSTR>::GetValue() = "SBC A, (HL)";       AnyType<Z80::SBC_A_A, Z80::InstrSTR>::GetValue() = "SBC A, A";
+    AnyType<Z80::XOR_hl,   Z80::InstrSTR>::GetValue() = "XOR (HL)";          AnyType<Z80::XOR_A,   Z80::InstrSTR>::GetValue() = "XOR A";
+    AnyType<Z80::CP_hl,    Z80::InstrSTR>::GetValue() = "CP (HL)";           AnyType<Z80::CP_A,    Z80::InstrSTR>::GetValue() = "CP A";
+    AnyType<Z80::ADC_A_N,  Z80::InstrSTR>::GetValue() = "ADC A, 0x%02x";     AnyType<Z80::RST_08h, Z80::InstrSTR>::GetValue() = "RST 0x08";
+    AnyType<Z80::SBC_A_N,  Z80::InstrSTR>::GetValue() = "SBC A, 0x%02x";     AnyType<Z80::RST_18h, Z80::InstrSTR>::GetValue() = "RST 0x18";
+    AnyType<Z80::XOR_N,    Z80::InstrSTR>::GetValue() = "XOR 0x%02x";        AnyType<Z80::RST_28h, Z80::InstrSTR>::GetValue() = "RST 0x28";
+    AnyType<Z80::CP_N,     Z80::InstrSTR>::GetValue() = "CP 0x%02x";         AnyType<Z80::RST_38h, Z80::InstrSTR>::GetValue() = "RST 0x38";
+
+
+
+    // BitInstructions
+    AnyType<Z80::RLC_B,   Z80::BitSTR>::GetValue() = "RLC B";        AnyType<Z80::RLC_C,   Z80::BitSTR>::GetValue() = "RLC C";
+    AnyType<Z80::RL_B,    Z80::BitSTR>::GetValue() = "RL B";         AnyType<Z80::RL_C,    Z80::BitSTR>::GetValue() = "RL C";
+    AnyType<Z80::SLA_B,   Z80::BitSTR>::GetValue() = "SLA B";        AnyType<Z80::SLA_C,   Z80::BitSTR>::GetValue() = "SLA C";
+    AnyType<Z80::SLL_B,   Z80::BitSTR>::GetValue() = "SLL B";        AnyType<Z80::SLL_C,   Z80::BitSTR>::GetValue() = "SLL C";
+    AnyType<Z80::BIT_0_B, Z80::BitSTR>::GetValue() = "BIT 0, B";     AnyType<Z80::BIT_0_C, Z80::BitSTR>::GetValue() = "BIT 0, C";
+    AnyType<Z80::BIT_2_B, Z80::BitSTR>::GetValue() = "BIT 2, B";     AnyType<Z80::BIT_2_C, Z80::BitSTR>::GetValue() = "BIT 2, C";
+    AnyType<Z80::BIT_4_B, Z80::BitSTR>::GetValue() = "BIT 4, B";     AnyType<Z80::BIT_4_C, Z80::BitSTR>::GetValue() = "BIT 4, C";
+    AnyType<Z80::BIT_6_B, Z80::BitSTR>::GetValue() = "BIT 6, B";     AnyType<Z80::BIT_6_C, Z80::BitSTR>::GetValue() = "BIT 6, C";
+    AnyType<Z80::RES_0_B, Z80::BitSTR>::GetValue() = "RES 0, B";     AnyType<Z80::RES_0_C, Z80::BitSTR>::GetValue() = "RES 0, C";
+    AnyType<Z80::RES_2_B, Z80::BitSTR>::GetValue() = "RES 2, B";     AnyType<Z80::RES_2_C, Z80::BitSTR>::GetValue() = "RES 2, C";
+    AnyType<Z80::RES_4_B, Z80::BitSTR>::GetValue() = "RES 4, B";     AnyType<Z80::RES_4_C, Z80::BitSTR>::GetValue() = "RES 4, C";
+    AnyType<Z80::RES_6_B, Z80::BitSTR>::GetValue() = "RES 6, B";     AnyType<Z80::RES_6_C, Z80::BitSTR>::GetValue() = "RES 6, C";
+    AnyType<Z80::SET_0_B, Z80::BitSTR>::GetValue() = "SET 0, B";     AnyType<Z80::SET_0_C, Z80::BitSTR>::GetValue() = "SET 0, C";
+    AnyType<Z80::SET_2_B, Z80::BitSTR>::GetValue() = "SET 2, B";     AnyType<Z80::SET_2_C, Z80::BitSTR>::GetValue() = "SET 2, C";
+    AnyType<Z80::SET_4_B, Z80::BitSTR>::GetValue() = "SET 4, B";     AnyType<Z80::SET_4_C, Z80::BitSTR>::GetValue() = "SET 4, C";
+    AnyType<Z80::SET_6_B, Z80::BitSTR>::GetValue() = "SET 6, B";     AnyType<Z80::SET_6_C, Z80::BitSTR>::GetValue() = "SET 6, C";
+
+
+    AnyType<Z80::RLC_D,   Z80::BitSTR>::GetValue() = "RLC D";          AnyType<Z80::RLC_E,   Z80::BitSTR>::GetValue() = "RLC E";
+    AnyType<Z80::RL_D,    Z80::BitSTR>::GetValue() = "RL D";           AnyType<Z80::RL_E,    Z80::BitSTR>::GetValue() = "RL E";
+    AnyType<Z80::SLA_D,   Z80::BitSTR>::GetValue() = "SLA D";          AnyType<Z80::SLA_E,   Z80::BitSTR>::GetValue() = "SLA E";
+    AnyType<Z80::SLL_D,   Z80::BitSTR>::GetValue() = "SLL D";          AnyType<Z80::SLL_E,   Z80::BitSTR>::GetValue() = "SLL E";
+    AnyType<Z80::BIT_0_D, Z80::BitSTR>::GetValue() = "BIT 0, D";       AnyType<Z80::BIT_0_E, Z80::BitSTR>::GetValue() = "BIT 0, E";
+    AnyType<Z80::BIT_2_D, Z80::BitSTR>::GetValue() = "BIT 2, D";       AnyType<Z80::BIT_2_E, Z80::BitSTR>::GetValue() = "BIT 2, E";
+    AnyType<Z80::BIT_4_D, Z80::BitSTR>::GetValue() = "BIT 4, D";       AnyType<Z80::BIT_4_E, Z80::BitSTR>::GetValue() = "BIT 4, E";
+    AnyType<Z80::BIT_6_D, Z80::BitSTR>::GetValue() = "BIT 6, D";       AnyType<Z80::BIT_6_E, Z80::BitSTR>::GetValue() = "BIT 6, E";
+    AnyType<Z80::RES_0_D, Z80::BitSTR>::GetValue() = "RES 0, D";       AnyType<Z80::RES_0_E, Z80::BitSTR>::GetValue() = "RES 0, E";
+    AnyType<Z80::RES_2_D, Z80::BitSTR>::GetValue() = "RES 2, D";       AnyType<Z80::RES_2_E, Z80::BitSTR>::GetValue() = "RES 2, E";
+    AnyType<Z80::RES_4_D, Z80::BitSTR>::GetValue() = "RES 4, D";       AnyType<Z80::RES_4_E, Z80::BitSTR>::GetValue() = "RES 4, E";
+    AnyType<Z80::RES_6_D, Z80::BitSTR>::GetValue() = "RES 6, D";       AnyType<Z80::RES_6_E, Z80::BitSTR>::GetValue() = "RES 6, E";
+    AnyType<Z80::SET_0_D, Z80::BitSTR>::GetValue() = "SET 0, D";       AnyType<Z80::SET_0_E, Z80::BitSTR>::GetValue() = "SET 0, E";
+    AnyType<Z80::SET_2_D, Z80::BitSTR>::GetValue() = "SET 2, D";       AnyType<Z80::SET_2_E, Z80::BitSTR>::GetValue() = "SET 2, E";
+    AnyType<Z80::SET_4_D, Z80::BitSTR>::GetValue() = "SET 4, D";       AnyType<Z80::SET_4_E, Z80::BitSTR>::GetValue() = "SET 4, E";
+    AnyType<Z80::SET_6_D, Z80::BitSTR>::GetValue() = "SET 6, D";       AnyType<Z80::SET_6_E, Z80::BitSTR>::GetValue() = "SET 6, E";
+
+
+    AnyType<Z80::RLC_H,   Z80::BitSTR>::GetValue() = "RLC H";          AnyType<Z80::RLC_L,   Z80::BitSTR>::GetValue() = "RLC L";
+    AnyType<Z80::RL_H,    Z80::BitSTR>::GetValue() = "RL H";           AnyType<Z80::RL_L,    Z80::BitSTR>::GetValue() = "RL L";
+    AnyType<Z80::SLA_H,   Z80::BitSTR>::GetValue() = "SLA H";          AnyType<Z80::SLA_L,   Z80::BitSTR>::GetValue() = "SLA L";
+    AnyType<Z80::SLL_H,   Z80::BitSTR>::GetValue() = "SLL H";          AnyType<Z80::SLL_L,   Z80::BitSTR>::GetValue() = "SLL L";
+    AnyType<Z80::BIT_0_H, Z80::BitSTR>::GetValue() = "BIT 0, H";       AnyType<Z80::BIT_0_L, Z80::BitSTR>::GetValue() = "BIT 0, L";
+    AnyType<Z80::BIT_2_H, Z80::BitSTR>::GetValue() = "BIT 2, H";       AnyType<Z80::BIT_2_L, Z80::BitSTR>::GetValue() = "BIT 2, L";
+    AnyType<Z80::BIT_4_H, Z80::BitSTR>::GetValue() = "BIT 4, H";       AnyType<Z80::BIT_4_L, Z80::BitSTR>::GetValue() = "BIT 4, L";
+    AnyType<Z80::BIT_6_H, Z80::BitSTR>::GetValue() = "BIT 6, H";       AnyType<Z80::BIT_6_L, Z80::BitSTR>::GetValue() = "BIT 6, L";
+    AnyType<Z80::RES_0_H, Z80::BitSTR>::GetValue() = "RES 0, H";       AnyType<Z80::RES_0_L, Z80::BitSTR>::GetValue() = "RES 0, L";
+    AnyType<Z80::RES_2_H, Z80::BitSTR>::GetValue() = "RES 2, H";       AnyType<Z80::RES_2_L, Z80::BitSTR>::GetValue() = "RES 2, L";
+    AnyType<Z80::RES_4_H, Z80::BitSTR>::GetValue() = "RES 4, H";       AnyType<Z80::RES_4_L, Z80::BitSTR>::GetValue() = "RES 4, L";
+    AnyType<Z80::RES_6_H, Z80::BitSTR>::GetValue() = "RES 6, H";       AnyType<Z80::RES_6_L, Z80::BitSTR>::GetValue() = "RES 6, L";
+    AnyType<Z80::SET_0_H, Z80::BitSTR>::GetValue() = "SET 0, H";       AnyType<Z80::SET_0_L, Z80::BitSTR>::GetValue() = "SET 0, L";
+    AnyType<Z80::SET_2_H, Z80::BitSTR>::GetValue() = "SET 2, H";       AnyType<Z80::SET_2_L, Z80::BitSTR>::GetValue() = "SET 2, L";
+    AnyType<Z80::SET_4_H, Z80::BitSTR>::GetValue() = "SET 4, H";       AnyType<Z80::SET_4_L, Z80::BitSTR>::GetValue() = "SET 4, L";
+    AnyType<Z80::SET_6_H, Z80::BitSTR>::GetValue() = "SET 6, H";       AnyType<Z80::SET_6_L, Z80::BitSTR>::GetValue() = "SET 6, L";
+
+
+    AnyType<Z80::RLC_hl,   Z80::BitSTR>::GetValue() = "RLC (HL)";      AnyType<Z80::RLC_A,   Z80::BitSTR>::GetValue() = "RLC A";
+    AnyType<Z80::RL_hl,    Z80::BitSTR>::GetValue() = "RL (HL)";       AnyType<Z80::RL_A,    Z80::BitSTR>::GetValue() = "RL A";
+    AnyType<Z80::SLA_hl,   Z80::BitSTR>::GetValue() = "SLA (HL)";      AnyType<Z80::SLA_A,   Z80::BitSTR>::GetValue() = "SLA A";
+    AnyType<Z80::SLL_hl,   Z80::BitSTR>::GetValue() = "SLL (HL)";      AnyType<Z80::SLL_A,   Z80::BitSTR>::GetValue() = "SLL A";
+    AnyType<Z80::BIT_0_hl, Z80::BitSTR>::GetValue() = "BIT 0, (HL)";   AnyType<Z80::BIT_0_A, Z80::BitSTR>::GetValue() = "BIT 0, A";
+    AnyType<Z80::BIT_2_hl, Z80::BitSTR>::GetValue() = "BIT 2, (HL)";   AnyType<Z80::BIT_2_A, Z80::BitSTR>::GetValue() = "BIT 2, A";
+    AnyType<Z80::BIT_4_hl, Z80::BitSTR>::GetValue() = "BIT 4, (HL)";   AnyType<Z80::BIT_4_A, Z80::BitSTR>::GetValue() = "BIT 4, A";
+    AnyType<Z80::BIT_6_hl, Z80::BitSTR>::GetValue() = "BIT 6, (HL)";   AnyType<Z80::BIT_6_A, Z80::BitSTR>::GetValue() = "BIT 6, A";
+    AnyType<Z80::RES_0_hl, Z80::BitSTR>::GetValue() = "RES 0, (HL)";   AnyType<Z80::RES_0_A, Z80::BitSTR>::GetValue() = "RES 0, A";
+    AnyType<Z80::RES_2_hl, Z80::BitSTR>::GetValue() = "RES 2, (HL)";   AnyType<Z80::RES_2_A, Z80::BitSTR>::GetValue() = "RES 2, A";
+    AnyType<Z80::RES_4_hl, Z80::BitSTR>::GetValue() = "RES 4, (HL)";   AnyType<Z80::RES_4_A, Z80::BitSTR>::GetValue() = "RES 4, A";
+    AnyType<Z80::RES_6_hl, Z80::BitSTR>::GetValue() = "RES 6, (HL)";   AnyType<Z80::RES_6_A, Z80::BitSTR>::GetValue() = "RES 6, A";
+    AnyType<Z80::SET_0_hl, Z80::BitSTR>::GetValue() = "SET 0, (HL)";   AnyType<Z80::SET_0_A, Z80::BitSTR>::GetValue() = "SET 0, A";
+    AnyType<Z80::SET_2_hl, Z80::BitSTR>::GetValue() = "SET 2, (HL)";   AnyType<Z80::SET_2_A, Z80::BitSTR>::GetValue() = "SET 2, A";
+    AnyType<Z80::SET_4_hl, Z80::BitSTR>::GetValue() = "SET 4, (HL)";   AnyType<Z80::SET_4_A, Z80::BitSTR>::GetValue() = "SET 4, A";
+    AnyType<Z80::SET_6_hl, Z80::BitSTR>::GetValue() = "SET 6, (HL)";   AnyType<Z80::SET_6_A, Z80::BitSTR>::GetValue() = "SET 6, A";
+
+
+    AnyType<Z80::RRC_B,   Z80::BitSTR>::GetValue() = "RRC B";          AnyType<Z80::RRC_C,   Z80::BitSTR>::GetValue() = "RRC C";
+    AnyType<Z80::RR_B,    Z80::BitSTR>::GetValue() = "RR B";           AnyType<Z80::RR_C,    Z80::BitSTR>::GetValue() = "RR C";
+    AnyType<Z80::SRA_B,   Z80::BitSTR>::GetValue() = "SRA B";          AnyType<Z80::SRA_C,   Z80::BitSTR>::GetValue() = "SRA C";
+    AnyType<Z80::SRL_B,   Z80::BitSTR>::GetValue() = "SRL B";          AnyType<Z80::SRL_C,   Z80::BitSTR>::GetValue() = "SRL C";
+    AnyType<Z80::BIT_1_B, Z80::BitSTR>::GetValue() = "BIT 1, B";       AnyType<Z80::BIT_1_C, Z80::BitSTR>::GetValue() = "BIT 1, C";
+    AnyType<Z80::BIT_3_B, Z80::BitSTR>::GetValue() = "BIT 3, B";       AnyType<Z80::BIT_3_C, Z80::BitSTR>::GetValue() = "BIT 3, C";
+    AnyType<Z80::BIT_5_B, Z80::BitSTR>::GetValue() = "BIT 5, B";       AnyType<Z80::BIT_5_C, Z80::BitSTR>::GetValue() = "BIT 5, C";
+    AnyType<Z80::BIT_7_B, Z80::BitSTR>::GetValue() = "BIT 7, B";       AnyType<Z80::BIT_7_C, Z80::BitSTR>::GetValue() = "BIT 7, C";
+    AnyType<Z80::RES_1_B, Z80::BitSTR>::GetValue() = "RES 1, B";       AnyType<Z80::RES_1_C, Z80::BitSTR>::GetValue() = "RES 1, C";
+    AnyType<Z80::RES_3_B, Z80::BitSTR>::GetValue() = "RES 3, B";       AnyType<Z80::RES_3_C, Z80::BitSTR>::GetValue() = "RES 3, C";
+    AnyType<Z80::RES_5_B, Z80::BitSTR>::GetValue() = "RES 5, B";       AnyType<Z80::RES_5_C, Z80::BitSTR>::GetValue() = "RES 5, C";
+    AnyType<Z80::RES_7_B, Z80::BitSTR>::GetValue() = "RES 7, B";       AnyType<Z80::RES_7_C, Z80::BitSTR>::GetValue() = "RES 7, C";
+    AnyType<Z80::SET_1_B, Z80::BitSTR>::GetValue() = "SET 1, B";       AnyType<Z80::SET_1_C, Z80::BitSTR>::GetValue() = "SET 1, C";
+    AnyType<Z80::SET_3_B, Z80::BitSTR>::GetValue() = "SET 3, B";       AnyType<Z80::SET_3_C, Z80::BitSTR>::GetValue() = "SET 3, C";
+    AnyType<Z80::SET_5_B, Z80::BitSTR>::GetValue() = "SET 5, B";       AnyType<Z80::SET_5_C, Z80::BitSTR>::GetValue() = "SET 5, C";
+    AnyType<Z80::SET_7_B, Z80::BitSTR>::GetValue() = "SET 7, B";       AnyType<Z80::SET_7_C, Z80::BitSTR>::GetValue() = "SET 7, C";
+
+
+    AnyType<Z80::RRC_D,   Z80::BitSTR>::GetValue() = "RRC D";          AnyType<Z80::RRC_E,   Z80::BitSTR>::GetValue() = "RRC E";
+    AnyType<Z80::RR_D,    Z80::BitSTR>::GetValue() = "RR D";           AnyType<Z80::RR_E,    Z80::BitSTR>::GetValue() = "RR E";
+    AnyType<Z80::SRA_D,   Z80::BitSTR>::GetValue() = "SRA D";          AnyType<Z80::SRA_E,   Z80::BitSTR>::GetValue() = "SRA E";
+    AnyType<Z80::SRL_D,   Z80::BitSTR>::GetValue() = "SRL D";          AnyType<Z80::SRL_E,   Z80::BitSTR>::GetValue() = "SRL E";
+    AnyType<Z80::BIT_1_D, Z80::BitSTR>::GetValue() = "BIT 1, D";       AnyType<Z80::BIT_1_E, Z80::BitSTR>::GetValue() = "BIT 1, E";
+    AnyType<Z80::BIT_3_D, Z80::BitSTR>::GetValue() = "BIT 3, D";       AnyType<Z80::BIT_3_E, Z80::BitSTR>::GetValue() = "BIT 3, E";
+    AnyType<Z80::BIT_5_D, Z80::BitSTR>::GetValue() = "BIT 5, D";       AnyType<Z80::BIT_5_E, Z80::BitSTR>::GetValue() = "BIT 5, E";
+    AnyType<Z80::BIT_7_D, Z80::BitSTR>::GetValue() = "BIT 7, D";       AnyType<Z80::BIT_7_E, Z80::BitSTR>::GetValue() = "BIT 7, E";
+    AnyType<Z80::RES_1_D, Z80::BitSTR>::GetValue() = "RES 1, D";       AnyType<Z80::RES_1_E, Z80::BitSTR>::GetValue() = "RES 1, E";
+    AnyType<Z80::RES_3_D, Z80::BitSTR>::GetValue() = "RES 3, D";       AnyType<Z80::RES_3_E, Z80::BitSTR>::GetValue() = "RES 3, E";
+    AnyType<Z80::RES_5_D, Z80::BitSTR>::GetValue() = "RES 5, D";       AnyType<Z80::RES_5_E, Z80::BitSTR>::GetValue() = "RES 5, E";
+    AnyType<Z80::RES_7_D, Z80::BitSTR>::GetValue() = "RES 7, D";       AnyType<Z80::RES_7_E, Z80::BitSTR>::GetValue() = "RES 7, E";
+    AnyType<Z80::SET_1_D, Z80::BitSTR>::GetValue() = "SET 1, D";       AnyType<Z80::SET_1_E, Z80::BitSTR>::GetValue() = "SET 1, E";
+    AnyType<Z80::SET_3_D, Z80::BitSTR>::GetValue() = "SET 3, D";       AnyType<Z80::SET_3_E, Z80::BitSTR>::GetValue() = "SET 3, E";
+    AnyType<Z80::SET_5_D, Z80::BitSTR>::GetValue() = "SET 5, D";       AnyType<Z80::SET_5_E, Z80::BitSTR>::GetValue() = "SET 5, E";
+    AnyType<Z80::SET_7_D, Z80::BitSTR>::GetValue() = "SET 7, D";       AnyType<Z80::SET_7_E, Z80::BitSTR>::GetValue() = "SET 7, E";
+
+    AnyType<Z80::RRC_H,   Z80::BitSTR>::GetValue() = "RRC H";          AnyType<Z80::RRC_L,   Z80::BitSTR>::GetValue() = "RRC L";
+    AnyType<Z80::RR_H,    Z80::BitSTR>::GetValue() = "RR H";           AnyType<Z80::RR_L,    Z80::BitSTR>::GetValue() = "RR L";
+    AnyType<Z80::SRA_H,   Z80::BitSTR>::GetValue() = "SRA H";          AnyType<Z80::SRA_L,   Z80::BitSTR>::GetValue() = "SRA L";
+    AnyType<Z80::SRL_H,   Z80::BitSTR>::GetValue() = "SRL H";          AnyType<Z80::SRL_L,   Z80::BitSTR>::GetValue() = "SRL L";
+    AnyType<Z80::BIT_1_H, Z80::BitSTR>::GetValue() = "BIT 1, H";       AnyType<Z80::BIT_1_L, Z80::BitSTR>::GetValue() = "BIT 1, L";
+    AnyType<Z80::BIT_3_H, Z80::BitSTR>::GetValue() = "BIT 3, H";       AnyType<Z80::BIT_3_L, Z80::BitSTR>::GetValue() = "BIT 3, L";
+    AnyType<Z80::BIT_5_H, Z80::BitSTR>::GetValue() = "BIT 5, H";       AnyType<Z80::BIT_5_L, Z80::BitSTR>::GetValue() = "BIT 5, L";
+    AnyType<Z80::BIT_7_H, Z80::BitSTR>::GetValue() = "BIT 7, H";       AnyType<Z80::BIT_7_L, Z80::BitSTR>::GetValue() = "BIT 7, L";
+    AnyType<Z80::RES_1_H, Z80::BitSTR>::GetValue() = "RES 1, H";       AnyType<Z80::RES_1_L, Z80::BitSTR>::GetValue() = "RES 1, L";
+    AnyType<Z80::RES_3_H, Z80::BitSTR>::GetValue() = "RES 3, H";       AnyType<Z80::RES_3_L, Z80::BitSTR>::GetValue() = "RES 3, L";
+    AnyType<Z80::RES_5_H, Z80::BitSTR>::GetValue() = "RES 5, H";       AnyType<Z80::RES_5_L, Z80::BitSTR>::GetValue() = "RES 5, L";
+    AnyType<Z80::RES_7_H, Z80::BitSTR>::GetValue() = "RES 7, H";       AnyType<Z80::RES_7_L, Z80::BitSTR>::GetValue() = "RES 7, L";
+    AnyType<Z80::SET_1_H, Z80::BitSTR>::GetValue() = "SET 1, H";       AnyType<Z80::SET_1_L, Z80::BitSTR>::GetValue() = "SET 1, L";
+    AnyType<Z80::SET_3_H, Z80::BitSTR>::GetValue() = "SET 3, H";       AnyType<Z80::SET_3_L, Z80::BitSTR>::GetValue() = "SET 3, L";
+    AnyType<Z80::SET_5_H, Z80::BitSTR>::GetValue() = "SET 5, H";       AnyType<Z80::SET_5_L, Z80::BitSTR>::GetValue() = "SET 5, L";
+    AnyType<Z80::SET_7_H, Z80::BitSTR>::GetValue() = "SET 7, H";       AnyType<Z80::SET_7_L, Z80::BitSTR>::GetValue() = "SET 7, L";
+
+
+    AnyType<Z80::RRC_hl,   Z80::BitSTR>::GetValue() = "RRC (HL)";      AnyType<Z80::RRC_A,   Z80::BitSTR>::GetValue() = "RRC A";
+    AnyType<Z80::RR_hl,    Z80::BitSTR>::GetValue() = "RR (HL)";       AnyType<Z80::RR_A,    Z80::BitSTR>::GetValue() = "RR A";
+    AnyType<Z80::SRA_hl,   Z80::BitSTR>::GetValue() = "SRA (HL)";      AnyType<Z80::SRA_A,   Z80::BitSTR>::GetValue() = "SRA A";
+    AnyType<Z80::SRL_hl,   Z80::BitSTR>::GetValue() = "SRL (HL)";      AnyType<Z80::SRL_A,   Z80::BitSTR>::GetValue() = "SRL A";
+    AnyType<Z80::BIT_1_hl, Z80::BitSTR>::GetValue() = "BIT 1, (HL)";   AnyType<Z80::BIT_1_A, Z80::BitSTR>::GetValue() = "BIT 1, A";
+    AnyType<Z80::BIT_3_hl, Z80::BitSTR>::GetValue() = "BIT 3, (HL)";   AnyType<Z80::BIT_3_A, Z80::BitSTR>::GetValue() = "BIT 3, A";
+    AnyType<Z80::BIT_5_hl, Z80::BitSTR>::GetValue() = "BIT 5, (HL)";   AnyType<Z80::BIT_5_A, Z80::BitSTR>::GetValue() = "BIT 5, A";
+    AnyType<Z80::BIT_7_hl, Z80::BitSTR>::GetValue() = "BIT 7, (HL)";   AnyType<Z80::BIT_7_A, Z80::BitSTR>::GetValue() = "BIT 7, A";
+    AnyType<Z80::RES_1_hl, Z80::BitSTR>::GetValue() = "RES 1, (HL)";   AnyType<Z80::RES_1_A, Z80::BitSTR>::GetValue() = "RES 1, A";
+    AnyType<Z80::RES_3_hl, Z80::BitSTR>::GetValue() = "RES 3, (HL)";   AnyType<Z80::RES_3_A, Z80::BitSTR>::GetValue() = "RES 3, A";
+    AnyType<Z80::RES_5_hl, Z80::BitSTR>::GetValue() = "RES 5, (HL)";   AnyType<Z80::RES_5_A, Z80::BitSTR>::GetValue() = "RES 5, A";
+    AnyType<Z80::RES_7_hl, Z80::BitSTR>::GetValue() = "RES 7, (HL)";   AnyType<Z80::RES_7_A, Z80::BitSTR>::GetValue() = "RES 7, A";
+    AnyType<Z80::SET_1_hl, Z80::BitSTR>::GetValue() = "SET 1, (HL)";   AnyType<Z80::SET_1_A, Z80::BitSTR>::GetValue() = "SET 1, A";
+    AnyType<Z80::SET_3_hl, Z80::BitSTR>::GetValue() = "SET 3, (HL)";   AnyType<Z80::SET_3_A, Z80::BitSTR>::GetValue() = "SET 3, A";
+    AnyType<Z80::SET_5_hl, Z80::BitSTR>::GetValue() = "SET 5, (HL)";   AnyType<Z80::SET_5_A, Z80::BitSTR>::GetValue() = "SET 5, A";
+    AnyType<Z80::SET_7_hl, Z80::BitSTR>::GetValue() = "SET 7, (HL)";   AnyType<Z80::SET_7_A, Z80::BitSTR>::GetValue() = "SET 7, A";
+
+
+    // IxInstructions
+    AnyType<Z80::ADD_IX_BC, Z80::IxSTR>::GetValue() = "ADD IX, BC";         AnyType<Z80::ADD_IX_DE, Z80::IxSTR>::GetValue() = "ADD IX, DE";
+    AnyType<Z80::INC_ixd,   Z80::IxSTR>::GetValue() = "INC (IX+%d)";        AnyType<Z80::DEC_ixd,   Z80::IxSTR>::GetValue() = "DEC (IX+%d)";
+    AnyType<Z80::LD_ixd_B,  Z80::IxSTR>::GetValue() = "LD (IX+%d), B";      AnyType<Z80::LD_ixd_C,  Z80::IxSTR>::GetValue() = "LD (IX+%d), C";
+    AnyType<Z80::ADD_A_ixd, Z80::IxSTR>::GetValue() = "ADD A, (IX+%d)";     AnyType<Z80::ADC_A_ixd, Z80::IxSTR>::GetValue() = "ADC A, (IX+%d)";
+    AnyType<Z80::POP_IX,    Z80::IxSTR>::GetValue() = "POP IX";             AnyType<Z80::EX_sp_IX,  Z80::IxSTR>::GetValue() = "EX (SP), IX";
+    AnyType<Z80::LD_IX_NN,  Z80::IxSTR>::GetValue() = "LD IX, 0x%04x";      AnyType<Z80::LD_nn_IX,  Z80::IxSTR>::GetValue() = "LD (0x%04x), IX";
+    AnyType<Z80::LD_ixd_N,  Z80::IxSTR>::GetValue() = "LD (IX+%d), 0x%04x"; AnyType<Z80::ADD_IX_SP, Z80::IxSTR>::GetValue() = "ADD IX, SP";
+    AnyType<Z80::LD_ixd_D,  Z80::IxSTR>::GetValue() = "LD (IX+%d), D";      AnyType<Z80::LD_ixd_E,  Z80::IxSTR>::GetValue() = "LD (IX+%d), E";
+    AnyType<Z80::SUB_ixd,   Z80::IxSTR>::GetValue() = "SUB (IX+%d)";        AnyType<Z80::SBC_A_ixd, Z80::IxSTR>::GetValue() = "SBC A, (IX+%d)";
+    AnyType<Z80::PUSH_IX,   Z80::IxSTR>::GetValue() = "PUSH IX";            AnyType<Z80::JP_ix,     Z80::IxSTR>::GetValue() = "JP (IX)";
+    AnyType<Z80::INC_IX,    Z80::IxSTR>::GetValue() = "INC IX";             AnyType<Z80::ADD_IX_IX, Z80::IxSTR>::GetValue() = "ADD IX, IX";
+    AnyType<Z80::LD_B_ixd,  Z80::IxSTR>::GetValue() = "LD B, (IX+%d)";      AnyType<Z80::LD_C_ixd,  Z80::IxSTR>::GetValue() = "LD C, (IX+%d)";
+    AnyType<Z80::LD_ixd_H,  Z80::IxSTR>::GetValue() = "LD (IX+%d), H";      AnyType<Z80::LD_ixd_L,  Z80::IxSTR>::GetValue() = "LD (IX+%d), L";
+    AnyType<Z80::AND_ixd,   Z80::IxSTR>::GetValue() = "AND (IX+%d)";        AnyType<Z80::XOR_ixd,   Z80::IxSTR>::GetValue() = "XOR (IX+%d)";
+    AnyType<Z80::LD_IX_nn,  Z80::IxSTR>::GetValue() = "LD IX, 0x%04x";      AnyType<Z80::DEC_IX,    Z80::IxSTR>::GetValue() = "DEC IX";
+    AnyType<Z80::LD_D_ixd,  Z80::IxSTR>::GetValue() = "LD D, (IX+%d)";      AnyType<Z80::LD_E_ixd,  Z80::IxSTR>::GetValue() = "LD E, (IX+%d)";
+    AnyType<Z80::LD_H_ixd,  Z80::IxSTR>::GetValue() = "LD H, (IX+%d)";      AnyType<Z80::LD_L_ixd,  Z80::IxSTR>::GetValue() = "LD L, (IX+%d)";
+    AnyType<Z80::LD_ixd_A,  Z80::IxSTR>::GetValue() = "LD (IX+%d), A";      AnyType<Z80::LD_A_ixd,  Z80::IxSTR>::GetValue() = "LD A, (IX+%d)";
+    AnyType<Z80::OR_ixd,    Z80::IxSTR>::GetValue() = "OR (IX+%d)";         AnyType<Z80::CP_ixd,    Z80::IxSTR>::GetValue() = "CP (IX+%d)";
+    AnyType<Z80::LD_SP_IX,  Z80::IxSTR>::GetValue() = "LD SP, IX";          AnyType<Z80::IxBitInstr,Z80::IxSTR>::GetValue() = "";
+
+
+    AnyType<Z80::RLC_ixd,   Z80::IxBitSTR>::GetValue() = "RLC (IX+%d)";     AnyType<Z80::RRC_ixd,   Z80::IxBitSTR>::GetValue() = "RRC (IX+%d)";
+    AnyType<Z80::RL_ixd,    Z80::IxBitSTR>::GetValue() = "RL (IX+%d)";      AnyType<Z80::RR_ixd,    Z80::IxBitSTR>::GetValue() = "RR (IX+%d)";
+    AnyType<Z80::SLA_ixd,   Z80::IxBitSTR>::GetValue() = "SLA (IX+%d)";     AnyType<Z80::SRA_ixd,   Z80::IxBitSTR>::GetValue() = "SRA (IX+%d)";
+    AnyType<Z80::SLL_ixd,   Z80::IxBitSTR>::GetValue() = "SLL (IX+%d)";     AnyType<Z80::SRL_ixd,   Z80::IxBitSTR>::GetValue() = "SRL (IX+%d)";
+    AnyType<Z80::BIT_0_ixd, Z80::IxBitSTR>::GetValue() = "BIT 0, (IX+%d)";  AnyType<Z80::BIT_1_ixd, Z80::IxBitSTR>::GetValue() = "BIT 1, (IX+%d)";
+    AnyType<Z80::RES_0_ixd, Z80::IxBitSTR>::GetValue() = "RES 0, (IX+%d)";  AnyType<Z80::RES_1_ixd, Z80::IxBitSTR>::GetValue() = "RES 1, (IX+%d)";
+    AnyType<Z80::SET_0_ixd, Z80::IxBitSTR>::GetValue() = "SET 0, (IX+%d)";  AnyType<Z80::SET_1_ixd, Z80::IxBitSTR>::GetValue() = "SET 1, (IX+%d)";
+    AnyType<Z80::BIT_2_ixd, Z80::IxBitSTR>::GetValue() = "BIT 2, (IX+%d)";  AnyType<Z80::BIT_3_ixd, Z80::IxBitSTR>::GetValue() = "BIT 3, (IX+%d)";
+    AnyType<Z80::RES_2_ixd, Z80::IxBitSTR>::GetValue() = "RES 2, (IX+%d)";  AnyType<Z80::RES_3_ixd, Z80::IxBitSTR>::GetValue() = "RES 3, (IX+%d)";
+    AnyType<Z80::SET_2_ixd, Z80::IxBitSTR>::GetValue() = "SET 2, (IX+%d)";  AnyType<Z80::SET_3_ixd, Z80::IxBitSTR>::GetValue() = "SET 3, (IX+%d)";
+    AnyType<Z80::BIT_4_ixd, Z80::IxBitSTR>::GetValue() = "BIT 4, (IX+%d)";  AnyType<Z80::BIT_5_ixd, Z80::IxBitSTR>::GetValue() = "BIT 5, (IX+%d)";
+    AnyType<Z80::RES_4_ixd, Z80::IxBitSTR>::GetValue() = "RES 4, (IX+%d)";  AnyType<Z80::RES_5_ixd, Z80::IxBitSTR>::GetValue() = "RES 5, (IX+%d)";
+    AnyType<Z80::SET_4_ixd, Z80::IxBitSTR>::GetValue() = "SET 4, (IX+%d)";  AnyType<Z80::SET_5_ixd, Z80::IxBitSTR>::GetValue() = "SET 5, (IX+%d)";
+    AnyType<Z80::BIT_6_ixd, Z80::IxBitSTR>::GetValue() = "BIT 6, (IX+%d)";  AnyType<Z80::BIT_7_ixd, Z80::IxBitSTR>::GetValue() = "BIT 7, (IX+%d)";
+    AnyType<Z80::RES_6_ixd, Z80::IxBitSTR>::GetValue() = "RES 6, (IX+%d)";  AnyType<Z80::RES_7_ixd, Z80::IxBitSTR>::GetValue() = "RES 7, (IX+%d)";
+    AnyType<Z80::SET_6_ixd, Z80::IxBitSTR>::GetValue() = "SET 6, (IX+%d)";  AnyType<Z80::SET_7_ixd, Z80::IxBitSTR>::GetValue() = "SET 7, (IX+%d)";
+
+
+    // IyInstructions
+    AnyType<Z80::ADD_IY_BC, Z80::IySTR>::GetValue() = "ADD IY, BC";         AnyType<Z80::ADD_IY_DE, Z80::IySTR>::GetValue() = "ADD IY, DE";
+    AnyType<Z80::INC_iyd,   Z80::IySTR>::GetValue() = "INC (IY+%d)";        AnyType<Z80::DEC_iyd,   Z80::IySTR>::GetValue() = "DEC (IY+%d)";
+    AnyType<Z80::LD_iyd_B,  Z80::IySTR>::GetValue() = "LD (IY+%d), B";      AnyType<Z80::LD_iyd_C,  Z80::IySTR>::GetValue() = "LD (IY+%d), C";
+    AnyType<Z80::ADD_A_iyd, Z80::IySTR>::GetValue() = "ADD A, (IY+%d)";     AnyType<Z80::ADC_A_iyd, Z80::IySTR>::GetValue() = "ADC A, (IY+%d)";
+    AnyType<Z80::POP_IY,    Z80::IySTR>::GetValue() = "POP IY";             AnyType<Z80::EX_sp_IY,  Z80::IySTR>::GetValue() = "EX (SP), IY";
+    AnyType<Z80::LD_IY_NN,  Z80::IySTR>::GetValue() = "LD IY, 0x%04x";      AnyType<Z80::LD_nn_IY,  Z80::IySTR>::GetValue() = "LD (0x%04x), IY";
+    AnyType<Z80::LD_iyd_N,  Z80::IySTR>::GetValue() = "LD (IY+%d), 0x%04x"; AnyType<Z80::ADD_IY_SP, Z80::IySTR>::GetValue() = "ADD IY, SP";
+    AnyType<Z80::LD_iyd_D,  Z80::IySTR>::GetValue() = "LD (IY+%d), D";      AnyType<Z80::LD_iyd_E,  Z80::IySTR>::GetValue() = "LD (IY+%d), E";
+    AnyType<Z80::SUB_iyd,   Z80::IySTR>::GetValue() = "SUB (IY+%d)";        AnyType<Z80::SBC_A_iyd, Z80::IySTR>::GetValue() = "SBC A, (IY+%d)";
+    AnyType<Z80::PUSH_IY,   Z80::IySTR>::GetValue() = "PUSH IY";            AnyType<Z80::JP_iy,     Z80::IySTR>::GetValue() = "JP (IY)";
+    AnyType<Z80::INC_IY,    Z80::IySTR>::GetValue() = "INC IY";             AnyType<Z80::ADD_IY_IY, Z80::IySTR>::GetValue() = "ADD IY, IY";
+    AnyType<Z80::LD_B_iyd,  Z80::IySTR>::GetValue() = "LD B, (IY+%d)";      AnyType<Z80::LD_C_iyd,  Z80::IySTR>::GetValue() = "LD C, (IY+%d)";
+    AnyType<Z80::LD_iyd_H,  Z80::IySTR>::GetValue() = "LD (IY+%d), H";      AnyType<Z80::LD_iyd_L,  Z80::IySTR>::GetValue() = "LD (IY+%d), L";
+    AnyType<Z80::AND_iyd,   Z80::IySTR>::GetValue() = "AND (IY+%d)";        AnyType<Z80::XOR_iyd,   Z80::IySTR>::GetValue() = "XOR (IY+%d)";
+    AnyType<Z80::LD_IY_nn,  Z80::IySTR>::GetValue() = "LD IY, 0x%04x";      AnyType<Z80::DEC_IY,    Z80::IySTR>::GetValue() = "DEC IY";
+    AnyType<Z80::LD_D_iyd,  Z80::IySTR>::GetValue() = "LD D, (IY+%d)";      AnyType<Z80::LD_E_iyd,  Z80::IySTR>::GetValue() = "LD E, (IY+%d)";
+    AnyType<Z80::LD_H_iyd,  Z80::IySTR>::GetValue() = "LD H, (IY+%d)";      AnyType<Z80::LD_L_iyd,  Z80::IySTR>::GetValue() = "LD L, (IY+%d)";
+    AnyType<Z80::LD_iyd_A,  Z80::IySTR>::GetValue() = "LD (IY+%d), A";      AnyType<Z80::LD_A_iyd,  Z80::IySTR>::GetValue() = "LD A, (IY+%d)";
+    AnyType<Z80::OR_iyd,    Z80::IySTR>::GetValue() = "OR (IY+%d)";         AnyType<Z80::CP_iyd,    Z80::IySTR>::GetValue() = "CP (IY+%d)";
+    AnyType<Z80::LD_SP_IY,  Z80::IySTR>::GetValue() = "LD SP, IY";          AnyType<Z80::IyBitInstr,Z80::IySTR>::GetValue() = "";
+
+    AnyType<Z80::RLC_iyd,   Z80::IyBitSTR>::GetValue() = "RLC (IY+%d)";     AnyType<Z80::RRC_iyd,   Z80::IyBitSTR>::GetValue() = "RRC (IY+%d)";
+    AnyType<Z80::RL_iyd,    Z80::IyBitSTR>::GetValue() = "RL (IY+%d)";      AnyType<Z80::RR_iyd,    Z80::IyBitSTR>::GetValue() = "RR (IY+%d)";
+    AnyType<Z80::SLA_iyd,   Z80::IyBitSTR>::GetValue() = "SLA (IY+%d)";     AnyType<Z80::SRA_iyd,   Z80::IyBitSTR>::GetValue() = "SRA (IY+%d)";
+    AnyType<Z80::SLL_iyd,   Z80::IyBitSTR>::GetValue() = "SLL (IY+%d)";     AnyType<Z80::SRL_iyd,   Z80::IyBitSTR>::GetValue() = "SRL (IY+%d)";
+    AnyType<Z80::BIT_0_iyd, Z80::IyBitSTR>::GetValue() = "BIT 0, (IY+%d)";  AnyType<Z80::BIT_1_iyd, Z80::IyBitSTR>::GetValue() = "BIT 1, (IY+%d)";
+    AnyType<Z80::RES_0_iyd, Z80::IyBitSTR>::GetValue() = "RES 0, (IY+%d)";  AnyType<Z80::RES_1_iyd, Z80::IyBitSTR>::GetValue() = "RES 1, (IY+%d)";
+    AnyType<Z80::SET_0_iyd, Z80::IyBitSTR>::GetValue() = "SET 0, (IY+%d)";  AnyType<Z80::SET_1_iyd, Z80::IyBitSTR>::GetValue() = "SET 1, (IY+%d)";
+    AnyType<Z80::BIT_2_iyd, Z80::IyBitSTR>::GetValue() = "BIT 2, (IY+%d)";  AnyType<Z80::BIT_3_iyd, Z80::IyBitSTR>::GetValue() = "BIT 3, (IY+%d)";
+    AnyType<Z80::RES_2_iyd, Z80::IyBitSTR>::GetValue() = "RES 2, (IY+%d)";  AnyType<Z80::RES_3_iyd, Z80::IyBitSTR>::GetValue() = "RES 3, (IY+%d)";
+    AnyType<Z80::SET_2_iyd, Z80::IyBitSTR>::GetValue() = "SET 2, (IY+%d)";  AnyType<Z80::SET_3_iyd, Z80::IyBitSTR>::GetValue() = "SET 3, (IY+%d)";
+    AnyType<Z80::BIT_4_iyd, Z80::IyBitSTR>::GetValue() = "BIT 4, (IY+%d)";  AnyType<Z80::BIT_5_iyd, Z80::IyBitSTR>::GetValue() = "BIT 5, (IY+%d)";
+    AnyType<Z80::RES_4_iyd, Z80::IyBitSTR>::GetValue() = "RES 4, (IY+%d)";  AnyType<Z80::RES_5_iyd, Z80::IyBitSTR>::GetValue() = "RES 5, (IY+%d)";
+    AnyType<Z80::SET_4_iyd, Z80::IyBitSTR>::GetValue() = "SET 4, (IY+%d)";  AnyType<Z80::SET_5_iyd, Z80::IyBitSTR>::GetValue() = "SET 5, (IY+%d)";
+    AnyType<Z80::BIT_6_iyd, Z80::IyBitSTR>::GetValue() = "BIT 6, (IY+%d)";  AnyType<Z80::BIT_7_iyd, Z80::IyBitSTR>::GetValue() = "BIT 7, (IY+%d)";
+    AnyType<Z80::RES_6_iyd, Z80::IyBitSTR>::GetValue() = "RES 6, (IY+%d)";  AnyType<Z80::RES_7_iyd, Z80::IyBitSTR>::GetValue() = "RES 7, (IY+%d)";
+    AnyType<Z80::SET_6_iyd, Z80::IyBitSTR>::GetValue() = "SET 6, (IY+%d)";  AnyType<Z80::SET_7_iyd, Z80::IyBitSTR>::GetValue() = "SET 7, (IY+%d)";
+
+    // TODO: Misc Instruction
   }
 };
 };

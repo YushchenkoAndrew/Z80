@@ -121,7 +121,7 @@ private:
 };
 
 int main() {
-  Defs::Init(); Interpreter::Defs::Init(); // Initialize types
+  Defs::Init(); Interpreter::Defs::Init(); Bus::Defs::Init();  // Initialize types
 
   LuaScript luaConfig;
   if (!luaConfig.Init("src/lua/Config.lua")) return 0;
