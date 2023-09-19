@@ -4,9 +4,6 @@
 namespace Bus {
 
 /**
- * EEPROM W27C512 
- *  65536 × 8 bits
- * 
  * Grammar:
  *  command     -> phrase | motion | order
  * 
@@ -17,19 +14,33 @@ namespace Bus {
  *  adverb      -> 'dd' | 'yy' | 'p' | 'P' | 'x'
  *  phrase      -> 'C' | ' ' | 'i' | 'a' | 'u' | 'U'
  */
-class Memory : public Window::Window {
+template<int32_t TypeT, int32_t SizeT>
+class Memory : public Window::Window, public Device {
 public:
+  enum { type = TypeT };
   enum ModeT { NORMAL, REPLACE, CHARACTER };
 
-  Memory(): mode(NORMAL) {}
-  Memory(ModeT m): mode(m) {}
-  Memory(int32_t s): pages(s, 0) {}
+  Memory(): mode(NORMAL), bus(nullptr) {}
+  Memory(ModeT m): mode(m), bus(nullptr) {}
+  Memory(int32_t s): pages(s, 0), bus(nullptr) {}
+
+  Memory(Bus* b): bus(b) {}
 
 
   void load(std::vector<uint8_t> code) {
     for (auto& bank : memory) bank = 0x00;
 
     for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];
+  }
+
+  inline uint8_t Read(uint32_t addr) { 
+    if (addr > memory.size()) return 0x00;
+    return memory[addr];
+  }
+
+  inline uint8_t Write(uint32_t addr, uint8_t data) {
+    if (addr > memory.size()) return 0x00;
+    return (memory[addr] = data);
   }
 
   void Initialize(DimensionT dimensions) {
@@ -680,8 +691,9 @@ private:
   olc::vi2d pos = olc::vi2d(0, 0);
 
   bool bUpdated = false;
-  std::array<uint8_t, 65536> memory;
+  std::array<uint8_t, SizeT> memory;
 
+  Bus* bus;
 };
 
 };

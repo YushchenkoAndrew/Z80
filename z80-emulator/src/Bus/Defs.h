@@ -3,6 +3,9 @@
 
 namespace Bus {
 
+class Bus;
+
+
 /**
  * This code was hardly expired by the next resource
  * Check out this link for more info: https://clrhome.org/table/
@@ -118,6 +121,9 @@ enum MiscInstruction {
   LDIR = 0xB0, CPIR = 0xB1, INIR = 0xB2, OTIR = 0xB3,   LDDR = 0xB8, CPDR = 0xB9, INDR = 0xBA, OTDR = 0xBB,
 };
 
+// template <class T>
+// using WindowT = std::tuple<bool, std::shared_ptr<T>, DimensionT, int32_t>;
+
 typedef TypeList<Instruction, std::string> InstrSTR;
 typedef TypeList<BitInstruction, std::string> BitSTR;
 typedef TypeList<IxInstruction, std::string> IxSTR;
@@ -127,387 +133,391 @@ typedef TypeList<IxBitInstruction, std::string> IxBitSTR;
 typedef TypeList<IyBitInstruction, std::string> IyBitSTR;
 
 typedef TypeList<
-  AnyType<Instruction::NOP,       InstrSTR>, TypeList<AnyType<Instruction::LD_BC_NN,  InstrSTR>, TypeList<
-  AnyType<Instruction::DJNZ_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_DE_NN,  InstrSTR>, TypeList<
-  AnyType<Instruction::JR_NZ_D,   InstrSTR>, TypeList<AnyType<Instruction::LD_HL_NN,  InstrSTR>, TypeList<
-  AnyType<Instruction::JR_NC_D,   InstrSTR>, TypeList<AnyType<Instruction::LD_SP_NN,  InstrSTR>, TypeList<
-  AnyType<Instruction::LD_B_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_B_C,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_D_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_D_C,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_H_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_H_C,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_hl_B,   InstrSTR>, TypeList<AnyType<Instruction::LD_hl_C,   InstrSTR>, TypeList<
-  AnyType<Instruction::ADD_A_B,   InstrSTR>, TypeList<AnyType<Instruction::ADD_A_C,   InstrSTR>, TypeList<
-  AnyType<Instruction::SUB_B,     InstrSTR>, TypeList<AnyType<Instruction::SUB_C,     InstrSTR>, TypeList<
-  AnyType<Instruction::AND_B,     InstrSTR>, TypeList<AnyType<Instruction::AND_C,     InstrSTR>, TypeList<
-  AnyType<Instruction::OR_B,      InstrSTR>, TypeList<AnyType<Instruction::OR_C,      InstrSTR>, TypeList<
-  AnyType<Instruction::RET_NZ,    InstrSTR>, TypeList<AnyType<Instruction::POP_BC,    InstrSTR>, TypeList<
-  AnyType<Instruction::RET_NC,    InstrSTR>, TypeList<AnyType<Instruction::POP_DE,    InstrSTR>, TypeList<
-  AnyType<Instruction::RET_PO,    InstrSTR>, TypeList<AnyType<Instruction::POP_HL,    InstrSTR>, TypeList<
-  AnyType<Instruction::RET_P,     InstrSTR>, TypeList<AnyType<Instruction::POP_AF,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_bc_A,   InstrSTR>, TypeList<AnyType<Instruction::INC_BC,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_de_A,   InstrSTR>, TypeList<AnyType<Instruction::INC_DE,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_nn_HL,  InstrSTR>, TypeList<AnyType<Instruction::INC_HL,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_nn_A,   InstrSTR>, TypeList<AnyType<Instruction::INC_SP,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_B_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_B_E,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_D_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_D_E,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_H_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_H_E,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_hl_D,   InstrSTR>, TypeList<AnyType<Instruction::LD_hl_E,   InstrSTR>, TypeList<
-  AnyType<Instruction::ADD_A_D,   InstrSTR>, TypeList<AnyType<Instruction::ADD_A_E,   InstrSTR>, TypeList<
-  AnyType<Instruction::SUB_D,     InstrSTR>, TypeList<AnyType<Instruction::SUB_E,     InstrSTR>, TypeList<
-  AnyType<Instruction::AND_D,     InstrSTR>, TypeList<AnyType<Instruction::AND_E,     InstrSTR>, TypeList<
-  AnyType<Instruction::OR_D,      InstrSTR>, TypeList<AnyType<Instruction::OR_E,      InstrSTR>, TypeList<
-  AnyType<Instruction::JP_NZ_NN,  InstrSTR>, TypeList<AnyType<Instruction::JP_NN,     InstrSTR>, TypeList<
-  AnyType<Instruction::JP_NC_NN,  InstrSTR>, TypeList<AnyType<Instruction::OUT_n_A,   InstrSTR>, TypeList<
-  AnyType<Instruction::JP_PO_NN,  InstrSTR>, TypeList<AnyType<Instruction::EX_sp_HL,  InstrSTR>, TypeList<
-  AnyType<Instruction::JP_P_NN,   InstrSTR>, TypeList<AnyType<Instruction::DI,        InstrSTR>, TypeList<
-  AnyType<Instruction::INC_B,     InstrSTR>, TypeList<AnyType<Instruction::DEC_B,     InstrSTR>, TypeList<
-  AnyType<Instruction::INC_D,     InstrSTR>, TypeList<AnyType<Instruction::DEC_D,     InstrSTR>, TypeList<
-  AnyType<Instruction::INC_H,     InstrSTR>, TypeList<AnyType<Instruction::DEC_H,     InstrSTR>, TypeList<
-  AnyType<Instruction::INC_hl,    InstrSTR>, TypeList<AnyType<Instruction::DEC_hl,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_B_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_B_L,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_D_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_D_L,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_H_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_H_L,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_hl_H,   InstrSTR>, TypeList<AnyType<Instruction::LD_hl_L,   InstrSTR>, TypeList<
-  AnyType<Instruction::ADD_A_H,   InstrSTR>, TypeList<AnyType<Instruction::ADD_A_L,   InstrSTR>, TypeList<
-  AnyType<Instruction::SUB_H,     InstrSTR>, TypeList<AnyType<Instruction::SUB_L,     InstrSTR>, TypeList<
-  AnyType<Instruction::AND_H,     InstrSTR>, TypeList<AnyType<Instruction::AND_L,     InstrSTR>, TypeList<
-  AnyType<Instruction::OR_H,      InstrSTR>, TypeList<AnyType<Instruction::OR_L,      InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_NZ_NN,InstrSTR>, TypeList<AnyType<Instruction::PUSH_BC,   InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_NC_NN,InstrSTR>, TypeList<AnyType<Instruction::PUSH_DE,   InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_PO_NN,InstrSTR>, TypeList<AnyType<Instruction::PUSH_HL,   InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_P_NN, InstrSTR>, TypeList<AnyType<Instruction::PUSH_AF,   InstrSTR>, TypeList<
-  AnyType<Instruction::LD_B_N,    InstrSTR>, TypeList<AnyType<Instruction::RLCA,      InstrSTR>, TypeList<
-  AnyType<Instruction::LD_D_N,    InstrSTR>, TypeList<AnyType<Instruction::RLA,       InstrSTR>, TypeList<
-  AnyType<Instruction::LD_H_N,    InstrSTR>, TypeList<AnyType<Instruction::DAA,       InstrSTR>, TypeList<
-  AnyType<Instruction::LD_hl_n,   InstrSTR>, TypeList<AnyType<Instruction::SCF,       InstrSTR>, TypeList<
-  AnyType<Instruction::LD_B_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_B_A,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_D_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_D_A,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_H_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_H_A,    InstrSTR>, TypeList<
-  AnyType<Instruction::HALT,      InstrSTR>, TypeList<AnyType<Instruction::LD_hl_A,   InstrSTR>, TypeList<
-  AnyType<Instruction::ADD_A_hl,  InstrSTR>, TypeList<AnyType<Instruction::ADD_A_A,   InstrSTR>, TypeList<
-  AnyType<Instruction::SUB_hl,    InstrSTR>, TypeList<AnyType<Instruction::SUB_A,     InstrSTR>, TypeList<
-  AnyType<Instruction::AND_hl,    InstrSTR>, TypeList<AnyType<Instruction::AND_A,     InstrSTR>, TypeList<
-  AnyType<Instruction::OR_hl,     InstrSTR>, TypeList<AnyType<Instruction::OR_A,      InstrSTR>, TypeList<
-  AnyType<Instruction::ADD_A_N,   InstrSTR>, TypeList<AnyType<Instruction::RST_00h,   InstrSTR>, TypeList<
-  AnyType<Instruction::SUB_N,     InstrSTR>, TypeList<AnyType<Instruction::RST_10h,   InstrSTR>, TypeList<
-  AnyType<Instruction::AND_N,     InstrSTR>, TypeList<AnyType<Instruction::RST_20h,   InstrSTR>, TypeList<
-  AnyType<Instruction::OR_N,      InstrSTR>, TypeList<AnyType<Instruction::RST_30h,   InstrSTR>, TypeList<
-  AnyType<Instruction::EX_AF_AF,  InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_BC, InstrSTR>, TypeList<
-  AnyType<Instruction::JR_D,      InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_DE, InstrSTR>, TypeList<
-  AnyType<Instruction::JR_Z_D,    InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_HL, InstrSTR>, TypeList<
-  AnyType<Instruction::JR_C_D,    InstrSTR>, TypeList<AnyType<Instruction::ADD_HL_SP, InstrSTR>, TypeList<
-  AnyType<Instruction::LD_C_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_C_C,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_E_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_E_C,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_L_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_L_C,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_B,    InstrSTR>, TypeList<AnyType<Instruction::LD_A_C,    InstrSTR>, TypeList<
-  AnyType<Instruction::ADC_A_B,   InstrSTR>, TypeList<AnyType<Instruction::ADC_A_C,   InstrSTR>, TypeList<
-  AnyType<Instruction::SBC_A_B,   InstrSTR>, TypeList<AnyType<Instruction::SBC_A_C,   InstrSTR>, TypeList<
-  AnyType<Instruction::XOR_B,     InstrSTR>, TypeList<AnyType<Instruction::XOR_C,     InstrSTR>, TypeList<
-  AnyType<Instruction::CP_B,      InstrSTR>, TypeList<AnyType<Instruction::CP_C,      InstrSTR>, TypeList<
-  AnyType<Instruction::RET_Z,     InstrSTR>, TypeList<AnyType<Instruction::RET,       InstrSTR>, TypeList<
-  AnyType<Instruction::RET_C,     InstrSTR>, TypeList<AnyType<Instruction::EXX,       InstrSTR>, TypeList<
-  AnyType<Instruction::RET_PE,    InstrSTR>, TypeList<AnyType<Instruction::JP_hl,     InstrSTR>, TypeList<
-  AnyType<Instruction::RET_M,     InstrSTR>, TypeList<AnyType<Instruction::JP_SP_HL,  InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_bc,   InstrSTR>, TypeList<AnyType<Instruction::DEC_BC,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_de,   InstrSTR>, TypeList<AnyType<Instruction::DEC_DE,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_HL_nn,  InstrSTR>, TypeList<AnyType<Instruction::DEC_HL,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_nn,   InstrSTR>, TypeList<AnyType<Instruction::DEC_SP,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_C_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_C_E,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_E_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_E_E,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_L_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_L_E,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_D,    InstrSTR>, TypeList<AnyType<Instruction::LD_A_E,    InstrSTR>, TypeList<
-  AnyType<Instruction::ADC_A_D,   InstrSTR>, TypeList<AnyType<Instruction::ADC_A_E,   InstrSTR>, TypeList<
-  AnyType<Instruction::SBC_A_D,   InstrSTR>, TypeList<AnyType<Instruction::SBC_A_E,   InstrSTR>, TypeList<
-  AnyType<Instruction::XOR_D,     InstrSTR>, TypeList<AnyType<Instruction::XOR_E,     InstrSTR>, TypeList<
-  AnyType<Instruction::CP_D,      InstrSTR>, TypeList<AnyType<Instruction::CP_E,      InstrSTR>, TypeList<
-  AnyType<Instruction::JP_Z_NN,   InstrSTR>, TypeList<AnyType<Instruction::BIT_INSTR, InstrSTR>, TypeList<
-  AnyType<Instruction::JP_C_NN,   InstrSTR>, TypeList<AnyType<Instruction::IN_A_n,    InstrSTR>, TypeList<
-  AnyType<Instruction::JP_PE_NN,  InstrSTR>, TypeList<AnyType<Instruction::EX_DE_HL,  InstrSTR>, TypeList<
-  AnyType<Instruction::JP_M_NN,   InstrSTR>, TypeList<AnyType<Instruction::EI,        InstrSTR>, TypeList<
-  AnyType<Instruction::INC_C,     InstrSTR>, TypeList<AnyType<Instruction::DEC_C,     InstrSTR>, TypeList<
-  AnyType<Instruction::INC_E,     InstrSTR>, TypeList<AnyType<Instruction::DEC_E,     InstrSTR>, TypeList<
-  AnyType<Instruction::INC_L,     InstrSTR>, TypeList<AnyType<Instruction::DEC_L,     InstrSTR>, TypeList<
-  AnyType<Instruction::INC_A,     InstrSTR>, TypeList<AnyType<Instruction::DEC_A,     InstrSTR>, TypeList<
-  AnyType<Instruction::LD_C_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_C_L,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_E_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_E_L,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_L_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_L_L,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_H,    InstrSTR>, TypeList<AnyType<Instruction::LD_A_L,    InstrSTR>, TypeList<
-  AnyType<Instruction::ADC_A_H,   InstrSTR>, TypeList<AnyType<Instruction::ADC_A_L,   InstrSTR>, TypeList<
-  AnyType<Instruction::SBC_A_H,   InstrSTR>, TypeList<AnyType<Instruction::SBC_A_L,   InstrSTR>, TypeList<
-  AnyType<Instruction::XOR_H,     InstrSTR>, TypeList<AnyType<Instruction::XOR_L,     InstrSTR>, TypeList<
-  AnyType<Instruction::CP_H,      InstrSTR>, TypeList<AnyType<Instruction::CP_L,      InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_Z_NN, InstrSTR>, TypeList<AnyType<Instruction::CALL_NN,   InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_C_NN, InstrSTR>, TypeList<AnyType<Instruction::IX_INSTR,  InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_PE_NN,InstrSTR>, TypeList<AnyType<Instruction::MISC_INSTR,InstrSTR>, TypeList<
-  AnyType<Instruction::CALL_M_NN, InstrSTR>, TypeList<AnyType<Instruction::IY_INSTR,  InstrSTR>, TypeList<
-  AnyType<Instruction::LD_C_N,    InstrSTR>, TypeList<AnyType<Instruction::RRCA,      InstrSTR>, TypeList<
-  AnyType<Instruction::LD_E_N,    InstrSTR>, TypeList<AnyType<Instruction::RRA,       InstrSTR>, TypeList<
-  AnyType<Instruction::LD_L_N,    InstrSTR>, TypeList<AnyType<Instruction::CPL,       InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_N,    InstrSTR>, TypeList<AnyType<Instruction::CCF,       InstrSTR>, TypeList<
-  AnyType<Instruction::LD_C_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_C_A,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_E_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_E_A,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_L_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_L_A,    InstrSTR>, TypeList<
-  AnyType<Instruction::LD_A_hl,   InstrSTR>, TypeList<AnyType<Instruction::LD_A_A,    InstrSTR>, TypeList<
-  AnyType<Instruction::ADC_A_hl,  InstrSTR>, TypeList<AnyType<Instruction::ADC_A_A,   InstrSTR>, TypeList<
-  AnyType<Instruction::SBC_A_hl,  InstrSTR>, TypeList<AnyType<Instruction::SBC_A_A,   InstrSTR>, TypeList<
-  AnyType<Instruction::XOR_hl,    InstrSTR>, TypeList<AnyType<Instruction::XOR_A,     InstrSTR>, TypeList<
-  AnyType<Instruction::CP_hl,     InstrSTR>, TypeList<AnyType<Instruction::CP_A,      InstrSTR>, TypeList<
-  AnyType<Instruction::ADC_A_N,   InstrSTR>, TypeList<AnyType<Instruction::RST_08h,   InstrSTR>, TypeList<
-  AnyType<Instruction::SBC_A_N,   InstrSTR>, TypeList<AnyType<Instruction::RST_18h,   InstrSTR>, TypeList<
-  AnyType<Instruction::XOR_N,     InstrSTR>, TypeList<AnyType<Instruction::RST_28h,   InstrSTR>, TypeList<
-  AnyType<Instruction::CP_N,      InstrSTR>, TypeList<AnyType<Instruction::RST_38h,   InstrSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<AnyType<Instruction::NOP,       InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_BC_NN,  InstrSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<Instruction::DJNZ_D,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::LD_DE_NN,  InstrSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<Instruction::JR_NZ_D,   InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::LD_HL_NN,  InstrSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<Instruction::JR_NC_D,   InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::LD_SP_NN,  InstrSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<Instruction::LD_B_B,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_B_C,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_D_B,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_D_C,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_H_B,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_H_C,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_hl_B,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_hl_C,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADD_A_B,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADD_A_C,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SUB_B,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SUB_C,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::AND_B,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::AND_C,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::OR_B,      InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::OR_C,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_NZ,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::POP_BC,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_NC,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::POP_DE,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_PO,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::POP_HL,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_P,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::POP_AF,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_bc_A,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::INC_BC,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_de_A,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::INC_DE,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_nn_HL,  InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::INC_HL,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_nn_A,   InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::INC_SP,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_B_D,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_B_E,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_D_D,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_D_E,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_H_D,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_H_E,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_hl_D,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_hl_E,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADD_A_D,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADD_A_E,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SUB_D,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SUB_E,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::AND_D,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::AND_E,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::OR_D,      InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::OR_E,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JP_NZ_NN,  InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::JP_NN,     InstrSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<Instruction::JP_NC_NN,  InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::OUT_n_A,   InstrSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<Instruction::JP_PO_NN,  InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::EX_sp_HL,  InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JP_P_NN,   InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::DI,        InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_B,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_B,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_D,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_D,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_H,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_H,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_hl,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_hl,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_B_H,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_B_L,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_D_H,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_D_L,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_H_H,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_H_L,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_hl_H,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_hl_L,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADD_A_H,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADD_A_L,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SUB_H,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SUB_L,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::AND_H,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::AND_L,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::OR_H,      InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::OR_L,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_NZ_NN,InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::PUSH_BC,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_NC_NN,InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::PUSH_DE,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_PO_NN,InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::PUSH_HL,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_P_NN, InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::PUSH_AF,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_B_N,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RLCA,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_D_N,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RLA,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_H_N,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::DAA,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_hl_n,   InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::SCF,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_B_hl,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_B_A,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_D_hl,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_D_A,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_H_hl,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_H_A,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::HALT,      InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_hl_A,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADD_A_hl,  InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADD_A_A,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SUB_hl,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SUB_A,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::AND_hl,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::AND_A,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::OR_hl,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::OR_A,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADD_A_N,   InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_00h,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SUB_N,     InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_10h,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::AND_N,     InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_20h,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::OR_N,      InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_30h,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::EX_AF_AF,  InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADD_HL_BC, InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JR_D,      InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::ADD_HL_DE, InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JR_Z_D,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::ADD_HL_HL, InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JR_C_D,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::ADD_HL_SP, InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_C_B,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_C_C,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_E_B,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_E_C,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_L_B,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_L_C,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_B,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_A_C,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADC_A_B,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADC_A_C,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SBC_A_B,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SBC_A_C,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::XOR_B,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::XOR_C,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CP_B,      InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::CP_C,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_Z,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::RET,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_C,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::EXX,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_PE,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::JP_hl,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_M,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::JP_SP_HL,  InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_bc,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_BC,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_de,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_DE,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_HL_nn,  InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::DEC_HL,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_nn,   InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::DEC_SP,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_C_D,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_C_E,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_E_D,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_E_E,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_L_D,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_L_E,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_D,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_A_E,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADC_A_D,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADC_A_E,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SBC_A_D,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SBC_A_E,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::XOR_D,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::XOR_E,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CP_D,      InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::CP_E,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JP_Z_NN,   InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::BIT_INSTR, InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JP_C_NN,   InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::IN_A_n,    InstrSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<Instruction::JP_PE_NN,  InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::EX_DE_HL,  InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::JP_M_NN,   InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::EI,        InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_C,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_C,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_E,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_E,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_L,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_L,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::INC_A,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_A,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_C_H,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_C_L,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_E_H,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_E_L,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_L_H,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_L_L,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_H,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_A_L,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADC_A_H,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADC_A_L,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SBC_A_H,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SBC_A_L,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::XOR_H,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::XOR_L,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CP_H,      InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::CP_L,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_Z_NN, InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::CALL_NN,   InstrSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_C_NN, InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::IX_INSTR,  InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_PE_NN,InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::MISC_INSTR,InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CALL_M_NN, InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::IY_INSTR,  InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_C_N,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RRCA,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_E_N,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RRA,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_L_N,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::CPL,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_N,    InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::CCF,       InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_C_hl,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_C_A,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_E_hl,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_E_A,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_L_hl,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_L_A,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::LD_A_hl,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_A_A,    InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADC_A_hl,  InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::ADC_A_A,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SBC_A_hl,  InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::SBC_A_A,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::XOR_hl,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::XOR_A,     InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CP_hl,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::CP_A,      InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::ADC_A_N,   InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_08h,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::SBC_A_N,   InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_18h,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::XOR_N,     InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_28h,   InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::CP_N,      InstrSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<Instruction::RST_38h,   InstrSTR>, Int2Type<1>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     Instructions;
 
 
 typedef TypeList<
-  AnyType<BitInstruction::RLC_B,   BitSTR>, TypeList<AnyType<BitInstruction::RLC_C,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RL_B,    BitSTR>, TypeList<AnyType<BitInstruction::RL_C,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SLA_B,   BitSTR>, TypeList<AnyType<BitInstruction::SLA_C,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SLL_B,   BitSTR>, TypeList<AnyType<BitInstruction::SLL_C,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_0_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_2_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_4_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_6_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_0_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_0_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_2_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_2_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_4_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_4_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_6_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_6_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_0_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_0_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_2_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_2_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_4_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_4_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_6_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_6_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RLC_D,   BitSTR>, TypeList<AnyType<BitInstruction::RLC_E,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RL_D,    BitSTR>, TypeList<AnyType<BitInstruction::RL_E,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SLA_D,   BitSTR>, TypeList<AnyType<BitInstruction::SLA_E,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SLL_D,   BitSTR>, TypeList<AnyType<BitInstruction::SLL_E,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_0_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_2_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_4_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_6_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_0_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_0_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_2_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_2_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_4_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_4_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_6_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_6_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_0_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_0_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_2_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_2_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_4_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_4_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_6_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_6_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RLC_H,   BitSTR>, TypeList<AnyType<BitInstruction::RLC_L,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RL_H,    BitSTR>, TypeList<AnyType<BitInstruction::RL_L,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SLA_H,   BitSTR>, TypeList<AnyType<BitInstruction::SLA_L,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SLL_H,   BitSTR>, TypeList<AnyType<BitInstruction::SLL_L,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_0_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_2_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_4_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_6_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_0_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_0_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_2_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_2_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_4_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_4_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_6_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_6_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_0_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_0_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_2_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_2_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_4_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_4_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_6_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_6_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RLC_hl,  BitSTR>, TypeList<AnyType<BitInstruction::RLC_A,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RL_hl,   BitSTR>, TypeList<AnyType<BitInstruction::RL_A,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SLA_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SLA_A,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SLL_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SLL_A,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_0_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_0_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_2_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_2_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_4_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_4_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_6_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_6_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_0_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_0_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_2_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_2_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_4_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_4_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_6_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_6_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_0_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_0_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_2_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_2_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_4_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_4_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_6_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_6_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RRC_B,   BitSTR>, TypeList<AnyType<BitInstruction::RRC_C,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RR_B,    BitSTR>, TypeList<AnyType<BitInstruction::RR_C,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SRA_B,   BitSTR>, TypeList<AnyType<BitInstruction::SRA_C,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SRL_B,   BitSTR>, TypeList<AnyType<BitInstruction::SRL_C,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_1_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_3_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_5_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_7_B, BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_1_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_1_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_3_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_3_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_5_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_5_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_7_B, BitSTR>, TypeList<AnyType<BitInstruction::RES_7_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_1_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_1_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_3_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_3_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_5_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_5_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_7_B, BitSTR>, TypeList<AnyType<BitInstruction::SET_7_C, BitSTR>, TypeList<
-  AnyType<BitInstruction::RRC_D,   BitSTR>, TypeList<AnyType<BitInstruction::RRC_E,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RR_D,    BitSTR>, TypeList<AnyType<BitInstruction::RR_E,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SRA_D,   BitSTR>, TypeList<AnyType<BitInstruction::SRA_E,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SRL_D,   BitSTR>, TypeList<AnyType<BitInstruction::SRL_E,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_1_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_3_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_5_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_7_D, BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_1_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_1_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_3_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_3_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_5_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_5_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_7_D, BitSTR>, TypeList<AnyType<BitInstruction::RES_7_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_1_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_1_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_3_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_3_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_5_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_5_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_7_D, BitSTR>, TypeList<AnyType<BitInstruction::SET_7_E, BitSTR>, TypeList<
-  AnyType<BitInstruction::RRC_H,   BitSTR>, TypeList<AnyType<BitInstruction::RRC_L,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RR_H,    BitSTR>, TypeList<AnyType<BitInstruction::RR_L,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SRA_H,   BitSTR>, TypeList<AnyType<BitInstruction::SRA_L,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SRL_H,   BitSTR>, TypeList<AnyType<BitInstruction::SRL_L,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_1_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_3_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_5_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_7_H, BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_1_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_1_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_3_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_3_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_5_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_5_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_7_H, BitSTR>, TypeList<AnyType<BitInstruction::RES_7_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_1_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_1_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_3_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_3_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_5_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_5_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_7_H, BitSTR>, TypeList<AnyType<BitInstruction::SET_7_L, BitSTR>, TypeList<
-  AnyType<BitInstruction::RRC_hl,  BitSTR>, TypeList<AnyType<BitInstruction::RRC_A,   BitSTR>, TypeList<
-  AnyType<BitInstruction::RR_hl,   BitSTR>, TypeList<AnyType<BitInstruction::RR_A,    BitSTR>, TypeList<
-  AnyType<BitInstruction::SRA_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SRA_A,   BitSTR>, TypeList<
-  AnyType<BitInstruction::SRL_hl,  BitSTR>, TypeList<AnyType<BitInstruction::SRL_A,   BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_1_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_1_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_3_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_3_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_5_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_5_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::BIT_7_hl,BitSTR>, TypeList<AnyType<BitInstruction::BIT_7_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_1_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_1_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_3_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_3_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_5_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_5_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::RES_7_hl,BitSTR>, TypeList<AnyType<BitInstruction::RES_7_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_1_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_1_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_3_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_3_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_5_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_5_A, BitSTR>, TypeList<
-  AnyType<BitInstruction::SET_7_hl,BitSTR>, TypeList<AnyType<BitInstruction::SET_7_A, BitSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<AnyType<BitInstruction::RLC_B,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RLC_C,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RL_B,    BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RL_C,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLA_B,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLA_C,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLL_B,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLL_C,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_0_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_0_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_2_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_2_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_4_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_4_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_6_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_6_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_0_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_0_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_2_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_2_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_4_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_4_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_6_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_6_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_0_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_0_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_2_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_2_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_4_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_4_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_6_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_6_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RLC_D,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RLC_E,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RL_D,    BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RL_E,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLA_D,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLA_E,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLL_D,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLL_E,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_0_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_0_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_2_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_2_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_4_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_4_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_6_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_6_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_0_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_0_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_2_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_2_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_4_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_4_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_6_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_6_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_0_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_0_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_2_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_2_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_4_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_4_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_6_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_6_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RLC_H,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RLC_L,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RL_H,    BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RL_L,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLA_H,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLA_L,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLL_H,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLL_L,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_0_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_0_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_2_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_2_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_4_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_4_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_6_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_6_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_0_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_0_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_2_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_2_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_4_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_4_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_6_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_6_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_0_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_0_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_2_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_2_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_4_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_4_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_6_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_6_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RLC_hl,  BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RLC_A,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RL_hl,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RL_A,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLA_hl,  BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLA_A,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SLL_hl,  BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SLL_A,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_0_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_0_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_2_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_2_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_4_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_4_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_6_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_6_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_0_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_0_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_2_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_2_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_4_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_4_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_6_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_6_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_0_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_0_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_2_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_2_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_4_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_4_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_6_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_6_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RRC_B,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RRC_C,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RR_B,    BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RR_C,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRA_B,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRA_C,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRL_B,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRL_C,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_1_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_1_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_3_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_3_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_5_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_5_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_7_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_7_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_1_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_1_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_3_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_3_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_5_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_5_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_7_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_7_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_1_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_1_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_3_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_3_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_5_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_5_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_7_B, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_7_C, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RRC_D,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RRC_E,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RR_D,    BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RR_E,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRA_D,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRA_E,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRL_D,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRL_E,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_1_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_1_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_3_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_3_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_5_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_5_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_7_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_7_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_1_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_1_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_3_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_3_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_5_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_5_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_7_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_7_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_1_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_1_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_3_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_3_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_5_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_5_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_7_D, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_7_E, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RRC_H,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RRC_L,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RR_H,    BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RR_L,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRA_H,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRA_L,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRL_H,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRL_L,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_1_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_1_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_3_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_3_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_5_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_5_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_7_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_7_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_1_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_1_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_3_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_3_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_5_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_5_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_7_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_7_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_1_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_1_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_3_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_3_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_5_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_5_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_7_H, BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_7_L, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RRC_hl,  BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RRC_A,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RR_hl,   BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RR_A,    BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRA_hl,  BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRA_A,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SRL_hl,  BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SRL_A,   BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_1_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_1_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_3_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_3_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_5_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_5_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::BIT_7_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::BIT_7_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_1_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_1_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_3_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_3_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_5_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_5_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::RES_7_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::RES_7_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_1_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_1_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_3_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_3_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_5_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_5_A, BitSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<BitInstruction::SET_7_hl,BitSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<BitInstruction::SET_7_A, BitSTR>, Int2Type<1>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     BitInstructions;
 
 typedef TypeList<
-  AnyType<IxInstruction::ADD_IX_BC, IxSTR>, TypeList<AnyType<IxInstruction::ADD_IX_DE, IxSTR>, TypeList<
-  AnyType<IxInstruction::INC_ixd,   IxSTR>, TypeList<AnyType<IxInstruction::DEC_ixd,   IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_ixd_B,  IxSTR>, TypeList<AnyType<IxInstruction::LD_ixd_C,  IxSTR>, TypeList<
-  AnyType<IxInstruction::ADD_A_ixd, IxSTR>, TypeList<AnyType<IxInstruction::ADC_A_ixd, IxSTR>, TypeList<
-  AnyType<IxInstruction::POP_IX,    IxSTR>, TypeList<AnyType<IxInstruction::EX_sp_IX,  IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_IX_NN,  IxSTR>, TypeList<AnyType<IxInstruction::LD_nn_IX,  IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_ixd_N,  IxSTR>, TypeList<AnyType<IxInstruction::ADD_IX_SP, IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_ixd_D,  IxSTR>, TypeList<AnyType<IxInstruction::LD_ixd_E,  IxSTR>, TypeList<
-  AnyType<IxInstruction::SUB_ixd,   IxSTR>, TypeList<AnyType<IxInstruction::SBC_A_ixd, IxSTR>, TypeList<
-  AnyType<IxInstruction::PUSH_IX,   IxSTR>, TypeList<AnyType<IxInstruction::JP_ix,     IxSTR>, TypeList<
-  AnyType<IxInstruction::INC_IX,    IxSTR>, TypeList<AnyType<IxInstruction::ADD_IX_IX, IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_B_ixd,  IxSTR>, TypeList<AnyType<IxInstruction::LD_C_ixd,  IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_ixd_H,  IxSTR>, TypeList<AnyType<IxInstruction::LD_ixd_L,  IxSTR>, TypeList<
-  AnyType<IxInstruction::AND_ixd,   IxSTR>, TypeList<AnyType<IxInstruction::XOR_ixd,   IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_IX_nn,  IxSTR>, TypeList<AnyType<IxInstruction::DEC_IX,    IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_D_ixd,  IxSTR>, TypeList<AnyType<IxInstruction::LD_E_ixd,  IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_H_ixd,  IxSTR>, TypeList<AnyType<IxInstruction::LD_L_ixd,  IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_ixd_A,  IxSTR>, TypeList<AnyType<IxInstruction::LD_A_ixd,  IxSTR>, TypeList<
-  AnyType<IxInstruction::OR_ixd,    IxSTR>, TypeList<AnyType<IxInstruction::CP_ixd,    IxSTR>, TypeList<
-  AnyType<IxInstruction::LD_SP_IX,  IxSTR>, TypeList<AnyType<IxInstruction::IxBitInstr,IxSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<AnyType<IxInstruction::ADD_IX_BC, IxSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IxInstruction::ADD_IX_DE, IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::INC_ixd,   IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::DEC_ixd,   IxSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_ixd_B,  IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::LD_ixd_C,  IxSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxInstruction::ADD_A_ixd, IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::ADC_A_ixd, IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::POP_IX,    IxSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IxInstruction::EX_sp_IX,  IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_IX_NN,  IxSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<IxInstruction::LD_nn_IX,  IxSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_ixd_N,  IxSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<IxInstruction::ADD_IX_SP, IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_ixd_D,  IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::LD_ixd_E,  IxSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxInstruction::SUB_ixd,   IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::SBC_A_ixd, IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::PUSH_IX,   IxSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IxInstruction::JP_ix,     IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::INC_IX,    IxSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IxInstruction::ADD_IX_IX, IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_B_ixd,  IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::LD_C_ixd,  IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_ixd_H,  IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::LD_ixd_L,  IxSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxInstruction::AND_ixd,   IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::XOR_ixd,   IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_IX_nn,  IxSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<IxInstruction::DEC_IX,    IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_D_ixd,  IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::LD_E_ixd,  IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_H_ixd,  IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::LD_L_ixd,  IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_ixd_A,  IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::LD_A_ixd,  IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::OR_ixd,    IxSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxInstruction::CP_ixd,    IxSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IxInstruction::LD_SP_IX,  IxSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IxInstruction::IxBitInstr,IxSTR>, Int2Type<1>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     IxInstructions;
 
 typedef TypeList<
-  AnyType<IxBitInstruction::RLC_ixd,   IxBitSTR>, TypeList<AnyType<IxBitInstruction::RRC_ixd,   IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::RL_ixd,    IxBitSTR>, TypeList<AnyType<IxBitInstruction::RR_ixd,    IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::SLA_ixd,   IxBitSTR>, TypeList<AnyType<IxBitInstruction::SRA_ixd,   IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::SLL_ixd,   IxBitSTR>, TypeList<AnyType<IxBitInstruction::SRL_ixd,   IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::BIT_0_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_1_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::RES_0_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_1_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::SET_0_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_1_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::BIT_2_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_3_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::RES_2_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_3_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::SET_2_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_3_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::BIT_4_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_5_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::RES_4_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_5_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::SET_4_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_5_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::BIT_6_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::BIT_7_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::RES_6_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::RES_7_ixd, IxBitSTR>, TypeList<
-  AnyType<IxBitInstruction::SET_6_ixd, IxBitSTR>, TypeList<AnyType<IxBitInstruction::SET_7_ixd, IxBitSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<AnyType<IxBitInstruction::RLC_ixd,   IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::RRC_ixd,   IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::RL_ixd,    IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::RR_ixd,    IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::SLA_ixd,   IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::SRA_ixd,   IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::SLL_ixd,   IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::SRL_ixd,   IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::BIT_0_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::BIT_1_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::RES_0_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::RES_1_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::SET_0_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::SET_1_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::BIT_2_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::BIT_3_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::RES_2_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::RES_3_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::SET_2_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::SET_3_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::BIT_4_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::BIT_5_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::RES_4_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::RES_5_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::SET_4_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::SET_5_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::BIT_6_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::BIT_7_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::RES_6_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::RES_7_ixd, IxBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IxBitInstruction::SET_6_ixd, IxBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IxBitInstruction::SET_7_ixd, IxBitSTR>, Int2Type<2>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     IxBitInstructions;
 
 
 typedef TypeList<
-  AnyType<IyInstruction::ADD_IY_BC, IySTR>, TypeList<AnyType<IyInstruction::ADD_IY_DE, IySTR>, TypeList<
-  AnyType<IyInstruction::INC_iyd,   IySTR>, TypeList<AnyType<IyInstruction::DEC_iyd,   IySTR>, TypeList<
-  AnyType<IyInstruction::LD_iyd_B,  IySTR>, TypeList<AnyType<IyInstruction::LD_iyd_C,  IySTR>, TypeList<
-  AnyType<IyInstruction::ADD_A_iyd, IySTR>, TypeList<AnyType<IyInstruction::ADC_A_iyd, IySTR>, TypeList<
-  AnyType<IyInstruction::POP_IY,    IySTR>, TypeList<AnyType<IyInstruction::EX_sp_IY,  IySTR>, TypeList<
-  AnyType<IyInstruction::LD_IY_NN,  IySTR>, TypeList<AnyType<IyInstruction::LD_nn_IY,  IySTR>, TypeList<
-  AnyType<IyInstruction::LD_iyd_N,  IySTR>, TypeList<AnyType<IyInstruction::ADD_IY_SP, IySTR>, TypeList<
-  AnyType<IyInstruction::LD_iyd_D,  IySTR>, TypeList<AnyType<IyInstruction::LD_iyd_E,  IySTR>, TypeList<
-  AnyType<IyInstruction::SUB_iyd,   IySTR>, TypeList<AnyType<IyInstruction::SBC_A_iyd, IySTR>, TypeList<
-  AnyType<IyInstruction::PUSH_IY,   IySTR>, TypeList<AnyType<IyInstruction::JP_iy,     IySTR>, TypeList<
-  AnyType<IyInstruction::INC_IY,    IySTR>, TypeList<AnyType<IyInstruction::ADD_IY_IY, IySTR>, TypeList<
-  AnyType<IyInstruction::LD_B_iyd,  IySTR>, TypeList<AnyType<IyInstruction::LD_C_iyd,  IySTR>, TypeList<
-  AnyType<IyInstruction::LD_iyd_H,  IySTR>, TypeList<AnyType<IyInstruction::LD_iyd_L,  IySTR>, TypeList<
-  AnyType<IyInstruction::AND_iyd,   IySTR>, TypeList<AnyType<IyInstruction::XOR_iyd,   IySTR>, TypeList<
-  AnyType<IyInstruction::LD_IY_nn,  IySTR>, TypeList<AnyType<IyInstruction::DEC_IY,    IySTR>, TypeList<
-  AnyType<IyInstruction::LD_D_iyd,  IySTR>, TypeList<AnyType<IyInstruction::LD_E_iyd,  IySTR>, TypeList<
-  AnyType<IyInstruction::LD_H_iyd,  IySTR>, TypeList<AnyType<IyInstruction::LD_L_iyd,  IySTR>, TypeList<
-  AnyType<IyInstruction::LD_iyd_A,  IySTR>, TypeList<AnyType<IyInstruction::LD_A_iyd,  IySTR>, TypeList<
-  AnyType<IyInstruction::OR_iyd,    IySTR>, TypeList<AnyType<IyInstruction::CP_iyd,    IySTR>, TypeList<
-  AnyType<IyInstruction::LD_SP_IY,  IySTR>, TypeList<AnyType<IyInstruction::IyBitInstr,IySTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<AnyType<IyInstruction::ADD_IY_BC, IySTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IyInstruction::ADD_IY_DE, IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::INC_iyd,   IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::DEC_iyd,   IySTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_iyd_B,  IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::LD_iyd_C,  IySTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyInstruction::ADD_A_iyd, IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::ADC_A_iyd, IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::POP_IY,    IySTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IyInstruction::EX_sp_IY,  IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_IY_NN,  IySTR>, Int2Type<3>>, TypeList<TypeList<AnyType<IyInstruction::LD_nn_IY,  IySTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_iyd_N,  IySTR>, Int2Type<3>>, TypeList<TypeList<AnyType<IyInstruction::ADD_IY_SP, IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_iyd_D,  IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::LD_iyd_E,  IySTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyInstruction::SUB_iyd,   IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::SBC_A_iyd, IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::PUSH_IY,   IySTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IyInstruction::JP_iy,     IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::INC_IY,    IySTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IyInstruction::ADD_IY_IY, IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_B_iyd,  IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::LD_C_iyd,  IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_iyd_H,  IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::LD_iyd_L,  IySTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyInstruction::AND_iyd,   IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::XOR_iyd,   IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_IY_nn,  IySTR>, Int2Type<3>>, TypeList<TypeList<AnyType<IyInstruction::DEC_IY,    IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_D_iyd,  IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::LD_E_iyd,  IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_H_iyd,  IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::LD_L_iyd,  IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_iyd_A,  IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::LD_A_iyd,  IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::OR_iyd,    IySTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyInstruction::CP_iyd,    IySTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<IyInstruction::LD_SP_IY,  IySTR>, Int2Type<1>>, TypeList<TypeList<AnyType<IyInstruction::IyBitInstr,IySTR>, Int2Type<1>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     IyInstructions;
 
 typedef TypeList<
-  AnyType<IyBitInstruction::RLC_iyd,   IyBitSTR>, TypeList<AnyType<IyBitInstruction::RRC_iyd,   IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::RL_iyd,    IyBitSTR>, TypeList<AnyType<IyBitInstruction::RR_iyd,    IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::SLA_iyd,   IyBitSTR>, TypeList<AnyType<IyBitInstruction::SRA_iyd,   IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::SLL_iyd,   IyBitSTR>, TypeList<AnyType<IyBitInstruction::SRL_iyd,   IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::BIT_0_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_1_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::RES_0_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_1_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::SET_0_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_1_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::BIT_2_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_3_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::RES_2_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_3_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::SET_2_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_3_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::BIT_4_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_5_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::RES_4_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_5_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::SET_4_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_5_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::BIT_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::BIT_7_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::RES_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::RES_7_iyd, IyBitSTR>, TypeList<
-  AnyType<IyBitInstruction::SET_6_iyd, IyBitSTR>, TypeList<AnyType<IyBitInstruction::SET_7_iyd, IyBitSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<AnyType<IyBitInstruction::RLC_iyd,   IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::RRC_iyd,   IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::RL_iyd,    IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::RR_iyd,    IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::SLA_iyd,   IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::SRA_iyd,   IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::SLL_iyd,   IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::SRL_iyd,   IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::BIT_0_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::BIT_1_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::RES_0_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::RES_1_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::SET_0_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::SET_1_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::BIT_2_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::BIT_3_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::RES_2_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::RES_3_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::SET_2_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::SET_3_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::BIT_4_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::BIT_5_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::RES_4_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::RES_5_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::SET_4_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::SET_5_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::BIT_6_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::BIT_7_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::RES_6_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::RES_7_iyd, IyBitSTR>, Int2Type<2>>, TypeList<
+  TypeList<AnyType<IyBitInstruction::SET_6_iyd, IyBitSTR>, Int2Type<2>>, TypeList<TypeList<AnyType<IyBitInstruction::SET_7_iyd, IyBitSTR>, Int2Type<2>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     IyBitInstructions;
 
 typedef TypeList<
-  AnyType<MiscInstruction::IN_B_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_B,  MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IN_D_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_D,  MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IN_H_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_H,  MiscSTR>, TypeList<
-  AnyType<MiscInstruction::SBC_HL_SP, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_nn_DE, MiscSTR>, TypeList<
-  AnyType<MiscInstruction::SBC_HL_BC, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_nn_BC, MiscSTR>, TypeList<
-  AnyType<MiscInstruction::SBC_HL_DE, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_nn_SP, MiscSTR>, TypeList<
-  AnyType<MiscInstruction::SBC_HL_HL, MiscSTR>, TypeList<AnyType<MiscInstruction::RRD,      MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IN_A_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_A,  MiscSTR>, TypeList<
-  AnyType<MiscInstruction::NEG,       MiscSTR>, TypeList<AnyType<MiscInstruction::RETN,     MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IM_1,      MiscSTR>, TypeList<AnyType<MiscInstruction::LD_A_I,   MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IN_L_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_L,  MiscSTR>, TypeList<
-  AnyType<MiscInstruction::ADC_HL_SP, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_SP_nn, MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IM_0,      MiscSTR>, TypeList<AnyType<MiscInstruction::LD_I_A,   MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IN_E_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_E,  MiscSTR>, TypeList<
-  AnyType<MiscInstruction::ADC_HL_HL, MiscSTR>, TypeList<AnyType<MiscInstruction::RLD,      MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IN_C_c,    MiscSTR>, TypeList<AnyType<MiscInstruction::OUT_c_C,  MiscSTR>, TypeList<
-  AnyType<MiscInstruction::ADC_HL_BC, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_BC_nn, MiscSTR>, TypeList<
-  AnyType<MiscInstruction::RTI,       MiscSTR>, TypeList<AnyType<MiscInstruction::LD_R_A,   MiscSTR>, TypeList<
-  AnyType<MiscInstruction::ADC_HL_DE, MiscSTR>, TypeList<AnyType<MiscInstruction::LD_DE_nn, MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IM_2,      MiscSTR>, TypeList<AnyType<MiscInstruction::LD_A_R,   MiscSTR>, TypeList<
-  AnyType<MiscInstruction::LDI,       MiscSTR>, TypeList<AnyType<MiscInstruction::CPI,      MiscSTR>, TypeList<
-  AnyType<MiscInstruction::LDIR,      MiscSTR>, TypeList<AnyType<MiscInstruction::CPIR,     MiscSTR>, TypeList<
-  AnyType<MiscInstruction::INI,       MiscSTR>, TypeList<AnyType<MiscInstruction::OUTI,     MiscSTR>, TypeList<
-  AnyType<MiscInstruction::INIR,      MiscSTR>, TypeList<AnyType<MiscInstruction::OTIR,     MiscSTR>, TypeList<
-  AnyType<MiscInstruction::LDD,       MiscSTR>, TypeList<AnyType<MiscInstruction::CPD,      MiscSTR>, TypeList<
-  AnyType<MiscInstruction::LDDR,      MiscSTR>, TypeList<AnyType<MiscInstruction::CPDR,     MiscSTR>, TypeList<
-  AnyType<MiscInstruction::IND,       MiscSTR>, TypeList<AnyType<MiscInstruction::OUTD,     MiscSTR>, TypeList<
-  AnyType<MiscInstruction::INDR,      MiscSTR>, TypeList<AnyType<MiscInstruction::OTDR,     MiscSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<AnyType<MiscInstruction::IN_B_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_B,  MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IN_D_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_D,  MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IN_H_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_H,  MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::SBC_HL_SP, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_nn_DE, MiscSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<MiscInstruction::SBC_HL_BC, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_nn_BC, MiscSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<MiscInstruction::SBC_HL_DE, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_nn_SP, MiscSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<MiscInstruction::SBC_HL_HL, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::RRD,      MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IN_A_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_A,  MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::NEG,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::RETN,     MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IM_1,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_A_I,   MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IN_L_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_L,  MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::ADC_HL_SP, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_SP_nn, MiscSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IM_0,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_I_A,   MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IN_E_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_E,  MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::ADC_HL_HL, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::RLD,      MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IN_C_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_C,  MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::ADC_HL_BC, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_BC_nn, MiscSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<MiscInstruction::RTI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_R_A,   MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::ADC_HL_DE, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_DE_nn, MiscSTR>, Int2Type<3>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IM_2,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_A_R,   MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::LDI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::CPI,      MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::LDIR,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::CPIR,     MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::INI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUTI,     MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::INIR,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OTIR,     MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::LDD,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::CPD,      MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::LDDR,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::CPDR,     MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::IND,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUTD,     MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::INDR,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OTDR,     MiscSTR>, Int2Type<1>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     MiscMInstructions;
 
 
 };
 
+
+enum MemoryT {
+  EEPROM, DRAM
+};
 
 typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_i>, Int2Type<'i'>>, TypeList<
@@ -549,6 +559,15 @@ typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_x>,  Int2Type<'x'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_r>, Int2Type<'r'>>, NullType>>
    SyncMemoryCommands; 
+
+
+class Device {
+public:
+  virtual uint8_t Read(uint32_t addr) = 0;
+  virtual uint8_t Write(uint32_t addr, uint8_t data) = 0;
+};
+
+
    
 
 class Defs {
@@ -556,9 +575,9 @@ class Defs {
 public:
   static void Init() {
     AnyType<Z80::NOP,     Z80::InstrSTR>::GetValue() = "NOP";                AnyType<Z80::LD_BC_NN, Z80::InstrSTR>::GetValue() = "LD BC, 0x%04x";
-    AnyType<Z80::DJNZ_D,  Z80::InstrSTR>::GetValue() = "DJNZ D";             AnyType<Z80::LD_DE_NN, Z80::InstrSTR>::GetValue() = "LD DE, 0x%04x";
-    AnyType<Z80::JR_NZ_D, Z80::InstrSTR>::GetValue() = "JR NZ, D";           AnyType<Z80::LD_HL_NN, Z80::InstrSTR>::GetValue() = "LD HL, 0x%04x";
-    AnyType<Z80::JR_NC_D, Z80::InstrSTR>::GetValue() = "JR NZ, D";           AnyType<Z80::LD_SP_NN, Z80::InstrSTR>::GetValue() = "LD SP, 0x%04x";
+    AnyType<Z80::DJNZ_D,  Z80::InstrSTR>::GetValue() = "DJNZ %d";            AnyType<Z80::LD_DE_NN, Z80::InstrSTR>::GetValue() = "LD DE, 0x%04x";
+    AnyType<Z80::JR_NZ_D, Z80::InstrSTR>::GetValue() = "JR NZ, %d";          AnyType<Z80::LD_HL_NN, Z80::InstrSTR>::GetValue() = "LD HL, 0x%04x";
+    AnyType<Z80::JR_NC_D, Z80::InstrSTR>::GetValue() = "JR NZ, %d";          AnyType<Z80::LD_SP_NN, Z80::InstrSTR>::GetValue() = "LD SP, 0x%04x";
     AnyType<Z80::LD_B_B,  Z80::InstrSTR>::GetValue() = "LD B, B";            AnyType<Z80::LD_B_C,   Z80::InstrSTR>::GetValue() = "LD B, C";
     AnyType<Z80::LD_D_B,  Z80::InstrSTR>::GetValue() = "LD D, B";            AnyType<Z80::LD_D_C,   Z80::InstrSTR>::GetValue() = "LD D, C";
     AnyType<Z80::LD_H_B,  Z80::InstrSTR>::GetValue() = "LD H, B";            AnyType<Z80::LD_H_C,   Z80::InstrSTR>::GetValue() = "LD H, C";

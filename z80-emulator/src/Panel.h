@@ -228,7 +228,15 @@ private:
   inline void Init(T ref, Args ...args) {  Init(ref); Init(args...); }
 
   inline void Init() {}
-  inline void Init(WindowInitT<Bus::Memory> m) { memory = std::tuple_cat(m, std::make_tuple(++nWindows)); }
+  
+  template<int32_t T, int32_t U>
+  inline void Init(WindowInitT<Bus::Memory<T, U>> m) { Init(Int2Type<T>(), m); }
+  
+  template<int32_t T>
+  inline void Init(Int2Type<Bus::EEPROM>, WindowInitT<Bus::Memory<Bus::EEPROM, T>> m) {
+    memory = std::tuple_cat(m, std::make_tuple(++nWindows));
+  }
+
   inline void Init(WindowInitT<Window::Lines> l) { lines = std::tuple_cat(l, std::make_tuple(++nWindows)); }
   inline void Init(WindowInitT<Editor::Editor> e) { editor = std::tuple_cat(e, std::make_tuple(++nWindows)); }
 
@@ -242,7 +250,7 @@ private:
   std::pair<bool, std::string> cmd = { false, "" };
 
   int32_t nWindows = 0;
-  WindowT<Bus::Memory> memory = { false, nullptr, {}, 0 };
+  WindowT<Bus::Memory<Bus::EEPROM, 65536>> memory = { false, nullptr, {}, 0 };
   WindowT<Window::Lines> lines = { false, nullptr, {}, 0 };
   WindowT<Editor::Editor> editor = { false, nullptr, {}, 0 };
 };

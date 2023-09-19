@@ -43,7 +43,10 @@ public:
     //   emulator.ROM.load(emulator.interpreter.env.memory);
     // }
 
-    auto rom = std::make_shared<Bus::Memory>(8);
+    auto bus = Bus::Bus();
+
+    // auto rom = bus.W27C512;
+    auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
     rom->load(interpreter.env.memory);
 
 
