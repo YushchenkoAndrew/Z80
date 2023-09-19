@@ -22,7 +22,7 @@ public:
 
   Memory(): mode(NORMAL), bus(nullptr) {}
   Memory(ModeT m): mode(m), bus(nullptr) {}
-  Memory(int32_t s): pages(s, 0), bus(nullptr) {}
+  // Memory(int32_t s): pages(s, 0), bus(nullptr) {}
 
   Memory(Bus* b): bus(b) {}
 
@@ -43,8 +43,11 @@ public:
     return (memory[addr] = data);
   }
 
+  // TODO: Maybe add ability to set local state with initialization
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
+
+    pages.x = std::floor(std::log2f((size.x - vOffset.x) / vStep.x)) * 2;
     pages.y = ((size.y - vOffset.y * 2) / (vStep.y * pages.x)) * pages.x;
   }
 

@@ -84,7 +84,7 @@ struct foreach<TypeList<AnyType<T, V>, NullType>, F> {
 template<int32_t T, class V, int32_t Y, class U, class F>
 struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, U>, F> {
 
-	static inline auto& Key2Value() {
+	static inline std::pair<V, int32_t> Key2Value() {
 		if (F::template Compare(Int2Type<T>())) return std::pair(AnyType<T, V>::GetValue(), Int2Type<Y>().value);
     return foreach<U, F>::Key2Value();
 	}
@@ -99,9 +99,9 @@ struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, U>, F> {
 template<int32_t T, class V, int32_t Y, class F>
 struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, NullType>, F> {
 
-	static inline auto& Key2Value() {
+	static inline std::pair<V, int32_t> Key2Value() {
 		if (F::template Compare(Int2Type<T>())) return std::pair(AnyType<T, V>::GetValue(), Int2Type<Y>().value);
-    return  std::pair(AnyType<-2, V>::GetValue(), -1);
+    return std::pair(AnyType<-2, V>::GetValue(), -1);
 	}
 
 	static inline auto Key2Process(F* ref) {

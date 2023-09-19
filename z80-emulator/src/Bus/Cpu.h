@@ -43,13 +43,13 @@ public:
     foreach<Instructions, CPU>::Key2Process(this);
   }
 
-  uint8_t Read();
-  std::string Disassemble();
-
   uint8_t Read(uint32_t addr) { return 0x00; }
   uint8_t Write(uint32_t addr, uint8_t data) { return 0x00; }
 
+  std::string Disassemble();
   
+private:
+  uint8_t Read();
 
 public:
   template<int32_t T>
@@ -100,6 +100,8 @@ public:
 
 
 private:
+  std::string sprintf(std::string str, int32_t byte);
+
   inline uint16_t& regAF() { return reg[REG::AF]; }
   inline uint16_t& regBC() { return reg[REG::BC]; }
   inline uint16_t& regDE() { return reg[REG::DE]; }

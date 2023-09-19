@@ -128,10 +128,10 @@ DISPLAY_BYTE:
  LD A, D      ;; Restore save value
 
  ;; Shift Reg by 4 bit
- RR A
- RR A
- RR A
- RR A
+ RRA
+ RRA
+ RRA
+ RRA
 
  CALL GET_NUM   ;; Input/Output value is located in reg 'A'
  OR 0x80      ;; Set to show in second display

@@ -20,6 +20,8 @@ public:
     std::stringstream buffer;
     buffer << f.rdbuf();
     f.close();
+
+    std::ofstream fASM("Test.asm");
     // std::string s = buffer.str();
 
     // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
@@ -45,12 +47,14 @@ public:
 
     auto bus = Bus::Bus();
 
-    // auto rom = bus.W27C512;
-    auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
+    auto rom = bus.W27C512;
+    // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
     rom->load(interpreter.env.memory);
 
 
     interpreter.env.save("out.bin");
+    fASM << bus.Z80->Disassemble() << "\n";
+    fASM.close();
     // emulator.editor.size = {  };
 
 
