@@ -250,7 +250,7 @@ private:
   std::pair<bool, std::string> cmd = { false, "" };
 
   int32_t nWindows = 0;
-  WindowT<Bus::Memory<Bus::EEPROM, 65536>> memory = { false, nullptr, {}, 0 };
+  WindowT<Bus::Memory<Bus::EEPROM, W27C512_SIZE>> memory = { false, nullptr, {}, 0 };
   WindowT<Window::Lines> lines = { false, nullptr, {}, 0 };
   WindowT<Editor::Editor> editor = { false, nullptr, {}, 0 };
 };

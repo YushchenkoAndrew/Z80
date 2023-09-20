@@ -45,7 +45,7 @@ public:
     foreach<Instructions, CPU>::Key2Process(this);
   }
 
-  std::string Disassemble();
+  DisassembleT Disassemble();
   
 private:
   uint8_t Read();
@@ -69,15 +69,15 @@ public:
   inline void Process(Int2Type<Instruction::LD_HL_NN>) { cycles = 10; regHL() = Word(); }
   inline void Process(Int2Type<Instruction::LD_SP_NN>) { cycles = 10; regSP() = Word(); }
 
-  inline void Process(Int2Type<Instruction::POP_BC>) { cycles = 10; regB(Read(regSP() + 2)); regC(Read(regSP() + 1)); regSP() += 2; }
-  inline void Process(Int2Type<Instruction::POP_DE>) { cycles = 10; regD(Read(regSP() + 2)); regE(Read(regSP() + 1)); regSP() += 2; }
-  inline void Process(Int2Type<Instruction::POP_HL>) { cycles = 10; regH(Read(regSP() + 2)); regL(Read(regSP() + 1)); regSP() += 2; }
-  inline void Process(Int2Type<Instruction::POP_AF>) { cycles = 10; regA(Read(regSP() + 2)); regF(Read(regSP() + 1)); regSP() += 2; }
+  inline void Process(Int2Type<Instruction::POP_BC>) { cycles = 10; regBC() = Pop(); }
+  inline void Process(Int2Type<Instruction::POP_DE>) { cycles = 10; regDE() = Pop(); }
+  inline void Process(Int2Type<Instruction::POP_HL>) { cycles = 10; regHL() = Pop(); }
+  inline void Process(Int2Type<Instruction::POP_AF>) { cycles = 10; regAF() = Pop(); }
 
-  inline void Process(Int2Type<Instruction::PUSH_BC>) { cycles = 11; Write(regSP(), regB()); Write(regSP() - 1, regC()); regSP() -= 2; }
-  inline void Process(Int2Type<Instruction::PUSH_DE>) { cycles = 11; Write(regSP(), regD()); Write(regSP() - 1, regE()); regSP() -= 2; }
-  inline void Process(Int2Type<Instruction::PUSH_HL>) { cycles = 11; Write(regSP(), regH()); Write(regSP() - 1, regL()); regSP() -= 2; }
-  inline void Process(Int2Type<Instruction::PUSH_AF>) { cycles = 11; Write(regSP(), regA()); Write(regSP() - 1, regF()); regSP() -= 2; }
+  inline void Process(Int2Type<Instruction::PUSH_BC>) { cycles = 11; Push(regBC()); }
+  inline void Process(Int2Type<Instruction::PUSH_DE>) { cycles = 11; Push(regDE()); }
+  inline void Process(Int2Type<Instruction::PUSH_HL>) { cycles = 11; Push(regHL()); }
+  inline void Process(Int2Type<Instruction::PUSH_AF>) { cycles = 11; Push(regAF()); }
 
 
 
@@ -263,6 +263,7 @@ private:
   inline uint8_t Xor8(uint8_t a, uint8_t b) { return BitOperation(a, b, a ^ b); }
   inline uint8_t And8(uint8_t a, uint8_t b) { auto res = BitOperation(a, b, a & b); regH(true); return res; }
 
+
   inline uint8_t BitOperation(uint8_t a, uint8_t b, uint8_t acc) {
     // When adding operands with similar signs and the result contains a different sign,
     // the Overflow Flag is set
@@ -271,6 +272,9 @@ private:
 
     return acc;
   }
+
+  inline uint16_t Pop() { regSP() += 2; return (Read(regSP() - 1) << 8) | Read(regSP() - 2); }
+  inline void Push(uint16_t word) { Write(regSP() - 1, HIGH(word)); Write(regSP() -= 2, LOW(word)); }
 
   inline uint16_t& regAF() { return reg[REG::AF]; }
   inline uint16_t& regBC() { return reg[REG::BC]; }

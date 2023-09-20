@@ -3,6 +3,8 @@
 
 namespace Bus {
 
+#define W27C512_SIZE 65536
+
 class Bus;
 
 
@@ -515,6 +517,8 @@ typedef TypeList<
 };
 
 
+typedef std::pair<std::string, std::unordered_map<int32_t, int32_t>> DisassembleT;
+
 enum MemoryT {
   EEPROM, DRAM
 };
@@ -537,6 +541,7 @@ typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_gg>,Int2Type<'g'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_G>, Int2Type<'G'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_C>, Int2Type<'C'>>, TypeList<
+  TypeList<Int2Type<Editor::VimT::CMD_D>, Int2Type<'D'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_n>, Int2Type<'n'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_N>, Int2Type<'N'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_f>, Int2Type<'f'>>, TypeList<
@@ -552,7 +557,7 @@ typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_SLASH>,      Int2Type<'/'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_QUESTION>,   Int2Type<'?'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_COMMA>,      Int2Type<','>>, TypeList<
-  TypeList<Int2Type<Editor::VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<Int2Type<Editor::VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    MemoryCommands; 
   
 typedef TypeList<

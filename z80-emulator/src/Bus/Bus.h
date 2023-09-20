@@ -9,7 +9,7 @@ private:
 
 public:
 
-  Bus(): Z80(std::make_shared<Z80::CPU>(this)), W27C512(std::make_shared<Memory<MemoryT::EEPROM, 65536>>(this)) {}
+  Bus(): Z80(std::make_shared<Z80::CPU>(this)), W27C512(std::make_shared<Memory<MemoryT::EEPROM, W27C512_SIZE>>(this)) {}
 
   void Initialize(DimensionT) {}
   void Process(PixelGameEngine* GameEngine) {}
@@ -29,6 +29,7 @@ public:
     return device->Write(addr, data);
   }
 
+  inline DisassembleT Disassemble() { return Z80->Disassemble(); }
 
 private:
   inline std::shared_ptr<Device> mux(uint32_t addr) {
@@ -44,7 +45,7 @@ private:
 
 public:
   std::shared_ptr<Z80::CPU> Z80;
-  std::shared_ptr<Memory<MemoryT::EEPROM, 65536>> W27C512;
+  std::shared_ptr<Memory<MemoryT::EEPROM, W27C512_SIZE>> W27C512;
 };
 
 };

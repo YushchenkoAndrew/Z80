@@ -50,10 +50,11 @@ public:
     auto rom = bus.W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
     rom->load(interpreter.env.memory);
+    rom->Disassemble();
 
 
     interpreter.env.save("out.bin");
-    fASM << bus.Z80->Disassemble() << "\n";
+    fASM << bus.Disassemble().first << "\n";
     fASM.close();
     // emulator.editor.size = {  };
 

@@ -18,7 +18,7 @@ template<int32_t TypeT, int32_t SizeT>
 class Memory : public Window::Window, public Device {
 public:
   enum { type = TypeT };
-  enum ModeT { NORMAL, REPLACE, CHARACTER };
+  enum ModeT { NORMAL, REPLACE, CHARACTER, DISASSEMBLE };
 
   Memory(): mode(NORMAL), bus(nullptr) {}
   Memory(ModeT m): mode(m), bus(nullptr) {}
@@ -26,6 +26,7 @@ public:
 
   Memory(Bus* b): bus(b) {}
 
+  void Disassemble();
 
   void load(std::vector<uint8_t> code) {
     for (auto& bank : memory) bank = 0x00;
@@ -59,7 +60,7 @@ public:
     auto nWidth = (mode == CHARACTER ? vStep.y : vStep.x) * pages.x;
 
     auto mouse = GameEngine->GetMousePos() - vOffset;
-    if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + nWidth && mouse.y < absolute.y + pages.y * vStep.y) {
+    if ((mode == NORMAL || mode == CHARACTER) && GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + nWidth && mouse.y < absolute.y + pages.y * vStep.y) {
       MoveTo((mouse - absolute) / olc::vi2d(mode == CHARACTER ? vStep.y : vStep.x, vStep.y) + vStartAt - pos);
       Command(Int2Type<Editor::VimT::CMD_gd>());
     }
@@ -72,6 +73,7 @@ public:
     switch (mode) {
       case NORMAL:    return Process(Int2Type<NORMAL>(), GameEngine);
       case CHARACTER: return Process(Int2Type<NORMAL>(), GameEngine);
+      case DISASSEMBLE: return Process(Int2Type<NORMAL>(), GameEngine); 
       case REPLACE:   return Process(Int2Type<REPLACE>(), GameEngine);
     }
   }
@@ -82,11 +84,13 @@ public:
       case NORMAL:    Draw(Int2Type<NORMAL>(), GameEngine); break;
       case REPLACE:   Draw(Int2Type<NORMAL>(), GameEngine); break;
       case CHARACTER: Draw(Int2Type<CHARACTER>(), GameEngine); break;
+      case DISASSEMBLE: Draw(Int2Type<DISASSEMBLE>(), GameEngine); break;
     }
 
     auto nWidth = (mode == CHARACTER ? vStep.y : vStep.x) * pages.x + vOffset.x;
+    auto nHight = mode == DISASSEMBLE ? size.y : (absolute.y + vOffset.y + pages.y * vStep.y);
 
-    auto pos = olc::vi2d(absolute.x, absolute.y + vOffset.y + pages.y * vStep.y);
+    auto pos = olc::vi2d(absolute.x, nHight);
     GameEngine->FillRect(pos - olc::vi2d(0, 2), { nWidth, 10 }, ~AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
     GameEngine->DrawString(pos, GetMode(), ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
@@ -152,11 +156,62 @@ private:
     GameEngine->DrawString(cursor, isprint(memory[index(pos)]) ? std::string(1, memory[index(pos)]) : ".", ~AnyType<BLACK, ColorT>::GetValue());
   }
 
+  void Draw(Int2Type<DISASSEMBLE>, PixelGameEngine* GameEngine) {
+    const olc::vi2d size = this->size + this->vOffset;
+    const olc::vi2d vStep = olc::vi2d(8, 12);
+    const olc::vi2d vOffset = olc::vi2d(24, 0);
+
+    const int32_t posAt = index();
+    auto cursor = olc::vi2d(0, 0);
+
+    for (auto& addr : dasm.second) {
+      if (addr.first <= posAt && addr.first >= cursor.y) cursor.y = addr.first;
+    }
+
+    cursor.y = dasm.second[cursor.y];
+
+    // TODO: Calc on each request vStartAt
+    const olc::vi2d vStartAt = olc::vi2d(0, 0);
+
+    olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (cursor.y + 1 - vStartAt.y) * vStep.y + vOffset.y);
+    GameEngine->FillRect(pos, { size.x, 8 }, ~AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+
+    olc::vi2d len = olc::vi2d(0, 0);
+
+    for (auto& token : lexer.tokens) {
+      if (vStartAt.y >= token->line) continue;
+      if (token->line != len.y) len = olc::vi2d(0, token->line);
+
+      olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
+
+      if (pos.x > size.x) continue;
+      if (pos.y >= size.y - vStep.y) break;
+
+      if (pos.x < size.x && pos.x + token->lexeme.size() * vStep.x > size.x) {
+        GameEngine->DrawString(pos, token->lexeme.substr(0, (size.x - pos.x) / vStep.x), token->color);
+      } else GameEngine->DrawString(pos, token->lexeme, token->color);
+    }
+
+
+    pos = (absolute + (cursor - vStartAt) * vStep + vOffset) / vStep; 
+
+    std::stringstream ss;
+    for (int32_t i = 0, max = size.y / vStep.y; i < max; i++) {
+      ss.str(""); ss << cursor.y - pos.y + i + 1; auto str = ss.str();
+      auto line = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y);
+
+      if (cursor.y - vStartAt.y == i) {
+        GameEngine->DrawString(line, str, ~AnyType<GREY, ColorT>::GetValue());
+      } else GameEngine->DrawString(line, str, ~AnyType<DARK_GREY, ColorT>::GetValue());
+    }
+  }
+
 public:
   template<int32_t T>
   inline void Command(Int2Type<T>) {}
 
   inline void Command(Int2Type<Editor::VimT::CMD_C>) { mode = mode == NORMAL ? CHARACTER : NORMAL; }
+  inline void Command(Int2Type<Editor::VimT::CMD_D>) { mode = mode == NORMAL ? DISASSEMBLE : NORMAL; }
   inline void Command(Int2Type<Editor::VimT::CMD_r>) { mode = REPLACE; Command(Int2Type<Editor::VimT::CMD_x>()); }
   inline void Command(Int2Type<Editor::VimT::CMD_0>) { pos.x = 0; }
   inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = pages.x - 1; }
@@ -196,6 +251,7 @@ public:
 
   inline void Command(Int2Type<Editor::VimT::CMD_f>) { 
     if (!std::get<0>(search.second).size()) return;
+    if (!isHex(std::get<0>(search.second).front())) return;
     if (search.first) std::get<2>(search.second) = true;
 
     uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
@@ -204,6 +260,18 @@ public:
 
       pos.x = i & (pages.x - 1); pos.y = i / pages.x;
       break;
+    }
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_F>) { 
+    if (!std::get<0>(search.second).size()) return;
+    if (!isHex(std::get<0>(search.second).front())) return;
+    if (search.first) std::get<2>(search.second) = false;
+
+    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+    for (int32_t i = index() - 1; i >= 0; i--) {
+      if (digit != memory[i]) continue;
+      pos.x = i & (pages.x - 1); pos.y = i / pages.x;
     }
   }
 
@@ -261,17 +329,6 @@ public:
     if (!foundAt.size()) return;
     int32_t index = foundAt.front();
     std::get<3>(search.second) = olc::vi2d(index & (pages.x - 1), index / pages.x);
-  }
-
-  inline void Command(Int2Type<Editor::VimT::CMD_F>) { 
-    if (!std::get<0>(search.second).size()) return;
-    if (search.first) std::get<2>(search.second) = false;
-
-    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
-    for (int32_t i = index() - 1; i >= 0; i--) {
-      if (digit != memory[i]) continue;
-      pos.x = i & (pages.x - 1); pos.y = i / pages.x;
-    }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_P>) { 
@@ -338,11 +395,45 @@ public:
 
 
   inline void Command(Int2Type<Editor::VimT::CMD_j>) {
-    if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++;
+    switch (mode) {
+      case NORMAL:
+      case CHARACTER:
+        if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++;
+        break;
+    
+      case DISASSEMBLE: {
+        const int32_t posAt = index();
+        int32_t next = memory.size() - 1;
+
+        for (auto& addr : dasm.second) {
+          if (addr.first > posAt && addr.first < next) next = addr.first;
+        }
+
+        Index2Pos(next);
+        break;
+      }
+    }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_k>) {
-    if (pos.y > 0x00) pos.y--;
+    switch (mode) {
+      case NORMAL:
+      case CHARACTER:
+        if (pos.y > 0x00) pos.y--;
+        break;
+    
+      case DISASSEMBLE: {
+        const int32_t posAt = index();
+        int32_t next = 0;
+
+        for (auto& addr : dasm.second) {
+          if (addr.first < posAt && addr.first > next) next = addr.first;
+        }
+
+        Index2Pos(next);
+        break;
+      }
+    }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_l>) {
@@ -379,7 +470,7 @@ private:
     }
 
     if (nCurr == 0) {
-      if (match<6>({ 'i', 'a', 'C', ' ', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
+      if (match<7>({ 'i', 'a', 'C', 'D', ' ', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
       if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
 
     } else {
@@ -499,7 +590,10 @@ public:
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: case CHARACTER: reset(false); break;
+      case DISASSEMBLE: 
+      case CHARACTER:
+      case NORMAL: reset(false); break;
+
       case REPLACE: memory[index()] = 0x00; std::get<0>(search.second) = ""; break;
     }
   }
@@ -512,7 +606,10 @@ public:
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: case CHARACTER: reset(false); break;
+      case CHARACTER: 
+      case DISASSEMBLE: 
+      case NORMAL: reset(false); break;
+
       case REPLACE: 
         memory[index()] = (memory[index()] / pages.x) & 0xF0;
         if (std::get<0>(search.second).size()) std::get<0>(search.second).pop_back();
@@ -538,6 +635,7 @@ public:
         reset(search.first);
         break;
 
+      case DISASSEMBLE: 
       case REPLACE: mode = NORMAL; break;
     }
   }
@@ -551,6 +649,7 @@ public:
 
     switch (mode) {
       case CHARACTER:
+      case DISASSEMBLE:
       case NORMAL: search.first = false; reset(false);
       case REPLACE: mode = NORMAL; break;
     }
@@ -571,6 +670,7 @@ public:
   inline std::string GetMode() {
     switch (mode) {
       case REPLACE: return "-- REPLACE --";
+      case DISASSEMBLE: return "-- DISASSEMBLE --";
       case CHARACTER: 
         if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
         return "-- CHARACTER --";
@@ -606,7 +706,10 @@ private:
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: case CHARACTER: cmd += std::string(1, c); break;
+      case CHARACTER:
+      case DISASSEMBLE: 
+      case NORMAL: cmd += std::string(1, c); break;
+
       case REPLACE: {
         if (!isHex(c)) { memory[index()] = c & 0xFF; mode = NORMAL; break; }
 
@@ -642,6 +745,7 @@ private:
   inline int32_t index() { return index(pos.x, pos.y); }
   inline int32_t index(olc::vi2d pos) { return index(pos.x, pos.y); }
   inline int32_t index(int32_t x, int32_t y) { return (y * pages.x) | x; }
+  inline void Index2Pos(int32_t index) { pos.y = index / pages.x; pos.x = index - (pos.y * pages.x); }
 
   inline uint8_t Hex2Int(const char c) { 
     if (isDigit(c)) return c - '0';
@@ -697,6 +801,9 @@ private:
   std::array<uint8_t, SizeT> memory;
 
   Bus* bus;
+
+  DisassembleT dasm;
+  Interpreter::Lexer lexer;
 };
 
 };

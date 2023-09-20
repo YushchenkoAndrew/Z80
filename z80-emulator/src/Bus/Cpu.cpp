@@ -8,25 +8,26 @@ namespace Z80 {
   inline uint8_t CPU::Read(uint32_t addr) { return bus->Read(addr); }
   inline uint8_t CPU::Write(uint32_t addr, uint8_t data) { return bus->Write(addr, data); }
 
-  std::string CPU::Disassemble() {
-    std::string assembler = "";
+  DisassembleT CPU::Disassemble() {
+    DisassembleT dasm = std::pair("", std::unordered_map<int32_t, int32_t>());
   
-    for (uint32_t i = 0; i < 0xFFFF; i++) {
+    for (uint32_t i = 0, line = 0; i < 0xFFFF; line++, i++) {
       std::pair<std::string, int32_t> cmd;
+      dasm.second[i] = line;
 
       switch (auto instruction = bus->Read(i)) {
         case Z80::MISC_INSTR: {
           AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
           auto res = foreach<MiscMInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, cmd.second); break;
+          cmd = std::pair(~res.first, res.second); break;
         }
         
         case Z80::BIT_INSTR: {
           AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
           auto res = foreach<BitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, cmd.second); break;
+          cmd = std::pair(~res.first, res.second); break;
         }
 
         case Z80::IX_INSTR: {
@@ -36,13 +37,13 @@ namespace Z80 {
             AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
             auto res = foreach<IxBitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-            cmd = std::pair(~res.first, cmd.second); break;
+            cmd = std::pair(~res.first, res.second); break;
           } 
 
           AnyType<-1, int32_t>::GetValue() = instruction;
           auto res = foreach<IxInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, cmd.second); break;
+          cmd = std::pair(~res.first, res.second); break;
         }
 
         case Z80::IY_INSTR: {
@@ -52,34 +53,34 @@ namespace Z80 {
             AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
             auto res = foreach<IyBitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-            cmd = std::pair(~res.first, cmd.second); break;
+            cmd = std::pair(~res.first, res.second); break;
           } 
 
           AnyType<-1, int32_t>::GetValue() = instruction;
           auto res = foreach<IyInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, cmd.second); break;
+          cmd = std::pair(~res.first, res.second); break;
         }
 
         default: {
           AnyType<-1, int32_t>::GetValue() = instruction;
           auto res = foreach<Instructions, AnyType<-1, int32_t>>::Key2Value();
-          cmd = std::pair(~res.first, cmd.second); break;
+          cmd = std::pair(~res.first, res.second); break;
         }
       }
       
 
-      if (cmd.second == 1) { assembler += cmd.first + "\n"; continue; }
+      if (cmd.second == 1) { dasm.first += cmd.first + "\n"; continue; }
 
       int32_t word = 0x00;
       for (int32_t j = 0; j < cmd.second - 1; j++) {
         word = word | (bus->Read(++i) << (j * 8));
       }
       
-      assembler += sprintf(cmd.first, word) + "\n";
+      dasm.first += sprintf(cmd.first, word) + "\n";
     }
 
-    return assembler;
+    return dasm;
   }
 
   std::string CPU::sprintf(std::string str, int32_t byte) {
