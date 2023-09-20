@@ -396,8 +396,16 @@ public:
     nLastX = pos.x += 1;
   }
 
+  inline void Command(Int2Type<VimT::CMD_CTRL_u>) {
+    for (int32_t i = 0; i < 20; i++) Command(Int2Type<VimT::CMD_k>());
+  }
+  
+  inline void Command(Int2Type<VimT::CMD_CTRL_d>) {
+    for (int32_t i = 0; i < 20; i++) Command(Int2Type<VimT::CMD_j>());
+  }
+
   inline void Command(Int2Type<VimT::CMD_j>) {
-    if (pos.y >= lines.size()) return;
+    if (pos.y + 1 >= lines.size()) return;
 
     pos.x = nLastX; nLastX = (pos += olc::vi2d(0, 1)).x;
     int32_t lineEndsAt = mode == ModeT::NORMAL;
@@ -462,6 +470,13 @@ public:
     if (nCurr == 0) {
       if (match<12>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', ' ', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
       if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
+
+      if (cmd.size() > 1 && match<1>({ '^' })) {
+        if (peek() == 'd') { phrase(Int2Type<VimT::CMD_CTRL_d>(), false); return reset(); }
+        if (peek() == 'u') { phrase(Int2Type<VimT::CMD_CTRL_u>(), false); return reset(); }
+
+        error(peek(), "Invalid operation");
+      }
 
     } else {
       uint8_t mask = ((uint8_t)isDigit(peekPrev()) << 1) + (uint8_t)isDigit(peek());
@@ -744,12 +759,13 @@ private:
 
     if (!bPressed) return;
     const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
+    const bool isCtrl = GameEngine->GetKey(olc::Key::CTRL).bHeld;
     std::string c(1, toUpper ? upper : lower);
 
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: cmd += c; break;
+      case NORMAL: cmd += (isCtrl ? "^" : "") + c; break;
       case INSERT: lines[pos.y].insert(pos.x++, c); break;
       case REPLACE: replaced.push_back(lines[pos.y][pos.x]); lines[pos.y].replace(pos.x++, 1, c); break;
     }

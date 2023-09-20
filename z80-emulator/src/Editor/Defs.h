@@ -19,6 +19,9 @@ enum VimT {
   // adverb
   CMD_cc, CMD_dd, CMD_yy, CMD_p, CMD_P, CMD_x,
   
+  // Special commands
+  CMD_CTRL_d, CMD_CTRL_u,
+  
   
   // Undefined CMD
   CMD_NONE, CMD_z, CMD_q, CMD_NUMBER

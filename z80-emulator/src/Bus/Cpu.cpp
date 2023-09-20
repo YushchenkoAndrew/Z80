@@ -5,6 +5,9 @@ namespace Z80 {
 
   inline uint8_t CPU::Read() { return bus->Read(regPC()++); }
 
+  inline uint8_t CPU::Read(uint32_t addr) { return bus->Read(addr); }
+  inline uint8_t CPU::Write(uint32_t addr, uint8_t data) { return bus->Write(addr, data); }
+
   std::string CPU::Disassemble() {
     std::string assembler = "";
   
