@@ -161,14 +161,6 @@ private:
     const olc::vi2d vStep = olc::vi2d(8, 12);
     const olc::vi2d vOffset = olc::vi2d(24, 0);
 
-    const int32_t posAt = index();
-    auto cursor = olc::vi2d(0, 0);
-
-    for (auto& addr : dasm.second) {
-      if (addr.first <= posAt && addr.first >= cursor.y) cursor.y = addr.first;
-    }
-
-    cursor.y = dasm.second[cursor.y];
 
     // TODO: Calc on each request vStartAt
     const olc::vi2d vStartAt = olc::vi2d(0, 0);
@@ -176,11 +168,8 @@ private:
     olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (cursor.y + 1 - vStartAt.y) * vStep.y + vOffset.y);
     GameEngine->FillRect(pos, { size.x, 8 }, ~AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
 
-    olc::vi2d len = olc::vi2d(0, 0);
-
     for (auto& token : lexer.tokens) {
       if (vStartAt.y >= token->line) continue;
-      if (token->line != len.y) len = olc::vi2d(0, token->line);
 
       olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
 
@@ -211,17 +200,27 @@ public:
   inline void Command(Int2Type<T>) {}
 
   inline void Command(Int2Type<Editor::VimT::CMD_C>) { mode = mode == NORMAL ? CHARACTER : NORMAL; }
-  inline void Command(Int2Type<Editor::VimT::CMD_D>) { mode = mode == NORMAL ? DISASSEMBLE : NORMAL; }
   inline void Command(Int2Type<Editor::VimT::CMD_r>) { mode = REPLACE; Command(Int2Type<Editor::VimT::CMD_x>()); }
-  inline void Command(Int2Type<Editor::VimT::CMD_0>) { pos.x = 0; }
-  inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = pages.x - 1; }
-  inline void Command(Int2Type<Editor::VimT::CMD_gg>) { vStartAt.y = pos.y = pos.x = 0; }
-  inline void Command(Int2Type<Editor::VimT::CMD_G>) { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x;}
   inline void Command(Int2Type<Editor::VimT::CMD_x>) { memory[index()] = 0x00; }
   inline void Command(Int2Type<Editor::VimT::CMD_yy>) { buffer = { memory[index()] }; }
   inline void Command(Int2Type<Editor::VimT::CMD_e>) { Command(Int2Type<Editor::VimT::CMD_b>()); }
   inline void Command(Int2Type<Editor::VimT::CMD_a>) { Command(Int2Type<Editor::VimT::CMD_w>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
   inline void Command(Int2Type<Editor::VimT::CMD_c>) { Command(Int2Type<Editor::VimT::CMD_d>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
+
+  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_0>) { pos.x = 0; }
+  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = pages.x - 1; }
+  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_gg>) { vStartAt.y = pos.y = pos.x = 0; }
+  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_G>) { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x; }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_0>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_0>()); UpdateCursor(); }
+  inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_DOLLAR>()); UpdateCursor(); }
+  inline void Command(Int2Type<Editor::VimT::CMD_gg>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_gg>()); UpdateCursor(); }
+  inline void Command(Int2Type<Editor::VimT::CMD_G>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_G>()); UpdateCursor(); }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_D>) {
+    if (mode == DISASSEMBLE) mode = NORMAL;
+    else { mode = DISASSEMBLE; UpdateCursor();}
+  }
 
   inline void Command(Int2Type<Editor::VimT::CMD_i>) { 
     for (int32_t i = memory.size() - 1, size = index() + 1; i >= size; i--) memory[i] = memory[i - 1];
@@ -385,20 +384,26 @@ public:
 
   inline void Command(Int2Type<Editor::VimT::CMD_w>) { 
     if (pos.x < (pages.x - 1)) return Command(Int2Type<Editor::VimT::CMD_l>());
-    Command(Int2Type<Editor::VimT::CMD_0>()); Command(Int2Type<Editor::VimT::CMD_j>());
+    Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_0>()); Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_j>());
+    UpdateCursor();
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_b>) { 
     if (pos.x > 0x00) return Command(Int2Type<Editor::VimT::CMD_h>());
-    Command(Int2Type<Editor::VimT::CMD_DOLLAR>()); Command(Int2Type<Editor::VimT::CMD_k>());
+    Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_DOLLAR>()); Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_k>());
+    UpdateCursor();
   }
 
+
+  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_j>) {
+    if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++;
+  }
 
   inline void Command(Int2Type<Editor::VimT::CMD_j>) {
     switch (mode) {
       case NORMAL:
       case CHARACTER:
-        if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++;
+        Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_j>());
         break;
     
       case DISASSEMBLE: {
@@ -409,17 +414,22 @@ public:
           if (addr.first > posAt && addr.first < next) next = addr.first;
         }
 
-        Index2Pos(next);
+        Index2Pos(next); cursor.y = dasm.second[next];
         break;
       }
     }
+  }
+
+
+  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_k>) {
+    if (pos.y > 0x00) pos.y--;
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_k>) {
     switch (mode) {
       case NORMAL:
       case CHARACTER:
-        if (pos.y > 0x00) pos.y--;
+        Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_k>());
         break;
     
       case DISASSEMBLE: {
@@ -430,7 +440,7 @@ public:
           if (addr.first < posAt && addr.first > next) next = addr.first;
         }
 
-        Index2Pos(next);
+        Index2Pos(next); cursor.y = dasm.second[next];
         break;
       }
     }
@@ -438,10 +448,12 @@ public:
 
   inline void Command(Int2Type<Editor::VimT::CMD_l>) {
     if (pos.x < (pages.x - 1)) pos.x++;
+    UpdateCursor();
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_h>) {
     if (pos.x > 0x00) pos.x--;
+    UpdateCursor();
   }
 
 
@@ -629,7 +641,7 @@ public:
       case CHARACTER:
         if (search.first) {
           std::get<1>(search.second) = std::get<0>(search.second).size();
-          pos = std::get<3>(search.second);
+          pos = std::get<3>(search.second); UpdateCursor();
         }
 
         reset(search.first);
@@ -723,6 +735,16 @@ private:
     }
   }
 
+  void UpdateCursor() {
+    const int32_t posAt = index(); cursor.y = 0;
+
+    for (auto& addr : dasm.second) {
+      if (addr.first <= posAt && addr.first >= cursor.y) cursor.y = addr.first;
+    }
+
+    cursor.y = dasm.second[cursor.y];
+  }
+
   template<int32_t T = Editor::VimT::CMD_NONE>
   void number(Int2Type<T> val = Int2Type<T>()) {
     int32_t nCurr = 0; while (isDigit(peek(nCurr))) nCurr++;
@@ -796,6 +818,7 @@ private:
   float fStrokeRepeat = 0.f;
 
   olc::vi2d pos = olc::vi2d(0, 0);
+  olc::vi2d cursor = olc::vi2d(0, 0);
 
   bool bUpdated = false;
   std::array<uint8_t, SizeT> memory;
