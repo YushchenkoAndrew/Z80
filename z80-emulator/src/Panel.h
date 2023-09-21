@@ -237,6 +237,7 @@ private:
     memory = std::tuple_cat(m, std::make_tuple(++nWindows));
   }
 
+  inline void Init(WindowInitT<Bus::Bus> b) { bus = std::tuple_cat(b, std::make_tuple(++nWindows)); }
   inline void Init(WindowInitT<Window::Lines> l) { lines = std::tuple_cat(l, std::make_tuple(++nWindows)); }
   inline void Init(WindowInitT<Editor::Editor> e) { editor = std::tuple_cat(e, std::make_tuple(++nWindows)); }
 
@@ -250,7 +251,10 @@ private:
   std::pair<bool, std::string> cmd = { false, "" };
 
   int32_t nWindows = 0;
-  WindowT<Bus::Memory<Bus::EEPROM, W27C512_SIZE>> memory = { false, nullptr, {}, 0 };
+
+  WindowT<Bus::Bus> bus = { false, nullptr, {}, 0 };
   WindowT<Window::Lines> lines = { false, nullptr, {}, 0 };
   WindowT<Editor::Editor> editor = { false, nullptr, {}, 0 };
+
+  WindowT<Bus::Memory<Bus::EEPROM, W27C512_SIZE>> memory = { false, nullptr, {}, 0 };
 };

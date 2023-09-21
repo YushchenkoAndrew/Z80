@@ -3,10 +3,10 @@
 namespace Bus {
 namespace Z80 {
 
-  inline uint8_t CPU::Read() { return bus->Read(regPC()++); }
+  inline uint8_t CPU::Read() { return bus->Read(regPC()++, true); }
 
-  inline uint8_t CPU::Read(uint32_t addr) { return bus->Read(addr); }
-  inline uint8_t CPU::Write(uint32_t addr, uint8_t data) { return bus->Write(addr, data); }
+  inline uint8_t CPU::Read(uint32_t addr, bool mreq) { return bus->Read(addr, mreq); }
+  inline uint8_t CPU::Write(uint32_t addr, uint8_t data, bool mreq) { return bus->Write(addr, data, mreq); }
 
   DisassembleT CPU::Disassemble() {
     DisassembleT dasm = std::pair("", std::unordered_map<int32_t, int32_t>());
@@ -15,26 +15,26 @@ namespace Z80 {
       std::pair<std::string, int32_t> cmd;
       dasm.second[i] = line;
 
-      switch (auto instruction = bus->Read(i)) {
+      switch (auto instruction = bus->Read(i, true)) {
         case Z80::MISC_INSTR: {
-          AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
+          AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
           auto res = foreach<MiscMInstructions, AnyType<-1, int32_t>>::Key2Value();
 
           cmd = std::pair(~res.first, res.second); break;
         }
         
         case Z80::BIT_INSTR: {
-          AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
+          AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
           auto res = foreach<BitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
           cmd = std::pair(~res.first, res.second); break;
         }
 
         case Z80::IX_INSTR: {
-          instruction = bus->Read(++i);
+          instruction = bus->Read(++i, true);
 
           if (instruction == Z80::IxBitInstr) {
-            AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
+            AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
             auto res = foreach<IxBitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
             cmd = std::pair(~res.first, res.second); break;
@@ -47,10 +47,10 @@ namespace Z80 {
         }
 
         case Z80::IY_INSTR: {
-          instruction = bus->Read(++i);
+          instruction = bus->Read(++i, true);
 
           if (instruction == Z80::IyBitInstr) {
-            AnyType<-1, int32_t>::GetValue() = bus->Read(++i);
+            AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
             auto res = foreach<IyBitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
             cmd = std::pair(~res.first, res.second); break;
@@ -74,7 +74,7 @@ namespace Z80 {
 
       int32_t word = 0x00;
       for (int32_t j = 0; j < cmd.second - 1; j++) {
-        word = word | (bus->Read(++i) << (j * 8));
+        word = word | (bus->Read(++i, true) << (j * 8));
       }
       
       dasm.first += sprintf(cmd.first, word) + "\n";

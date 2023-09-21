@@ -1,5 +1,5 @@
 #pragma once
-#include "Defs.h"
+#include "Switch.h"
 
 namespace Bus {
 
@@ -34,12 +34,12 @@ public:
     for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];
   }
 
-  inline uint8_t Read(uint32_t addr) { 
+  inline uint8_t Read(uint32_t addr, bool) { 
     if (addr > memory.size()) return 0x00;
     return memory[addr];
   }
 
-  inline uint8_t Write(uint32_t addr, uint8_t data) {
+  inline uint8_t Write(uint32_t addr, uint8_t data, bool) {
     if (addr > memory.size()) return 0x00;
     return (memory[addr] = data);
   }

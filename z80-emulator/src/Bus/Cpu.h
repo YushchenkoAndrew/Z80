@@ -52,10 +52,10 @@ private:
   inline uint16_t Word() { return Read() | (Read() << 8); }
   inline uint16_t Word(uint32_t addr) { return Read(addr) | (Read(addr + 1) << 8); }
 
-  uint8_t Read(uint32_t addr);
-  uint8_t Write(uint32_t addr, uint8_t data);
-  uint16_t Write(uint32_t addr, uint16_t data) {
-    Write(addr + 1, HIGH(data)); Write(addr, LOW(data));
+  uint8_t Read(uint32_t addr, bool mreq = true);
+  uint8_t Write(uint32_t addr, uint8_t data, bool mreq = true);
+  uint16_t Write(uint32_t addr, uint16_t data, bool mreq = true) {
+    Write(addr + 1, HIGH(data), mreq); Write(addr, LOW(data), mreq);
     return data;
   }
 

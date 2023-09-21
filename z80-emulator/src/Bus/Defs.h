@@ -3,7 +3,10 @@
 
 namespace Bus {
 
-#define W27C512_SIZE 65536
+#define W27C512_SIZE  65536
+#define HY62256A_SIZE 32786
+#define IMS1423_SIZE  4096 * 2
+#define KM28C17_SIZE  2048
 
 class Bus;
 
@@ -568,8 +571,8 @@ typedef TypeList<
 
 class Device {
 public:
-  virtual uint8_t Read(uint32_t addr) = 0;
-  virtual uint8_t Write(uint32_t addr, uint8_t data) = 0;
+  virtual uint8_t Read(uint32_t addr, bool) = 0;
+  virtual uint8_t Write(uint32_t addr, uint8_t data, bool) = 0;
 };
 
 

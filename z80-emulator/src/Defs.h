@@ -130,14 +130,14 @@ public:
 
     AnyType<ORANGE,            ColorSTR>::GetValue() = "ORANGE";            AnyType<ORANGE,            ColorT>::GetValue() = olc::Pixel(0xE0, 0x9C, 0x5F);
     AnyType<DARK_ORANGE,       ColorSTR>::GetValue() = "DARK_ORANGE";       AnyType<DARK_ORANGE,       ColorT>::GetValue() = olc::Pixel(0xD3, 0x7D, 0x09);
-    AnyType<VERY_DARK_ORANGE,  ColorSTR>::GetValue() = "VERY_DARK_ORANGE";  AnyType<VERY_DARK_ORANGE,  ColorT>::GetValue() = olc::Pixel(64, 32, 0);
+    AnyType<VERY_DARK_ORANGE,  ColorSTR>::GetValue() = "VERY_DARK_ORANGE";  AnyType<VERY_DARK_ORANGE,  ColorT>::GetValue() = olc::Pixel(0x9D, 0x02, 0x08);
 
     AnyType<YELLOW,            ColorSTR>::GetValue() = "YELLOW";            AnyType<YELLOW,            ColorT>::GetValue() = olc::Pixel(0xEC, 0xCE, 0x8A);
     AnyType<DARK_YELLOW,       ColorSTR>::GetValue() = "DARK_YELLOW";       AnyType<DARK_YELLOW,       ColorT>::GetValue() = olc::Pixel(0xD7, 0xAD, 0x5D);
     AnyType<VERY_DARK_YELLOW,  ColorSTR>::GetValue() = "VERY_DARK_YELLOW";  AnyType<VERY_DARK_YELLOW,  ColorT>::GetValue() = olc::Pixel(64, 64, 0);
 
-    AnyType<GREEN,             ColorSTR>::GetValue() = "GREEN";             AnyType<GREEN,             ColorT>::GetValue() = olc::Pixel(0, 255, 0);
-    AnyType<DARK_GREEN,        ColorSTR>::GetValue() = "DARK_GREEN";        AnyType<DARK_GREEN,        ColorT>::GetValue() = olc::Pixel(0, 128, 0);
+    AnyType<GREEN,             ColorSTR>::GetValue() = "GREEN";             AnyType<GREEN,             ColorT>::GetValue() = olc::Pixel(0x00, 0xC9, 0x5A);
+    AnyType<DARK_GREEN,        ColorSTR>::GetValue() = "DARK_GREEN";        AnyType<DARK_GREEN,        ColorT>::GetValue() = olc::Pixel(0x26, 0xA8, 0x52);
     AnyType<VERY_DARK_GREEN,   ColorSTR>::GetValue() = "VERY_DARK_GREEN";   AnyType<VERY_DARK_GREEN,   ColorT>::GetValue() = olc::Pixel(0, 64, 0);
 
     AnyType<CYAN,              ColorSTR>::GetValue() = "CYAN";              AnyType<CYAN,              ColorT>::GetValue() = olc::Pixel(0x2E, 0xBF, 0xD5);
