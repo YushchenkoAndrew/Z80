@@ -523,7 +523,7 @@ typedef TypeList<
 typedef std::pair<std::string, std::unordered_map<int32_t, int32_t>> DisassembleT;
 
 enum MemoryT {
-  EEPROM, DRAM
+  W27C512, IMS1423
 };
 
 typedef TypeList<

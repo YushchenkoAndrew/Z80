@@ -46,12 +46,11 @@ public:
     GameEngine->FillRect(pos, { size.x, 8 }, ~AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
 
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
-    olc::vi2d len = olc::vi2d(0, 0);
 
     for (auto& token : lexer.tokens) {
       if (vStartAt.y >= token->line) continue;
-      if (token->line != len.y) len = olc::vi2d(0, token->line);
 
+      // FIXME: Fix bug wih displaying large lines in a small window
       olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
 
       if (pos.x > size.x) continue;

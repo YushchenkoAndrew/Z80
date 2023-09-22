@@ -19,7 +19,7 @@ namespace Z80 {
 
   #define SIGN(byte) (byte & 0x80)
 
-class CPU : public Device {
+class CPU : public Window::Window, public Device {
 private:
   /**
    * Flags annotation
@@ -36,7 +36,19 @@ private:
   enum REG { AF, BC, DE, HL, ALTERNATIVE, IX = 8, IY, SP, IR, PC };
   
 public:
-  CPU(Bus* b): bus(b) { regSP() = 0xFFFF; }
+  CPU(Bus* b): bus(b) { regSP() = 0xFFFF; regPC() = 0x0000; }
+
+
+  // TODO:
+  void Initialize(DimensionT) {}
+  void Process(PixelGameEngine* GameEngine) {
+
+    // TODO: Add manual mode
+    Clock();
+  }
+
+  void Draw(PixelGameEngine* GameEngine) {
+  }
 
   void Clock() {
     if (cycles > 0) { cycles--; return; }
@@ -68,6 +80,9 @@ public:
   }
 
   inline void Process(Int2Type<Instruction::NOP>) { cycles = 4; }
+
+  inline void Process(Int2Type<Instruction::IN_A_n>) { cycles = 11; regA(Read(HIGH_SET(Read(), regA()), false)); }
+  inline void Process(Int2Type<Instruction::OUT_n_A>) { cycles = 11; Write(HIGH_SET(Read(), regA()), regA(), false); }
 
   inline void Process(Int2Type<Instruction::LD_BC_NN>) { cycles = 10; regBC() = Word(); }
   inline void Process(Int2Type<Instruction::LD_DE_NN>) { cycles = 10; regDE() = Word(); }
@@ -321,7 +336,6 @@ public:
   inline void Process(Int2Type<Instruction::JR_NZ_D>) {}
   inline void Process(Int2Type<Instruction::JR_NC_D>) {}
 
-  inline void Process(Int2Type<Instruction::OUT_n_A>) {}
   inline void Process(Int2Type<Instruction::EX_sp_HL>) {}
   inline void Process(Int2Type<Instruction::DI>) {}
   inline void Process(Int2Type<Instruction::HALT>) {}
@@ -355,7 +369,6 @@ public:
   inline void Process(Int2Type<Instruction::JP_SP_HL>) {}
 
 
-  inline void Process(Int2Type<Instruction::IN_A_n>) {}
   inline void Process(Int2Type<Instruction::EX_DE_HL>) {}
   inline void Process(Int2Type<Instruction::EI>) {}
 
@@ -495,7 +508,7 @@ private:
   inline bool IsParity(uint8_t x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (~x) & 1; }
 
 private:
-  uint32_t cycles; // Show how many clock cycles are required to run specific command
+  uint32_t cycles = 0; // Show how many clock cycles are required to run specific command
 
   std::array<uint16_t, 13> reg;
 

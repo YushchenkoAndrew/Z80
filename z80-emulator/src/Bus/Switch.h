@@ -15,7 +15,6 @@ public:
     auto mouse = GameEngine->GetMousePos() - vOffset;
     if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + vStep.x * sizeof(uint8_t) * 8 && mouse.y < absolute.y + vStep.y) {
       data = data ^ (0x80 >> ((mouse.x - absolute.x) / vStep.x));
-      printf("%d\n", (mouse.x - absolute.x) / vStep.x);
     }
   }
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <fstream>
 
-#define CMD_PRINT
+#define DEBUG_MODE
 #include "Panel.h"
 
 // Check Memory Leaking
@@ -16,7 +16,8 @@ public:
   }
 
   bool OnUserCreate() override {
-    std::ifstream f("../RTC_Test/Test.asm");
+    // std::ifstream f("../RTC_Test/Test.asm");
+    std::ifstream f("assets/SevenSegmentDisplay/Test.asm");
     std::stringstream buffer;
     buffer << f.rdbuf();
     f.close();
@@ -32,29 +33,34 @@ public:
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     Interpreter::Interpreter interpreter = Interpreter::Interpreter();
 
-    bool err = interpreter.scan(buffer.str());
-    // // for (auto token : interpreter.parser.lexer.vTokens) { token->print(); }
+    if (bool err = interpreter.scan(buffer.str())) {
+      for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
+      printf("\n");
 
-    // if (err) {
-    //   printf("HAS AN ERROR %ld\n", emulator.interpreter.errors.size());
+      for (auto err : interpreter.errors) {
+        printf("%s", err.c_str());
+      }
 
-    //   for (auto err : emulator.interpreter.errors) {
-    //     printf("%s", err.c_str());
-    //   }
-    // } else {
+      printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
+    }
+
+    //  else {
     //   emulator.ROM.load(emulator.interpreter.env.memory);
     // }
 
-    auto bus = Bus::Bus();
 
-    auto rom = bus.W27C512;
+    auto bus = std::make_shared<Bus::Bus>();
+
+    // auto rom = bus->W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
-    rom->load(interpreter.env.memory);
-    rom->Disassemble();
+    bus->W27C512->load(interpreter.env.memory);
+    bus->W27C512->Disassemble();
+
+    bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
 
     interpreter.env.save("out.bin");
-    fASM << bus.Disassemble().first << "\n";
+    fASM << bus->Disassemble().first << "\n";
     fASM.close();
     // emulator.editor.size = {  };
 
@@ -63,19 +69,22 @@ public:
     lines->lines = interpreter.errors;
 
 
-    auto offset = 200;
+    auto offset = 210;
     panels = {
       Panel(
-        std::tuple(true, editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth() - offset, ScreenHeight())))
+        std::tuple(editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth() - offset, ScreenHeight())))
         ,
-        std::tuple(false, rom,  std::pair(olc::vi2d(ScreenWidth() - offset, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+        std::tuple(bus->W27C512,  std::pair(olc::vi2d(ScreenWidth() - offset, 0), olc::vi2d(offset, ScreenHeight())))
         // ,
         // std::tuple(true, lines,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+      ),
+      Panel(
+        std::tuple(bus,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
       )
     };
 
 
-    panels[nPanel].Initialize();
+    panels[nPanel].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
 
     return true;
@@ -117,13 +126,21 @@ public:
   void Event(Int2Type<EDITOR_CALLBACK>) override { std::cout << "EDITOR_CALLBACK\n"; }
   void Event(Int2Type<MEMORY_CALLBACK>) override { std::cout << "MEMORY_CALLBACK\n"; }
 
-  void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index)  override { std::cout << "PANEL_SELECT_CALLBACK " << index << "\n" ; }
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { std::cout << "MEMORY_SELECT_CALLBACK " << index << "\n"; }
+
+  void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "PANEL_SELECT_CALLBACK " << index << "\n" ;
+    #endif
+
+    if (index - 1 < 0 || index - 1>= panels.size()) return;
+    panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
+  }
 
 
 private:
-  int32_t nPanel = 0;
-  std::array<Panel, 1> panels;
+  int32_t nPanel = 1;
+  std::array<Panel, 2> panels;
 
   LuaScript& luaConfig;
 };

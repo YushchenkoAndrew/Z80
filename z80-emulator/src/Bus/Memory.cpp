@@ -11,7 +11,8 @@ namespace Bus {
   }
 
 
-template class Memory<MemoryT::EEPROM, 65536>;
+template class Memory<MemoryT::W27C512, W27C512_SIZE>;
+template class Memory<MemoryT::IMS1423, IMS1423_SIZE>;
 
 #undef TEMPLATE
 #undef CLASS

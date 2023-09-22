@@ -1,0 +1,3 @@
+main: equ 0Ch ; last def. pass 3
+delay: equ 017h ; last def. pass 3
+setup: equ 03h ; last def. pass 3

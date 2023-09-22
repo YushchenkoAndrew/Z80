@@ -50,9 +50,14 @@ private:
       case 'B': case 'b': base = 2; break;
     }
 
-    if (base != 10 && isDigit(peekNext())) {
+    if ((base == 2 || base == 8) && isDigit(peekNext())) {
       advance(); // Consume 'x' || 'o' || 'b'
-      while (isDigit(peek()) || (base == 16 && isHexDigit(peek()))) advance();
+      while (isDigit(peek())) advance();
+    }
+
+    if (base == 16 && isHexDigit(peekNext())) {
+      advance(); // Consume 'x' || 'o' || 'b'
+      while (isHexDigit(peek())) advance();
     }
 
     addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart), nullptr, base)));
@@ -94,7 +99,7 @@ private:
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
   inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
-  inline bool isHexDigit(const char &c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+  inline bool isHexDigit(const char &c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
   inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '\''; }
   inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || isDigit(c); }
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "Switch.h"
+#include "HexDisplay.h"
 
 namespace Bus {
 
@@ -15,7 +15,7 @@ namespace Bus {
  *  phrase      -> 'C' | ' ' | 'i' | 'a' | 'u' | 'U'
  */
 template<int32_t TypeT, int32_t SizeT>
-class Memory : public Window::Window, public Device {
+class Memory : public Window::Window, public Window::Command, public Device {
 public:
   enum { type = TypeT };
   enum ModeT { NORMAL, REPLACE, CHARACTER, DISASSEMBLE };
@@ -48,8 +48,9 @@ public:
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
 
-    pages.x = std::floor(std::log2f((size.x - vOffset.x) / vStep.x)) * 2;
+    pages.x = 1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.x));
     pages.y = ((size.y - vOffset.y * 2) / (vStep.y * pages.x)) * pages.x;
+    Index2Pos(index());
   }
 
   void Process(PixelGameEngine* GameEngine) {
@@ -170,10 +171,12 @@ private:
 
     for (auto& token : lexer.tokens) {
       if (vStartAt.y >= token->line) continue;
+      // printf("%s \n", token->lexeme.c_str());
 
       olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
 
-      if (pos.x > size.x) continue;
+      // TODO: FIX bug with not displaying anything
+      // if (pos.x > size.x) continue;
       if (pos.y >= size.y - vStep.y) break;
 
       if (pos.x < size.x && pos.x + token->lexeme.size() * vStep.x > size.x) {
@@ -470,7 +473,7 @@ private:
     if (!bUpdated) return;
     else bUpdated = false;
     
-    #ifdef CMD_PRINT
+    #ifdef DEBUG_MODE
     printf("Memory: %s\n", cmd.c_str());
     #endif
 
@@ -756,14 +759,6 @@ private:
     lambda = [=]() { for (int32_t i = 0; i < len; i++) { if (i) Command(val); prev(); } };
   }
 
-  inline const char peek() { return cmd[nCurr]; }
-  inline const char peek(int32_t nCurr) { return cmd[nCurr]; }
-  inline const char peekPrev() { return nCurr == 0 ? '\0' : cmd[nCurr - 1]; }
-  inline bool check(const char c) { return peek() == c; }
-  inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
-  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
-  inline bool isHex(const char &c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
-
   inline int32_t index() { return index(pos.x, pos.y); }
   inline int32_t index(olc::vi2d pos) { return index(pos.x, pos.y); }
   inline int32_t index(int32_t x, int32_t y) { return (y * pages.x) | x; }
@@ -782,17 +777,6 @@ private:
   }
 
 
-  template<int32_t T>
-  bool match(std::array<const char, T> str) {
-    for (auto& c : str) {
-      if (!check(c)) continue;
-      nCurr++; return true;
-    }
-
-    return false;
-  }
-
-
 private:
   olc::vi2d size = olc::vi2d(0, 0);
   olc::vi2d pages = olc::vi2d(0x10, 0);
@@ -803,16 +787,8 @@ private:
   const olc::vi2d vOffset = olc::vi2d(44, 12);
 
   ModeT mode = NORMAL;
-
-  int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme
-  int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
-  
-  std::string cmd;
   std::vector<uint8_t> buffer = { }; 
-  std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
   
-  bool bSync = false; // Flag that define is lambda func is sync or async
-  std::function<void(void)> lambda = []() {};
 
   // Variables defines animation duration
   float fStrokeRepeat = 0.f;
@@ -820,7 +796,6 @@ private:
   olc::vi2d pos = olc::vi2d(0, 0);
   olc::vi2d cursor = olc::vi2d(0, 0);
 
-  bool bUpdated = false;
   std::array<uint8_t, SizeT> memory;
 
   Bus* bus;

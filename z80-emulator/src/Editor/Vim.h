@@ -17,7 +17,7 @@ namespace Editor {
  *  adverb      -> 'dd' | 'cc' | 'yy' | 'p' | 'P'
  *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R' | ' ' | 'u' | 'U'
  */
-class Vim {
+class Vim : public Window::Command {
 public:
   enum ModeT { NORMAL, INSERT, REPLACE };
 
@@ -450,7 +450,7 @@ public:
     if (!bUpdated) return;
     else bUpdated = false;
     
-    #ifdef CMD_PRINT
+    #ifdef DEBUG_MODE
     printf("Vim: %s %s\n", cmd.c_str(), err.c_str());
     #endif
 
@@ -771,23 +771,6 @@ private:
     }
   }
 
-  inline const char peek() { return cmd[nCurr]; }
-  inline const char peek(int32_t nCurr) { return cmd[nCurr]; }
-  inline const char peekPrev() { return nCurr == 0 ? '\0' : cmd[nCurr - 1]; }
-  inline bool check(const char c) { return peek() == c; }
-  inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
-  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
-
-  template<int32_t T>
-  bool match(std::array<const char, T> str) {
-    for (auto& c : str) {
-      if (!check(c)) continue;
-      nCurr++; return true;
-    }
-
-    return false;
-  }
-
   template<int32_t T = VimT::CMD_NONE>
   void number(Int2Type<T> val = Int2Type<T>()) {
     int32_t nCurr = 0; while (isDigit(peek(nCurr))) nCurr++;
@@ -805,34 +788,15 @@ private:
     return startAt;
   }
 
-  void error(const char c, std::string message) {
-    std::stringstream ss; 
-    ss << "Error at '" << c << "': " << message << "\n";
-    reset(false); err = ss.str();
-  }
-
-  void error(std::string message) {
-    std::stringstream ss; ss << "Error " << message << "\n"; err = ss.str();
-  }
-
 
 private:
   ModeT mode = NORMAL;
 
-  int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme
-  int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
-
-  std::string err;
-  std::string cmd;
   std::list<std::string> history = {};
-  std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
 
   std::string replaced = "";
   std::pair<std::vector<std::string>, bool> buffer = { { "" }, false }; // second value is responsible to distinguish if buffer has a whole line or just a part of it
   
-  bool bSync = false; // Flag that define is lambda func is sync or async
-  std::function<void(void)> lambda = []() {};
-
   // Variables defines animation duration
   float fBlink = 0.f;
   float fStrokeRepeat = 0.f;
@@ -840,8 +804,5 @@ private:
   int32_t nLastX = 0; // Used for saving max x pos, when moving from line to line
   olc::vi2d pos = olc::vi2d(0, 0);
   std::vector<std::string> lines;
-
-public: 
-  bool bUpdated = false;
 };
 };

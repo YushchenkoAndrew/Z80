@@ -4,10 +4,21 @@
 
 
 template <class T>
-using WindowT = std::tuple<bool, std::shared_ptr<T>, DimensionT, int32_t>;
+using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, DimensionT, int32_t>;
 
 template <class T>
-using WindowInitT = std::tuple<bool, std::shared_ptr<T>, DimensionT>;
+using WindowInitT = std::tuple<std::shared_ptr<T>, DimensionT>;
+
+#define SELECTED(p)  std::get<0>(p)
+#define ZOOMED(p)    std::get<1>(p)
+#define PTR(p)       std::get<2>(p)
+#define DIMENSION(p) std::get<3>(p)
+#define WINDOW(p)    std::get<4>(p)
+
+#define POS(p) DIMENSION(p).first
+#define SIZE(p) DIMENSION(p).second
+#define EXIST(p) PTR(p) != nullptr
+#define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
 
 /**
  * 
@@ -18,17 +29,20 @@ using WindowInitT = std::tuple<bool, std::shared_ptr<T>, DimensionT>;
  *  noun        -> '?' | 'z'
  *  verb        -> 'q'
  */
-class Panel {
-  enum { NORMAL };
+class Panel : public Window::Command {
+  enum ModeT { NORMAL, COMMAND };
 
 public:
   template<typename ...Args>
   Panel(Args ...args) { Init(args...); }
 
-  void Initialize() {
-    if (std::get<1>(memory) != nullptr) std::get<1>(memory)->Initialize(std::get<2>(memory));
-    if (std::get<1>(lines)  != nullptr) std::get<1>(lines)->Initialize(std::get<2>(lines));
-    if (std::get<1>(editor) != nullptr) std::get<1>(editor)->Initialize(std::get<2>(editor));
+  void Initialize(DimensionT dimensions) {
+    this->absolute = dimensions.first; this->size = dimensions.second; bFullScreen = false;
+
+    if (EXIST(bus))    PTR(bus)->Initialize(DIMENSION(bus));
+    if (EXIST(memory)) PTR(memory)->Initialize(DIMENSION(memory));
+    if (EXIST(lines))  PTR(lines)->Initialize(DIMENSION(lines));
+    if (EXIST(editor)) PTR(editor)->Initialize(DIMENSION(editor));
   }
 
 
@@ -42,11 +56,12 @@ public:
     // for(auto& future : vFuture) future.wait();
 
     Process(Int2Type<NORMAL>(), GameEngine);
-    if (cmd.first) { if (!cmd.second.size()) cmd.first = false; return; }
+    if (mode == COMMAND) { if (!cmd.size()) mode = NORMAL; return; }
 
-    if (std::get<0>(memory)) std::get<1>(memory)->Process(GameEngine);
-    if (std::get<0>(lines))  std::get<1>(lines)->Process(GameEngine);
-    if (std::get<0>(editor)) std::get<1>(editor)->Process(GameEngine);
+    if (SELECTED(bus))    PTR(bus)->Process(GameEngine);
+    if (SELECTED(memory)) PTR(memory)->Process(GameEngine);
+    if (SELECTED(lines))  PTR(lines)->Process(GameEngine);
+    if (SELECTED(editor)) PTR(editor)->Process(GameEngine);
   }
 
   void Draw(PixelGameEngine* GameEngine) {
@@ -58,24 +73,26 @@ public:
 
     // for(auto& future : vFuture) future.wait();
 
-    if (std::get<1>(memory) != nullptr) std::get<1>(memory)->Draw(GameEngine);
-    if (std::get<1>(lines)  != nullptr) std::get<1>(lines)->Draw(GameEngine);
-    if (std::get<1>(editor) != nullptr) std::get<1>(editor)->Draw(GameEngine);
+    if (EXIST(bus)    && SHOULD_DRAW(bFullScreen, bus))    PTR(bus)->Draw(GameEngine);
+    if (EXIST(memory) && SHOULD_DRAW(bFullScreen, memory)) PTR(memory)->Draw(GameEngine);
+    if (EXIST(lines)  && SHOULD_DRAW(bFullScreen, lines))  PTR(lines)->Draw(GameEngine);
+    if (EXIST(editor) && SHOULD_DRAW(bFullScreen, editor)) PTR(editor)->Draw(GameEngine);
 
-    if (!cmd.first) return;
-    if (cmd.second.back() == 'q') Draw(Int2Type<Editor::VimT::CMD_q>(), GameEngine);
+    if (mode == NORMAL) return;
+    if (cmd.back() == 'q') Draw(Int2Type<Editor::VimT::CMD_q>(), GameEngine);
   }
 
 private:
   void Draw(Int2Type<Editor::VimT::CMD_q>, PixelGameEngine* GameEngine) {
     auto index = [&](auto tuple) {
       auto color = std::get<0>(tuple) ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
-      GameEngine->DrawString(std::get<2>(tuple).first , std::string(1, '0' + std::get<3>(tuple)), ~color, 4);
+      GameEngine->DrawString(POS(tuple), std::string(1, '0' + WINDOW(tuple)), ~color, 4);
     };
 
-    if (std::get<1>(memory) != nullptr) index(memory);
-    if (std::get<1>(lines)  != nullptr) index(lines);
-    if (std::get<1>(editor) != nullptr) index(editor);
+    if (EXIST(bus)) index(bus);
+    if (EXIST(memory)) index(memory);
+    if (EXIST(lines)) index(lines);
+    if (EXIST(editor)) index(editor);
   }
 
 public:
@@ -83,7 +100,10 @@ public:
   inline void Command(Int2Type<T>) {}
 
   inline void Command(Int2Type<Editor::VimT::CMD_z>) {
-    // TODO: Add ability to maximize window
+    if (SELECTED(bus))    { bFullScreen = (ZOOMED(bus)    ^= true); PTR(bus)->Initialize(   bFullScreen ? std::pair(absolute, size) : DIMENSION(bus)); }
+    if (SELECTED(memory)) { bFullScreen = (ZOOMED(memory) ^= true); PTR(memory)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(memory)); }
+    if (SELECTED(lines))  { bFullScreen = (ZOOMED(lines)  ^= true); PTR(lines)->Initialize( bFullScreen ? std::pair(absolute, size) : DIMENSION(lines)); }
+    if (SELECTED(editor)) { bFullScreen = (ZOOMED(editor) ^= true); PTR(editor)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(editor)); }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
@@ -96,23 +116,30 @@ public:
 
   inline void Command(Int2Type<Editor::VimT::CMD_q>) {
     int32_t digit = this->digit();
-    if (std::get<1>(memory) != nullptr) std::get<0>(memory) = std::get<3>(memory) == digit;
-    if (std::get<1>(lines)  != nullptr) std::get<0>(lines)  = std::get<3>(lines)  == digit;
-    if (std::get<1>(editor) != nullptr) std::get<0>(editor) = std::get<3>(editor) == digit;
+    if (EXIST(bus))    SELECTED(bus)    = WINDOW(bus)    == digit;
+    if (EXIST(memory)) SELECTED(memory) = WINDOW(memory) == digit;
+    if (EXIST(lines))  SELECTED(lines)  = WINDOW(lines)  == digit;
+    if (EXIST(editor)) SELECTED(editor) = WINDOW(editor) == digit;
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
     AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<Editor::KeyEvent, Panel>::Process(this);
 
-    if (!bUpdated || !cmd.first) return;
+    if (!bUpdated) return;
     else bUpdated = false;
     
-    #ifdef CMD_PRINT
-    printf("Panel: %s\n", cmd.second.c_str());
+    #ifdef DEBUG_MODE
+    if (mode == COMMAND) printf("Panel: %s\n", cmd.c_str());
     #endif
 
-    if (nCurr == 0) { nCurr++; return; }
+    if (nCurr == 0) {
+      if (cmd.size() > 1 && match<1>({ '^' })) {
+        if (match<1>({ ' ' })) { mode = COMMAND; return; }
+      }
+
+      reset(false);
+    } 
 
     // noun
     if (match<1>({ 'z' })) { phrase(Int2Type<Editor::VimT::CMD_z>()); return reset(); } 
@@ -136,7 +163,7 @@ public:
   inline void reset(bool exec = true) {
     if (exec) lambda();
 
-    cmd.second = ""; nStart = nCurr = 0; lambda = []() {}; 
+    cmd = ""; nStart = nCurr = 0; lambda = []() {}; 
   }
 
 
@@ -176,51 +203,12 @@ public:
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>)  { EscapeStrokeHandler(olc::Key::ENTER); }
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) { EscapeStrokeHandler(olc::Key::ENTER); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::SPACE>, Int2Type<U>>) { 
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::SPACE).bPressed) return;
-
-    const bool isCtrl = GameEngine->GetKey(olc::Key::CTRL).bHeld;
-    if (!isCtrl && !cmd.first) return;
-
-    cmd.first = bUpdated = true; cmd.second += " ";
-  }
-
 private:
   inline void EscapeStrokeHandler(olc::Key key) {
     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(key).bPressed || !cmd.first) return;
+    if (!GameEngine->GetKey(key).bPressed) return;
 
     bUpdated = true; reset(false);
-  }
-
-  inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(key).bPressed || !cmd.first) return;
-
-    const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
-    const char c = toUpper ? upper : lower;
-
-    bUpdated = true; cmd.second += std::string(1, c); 
-  }
-
-
-  inline const char peek() { return cmd.second[nCurr]; }
-  inline const char peek(int32_t nCurr) { return cmd.second[nCurr]; }
-  inline const char peekPrev() { return nCurr == 0 ? '\0' : cmd.second[nCurr - 1]; }
-  inline bool check(const char c) { return peek() == c; }
-  inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
-  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
-  inline int32_t digit() { return peek() - '0'; }
-
-  template<int32_t T>
-  bool match(std::array<const char, T> str) {
-    for (auto& c : str) {
-      if (!check(c)) continue;
-      nCurr++; return true;
-    }
-
-    return false;
   }
 
 private:
@@ -233,28 +221,35 @@ private:
   inline void Init(WindowInitT<Bus::Memory<T, U>> m) { Init(Int2Type<T>(), m); }
   
   template<int32_t T>
-  inline void Init(Int2Type<Bus::EEPROM>, WindowInitT<Bus::Memory<Bus::EEPROM, T>> m) {
-    memory = std::tuple_cat(m, std::make_tuple(++nWindows));
-  }
+  inline void Init(Int2Type<Bus::W27C512>, WindowInitT<Bus::Memory<Bus::W27C512, T>> m) { memory = std::tuple_cat(std::make_tuple(nWindows == 1, false), m, std::make_tuple(++nWindows)); }
 
-  inline void Init(WindowInitT<Bus::Bus> b) { bus = std::tuple_cat(b, std::make_tuple(++nWindows)); }
-  inline void Init(WindowInitT<Window::Lines> l) { lines = std::tuple_cat(l, std::make_tuple(++nWindows)); }
-  inline void Init(WindowInitT<Editor::Editor> e) { editor = std::tuple_cat(e, std::make_tuple(++nWindows)); }
+  inline void Init(WindowInitT<Bus::Bus> b) { bus = std::tuple_cat(std::make_tuple(nWindows == 1, false), b, std::make_tuple(++nWindows)); }
+  inline void Init(WindowInitT<Window::Lines> l) { lines = std::tuple_cat(std::make_tuple(nWindows == 1, false), l, std::make_tuple(++nWindows)); }
+  inline void Init(WindowInitT<Editor::Editor> e) { editor = std::tuple_cat(std::make_tuple(nWindows == 1, false), e, std::make_tuple(++nWindows)); }
 
 private:
-  bool bUpdated = false;
-
-  int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme
-  int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
-
-  std::function<void(void)> lambda = []() {};
-  std::pair<bool, std::string> cmd = { false, "" };
-
+  ModeT mode = NORMAL;
   int32_t nWindows = 0;
+  bool bFullScreen = false;
 
-  WindowT<Bus::Bus> bus = { false, nullptr, {}, 0 };
-  WindowT<Window::Lines> lines = { false, nullptr, {}, 0 };
-  WindowT<Editor::Editor> editor = { false, nullptr, {}, 0 };
+  olc::vi2d absolute = olc::vi2d(0, 0);
+  olc::vi2d size = olc::vi2d(0, 0);
 
-  WindowT<Bus::Memory<Bus::EEPROM, W27C512_SIZE>> memory = { false, nullptr, {}, 0 };
+  WindowT<Bus::Bus> bus = { false, false, nullptr, {}, 0 };
+  WindowT<Window::Lines> lines = { false, false, nullptr, {}, 0 };
+  WindowT<Editor::Editor> editor = { false, false, nullptr, {}, 0 };
+
+  WindowT<Bus::Memory<Bus::W27C512, W27C512_SIZE>> memory = { false, false, nullptr, {}, 0 };
 };
+
+
+#undef SELECTED
+#undef ZOOMED
+#undef PTR
+#undef DIMENSION
+#undef WINDOW
+
+#undef POS
+#undef SIZE
+#undef EXIST
+#undef SHOULD_DRAW

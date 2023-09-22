@@ -202,6 +202,14 @@ class PixelGameEngine : public olc::PixelGameEngine {
 
   virtual void Event(Int2Type<PANEL_SELECT_CALLBACK>, int32_t) = 0;
   virtual void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t) = 0;
+
+  void FillRectDither(olc::vi2d pos, olc::vi2d size, olc::Pixel color = olc::WHITE, int32_t scale = 1) {
+    for (int32_t i = 0, k = 0; i < size.y; i += scale, k ^= 1) {
+      for (int32_t j = k * scale; j < size.x; j += scale << 1) {
+        FillRect(pos + olc::vi2d(j, i), olc::vi2d(scale, scale), color);
+      }
+    }
+  }
 };
 
 

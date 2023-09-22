@@ -17,22 +17,33 @@ public:
   Bus():
     led(std::make_shared<Led>(this)),
     switches(std::make_shared<Switch>(this)),
+    hexDisplay(std::make_shared<HexDisplay>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this)),
-    W27C512(std::make_shared<Memory<MemoryT::EEPROM, W27C512_SIZE>>(this)) {}
+    W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)) {}
 
-  void Initialize(DimensionT) {
-    // TODO:
+  void Initialize(DimensionT dimensions) {
+
+    // TODO: Design and draw bus as PCB
+    led->Initialize(std::pair(olc::vi2d(10, 10), olc::vi2d(0, 0)));
+    switches->Initialize(std::pair(olc::vi2d(10, 25), olc::vi2d(0, 0)));
+    hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), olc::vi2d(0, 0)));
   }
 
   void Process(PixelGameEngine* GameEngine) {
     led->Process(GameEngine);
     switches->Process(GameEngine);
+    hexDisplay->Process(GameEngine);
+
+    Z80->Process(GameEngine);
   }
 
   void Draw(PixelGameEngine* GameEngine) {
     led->Draw(GameEngine);
     switches->Draw(GameEngine);
+    hexDisplay->Draw(GameEngine);
+
+    Z80->Draw(GameEngine);
   }
 
   uint8_t Read(uint32_t addr, bool mreq) {
@@ -55,7 +66,7 @@ private:
   inline std::shared_ptr<Device> mux(Int2Type<MREQ>, uint32_t addr, bool read) {
     switch((addr & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: if (read) return W27C512; else return nullptr;
-      case MUX::MREQ::IMS1423: 
+      case MUX::MREQ::IMS1423: return IMS1423;
       case MUX::MREQ::HY62256A: // TODO:
       case MUX::MREQ::KM28C17: break;
     }
@@ -66,7 +77,7 @@ private:
   inline std::shared_ptr<Device> mux(Int2Type<IORQ>, uint32_t addr, bool read) {
     switch((addr & 0x00F0) >> 4) {
       case MUX::IORQ::IO_DEVICE: if (read) return switches; else return led;
-      case MUX::IORQ::HEX_DEVICE: 
+      case MUX::IORQ::HEX_DEVICE: return read ? nullptr : hexDisplay; 
       case MUX::IORQ::PPI_PORT: // TODO:
       case MUX::IORQ::UART_PORT: break; 
     }
@@ -78,9 +89,11 @@ private:
 public:
   std::shared_ptr<Led> led;
   std::shared_ptr<Switch> switches;
+  std::shared_ptr<HexDisplay> hexDisplay;
 
   std::shared_ptr<Z80::CPU> Z80;
-  std::shared_ptr<Memory<MemoryT::EEPROM, W27C512_SIZE>> W27C512;
+  std::shared_ptr<Memory<MemoryT::W27C512, W27C512_SIZE>> W27C512;
+  std::shared_ptr<Memory<MemoryT::IMS1423, IMS1423_SIZE>> IMS1423;
 
   // TODO: RAM HY62256A A14 = 0 A15 = 1 
   // TODO: RAM ims1423  A14 = 1 A15 = 0  (NOTE: Without A13)

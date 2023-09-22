@@ -1,4 +1,5 @@
-#include "Window.h"
+#pragma once
+#include "Command.h"
 
 namespace Window {
 
