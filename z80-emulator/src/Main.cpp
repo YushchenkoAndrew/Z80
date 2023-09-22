@@ -56,7 +56,7 @@ public:
     bus->W27C512->load(interpreter.env.memory);
     bus->W27C512->Disassemble();
 
-    bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
+    // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
 
     interpreter.env.save("out.bin");
@@ -76,6 +76,7 @@ public:
         ,
         std::tuple(bus->W27C512,  std::pair(olc::vi2d(ScreenWidth() - offset, 0), olc::vi2d(offset, ScreenHeight())))
         // ,
+        // TODO: Display errors
         // std::tuple(true, lines,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
       ),
       Panel(

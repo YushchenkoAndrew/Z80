@@ -20,7 +20,8 @@ public:
     hexDisplay(std::make_shared<HexDisplay>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this)),
-    W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)) {}
+    W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
+    IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)) {}
 
   void Initialize(DimensionT dimensions) {
 

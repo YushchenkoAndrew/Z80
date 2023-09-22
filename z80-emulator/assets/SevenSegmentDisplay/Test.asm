@@ -36,8 +36,8 @@ MAIN:
   CALL DISPLAY_BYTE
 
 
-  LD D, 0xFF
-  CALL DELAY
+  ;; LD D, 0xFF
+  ;; CALL DELAY
   JP MAIN
 
 GET_NUM:
@@ -83,7 +83,7 @@ DELAY:
   RET
 
 ; Variables name
-STACK          EQU 0x5FFF
+STACK          EQU 0x4FFF
 
 NUM:      ; This array of values need for display HEX number
   db 0x40, 0x79, 0x24, 0x30, 0x19, 0x12, 0x02, 0x78, 0x00, 0x10, 0x08, 0x03, 0x46, 0x21, 0x06, 0x0E

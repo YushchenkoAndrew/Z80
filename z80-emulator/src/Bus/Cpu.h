@@ -79,6 +79,13 @@ public:
     // return std::make_shared<Statement>();
   }
 
+  template<int32_t T>
+  inline void Process(Int2Type<Instruction::BIT_INSTR>, Int2Type<T>) {
+    // TODO:
+    // error(peekPrev(), "Unknown operation");
+    // return std::make_shared<Statement>();
+  }
+
   inline void Process(Int2Type<Instruction::NOP>) { cycles = 4; }
 
   inline void Process(Int2Type<Instruction::IN_A_n>) { cycles = 11; regA(Read(HIGH_SET(Read(), regA()), false)); }
@@ -360,7 +367,8 @@ public:
   inline void Process(Int2Type<Instruction::JR_C_D>) {}
 
 
-  inline void Process(Int2Type<Instruction::ADD_HL_BC>) {}
+  // FIXME: Impl this normally
+  inline void Process(Int2Type<Instruction::ADD_HL_BC>) { cycles = 11; regHL() += regBC(); }
   inline void Process(Int2Type<Instruction::ADD_HL_DE>) {}
   inline void Process(Int2Type<Instruction::ADD_HL_HL>) {}
   inline void Process(Int2Type<Instruction::ADD_HL_SP>) {}
@@ -379,11 +387,24 @@ public:
 
 
   // TODO: Add another foreach
-  inline void Process(Int2Type<Instruction::BIT_INSTR>) {}
   inline void Process(Int2Type<Instruction::IX_INSTR>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>) {}
   inline void Process(Int2Type<Instruction::IY_INSTR>) {}
 
+  inline void Process(Int2Type<Instruction::BIT_INSTR>) {
+    AnyType<-1, int32_t>::GetValue() = Read();
+    foreach<BitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::BIT_INSTR>());
+  }
+
+
+  // FIXME: Impl this normally
+  inline void Process(Int2Type<Instruction::BIT_INSTR>, Int2Type<BitInstruction::RR_A>) {
+    cycles = 8;
+    uint8_t A0 = regA() & 0x01; regA((regA() >> 1) | ((uint8_t)flagC() << 7));
+
+    flagC(A0)->flagH(false)->flagN(false);
+    flagPV(IsParity(regA()))->flagS(SIGN(regA()))->flagZ(!regA());
+  }
 
   // TODO:
 
@@ -437,7 +458,7 @@ private:
 
   inline uint8_t Or8(uint8_t a, uint8_t b)  { return BitOperation(a, b, a | b); }
   inline uint8_t Xor8(uint8_t a, uint8_t b) { return BitOperation(a, b, a ^ b); }
-  inline uint8_t And8(uint8_t a, uint8_t b) { auto res = BitOperation(a, b, a & b); regH(true); return res; }
+  inline uint8_t And8(uint8_t a, uint8_t b) { auto res = BitOperation(a, b, a & b); flagH(true); return res; }
 
 
   inline uint8_t BitOperation(uint8_t a, uint8_t b, uint8_t acc) {

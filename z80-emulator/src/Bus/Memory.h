@@ -34,15 +34,8 @@ public:
     for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];
   }
 
-  inline uint8_t Read(uint32_t addr, bool) { 
-    if (addr > memory.size()) return 0x00;
-    return memory[addr];
-  }
-
-  inline uint8_t Write(uint32_t addr, uint8_t data, bool) {
-    if (addr > memory.size()) return 0x00;
-    return (memory[addr] = data);
-  }
+  inline uint8_t Read(uint32_t addr, bool) { return memory[addr & (uint32_t)(memory.size() - 1)]; }
+  inline uint8_t Write(uint32_t addr, uint8_t data, bool) { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
   // TODO: Maybe add ability to set local state with initialization
   void Initialize(DimensionT dimensions) {

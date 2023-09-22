@@ -23,7 +23,10 @@ public:
   }
 
   uint8_t Read(uint32_t addr, bool) { return 0; }
-  uint8_t Write(uint32_t addr, uint8_t data, bool) { return (this->data = (this->data << 8) | data); }
+  uint8_t Write(uint32_t addr, uint8_t data, bool) { 
+    if (data & 0x80) return this->data = (this->data & 0x00FF) | (data << 8);
+    else return (this->data = (this->data & 0xFF00) | data); 
+  }
 
 private:
   void Draw(Int2Type<HEX>, PixelGameEngine* GameEngine, uint8_t data, olc::vi2d pos) {

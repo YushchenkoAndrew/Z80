@@ -94,6 +94,11 @@ struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, U>, F> {
     return foreach<U, F>::Key2Process(ref);
 	}
 
+  template<typename ...Args>
+	static inline auto Key2Process(F* ref, Args ...args) {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(args..., Int2Type<T>());
+    return foreach<U, F>::Key2Process(ref, args...);
+	}
 };
 
 template<int32_t T, class V, int32_t Y, class F>
@@ -106,6 +111,12 @@ struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, NullType>, F> {
 
 	static inline auto Key2Process(F* ref) {
 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
+    return ref->Process(Int2Type<-1>());
+	}
+
+  template<typename ...Args>
+	static inline auto Key2Process(F* ref, Args ...args) {
+		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(args..., Int2Type<T>());
     return ref->Process(Int2Type<-1>());
 	}
 
