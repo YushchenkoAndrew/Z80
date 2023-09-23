@@ -94,9 +94,7 @@ public:
   inline void Command(Int2Type<VimT::CMD_C>)  { Command(Int2Type<VimT::CMD_D>()); Command(Int2Type<VimT::CMD_A>()); }
   inline void Command(Int2Type<VimT::CMD_cc>) { Command(Int2Type<VimT::CMD_dd>()); Command(Int2Type<VimT::CMD_I>()); }
 
-  inline void Command(Int2Type<VimT::CMD_SPACE>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_CALLBACK>());
-  }
+  inline void Command(Int2Type<VimT::CMD_gd>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_CALLBACK>(), pos); }
 
   inline void Command(Int2Type<VimT::CMD_o>) { 
     Command(Int2Type<VimT::CMD_I>());
@@ -468,7 +466,7 @@ public:
     // TODO: Add ability to run execution commands aka ':wq'
 
     if (nCurr == 0) {
-      if (match<12>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', ' ', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
+      if (match<12>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
       if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
 
       if (cmd.size() > 1 && match<1>({ '^' })) {
@@ -509,6 +507,7 @@ public:
     if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<VimT::CMD_yy>()); number(); return reset(); } 
 
     if (peekPrev() == 'g' && match<1>({ 'g' })) {  phrase(Int2Type<VimT::CMD_gg>()); number();  verb(peek(nCurr - 3)); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'd' })) {  phrase(Int2Type<VimT::CMD_gd>()); return reset(); } 
 
     // verb
     if (match<4>({ 'c', 'd', 'y', 'g' })) return;

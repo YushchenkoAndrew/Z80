@@ -19,6 +19,8 @@ using WindowInitT = std::tuple<std::shared_ptr<T>, DimensionT>;
 #define SIZE(p) DIMENSION(p).second
 #define EXIST(p) PTR(p) != nullptr
 #define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
+#define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
+        
 
 /**
  * 
@@ -62,6 +64,14 @@ public:
     if (SELECTED(memory)) PTR(memory)->Process(GameEngine);
     if (SELECTED(lines))  PTR(lines)->Process(GameEngine);
     if (SELECTED(editor)) PTR(editor)->Process(GameEngine);
+
+    if (!GameEngine->GetMouse(0).bPressed) return;
+    auto mouse = GameEngine->GetMousePos();
+
+    if (EXIST(bus))    SELECTED(bus)    = IS_INSIDE(bus, mouse);
+    if (EXIST(memory)) SELECTED(memory) = IS_INSIDE(memory, mouse);
+    if (EXIST(lines))  SELECTED(lines)  = IS_INSIDE(lines, mouse);
+    if (EXIST(editor)) SELECTED(editor) = IS_INSIDE(editor, mouse);
   }
 
   void Draw(PixelGameEngine* GameEngine) {
@@ -211,6 +221,12 @@ private:
     bUpdated = true; reset(false);
   }
 
+public:
+  std::shared_ptr<Bus::Bus> Bus() { return PTR(bus); }
+  std::shared_ptr<Window::Lines> Lines() { return PTR(lines); }
+  std::shared_ptr<Editor::Editor> Editor() { return PTR(editor); }
+  std::shared_ptr<Bus::Memory<Bus::W27C512, W27C512_SIZE>> Memory() { return PTR(memory); }
+
 private:
   template<typename T, typename... Args>
   inline void Init(T ref, Args ...args) {  Init(ref); Init(args...); }
@@ -253,3 +269,4 @@ private:
 #undef SIZE
 #undef EXIST
 #undef SHOULD_DRAW
+#undef IS_INSIDE

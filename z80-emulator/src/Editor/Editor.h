@@ -87,6 +87,9 @@ public:
     GameEngine->DrawString(pos, vim.GetCmd(), ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
   }
 
+public:
+  inline void MoveTo(olc::vi2d next) { vim.MoveTo(next - vim.GetPos()); }
+
 private:
   olc::vi2d size = olc::vi2d(0, 0);
   olc::vi2d absolute = olc::vi2d(0, 0);

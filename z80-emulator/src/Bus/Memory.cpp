@@ -8,6 +8,8 @@ namespace Bus {
   TEMPLATE void CLASS::Disassemble() {
     dasm = bus->Disassemble();
     lexer.scan(dasm.first); 
+
+    for (auto& addr : dasm.second) LINES_SIZE = std::max(LINES_SIZE, addr.second);
   }
 
 

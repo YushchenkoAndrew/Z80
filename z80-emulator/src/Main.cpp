@@ -31,8 +31,6 @@ public:
 
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
-    Interpreter::Interpreter interpreter = Interpreter::Interpreter();
-
     if (bool err = interpreter.scan(buffer.str())) {
       for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
       printf("\n");
@@ -72,6 +70,7 @@ public:
     auto offset = 210;
     panels = {
       Panel(
+        // TODO: Load panes from lua
         std::tuple(editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth() - offset, ScreenHeight())))
         ,
         std::tuple(bus->W27C512,  std::pair(olc::vi2d(ScreenWidth() - offset, 0), olc::vi2d(offset, ScreenHeight())))
@@ -124,10 +123,43 @@ public:
     return true;
   }
 
-  void Event(Int2Type<EDITOR_CALLBACK>) override { std::cout << "EDITOR_CALLBACK\n"; }
-  void Event(Int2Type<MEMORY_CALLBACK>) override { std::cout << "MEMORY_CALLBACK\n"; }
+  void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d cursor) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "EDITOR_SELECT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
+    #endif
 
-  void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { std::cout << "MEMORY_SELECT_CALLBACK " << index << "\n"; }
+    std::pair<uint32_t, std::shared_ptr<Interpreter::Token>> next = std::pair(0, nullptr);
+
+    for (auto& pos : interpreter.env.tokens) {
+      if (
+        pos.second->line <= cursor.y + 1 && pos.second->col <= cursor.x + 1 && (
+          next.second == nullptr || 
+          (pos.second->line >= next.second->line && pos.second->col >= next.second->col)
+      )) next = pos;
+    }
+
+    if (next.second == nullptr || panels[nPanel].Memory() == nullptr) return;
+    panels[nPanel].Memory()->Move2Addr(next.first);
+  }
+
+  void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
+    #ifdef DEBUG_MODE 
+    std::cout << "MEMORY_SELECT_CALLBACK [Addr " <<  std::setfill('0') << std::setw(5) << std::hex << std::uppercase << index << "]\n";
+    #endif
+
+    std::pair<uint32_t, std::shared_ptr<Interpreter::Token>> next = std::pair(0, nullptr);
+
+    for (auto& pos : interpreter.env.tokens) {
+      if (
+        pos.first <= index && (
+          next.second == nullptr || 
+          (pos.second->line >= next.second->line && pos.second->col >= next.second->col)
+      )) next = pos;
+    }
+
+    if (next.second == nullptr || panels[nPanel].Editor() == nullptr) return;
+    panels[nPanel].Editor()->MoveTo(olc::vi2d(next.second->col - 1, next.second->line - 1));
+  }
 
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
     #ifdef DEBUG_MODE 
@@ -140,8 +172,9 @@ public:
 
 
 private:
-  int32_t nPanel = 1;
+  int32_t nPanel = 0;
   std::array<Panel, 2> panels;
+  Interpreter::Interpreter interpreter;
 
   LuaScript& luaConfig;
 };

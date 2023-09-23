@@ -91,6 +91,34 @@ public:
   inline void Process(Int2Type<Instruction::IN_A_n>) { cycles = 11; regA(Read(HIGH_SET(Read(), regA()), false)); }
   inline void Process(Int2Type<Instruction::OUT_n_A>) { cycles = 11; Write(HIGH_SET(Read(), regA()), regA(), false); }
 
+
+
+
+  inline void Process(Int2Type<Instruction::INC_BC>) { cycles = 6; regBC()++; }
+  inline void Process(Int2Type<Instruction::INC_DE>) { cycles = 6; regDE()++; }
+  inline void Process(Int2Type<Instruction::INC_HL>) { cycles = 6; regHL()++; }
+  inline void Process(Int2Type<Instruction::INC_SP>) { cycles = 6; regSP()++; }
+
+  inline void Process(Int2Type<Instruction::DEC_BC>) { cycles = 6; regBC()--; }
+  inline void Process(Int2Type<Instruction::DEC_DE>) { cycles = 6; regDE()--; }
+  inline void Process(Int2Type<Instruction::DEC_HL>) { cycles = 6; regHL()--; }
+  inline void Process(Int2Type<Instruction::DEC_SP>) { cycles = 6; regSP()--; }
+
+  inline void Process(Int2Type<Instruction::ADD_HL_BC>) { cycles = 11; regHL() = Add16(regHL(), regBC()); }
+  inline void Process(Int2Type<Instruction::ADD_HL_DE>) { cycles = 11; regHL() = Add16(regHL(), regDE()); }
+  inline void Process(Int2Type<Instruction::ADD_HL_HL>) { cycles = 11; regHL() = Add16(regHL(), regHL()); }
+  inline void Process(Int2Type<Instruction::ADD_HL_SP>) { cycles = 11; regHL() = Add16(regHL(), regSP()); }
+
+  inline void Process(Int2Type<Instruction::POP_BC>) { cycles = 10; regBC() = Pop(); }
+  inline void Process(Int2Type<Instruction::POP_DE>) { cycles = 10; regDE() = Pop(); }
+  inline void Process(Int2Type<Instruction::POP_HL>) { cycles = 10; regHL() = Pop(); }
+  inline void Process(Int2Type<Instruction::POP_AF>) { cycles = 10; regAF() = Pop(); }
+
+  inline void Process(Int2Type<Instruction::PUSH_BC>) { cycles = 11; Push(regBC()); }
+  inline void Process(Int2Type<Instruction::PUSH_DE>) { cycles = 11; Push(regDE()); }
+  inline void Process(Int2Type<Instruction::PUSH_HL>) { cycles = 11; Push(regHL()); }
+  inline void Process(Int2Type<Instruction::PUSH_AF>) { cycles = 11; Push(regAF()); }
+
   inline void Process(Int2Type<Instruction::LD_BC_NN>) { cycles = 10; regBC() = Word(); }
   inline void Process(Int2Type<Instruction::LD_DE_NN>) { cycles = 10; regDE() = Word(); }
   inline void Process(Int2Type<Instruction::LD_HL_NN>) { cycles = 10; regHL() = Word(); }
@@ -107,25 +135,8 @@ public:
   inline void Process(Int2Type<Instruction::LD_HL_nn>) { cycles = 16; regHL() = Word(Word()); }
   inline void Process(Int2Type<Instruction::LD_nn_HL>) { cycles = 16; Write(Word(), regHL()); }
 
-  inline void Process(Int2Type<Instruction::INC_BC>) { cycles = 6; regBC()++; }
-  inline void Process(Int2Type<Instruction::INC_DE>) { cycles = 6; regDE()++; }
-  inline void Process(Int2Type<Instruction::INC_HL>) { cycles = 6; regHL()++; }
-  inline void Process(Int2Type<Instruction::INC_SP>) { cycles = 6; regSP()++; }
 
-  inline void Process(Int2Type<Instruction::DEC_BC>) { cycles = 6; regBC()--; }
-  inline void Process(Int2Type<Instruction::DEC_DE>) { cycles = 6; regDE()--; }
-  inline void Process(Int2Type<Instruction::DEC_HL>) { cycles = 6; regHL()--; }
-  inline void Process(Int2Type<Instruction::DEC_SP>) { cycles = 6; regSP()--; }
 
-  inline void Process(Int2Type<Instruction::POP_BC>) { cycles = 10; regBC() = Pop(); }
-  inline void Process(Int2Type<Instruction::POP_DE>) { cycles = 10; regDE() = Pop(); }
-  inline void Process(Int2Type<Instruction::POP_HL>) { cycles = 10; regHL() = Pop(); }
-  inline void Process(Int2Type<Instruction::POP_AF>) { cycles = 10; regAF() = Pop(); }
-
-  inline void Process(Int2Type<Instruction::PUSH_BC>) { cycles = 11; Push(regBC()); }
-  inline void Process(Int2Type<Instruction::PUSH_DE>) { cycles = 11; Push(regDE()); }
-  inline void Process(Int2Type<Instruction::PUSH_HL>) { cycles = 11; Push(regHL()); }
-  inline void Process(Int2Type<Instruction::PUSH_AF>) { cycles = 11; Push(regAF()); }
 
   inline void Process(Int2Type<Instruction::CALL_NN>)    { cycles = 17; Call(true, Word()); }
   inline void Process(Int2Type<Instruction::CALL_NZ_NN>) { cycles = Call(!flagZ(), Word()) ? 17 : 10; }
@@ -366,12 +377,6 @@ public:
   inline void Process(Int2Type<Instruction::JR_Z_D>) {}
   inline void Process(Int2Type<Instruction::JR_C_D>) {}
 
-
-  // FIXME: Impl this normally
-  inline void Process(Int2Type<Instruction::ADD_HL_BC>) { cycles = 11; regHL() += regBC(); }
-  inline void Process(Int2Type<Instruction::ADD_HL_DE>) {}
-  inline void Process(Int2Type<Instruction::ADD_HL_HL>) {}
-  inline void Process(Int2Type<Instruction::ADD_HL_SP>) {}
   inline void Process(Int2Type<Instruction::EXX>) {}
   inline void Process(Int2Type<Instruction::JP_hl>) {}
   inline void Process(Int2Type<Instruction::JP_SP_HL>) {}
@@ -396,15 +401,6 @@ public:
     foreach<BitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::BIT_INSTR>());
   }
 
-
-  // FIXME: Impl this normally
-  inline void Process(Int2Type<Instruction::BIT_INSTR>, Int2Type<BitInstruction::RR_A>) {
-    cycles = 8;
-    uint8_t A0 = regA() & 0x01; regA((regA() >> 1) | ((uint8_t)flagC() << 7));
-
-    flagC(A0)->flagH(false)->flagN(false);
-    flagPV(IsParity(regA()))->flagS(SIGN(regA()))->flagZ(!regA());
-  }
 
   // TODO:
 
@@ -438,20 +434,27 @@ private:
     // the Overflow Flag is set
     flagPV(SIGN(a) == SIGN(b) && SIGN(a) != SIGN(acc));
 
-    flagN(false)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagC(acc & 0xFF00)->flagH(((regA() & 0x0F) + (regB() & 0x0F) +  (carry && flagC())) & 0xF0);
+    flagN(false)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagC(acc & 0xFF00)->flagH(((a & 0x0F) + (b & 0x0F) + (carry && flagC())) & 0xF0);
 
     return (uint8_t)(acc & 0xFF);
   }
 
-  // TODO:
+  inline uint16_t Add16(uint16_t a, uint16_t b, bool carry = false) {
+    uint32_t acc = (uint32_t)a + b + (carry && flagC());
+
+    flagN(false)->flagC(acc & 0xFF0000)->flagH(((a & 0x0FFF) + (b & 0x0FFF) + (carry && flagC())) & 0xF000);
+
+    return (uint16_t)(acc & 0xFFFF);
+  }
+
   inline uint8_t Sub8(uint8_t a, uint8_t b, bool carry = false) {
-    uint16_t acc = (uint16_t)a + b;
+    uint16_t acc = (uint16_t)a + (b ^ 0xFF) + 1 + (carry && flagC()) * 0xFF;
 
-    // // When adding operands with similar signs and the result contains a different sign,
-    // // the Overflow Flag is set
-    // flagPV(SIGN(a) == SIGN(b) && SIGN(a) != SIGN(acc));
+    // When adding operands with similar signs and the result contains a different sign,
+    // the Overflow Flag is set
+    flagPV(SIGN(a) != SIGN(b) && SIGN(a) != SIGN(acc));
 
-    // flagN(false)->flagS(SIGN(acc))->flagZ((acc & 0xFF) == 0)->flagC(acc & 0xFF00)->flagH(((regA() & 0x0F) + (regB() & 0x0F)) & 0xF0);
+    flagN(true)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagC(!(acc & 0xFF00))->flagH(!(((a & 0x0F) + (((b ^ 0xFF) + 1) & 0x0F) + (carry && flagC()) * 0xFF) & 0xF0));
 
     return (uint8_t)(acc & 0xFF);
   }
