@@ -36,29 +36,81 @@ private:
   enum REG { AF, BC, DE, HL, ALTERNATIVE, IX = 8, IY, SP, IR, PC };
   
 public:
-  CPU(Bus* b): bus(b) { regSP() = 0xFFFF; regPC() = 0x0000; }
+  enum ModeT { NORMAL, DEBUG };
 
+  CPU(Bus* b): bus(b) { Reset(); }
+  ~CPU() {
+    bExec = false; sync.second.notify_all();
+
+    if (runtime != nullptr && runtime->joinable()) runtime->join();
+  }
+
+  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; }
+
+  void Preinitialize() { 
+    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
+  }
 
   // TODO:
-  void Initialize(DimensionT) {}
-  void Process(PixelGameEngine* GameEngine) {
-
-    // TODO: Add manual mode
-    Clock();
+  void Initialize(DimensionT dimensions) {
+    this->absolute = dimensions.first; this->size = dimensions.second;
   }
+
+  void Process(PixelGameEngine* GameEngine) {}
 
   void Draw(PixelGameEngine* GameEngine) {
-  }
+    int32_t index = 0;
+    olc::vi2d pos = absolute;
 
-  void Clock() {
-    if (cycles > 0) { cycles--; return; }
+    auto DrawReg = [&](std::string name, uint16_t val) {
+      GameEngine->DrawString(pos, name, ~AnyType<DARK_GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset, Int2Hex(val), ~AnyType<GREY, ColorT>::GetValue());
 
-    AnyType<-1, int32_t>::GetValue() = Read();
-    foreach<Instructions, CPU>::Key2Process(this);
+      if (++index % 2) pos.x += vOffset.x + vStep.x * 6;
+      else pos = olc::vi2d(absolute.x, pos.y + vStep.y);
+    };
+
+    auto DrawFlag = [&](std::string name, bool val) {
+      GameEngine->DrawString(pos - olc::vi2d(vStep.x * (name.size() - 1) / 2, 0), name, ~AnyType<DARK_GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + olc::vi2d(0, vStep.y), val ? "1" : "0", ~AnyType<GREY, ColorT>::GetValue());
+
+      pos.x += vStep.x * 3;
+    };
+
+    DrawReg("AF", regAF()); DrawReg("AF'", reg[ALTERNATIVE + REG::AF]);
+    DrawReg("BC", regBC()); DrawReg("BC'", reg[ALTERNATIVE + REG::BC]);
+    DrawReg("DE", regDE()); DrawReg("DE'", reg[ALTERNATIVE + REG::DE]);
+    DrawReg("HL", regHL()); DrawReg("HL'", reg[ALTERNATIVE + REG::HL]);
+
+    pos += olc::vi2d(0, vStep.y);
+    DrawReg("SP", regSP()); DrawReg("IX'", regIX());
+    DrawReg("PC", regPC()); DrawReg("IY'", regIY());
+    DrawReg("I",  regI());  DrawReg("R",   regR());
+
+    pos = olc::vi2d(absolute.x, pos.y + vStep.y);
+    DrawFlag("C", flagC()); DrawFlag("N", flagN()); DrawFlag("PV", flagPV());
+    DrawFlag("H", flagH()); DrawFlag("Z", flagZ()); DrawFlag("S", flagS());
   }
 
   DisassembleT Disassemble();
+
   
+private:
+  void Runtime() {
+    while (bExec) {
+      if (cycles > 0 && cycles--) continue;
+
+      AnyType<-1, int32_t>::GetValue() = Read();
+      foreach<Instructions, CPU>::Key2Process(this);
+
+      if (mode != DEBUG) continue;
+      callback.second.notify_all();
+
+      std::unique_lock<std::mutex> lock(sync.first);
+      sync.second.wait(lock);
+    }
+  }
+
 private:
   uint8_t Read();
   inline uint16_t Word() { return Read() | (Read() << 8); }
@@ -70,6 +122,7 @@ private:
     Write(addr + 1, HIGH(data), mreq); Write(addr, LOW(data), mreq);
     return data;
   }
+
 
 public:
   template<int32_t T>
@@ -477,14 +530,14 @@ private:
   inline bool Call(bool flag, uint16_t addr) { if (flag) { Push(regPC()); regPC() = addr; } return flag; }
   inline bool Jump(bool flag, uint16_t addr) { if (flag) regPC() = addr; return flag; }
 
-  inline uint16_t& regAF() { return reg[REG::AF]; }
-  inline uint16_t& regBC() { return reg[REG::BC]; }
-  inline uint16_t& regDE() { return reg[REG::DE]; }
-  inline uint16_t& regHL() { return reg[REG::HL]; }
-  inline uint16_t& regIX() { return reg[REG::IX]; }
-  inline uint16_t& regIY() { return reg[REG::IY]; }
-  inline uint16_t& regSP() { return reg[REG::SP]; }
-  inline uint16_t& regPC() { return reg[REG::PC]; }
+  inline std::atomic<uint16_t>& regAF() { return reg[REG::AF]; }
+  inline std::atomic<uint16_t>& regBC() { return reg[REG::BC]; }
+  inline std::atomic<uint16_t>& regDE() { return reg[REG::DE]; }
+  inline std::atomic<uint16_t>& regHL() { return reg[REG::HL]; }
+  inline std::atomic<uint16_t>& regIX() { return reg[REG::IX]; }
+  inline std::atomic<uint16_t>& regIY() { return reg[REG::IY]; }
+  inline std::atomic<uint16_t>& regSP() { return reg[REG::SP]; }
+  inline std::atomic<uint16_t>& regPC() { return reg[REG::PC]; }
 
   inline uint8_t regA() { return HIGH(reg[REG::AF]); }
   inline uint8_t regB() { return HIGH(reg[REG::BC]); }
@@ -531,10 +584,41 @@ private:
    */
   inline bool IsParity(uint8_t x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (~x) & 1; }
 
-private:
-  uint32_t cycles = 0; // Show how many clock cycles are required to run specific command
+  inline std::string Int2Hex(int32_t i, int32_t width = 4) { 
+    std::stringstream ss; ss << std::setfill('0') << std::setw(width) << std::hex << std::uppercase << +i;
+    return ss.str();
+  }
 
-  std::array<uint16_t, 13> reg;
+public:
+  inline bool IsDebug() { return mode == DEBUG; }
+  inline void Debug() { mode = DEBUG; }
+  inline void Normal() { mode = NORMAL; sync.second.notify_all(); }
+
+  inline void Step() { if (mode == DEBUG) sync.second.notify_all(); }
+  inline uint16_t Addr() { 
+    std::unique_lock<std::mutex> lock(callback.first);
+    callback.second.wait(lock);
+
+    return regPC();
+  }
+
+private:
+  olc::vi2d size = olc::vi2d(0, 0);
+  olc::vi2d absolute = olc::vi2d(0, 0);
+
+  const olc::vi2d vStep = olc::vi2d(8, 12);
+  const olc::vi2d vOffset = olc::vi2d(24, 0);
+
+  uint32_t cycles = 0; // Show how many clock cycles are required to run specific command
+  std::atomic<ModeT> mode = NORMAL;
+
+  std::pair<std::mutex, std::condition_variable> sync;
+  std::pair<std::mutex, std::condition_variable> callback;
+
+  std::atomic<bool> bExec = true;
+  std::unique_ptr<std::thread> runtime = nullptr;
+
+  std::array<std::atomic<uint16_t>, 13> reg;
 
   Bus* bus;
 };

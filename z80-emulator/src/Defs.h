@@ -189,15 +189,25 @@ public:
 };
 
 enum Events {
+  ENTER_DEBUG_MODE_CALLBACK, EXIT_DEBUG_MODE_CALLBACK, NEXT_DEBUG_STEP_CALLBACK, DEBUG_RESET_CALLBACK,
+
   EDITOR_SELECT_CALLBACK, MEMORY_SELECT_CALLBACK, PANEL_SELECT_CALLBACK,
 };
 
 class PixelGameEngine : public olc::PixelGameEngine {
   public:
+  enum ModeT { NORMAL, DEBUG };
+
+  virtual void Event(Int2Type<ENTER_DEBUG_MODE_CALLBACK>) = 0;
+  virtual void Event(Int2Type<DEBUG_RESET_CALLBACK>) = 0;
+  virtual void Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>) = 0;
+  virtual void Event(Int2Type<EXIT_DEBUG_MODE_CALLBACK>) = 0;
 
   virtual void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d) = 0;
   virtual void Event(Int2Type<PANEL_SELECT_CALLBACK>, int32_t) = 0;
   virtual void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t) = 0;
+
+  virtual ModeT GetMode() = 0;
 
   void FillRectDither(olc::vi2d pos, olc::vi2d size, olc::Pixel color = olc::WHITE, int32_t scale = 1) {
     for (int32_t i = 0, k = 0; i < size.y; i += scale, k ^= 1) {

@@ -38,6 +38,14 @@ public:
   template<typename ...Args>
   Panel(Args ...args) { Init(args...); }
 
+
+  void Preinitialize() {
+    if (EXIST(bus))    PTR(bus)->Preinitialize();
+    if (EXIST(memory)) PTR(memory)->Preinitialize();
+    if (EXIST(lines))  PTR(lines)->Preinitialize();
+    if (EXIST(editor)) PTR(editor)->Preinitialize();
+  }
+
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second; bFullScreen = false;
 
@@ -47,6 +55,12 @@ public:
     if (EXIST(editor)) PTR(editor)->Initialize(DIMENSION(editor));
   }
 
+  void Preprocess() {
+    if (EXIST(bus))    PTR(bus)->Preprocess();
+    if (EXIST(memory)) PTR(memory)->Preprocess();
+    if (EXIST(lines))  PTR(lines)->Preprocess();
+    if (EXIST(editor)) PTR(editor)->Preprocess();
+  }
 
   void Process(PixelGameEngine* GameEngine) {
     // TODO: For some reason this, is much slower, maybe I'll use it in a future, ha pan not intended
@@ -56,9 +70,11 @@ public:
     // if (editor.first != nullptr) vFuture.push_back(std::async(&Editor::Editor::Process, editor.first, GameEngine)); 
 
     // for(auto& future : vFuture) future.wait();
+    bUpdated = false;
 
     Process(Int2Type<NORMAL>(), GameEngine);
     if (mode == COMMAND) { if (!cmd.size()) mode = NORMAL; return; }
+
 
     if (SELECTED(bus))    PTR(bus)->Process(GameEngine);
     if (SELECTED(memory)) PTR(memory)->Process(GameEngine);
@@ -92,6 +108,20 @@ public:
     if (cmd.back() == 'q') Draw(Int2Type<Editor::VimT::CMD_q>(), GameEngine);
   }
 
+  void Lock() {
+    if (EXIST(bus))    PTR(bus)->Lock();
+    if (EXIST(memory)) PTR(memory)->Lock();
+    if (EXIST(lines))  PTR(lines)->Lock();
+    if (EXIST(editor)) PTR(editor)->Lock();
+  }
+
+  void Unlock() {
+    if (EXIST(bus))    PTR(bus)->Unlock();
+    if (EXIST(memory)) PTR(memory)->Unlock();
+    if (EXIST(lines))  PTR(lines)->Unlock();
+    if (EXIST(editor)) PTR(editor)->Unlock();
+  }
+
 private:
   void Draw(Int2Type<Editor::VimT::CMD_q>, PixelGameEngine* GameEngine) {
     auto index = [&](auto tuple) {
@@ -120,6 +150,14 @@ public:
     // TODO: Add menu property
   }
 
+  inline void Command(Int2Type<Editor::VimT::CMD_SPACE>) {
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<ENTER_DEBUG_MODE_CALLBACK>()); 
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_d>) {
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EXIT_DEBUG_MODE_CALLBACK>()); 
+  }
+
   inline void Command(Int2Type<Editor::VimT::CMD_NUMBER>) {
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), digit()); 
   }
@@ -140,18 +178,28 @@ public:
     else bUpdated = false;
     
     #ifdef DEBUG_MODE
-    if (mode == COMMAND) printf("Panel: %s\n", cmd.c_str());
+    if (mode == COMMAND) printf("Panel: '%s'\n", cmd.c_str());
     #endif
 
     if (nCurr == 0) {
       if (cmd.size() > 1 && match<1>({ '^' })) {
         if (match<1>({ ' ' })) { mode = COMMAND; return; }
+        if (peek() == 'r' && GameEngine->GetMode() == PixelGameEngine::DEBUG) {
+          mode = COMMAND;  GameEngine->Event(Int2Type<DEBUG_RESET_CALLBACK>());
+        }
       }
 
-      reset(false);
+      if (peek() == ' ' && GameEngine->GetMode() == PixelGameEngine::DEBUG) {
+        mode = COMMAND;
+        std::thread p([=]() { GameEngine->Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>()); }); p.detach();
+      }
+
+      return reset(false);
     } 
 
     // noun
+    if (match<1>({ ' ' })) { phrase(Int2Type<Editor::VimT::CMD_SPACE>()); return reset(); } 
+    if (match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_d>()); return reset(); } 
     if (match<1>({ 'z' })) { phrase(Int2Type<Editor::VimT::CMD_z>()); return reset(); } 
     if (match<1>({ '?' })) { phrase(Int2Type<Editor::VimT::CMD_QUESTION>()); return reset(); } 
 

@@ -37,6 +37,9 @@ public:
   inline uint8_t Read(uint32_t addr, bool) { return memory[addr & (uint32_t)(memory.size() - 1)]; }
   inline uint8_t Write(uint32_t addr, uint8_t data, bool) { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
+  // TODO: Load disassembler here
+  void Preinitialize() {}
+
   // TODO: Maybe add ability to set local state with initialization
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset.first;
@@ -44,6 +47,27 @@ public:
     pages.x = 1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.first.x));
     pages.y = ((size.y - vOffset.first.y * 2) / (vStep.first.y * pages.x)) * pages.x;
     Index2Pos(index());
+  }
+
+  inline void Lock() { 
+    locked = true;
+
+    switch (mode) {
+      case REPLACE: mode = NORMAL;
+      case NORMAL: case CHARACTER: case DISASSEMBLE: break;
+    }
+  }
+
+  inline void Unlock() { locked = false; }
+
+
+  void Preprocess() {
+    switch (mode) {
+      case NORMAL:      return Preprocess(Int2Type<NORMAL>());
+      case CHARACTER:   return Preprocess(Int2Type<NORMAL>());
+      case DISASSEMBLE: return Preprocess(Int2Type<DISASSEMBLE>()); 
+      case REPLACE:     return Preprocess(Int2Type<NORMAL>());
+    }
   }
 
   void Process(PixelGameEngine* GameEngine) {
@@ -54,28 +78,13 @@ public:
     auto mouse = GameEngine->GetMousePos() - (mode == DISASSEMBLE ? vOffset.second : vOffset.first);
     auto nWidth = (mode == CHARACTER ? vStep.first.y : vStep.first.x) * pages.x;
 
-    switch (mode) {
-      case NORMAL:
-      case CHARACTER: 
-        if ((mode == NORMAL || mode == CHARACTER) && GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + nWidth && mouse.y < absolute.y + pages.y * vStep.first.y) {
-          MoveTo((mouse - absolute) / olc::vi2d(mode == CHARACTER ? vStep.first.y : vStep.first.x, vStep.first.y) + vStartAt.first - pos);
-          Command(Int2Type<Editor::VimT::CMD_gd>());
-        }
-
-        if (pos.y - vStartAt.first.y >= pages.y && pos.y < (((int32_t)memory.size() - 1) / pages.x)) vStartAt.first.y += pages.y;
-        if (pos.y - vStartAt.first.y < 0 && pos.y) vStartAt.first.y -= pages.y;
-        break;
-
-      case DISASSEMBLE: 
-        if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x && mouse.y < absolute.y + size.y) {
-          auto addr = Line2Index((mouse.y - absolute.y) / vStep.second.y + vStartAt.second.y - 1);
-          Index2Pos(addr); cursor.y = dasm.second[addr];
-        }
-
-        if (cursor.y - vStartAt.second.y + 3 >  (size.y + vOffset.second.y) / vStep.second.y && cursor.y < LINES_SIZE) vStartAt.second.y++;
-        if ((cursor.y - vStartAt.second.y - 1 < 0 && cursor.y) || (!cursor.y && cursor.y != vStartAt.second.y)) vStartAt.second.y--;
+    if ((mode == NORMAL || mode == CHARACTER) && GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + nWidth && mouse.y < absolute.y + pages.y * vStep.first.y) {
+      MoveTo((mouse - absolute) / olc::vi2d(mode == CHARACTER ? vStep.first.y : vStep.first.x, vStep.first.y) + vStartAt.first - pos);
+      Command(Int2Type<Editor::VimT::CMD_gd>());
+    } else if (mode == DISASSEMBLE && GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x && mouse.y < absolute.y + size.y) {
+      auto addr = Line2Index((mouse.y - absolute.y) / vStep.second.y + vStartAt.second.y - 1);
+      Index2Pos(addr); cursor.y = dasm.second[addr];
     }
-
 
     bUpdated = false;
 
@@ -198,6 +207,16 @@ private:
         GameEngine->DrawString(line, str, ~AnyType<GREY, ColorT>::GetValue());
       } else GameEngine->DrawString(line, str, ~AnyType<DARK_GREY, ColorT>::GetValue());
     }
+  }
+
+  inline void Preprocess(Int2Type<NORMAL>) {
+    if (pos.y - vStartAt.first.y >= pages.y && pos.y < (((int32_t)memory.size() - 1) / pages.x)) vStartAt.first.y += pages.y;
+    if (pos.y - vStartAt.first.y < 0 && pos.y) vStartAt.first.y -= pages.y;
+  }
+
+  inline void Preprocess(Int2Type<DISASSEMBLE>) {
+    if (cursor.y - vStartAt.second.y + 3 >  (size.y + vOffset.second.y) / vStep.second.y && cursor.y < LINES_SIZE) vStartAt.second.y++;
+    if ((cursor.y - vStartAt.second.y - 1 < 0 && cursor.y) || (!cursor.y && cursor.y != vStartAt.second.y)) vStartAt.second.y--;
   }
 
 public:
@@ -483,7 +502,7 @@ private:
     else bUpdated = false;
     
     #ifdef DEBUG_MODE
-    printf("Memory: %s\n", cmd.c_str());
+    printf("Memory: '%s'\n", cmd.c_str());
     #endif
 
     if (search.first) {
@@ -533,7 +552,7 @@ private:
     if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_dd>(), false); number(); return reset(); } 
     if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<Editor::VimT::CMD_yy>(), false); number(); return reset(); } 
     if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_gd>(), false); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<Editor::VimT::CMD_gg>()); number();  verb(peek(nCurr - 3)); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<Editor::VimT::CMD_gg>(), true, true); number();  verb(peek(nCurr - 3)); return reset(); } 
 
     // verb
     if (match<4>({ 'c', 'd', 'y', 'g' })) return;
@@ -550,17 +569,19 @@ private:
   inline void phrase(const char c) {
     AnyType<-1, int32_t>::GetValue() = c;
     bSync = bSync || foreach<SyncMemoryCommands, AnyType<-1, int32_t>>::Has();
-
+    
     auto operation = lambda;
-    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<MemoryCommands, Memory>::Command(this); };
+    if (locked && foreach<LockedMemoryCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
+    else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<MemoryCommands, Memory>::Command(this); };
   }
 
   template<int32_t T>
-  inline void phrase(Int2Type<T> val, bool isSync = true) {
+  inline void phrase(Int2Type<T> val, bool isSync = true, bool forced = false) {
     bSync = bSync || isSync;
 
     auto operation = lambda;
-    lambda = [=]() { operation(); Command(val); };
+    if (locked && !forced) lambda = []() {};
+    else lambda = [=]() { operation(); Command(val); };
   }
 
   inline void reset(bool exec = true) {
@@ -809,6 +830,8 @@ private:
   const std::pair<olc::vi2d, olc::vi2d> vOffset = std::pair(olc::vi2d(44, 12), olc::vi2d(24, 0));
 
   ModeT mode = NORMAL;
+  bool locked = false;
+
   std::vector<uint8_t> buffer = { }; 
   
 

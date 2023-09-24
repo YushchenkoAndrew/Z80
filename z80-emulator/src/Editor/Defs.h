@@ -78,16 +78,16 @@ typedef TypeList<
   TypeList<Int2Type<olc::Key::NP9>, Int2Type<'9'>>, TypeList<
 
   TypeList<Int2Type<olc::Key::TAB>, Int2Type<'\t'>>, TypeList<
-  TypeList<Int2Type<olc::Key::BACK>, Int2Type<' '>>, TypeList<
-  TypeList<Int2Type<olc::Key::DEL>, Int2Type<' '>>, TypeList<
+  TypeList<Int2Type<olc::Key::BACK>, Int2Type<'\0'>>, TypeList<
+  TypeList<Int2Type<olc::Key::DEL>, Int2Type<'\0'>>, TypeList<
   TypeList<Int2Type<olc::Key::SPACE>, Int2Type<' '>>, TypeList<
   TypeList<Int2Type<olc::Key::ENTER>, Int2Type<'\n'>>, TypeList<
-  TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<' '>>, TypeList<
+  TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<'\0'>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::UP>, Int2Type<' '>>, TypeList<
-  TypeList<Int2Type<olc::Key::DOWN>, Int2Type<' '>>, TypeList<
-  TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<' '>>, TypeList<
-  TypeList<Int2Type<olc::Key::LEFT>, Int2Type<' '>>, TypeList<
+  TypeList<Int2Type<olc::Key::UP>, Int2Type<'\0'>>, TypeList<
+  TypeList<Int2Type<olc::Key::DOWN>, Int2Type<'\0'>>, TypeList<
+  TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<'\0'>>, TypeList<
+  TypeList<Int2Type<olc::Key::LEFT>, Int2Type<'\0'>>, TypeList<
 
   TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<';'>>, TypeList<
   TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<'/'>>, TypeList<
@@ -144,7 +144,6 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_u>,  Int2Type<'u'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_U>,  Int2Type<'U'>>, TypeList<
 
-  TypeList<Int2Type<VimT::CMD_SPACE>,      Int2Type<' '>>, TypeList<
   TypeList<Int2Type<VimT::CMD_SQUIGGLE>,   Int2Type<'~'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_DOLLAR>,     Int2Type<'$'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_CARET>,      Int2Type<'^'>>, TypeList<
@@ -152,7 +151,7 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_SLASH>,      Int2Type<'/'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_QUESTION>,   Int2Type<'?'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_COMMA>,      Int2Type<','>>, TypeList<
-  TypeList<Int2Type<VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<Int2Type<VimT::CMD_SEMICOLON>,  Int2Type<';'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    VimCommands; 
   
 typedef TypeList<
@@ -170,6 +169,30 @@ typedef TypeList<
   TypeList<Int2Type<VimT::CMD_p>, Int2Type<'p'>>, TypeList<
   TypeList<Int2Type<VimT::CMD_P>, Int2Type<'P'>>, NullType>>>>>>>>>>>
    SyncVimCommands; 
+
+typedef TypeList<
+  TypeList<Int2Type<VimT::CMD_i>, Int2Type<'i'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_I>, Int2Type<'I'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_a>, Int2Type<'a'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_A>, Int2Type<'A'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_o>, Int2Type<'o'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_O>, Int2Type<'O'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_r>, Int2Type<'r'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_R>, Int2Type<'R'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_p>, Int2Type<'p'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_P>, Int2Type<'P'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_C>, Int2Type<'C'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_D>, Int2Type<'D'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_x>, Int2Type<'x'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_d>,  Int2Type<'d'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_c>,  Int2Type<'c'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_y>,  Int2Type<'y'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_u>,  Int2Type<'u'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_U>,  Int2Type<'U'>>, TypeList<
+
+  TypeList<Int2Type<VimT::CMD_SQUIGGLE>,   Int2Type<'~'>>, TypeList<
+  TypeList<Int2Type<VimT::CMD_UNDERLINE>,  Int2Type<'_'>>, NullType>>>>>>>>>>>>>>>>>>>>
+   LockedVimCommands; 
    
 
 };

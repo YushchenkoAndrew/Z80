@@ -15,25 +15,33 @@ public:
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
   }
 
-  void Process(PixelGameEngine* GameEngine) {
-    auto nWheel = GameEngine->GetMouseWheel();
-    if (nWheel > 0) vim.MoveTo({ 0, -1 });
-    else if (nWheel < 0) vim.MoveTo({ 0, 1 });
+  void Lock() { vim.Lock(); }
+  void Unlock() { vim.Unlock(); }
 
-    auto vMax = size / vStep;
-    auto cursor = vim.GetPos();
-
-    auto mouse = GameEngine->GetMousePos() - vOffset;
-    if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x && mouse.y < absolute.y + size.y) {
-      vim.MoveTo((mouse - absolute) / vStep + vStartAt - vim.GetPos() - olc::vi2d(1 , 1));
-    }
+  void Preprocess() {
+    const auto vMax = size / vStep;
+    const auto cursor = vim.GetPos();
 
     if (cursor.y - vStartAt.y + 3 > vMax.y && cursor.y < vim.GetLineSize()) vStartAt.y++;
     if ((cursor.y - vStartAt.y - 1 < 0 && cursor.y) || (!cursor.y && cursor.y != vStartAt.y)) vStartAt.y--;
 
     if (cursor.x - vStartAt.x + 3 > vMax.x && cursor.x < vim.GetLineSize(cursor.y)) vStartAt.x++;
     if ((cursor.x - vStartAt.x - 1 < 0 && cursor.x) || (!cursor.x && cursor.x != vStartAt.x)) vStartAt.x--;
-      
+  }
+
+  void Process(PixelGameEngine* GameEngine) {
+    auto nWheel = GameEngine->GetMouseWheel();
+    if (nWheel > 0) vim.MoveTo({ 0, -1 });
+    else if (nWheel < 0) vim.MoveTo({ 0, 1 });
+
+    const auto vMax = size / vStep;
+    const auto cursor = vim.GetPos();
+
+    auto mouse = GameEngine->GetMousePos() - vOffset;
+    if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x && mouse.y < absolute.y + size.y) {
+      vim.MoveTo((mouse - absolute) / vStep + vStartAt - vim.GetPos() - olc::vi2d(1 , 1));
+    }
+
     vim.Process(GameEngine);
 
     if (!vim.bUpdated) return;

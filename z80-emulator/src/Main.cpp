@@ -47,8 +47,6 @@ public:
     // }
 
 
-    auto bus = std::make_shared<Bus::Bus>();
-
     // auto rom = bus->W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
     bus->W27C512->load(interpreter.env.memory);
@@ -83,7 +81,7 @@ public:
       )
     };
 
-
+    for (auto& p : panels) p.Preinitialize();
     panels[nPanel].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
 
@@ -93,6 +91,8 @@ public:
   bool OnUserUpdate(float fElapsedTime) override {
 	  Clear(~AnyType<Colors::BLACK, ColorT>::GetValue());
     AnyType<-1, float>::GetValue() = fElapsedTime;
+
+    panels[nPanel].Preprocess();
 
     // AnyType<-2, float>::GetValue() += fElapsedTime;
     panels[nPanel].Process(this);
@@ -121,6 +121,63 @@ public:
     // // mMinecraft.Draw(*this, fElapsedTime);
     // // return mMinecraft.IsFinished();
     return true;
+  }
+
+  ModeT GetMode() override { return bus->Z80->IsDebug() ? DEBUG : NORMAL; }
+
+  void Event(Int2Type<ENTER_DEBUG_MODE_CALLBACK>) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "ENTER_DEBUG_MODE_CALLBACK\n";
+    #endif
+
+    bus->Z80->Debug();
+
+    for (auto& p : panels) p.Lock();
+    Event(Int2Type<DEBUG_RESET_CALLBACK>());
+  }
+
+  void Event(Int2Type<DEBUG_RESET_CALLBACK>) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "DEBUG_RESET_CALLBACK\n";
+    #endif
+
+    bus->Z80->Reset();
+  }
+
+
+  void Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "NEXT_DEBUG_STEP_CALLBACK\n";
+    #endif
+
+    if (!bus->Z80->IsDebug()) return;
+    else bus->Z80->Step();
+
+    const uint32_t addr = bus->Z80->Addr();
+    std::pair<uint32_t, std::shared_ptr<Interpreter::Token>> next = std::pair(0, nullptr);
+
+    for (auto& pos : interpreter.env.tokens) {
+      if (
+        pos.first <= addr && (
+          next.second == nullptr || 
+          (pos.second->line >= next.second->line && pos.second->col >= next.second->col)
+      )) next = pos;
+    }
+
+    if (next.second == nullptr) return;
+
+    Panel& p = panels[nPanel];
+    if (p.Editor() != nullptr) p.Editor()->MoveTo(olc::vi2d(next.second->col - 1, next.second->line - 1));
+    if (p.Memory() != nullptr) p.Memory()->Move2Addr(next.first);
+  }
+
+  void Event(Int2Type<EXIT_DEBUG_MODE_CALLBACK>) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "EXIT_DEBUG_MODE_CALLBACK\n";
+    #endif
+
+    bus->Z80->Normal();
+    for (auto& p : panels) p.Unlock();
   }
 
   void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d cursor) override {
@@ -175,6 +232,7 @@ private:
   int32_t nPanel = 0;
   std::array<Panel, 2> panels;
   Interpreter::Interpreter interpreter;
+  std::shared_ptr<Bus::Bus> bus = std::make_shared<Bus::Bus>();
 
   LuaScript& luaConfig;
 };

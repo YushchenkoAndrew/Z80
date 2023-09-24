@@ -21,6 +21,17 @@ class Vim : public Window::Command {
 public:
   enum ModeT { NORMAL, INSERT, REPLACE };
 
+  inline void Lock() { 
+    locked = true;
+
+    switch (mode) {
+      case NORMAL: break;
+      case INSERT: case REPLACE: mode = NORMAL; break;
+    }
+  }
+
+  inline void Unlock() { locked = false; }
+
   void Process(PixelGameEngine* GameEngine) {
     bUpdated = false;
 
@@ -449,7 +460,7 @@ public:
     else bUpdated = false;
     
     #ifdef DEBUG_MODE
-    printf("Vim: %s %s\n", cmd.c_str(), err.c_str());
+    printf("Vim: '%s' %s\n", cmd.c_str(), err.c_str());
     #endif
 
     err.clear(); 
@@ -526,15 +537,17 @@ public:
     bSync = bSync || foreach<SyncVimCommands, AnyType<-1, int32_t>>::Has();
 
     auto operation = lambda;
-    lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, Vim>::Command(this); };
+    if (locked && foreach<LockedVimCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
+    else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, Vim>::Command(this); };
   }
 
   template<int32_t T>
-  inline void phrase(Int2Type<T> val, bool isSync = true) {
+  inline void phrase(Int2Type<T> val, bool isSync = true, bool forced = false) {
     bSync = bSync || isSync;
 
     auto operation = lambda;
-    lambda = [=]() { operation(); Command(val); };
+    if (locked && !forced) lambda = []() {};
+    else lambda = [=]() { operation(); Command(val); };
   }
 
   inline void reset(bool exec = true) {
@@ -790,6 +803,7 @@ private:
 
 private:
   ModeT mode = NORMAL;
+  bool locked = false;
 
   std::list<std::string> history = {};
 

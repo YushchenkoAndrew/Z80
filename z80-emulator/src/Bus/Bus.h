@@ -23,12 +23,30 @@ public:
     W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
     IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)) {}
 
+  void Preinitialize() {
+    led->Preinitialize();
+    switches->Preinitialize();
+    hexDisplay->Preinitialize();
+
+    Z80->Preinitialize(); W27C512->Preinitialize(); 
+  }
+
   void Initialize(DimensionT dimensions) {
 
     // TODO: Design and draw bus as PCB
     led->Initialize(std::pair(olc::vi2d(10, 10), olc::vi2d(0, 0)));
     switches->Initialize(std::pair(olc::vi2d(10, 25), olc::vi2d(0, 0)));
     hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), olc::vi2d(0, 0)));
+
+    Z80->Initialize(std::pair(olc::vi2d(150, 20), olc::vi2d(0, 0)));
+  }
+
+  void Preprocess() {
+    led->Preprocess();
+    switches->Preprocess();
+    hexDisplay->Preprocess();
+
+    Z80->Preprocess();
   }
 
   void Process(PixelGameEngine* GameEngine) {
