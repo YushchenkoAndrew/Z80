@@ -51,7 +51,6 @@ public:
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
   }
 
-  // TODO:
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
@@ -102,6 +101,7 @@ private:
 
       AnyType<-1, int32_t>::GetValue() = Read();
       foreach<Instructions, CPU>::Key2Process(this);
+      std::this_thread::sleep_for(std::chrono::milliseconds(2));
 
       if (mode != DEBUG) continue;
       callback.second.notify_all();
