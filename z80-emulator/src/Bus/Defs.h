@@ -38,7 +38,7 @@ enum Instruction {
     RET_NZ,  POP_BC,     JP_NZ_NN,  JP_NN,    CALL_NZ_NN, PUSH_BC, ADD_A_N,  RST_00h, RET_Z,     RET,         JP_Z_NN,   BIT_INSTR, CALL_Z_NN,  CALL_NN,    ADC_A_N,  RST_08h,
     RET_NC,  POP_DE,     JP_NC_NN,  OUT_n_A,  CALL_NC_NN, PUSH_DE, SUB_N,    RST_10h, RET_C,     EXX,         JP_C_NN,   IN_A_n,    CALL_C_NN,  IX_INSTR,   SBC_A_N,  RST_18h,
     RET_PO,  POP_HL,     JP_PO_NN,  EX_sp_HL, CALL_PO_NN, PUSH_HL, AND_N,    RST_20h, RET_PE,    JP_hl,       JP_PE_NN,  EX_DE_HL,  CALL_PE_NN, MISC_INSTR, XOR_N,    RST_28h,
-    RET_P,   POP_AF,     JP_P_NN,   DI,       CALL_P_NN,  PUSH_AF, OR_N,     RST_30h, RET_M,     JP_SP_HL,    JP_M_NN,   EI,        CALL_M_NN,  IY_INSTR,   CP_N,     RST_38h,
+    RET_P,   POP_AF,     JP_P_NN,   DI,       CALL_P_NN,  PUSH_AF, OR_N,     RST_30h, RET_M,     LD_SP_HL,    JP_M_NN,   EI,        CALL_M_NN,  IY_INSTR,   CP_N,     RST_38h,
 };
 
 /**
@@ -217,7 +217,7 @@ typedef TypeList<
   TypeList<AnyType<Instruction::RET_Z,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::RET,       InstrSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<Instruction::RET_C,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::EXX,       InstrSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<Instruction::RET_PE,    InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::JP_hl,     InstrSTR>, Int2Type<1>>, TypeList<
-  TypeList<AnyType<Instruction::RET_M,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::JP_SP_HL,  InstrSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<Instruction::RET_M,     InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::LD_SP_HL,  InstrSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<Instruction::LD_A_bc,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_BC,    InstrSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<Instruction::LD_A_de,   InstrSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<Instruction::DEC_DE,    InstrSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<Instruction::LD_HL_nn,  InstrSTR>, Int2Type<3>>, TypeList<TypeList<AnyType<Instruction::DEC_HL,    InstrSTR>, Int2Type<1>>, TypeList<
@@ -682,7 +682,7 @@ public:
     AnyType<Z80::RET_Z,    Z80::InstrSTR>::GetValue() = "RET Z";             AnyType<Z80::RET,       Z80::InstrSTR>::GetValue() = "RET";
     AnyType<Z80::RET_C,    Z80::InstrSTR>::GetValue() = "RET C";             AnyType<Z80::EXX,       Z80::InstrSTR>::GetValue() = "EXX";
     AnyType<Z80::RET_PE,   Z80::InstrSTR>::GetValue() = "RET PE";            AnyType<Z80::JP_hl,     Z80::InstrSTR>::GetValue() = "JP (HL)";
-    AnyType<Z80::RET_M,    Z80::InstrSTR>::GetValue() = "RET M";             AnyType<Z80::JP_SP_HL,  Z80::InstrSTR>::GetValue() = "JP SP, HL";
+    AnyType<Z80::RET_M,    Z80::InstrSTR>::GetValue() = "RET M";             AnyType<Z80::LD_SP_HL,  Z80::InstrSTR>::GetValue() = "LD SP, HL";
 
 
     AnyType<Z80::LD_A_bc,  Z80::InstrSTR>::GetValue() = "LD A, (BC)";        AnyType<Z80::DEC_BC,    Z80::InstrSTR>::GetValue() = "DEC BC";
