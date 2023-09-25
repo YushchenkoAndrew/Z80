@@ -247,6 +247,11 @@ public:
     return {};
   }
 
+  MemoryT visitStmtInclude(StatementInclude * stmt) override { 
+    // TODO: Impl this
+    return {};
+  }
+
 private:
   inline MemoryT evaluate(Expression* expr) {
     return expr->accept(this);

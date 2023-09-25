@@ -17,6 +17,7 @@ class StatementLambda;
 class StatementNoArgCommand;
 class StatementOneArgCommand;
 class StatementVariable;
+class StatementInclude;
 
 class Visitor {
 public:
@@ -31,6 +32,7 @@ public:
   virtual MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) { return {}; }
   virtual MemoryT visitStmtOneArg(StatementOneArgCommand* stmt) { return {}; }
   virtual MemoryT visitStmtVariable(StatementVariable* stmt) { return {}; }
+  virtual MemoryT visitStmtInclude(StatementInclude * stmt) { return {}; }
 
   virtual MemoryT visitExprUnknown(Expression* expr) { return {}; }
 };

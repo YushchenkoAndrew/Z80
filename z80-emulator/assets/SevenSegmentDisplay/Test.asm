@@ -31,45 +31,43 @@ SETUP:
   ; ##################    MAIN     ####################
   ; ###################################################
 MAIN:
-  IN A, (0x00)
-  OUT (0x00), A
-  CALL DISPLAY_BYTE
+  IN A, (LED_PORT)
+  OUT (LED_PORT), A
 
-
-  ;; LD D, 0xFF
-  ;; CALL DELAY
+  PUSH AF     ;; Send arg to func
+  CALL _HEX   ;; Display value in hex display
   JP MAIN
 
-GET_NUM:
-  LD BC, 0x00        ;; Reset reg BC value
-  LD HL, NUM        ;; Get addr of NUM
-  AND 0x0F          ;; Get only low bites
-  LD C, A            ;; Set addr offset for NUM
-  ADD HL, BC        ;; Get the correct pointer position
-  LD A, (HL)        ;; Get the value
+;; Funcion HEX(arg) exptects value to display to be in high byte
+_HEX:
+  POP DE     ;; Get return addr
+  POP AF     ;; Get value to display
+  PUSH DE    ;; Restore return addr
+
+  LD D, 0x80 ;; Set count & mask at the same time
+  LD E, A    ;; Save value in reg C
+  LD B, 0    ;; Reset reg B
+
+  RRCA       ;; Move A0 -> A7
+  RRCA       ;; Move A0 -> A7
+  RRCA       ;; Move A0 -> A7
+  RRCA       ;; Move A0 -> A7
+
+_HEX_lp:
+  AND 0x0F   ;; Now just get low portion
+  LD C, A    ;; Load high bit
+  LD HL, _HEX_DB ;; Load start addr of db
+  ADD HL, BC ;; Addr + offset
+
+  LD A, (HL) ;; Load appropriet value
+  OR D       ;; Apply mask to the value
+  OUT (HEX_PORT), A ;; Display segment
+
+  LD A, E    ;; Load saved reg C value
+  SLA D      ;; Dec a loop counter
+  JP C, _HEX_lp
   RET
 
-
-DISPLAY_BYTE:
-  LD D, A            ;; Save reg 'A' value in reg 'D'
-
-  CALL GET_NUM      ;; Input/Output value is located in reg 'A'
-  OUT (0x10), A      ;; Show LOW bites
-
-  LD A, D            ;; Restore save value
-
-  ;; Shift Reg by 4 bit
-  RR A
-  RR A
-  RR A
-  RR A
-
-  CALL GET_NUM      ;; Input/Output value is located in reg 'A'
-  OR 0x80            ;; Set to show in second display
-  OUT (0x10), A      ;; Show HIGHT bites
-
-  LD A, D
-  RET
 
 DELAY:
   NOP
@@ -83,7 +81,9 @@ DELAY:
   RET
 
 ; Variables name
-STACK          EQU 0x4FFF
+STACK          EQU 0x5FFF
+LED_PORT       EQU 0x00
+HEX_PORT       EQU 0x10
 
-NUM:      ; This array of values need for display HEX number
+_HEX_DB:      ; This array of values need for display HEX number
   db 0x40, 0x79, 0x24, 0x30, 0x19, 0x12, 0x02, 0x78, 0x00, 0x10, 0x08, 0x03, 0x46, 0x21, 0x06, 0x0E

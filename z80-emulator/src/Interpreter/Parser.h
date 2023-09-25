@@ -10,6 +10,7 @@ namespace Interpreter {
  * Grammar:
  *  program     -> declaration* EOF
  *  declaration -> variable | func | statement
+ *  include     -> '#' IDENTIFIER '(' STRING ')'
  *  variable    -> IDENTIFIER 'EQU' term 
  *  func        -> IDENTIFIER ':'
  *  statement   -> COMMAND (expression)?  // NOTE: Grammar for each command will be hardcoded based on manual, this grammar is just a common example
@@ -60,6 +61,12 @@ private:
 
       error(advance(), "Unknown token.");
       return std::make_shared<Statement>();
+    } else if (match<1>({ TokenT::HASH })) {
+      if (advance()->lexeme == "include") error(peekPrev(), "Expected 'include' keyword.");
+      consume(TokenT::LEFT_BRACE, "Expect '(' before expression.");
+      auto expr = literal();
+      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+      return std::make_shared<StatementInclude>(expr);
     }
 
     return statement();
@@ -516,23 +523,23 @@ public:
       return stmt;
     }
 
-    if (!match<8>({ TokenT::FLAG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
-      return std::make_shared<StatementOneArgCommand>(0xC3, cmd, literal(2));
-    }
+    if (match<9>({ TokenT::REG_C, TokenT::FLAG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
+      std::shared_ptr<Token> flag = peekPrev();
+      consume(TokenT::COMMA, "Expect ',' after first expression.");
 
-    std::shared_ptr<Token> flag = peekPrev();
-    consume(TokenT::COMMA, "Expect ',' after first expression.");
+      switch(flag->token) {
+        case TokenT::REG_C:
+        case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DA, cmd, literal(2));
+        case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FA, cmd, literal(2));
+        case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D2, cmd, literal(2));
+        case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C2, cmd, literal(2));
+        case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F2, cmd, literal(2));
+        case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EA, cmd, literal(2));
+        case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E2, cmd, literal(2));
+        case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CA, cmd, literal(2));
+      }
+    } else return std::make_shared<StatementOneArgCommand>(0xC3, cmd, literal(2));
 
-    switch(flag->token) {
-      case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DA, cmd, literal(2));
-      case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FA, cmd, literal(2));
-      case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D2, cmd, literal(2));
-      case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C2, cmd, literal(2));
-      case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F2, cmd, literal(2));
-      case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EA, cmd, literal(2));
-      case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E2, cmd, literal(2));
-      case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CA, cmd, literal(2));
-    }
 
     return std::make_shared<Statement>();
   }
