@@ -8,6 +8,8 @@ namespace Bus {
 #define IMS1423_SIZE  4096 * 2
 #define KM28C17_SIZE  2048
 
+#define LCD_SEGMENT_SIZE 5
+
 class Bus;
 
 
@@ -117,7 +119,7 @@ enum IyBitInstruction {
  * All of those instructions start with code 0xED
  */
 enum MiscInstruction {
-  IN_B_c = 0x40,    OUT_c_B = 0x41,  SBC_HL_BC = 0x42, LD_nn_BC = 0x43, NEG = 0x44,       RETN = 0x45,     IM_0 = 0x46,       LD_I_A = 0x47,  IN_C_c = 0x48,    OUT_c_C = 0x49,  ADC_HL_BC = 0x4A, LD_BC_nn = 0x4B, RTI = 0x4D, LD_R_A = 0x4F,
+  IN_B_c = 0x40,    OUT_c_B = 0x41,  SBC_HL_BC = 0x42, LD_nn_BC = 0x43, NEG = 0x44,       RETN = 0x45,     IM_0 = 0x46,       LD_I_A = 0x47,  IN_C_c = 0x48,    OUT_c_C = 0x49,  ADC_HL_BC = 0x4A, LD_BC_nn = 0x4B, RETI = 0x4D, LD_R_A = 0x4F,
   IN_D_c = 0x50,    OUT_c_D = 0x51,  SBC_HL_DE = 0x52, LD_nn_DE = 0x53, IM_1 = 0x56,      LD_A_I = 0x57,   IN_E_c = 0x58,     OUT_c_E = 0x59, ADC_HL_DE = 0x5A, LD_DE_nn = 0x5B, IM_2 = 0x5E,      LD_A_R = 0x5F,
   IN_H_c = 0x60,    OUT_c_H = 0x61,  SBC_HL_HL = 0x62, RRD = 0x67,      IN_L_c = 0x68,    OUT_c_L = 0x69,  ADC_HL_HL = 0x6A, RLD = 0x6F,
   SBC_HL_SP = 0x72, LD_nn_SP = 0x73, IN_A_c = 0x78,    OUT_c_A = 0x79,  ADC_HL_SP = 0x7A, LD_SP_nn = 0x7B,
@@ -503,7 +505,7 @@ typedef TypeList<
   TypeList<AnyType<MiscInstruction::ADC_HL_HL, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::RLD,      MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::IN_C_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_C,  MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::ADC_HL_BC, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_BC_nn, MiscSTR>, Int2Type<3>>, TypeList<
-  TypeList<AnyType<MiscInstruction::RTI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_R_A,   MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::RETI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_R_A,   MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::ADC_HL_DE, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_DE_nn, MiscSTR>, Int2Type<3>>, TypeList<
   TypeList<AnyType<MiscInstruction::IM_2,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_A_R,   MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::LDI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::CPI,      MiscSTR>, Int2Type<1>>, TypeList<
@@ -984,7 +986,7 @@ public:
     AnyType<Z80::ADC_HL_HL, Z80::MiscSTR>::GetValue() = "ADC HL, HL"; AnyType<Z80::RLD,      Z80::MiscSTR>::GetValue() = "RLD";
     AnyType<Z80::IN_C_c,    Z80::MiscSTR>::GetValue() = "IN C, (C)";  AnyType<Z80::OUT_c_C,  Z80::MiscSTR>::GetValue() = "OUT (C), C";
     AnyType<Z80::ADC_HL_BC, Z80::MiscSTR>::GetValue() = "ADC HL, BC"; AnyType<Z80::LD_BC_nn, Z80::MiscSTR>::GetValue() = "LD BC, (0x%04x)";
-    AnyType<Z80::RTI,       Z80::MiscSTR>::GetValue() = "RTI";        AnyType<Z80::LD_R_A,   Z80::MiscSTR>::GetValue() = "LD R, A";
+    AnyType<Z80::RETI,      Z80::MiscSTR>::GetValue() = "RETI";       AnyType<Z80::LD_R_A,   Z80::MiscSTR>::GetValue() = "LD R, A";
     AnyType<Z80::ADC_HL_DE, Z80::MiscSTR>::GetValue() = "ADC HL, DE"; AnyType<Z80::LD_DE_nn, Z80::MiscSTR>::GetValue() = "LD DE, (0x%04x)";
     AnyType<Z80::IM_2,      Z80::MiscSTR>::GetValue() = "IM 2";       AnyType<Z80::LD_A_R,   Z80::MiscSTR>::GetValue() = "LD A, R";
     AnyType<Z80::LDI,       Z80::MiscSTR>::GetValue() = "LDI";        AnyType<Z80::CPI,      Z80::MiscSTR>::GetValue() = "CPI";

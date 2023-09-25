@@ -1,5 +1,5 @@
 #pragma once
-#include "HexDisplay.h"
+#include "Lcd.h"
 
 namespace Bus {
 

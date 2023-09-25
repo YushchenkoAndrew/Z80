@@ -18,6 +18,7 @@ public:
     led(std::make_shared<Led>(this)),
     switches(std::make_shared<Switch>(this)),
     hexDisplay(std::make_shared<HexDisplay>(this)),
+    lcd(std::make_shared<LCD>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this)),
     W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
@@ -37,6 +38,7 @@ public:
     led->Initialize(std::pair(olc::vi2d(10, 10), olc::vi2d(0, 0)));
     switches->Initialize(std::pair(olc::vi2d(10, 25), olc::vi2d(0, 0)));
     hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), olc::vi2d(0, 0)));
+    lcd->Initialize(std::pair(olc::vi2d(10, 150), olc::vi2d(0, 0)));
 
     Z80->Initialize(std::pair(olc::vi2d(150, 20), olc::vi2d(0, 0)));
   }
@@ -45,6 +47,7 @@ public:
     led->Preprocess();
     switches->Preprocess();
     hexDisplay->Preprocess();
+    lcd->Preprocess();
 
     Z80->Preprocess();
   }
@@ -53,6 +56,7 @@ public:
     led->Process(GameEngine);
     switches->Process(GameEngine);
     hexDisplay->Process(GameEngine);
+    lcd->Process(GameEngine);
 
     Z80->Process(GameEngine);
   }
@@ -61,6 +65,7 @@ public:
     led->Draw(GameEngine);
     switches->Draw(GameEngine);
     hexDisplay->Draw(GameEngine);
+    lcd->Draw(GameEngine);
 
     Z80->Draw(GameEngine);
   }
@@ -109,6 +114,7 @@ public:
   std::shared_ptr<Led> led;
   std::shared_ptr<Switch> switches;
   std::shared_ptr<HexDisplay> hexDisplay;
+  std::shared_ptr<LCD> lcd;
 
   std::shared_ptr<Z80::CPU> Z80;
   std::shared_ptr<Memory<MemoryT::W27C512, W27C512_SIZE>> W27C512;

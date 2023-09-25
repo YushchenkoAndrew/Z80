@@ -209,8 +209,8 @@ class PixelGameEngine : public olc::PixelGameEngine {
 
   virtual ModeT GetMode() = 0;
 
-  void FillRectDither(olc::vi2d pos, olc::vi2d size, olc::Pixel color = olc::WHITE, int32_t scale = 1) {
-    for (int32_t i = 0, k = 0; i < size.y; i += scale, k ^= 1) {
+  void FillRectDither(olc::vi2d pos, olc::vi2d size, olc::Pixel color = olc::WHITE, int32_t scale = 1, int32_t flag = 0) {
+    for (int32_t i = 0, k = flag; i < size.y; i += scale, k ^= 1) {
       for (int32_t j = k * scale; j < size.x; j += scale << 1) {
         FillRect(pos + olc::vi2d(j, i), olc::vi2d(scale, scale), color);
       }
