@@ -37,7 +37,7 @@ private:
     
 
     advance(); // closing quote
-    addToken(TokenT::STRING, src.substr(nStart + 1, nCurr - nStart - 1));
+    addToken(TokenT::STRING, src.substr(nStart + 1, nCurr - nStart - 2));
   }
 
   void number() {

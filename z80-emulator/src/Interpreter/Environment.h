@@ -5,7 +5,12 @@ namespace Interpreter {
 
 class Environment {
 public:
-  inline void reset() { addr = 0x0000; memory.clear(); vars.clear(); unknown.clear(); }
+  Environment(uint32_t a = 0): addr(a), startAt(a) {}
+
+  inline void reset() {
+    addr = startAt; memory.clear(); vars.clear(); unknown.clear();
+    for (int32_t i = 0; i < startAt; i++) memory.push_back(0x00);
+  }
 
   inline void define(std::string key, MemoryT val) { 
     vars[key] = val;
@@ -84,6 +89,7 @@ public:
   MemoryT memory;
 
   uint32_t addr = 0x0000;
+  const uint32_t startAt;
   std::unordered_map<std::string, MemoryT> vars;
   std::unordered_map<std::string, std::vector<uint32_t>> unknown; // This map points to places which need to be updated 
 

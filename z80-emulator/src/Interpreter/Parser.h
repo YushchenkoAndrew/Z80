@@ -63,10 +63,8 @@ private:
       return std::make_shared<Statement>();
     } else if (match<1>({ TokenT::HASH })) {
       if (advance()->lexeme == "include") error(peekPrev(), "Expected 'include' keyword.");
-      consume(TokenT::LEFT_BRACE, "Expect '(' before expression.");
-      auto expr = literal();
-      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
-      return std::make_shared<StatementInclude>(expr);
+      consume(TokenT::STRING, "Expect string after include stmt.");
+      return std::make_shared<StatementInclude>(std::make_shared<ExpressionLiteral>(peekPrev(), 0));
     }
 
     return statement();

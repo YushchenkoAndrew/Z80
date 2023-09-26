@@ -17,21 +17,18 @@ public:
 
   bool OnUserCreate() override {
     // std::ifstream f("../RTC_Test/Test.asm");
-    std::ifstream f("assets/SevenSegmentDisplay/Test.asm");
-    std::stringstream buffer;
-    buffer << f.rdbuf();
-    f.close();
+    // std::ifstream f(file);
+    // std::stringstream buffer;
+    // buffer << f.rdbuf();
+    // f.close();
 
-    std::ofstream fASM("Test.asm");
     // std::string s = buffer.str();
 
     // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
-    auto editor = std::make_shared<Editor::Editor>();
-    editor->temp(buffer.str());
 
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
-    if (bool err = interpreter.scan(buffer.str())) {
+    if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
       for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
       printf("\n");
 
@@ -46,6 +43,9 @@ public:
     //   emulator.ROM.load(emulator.interpreter.env.memory);
     // }
 
+    auto editor = std::make_shared<Editor::Editor>();
+    editor->temp(interpreter.buffer);
+
 
     // auto rom = bus->W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
@@ -55,9 +55,10 @@ public:
     // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
 
+    std::ofstream f("Test.asm");
     interpreter.env.save("out.bin");
-    fASM << bus->Disassemble().first << "\n";
-    fASM.close();
+    f << bus->Disassemble().first << "\n";
+    f.close();
     // emulator.editor.size = {  };
 
 

@@ -6,8 +6,17 @@ namespace Interpreter {
 class Interpreter : public Visitor {
 public:
 
-  Interpreter(): parser(Parser()) {}
+  Interpreter(uint32_t a = 0): parser(Parser()), env(a) {}
   Interpreter(Parser p): parser(p) {}
+
+  bool Load(std::string path) {
+    pwd = std::filesystem::path(path).remove_filename();
+
+    std::ifstream f(path); std::stringstream buffer;
+    buffer << f.rdbuf(); f.close();
+
+    return scan((this->buffer = buffer.str()));
+  }
 
   bool scan(std::string src) {
     reset();
@@ -248,8 +257,14 @@ public:
   }
 
   MemoryT visitStmtInclude(StatementInclude * stmt) override { 
-    // TODO: Impl this
-    return {};
+    Interpreter included = Interpreter(env.addr);
+    included.Load(pwd / std::filesystem::path(stmt->expr->token->literal));
+
+    errors.insert(errors.end(), included.errors.begin(), included.errors.end());
+    for (auto& v : included.env.vars) env.define(v.first, v.second);
+
+    included.env.memory.erase(included.env.memory.begin(), included.env.memory.begin() + env.addr);
+    return included.env.memory;
   }
 
 private:
@@ -294,6 +309,8 @@ public:
   Environment env;
   Parser parser;
 
+  std::string buffer;
+  std::filesystem::path pwd;
   std::vector<std::string> errors;
 };
 
