@@ -505,7 +505,7 @@ typedef TypeList<
   TypeList<AnyType<MiscInstruction::ADC_HL_HL, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::RLD,      MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::IN_C_c,    MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::OUT_c_C,  MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::ADC_HL_BC, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_BC_nn, MiscSTR>, Int2Type<3>>, TypeList<
-  TypeList<AnyType<MiscInstruction::RETI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_R_A,   MiscSTR>, Int2Type<1>>, TypeList<
+  TypeList<AnyType<MiscInstruction::RETI,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_R_A,   MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::ADC_HL_DE, MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_DE_nn, MiscSTR>, Int2Type<3>>, TypeList<
   TypeList<AnyType<MiscInstruction::IM_2,      MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::LD_A_R,   MiscSTR>, Int2Type<1>>, TypeList<
   TypeList<AnyType<MiscInstruction::LDI,       MiscSTR>, Int2Type<1>>, TypeList<TypeList<AnyType<MiscInstruction::CPI,      MiscSTR>, Int2Type<1>>, TypeList<
@@ -582,6 +582,112 @@ typedef TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_u>,  Int2Type<'u'>>, TypeList<
   TypeList<Int2Type<Editor::VimT::CMD_U>,  Int2Type<'U'>>, NullType>>>>>>>>>>>
    LockedMemoryCommands; 
+
+
+enum LcdROM {};
+typedef std::array<uint8_t, LCD_SEGMENT_SIZE> SegmentT;
+typedef TypeList<TypeList<LcdROM, Int2Type<LCD_SEGMENT_SIZE>>, SegmentT> LcdCHR;
+
+typedef TypeList<
+  AnyType<0x10,LcdCHR>, TypeList<
+  AnyType<0x11,LcdCHR>, TypeList<
+  AnyType<0x12,LcdCHR>, TypeList<
+  AnyType<0x13,LcdCHR>, TypeList<
+  AnyType<0x14,LcdCHR>, TypeList<
+  AnyType<0x15,LcdCHR>, TypeList<
+  AnyType<0x16,LcdCHR>, TypeList<
+  AnyType<0x17,LcdCHR>, TypeList<
+  AnyType<0x18,LcdCHR>, TypeList<
+  AnyType<0x19,LcdCHR>, TypeList<
+  AnyType<0x1A,LcdCHR>, TypeList<
+  AnyType<0x1B,LcdCHR>, TypeList<
+  AnyType<0x1C,LcdCHR>, TypeList<
+  AnyType<0x1D,LcdCHR>, TypeList<
+  AnyType<0x1E,LcdCHR>, TypeList<
+  AnyType<0x1F,LcdCHR>, TypeList<
+  AnyType<'!', LcdCHR>, TypeList<
+  AnyType<'"', LcdCHR>, TypeList<
+  AnyType<'#', LcdCHR>, TypeList<
+  AnyType<'$', LcdCHR>, TypeList<
+  AnyType<'%', LcdCHR>, TypeList<
+  AnyType<'&', LcdCHR>, TypeList<
+  AnyType<'\'',LcdCHR>, TypeList<
+  AnyType<'(', LcdCHR>, TypeList<
+  AnyType<')', LcdCHR>, TypeList<
+  AnyType<'*', LcdCHR>, TypeList<
+  AnyType<'+', LcdCHR>, TypeList<
+  AnyType<',', LcdCHR>, TypeList<
+  AnyType<'-', LcdCHR>, TypeList<
+  AnyType<'.', LcdCHR>, TypeList<
+  AnyType<'/', LcdCHR>, TypeList<
+  AnyType<'0', LcdCHR>, TypeList<
+  AnyType<'1', LcdCHR>, TypeList<
+  AnyType<'2', LcdCHR>, TypeList<
+  AnyType<'3', LcdCHR>, TypeList<
+  AnyType<'4', LcdCHR>, TypeList<
+  AnyType<'5', LcdCHR>, TypeList<
+  AnyType<'6', LcdCHR>, TypeList<
+  AnyType<'7', LcdCHR>, TypeList<
+  AnyType<'8', LcdCHR>, TypeList<
+  AnyType<'9', LcdCHR>, TypeList<
+  AnyType<':', LcdCHR>, TypeList<
+  AnyType<';', LcdCHR>, TypeList<
+  AnyType<'<', LcdCHR>, TypeList<
+  AnyType<'=', LcdCHR>, TypeList<
+  AnyType<'>', LcdCHR>, TypeList<
+  AnyType<'?', LcdCHR>, TypeList<
+  AnyType<'@', LcdCHR>, TypeList<
+  AnyType<'A', LcdCHR>, TypeList<
+  AnyType<'B', LcdCHR>, TypeList<
+  AnyType<'C', LcdCHR>, TypeList<
+  AnyType<'D', LcdCHR>, TypeList<
+  AnyType<'E', LcdCHR>, TypeList<
+  AnyType<'F', LcdCHR>, TypeList<
+  AnyType<'G', LcdCHR>, TypeList<
+  AnyType<'H', LcdCHR>, TypeList<
+  AnyType<'I', LcdCHR>, TypeList<
+  AnyType<'J', LcdCHR>, TypeList<
+  AnyType<'K', LcdCHR>, TypeList<
+  AnyType<'L', LcdCHR>, TypeList<
+  AnyType<'M', LcdCHR>, TypeList<
+  AnyType<'N', LcdCHR>, TypeList<
+  AnyType<'O', LcdCHR>, TypeList<
+  AnyType<'P', LcdCHR>, TypeList<
+  AnyType<'Q', LcdCHR>, TypeList<
+  AnyType<'R', LcdCHR>, TypeList<
+  AnyType<'S', LcdCHR>, TypeList<
+  AnyType<'T', LcdCHR>, TypeList<
+  AnyType<'U', LcdCHR>, TypeList<
+  AnyType<'V', LcdCHR>, TypeList<
+  AnyType<'W', LcdCHR>, TypeList<
+  AnyType<'X', LcdCHR>, TypeList<
+  AnyType<'Y', LcdCHR>, TypeList<
+  AnyType<'Z', LcdCHR>, TypeList<
+  AnyType<'[', LcdCHR>, TypeList<
+  AnyType<'\\',LcdCHR>, TypeList<
+  AnyType<']', LcdCHR>, TypeList<
+  AnyType<'^', LcdCHR>, TypeList<
+  AnyType<'_', LcdCHR>, TypeList<
+  AnyType<'`', LcdCHR>, TypeList<
+  AnyType<'a', LcdCHR>, TypeList<
+  AnyType<'b', LcdCHR>, TypeList<
+  AnyType<'c', LcdCHR>, TypeList<
+  AnyType<'d', LcdCHR>, TypeList<
+  AnyType<'e', LcdCHR>, TypeList<
+  AnyType<'f', LcdCHR>, TypeList<
+  AnyType<'g', LcdCHR>, TypeList<
+  AnyType<'h', LcdCHR>, TypeList<
+  AnyType<'i', LcdCHR>, TypeList<
+  AnyType<'j', LcdCHR>, TypeList<
+  AnyType<'k', LcdCHR>, TypeList<
+  AnyType<'l', LcdCHR>, TypeList<
+  AnyType<'m', LcdCHR>, TypeList<
+  AnyType<'n', LcdCHR>, TypeList<
+  AnyType<'o', LcdCHR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   LcdChars; 
+
+
+// TODO: Add typelist
 
 
 class Device {
@@ -999,6 +1105,106 @@ public:
     AnyType<Z80::INDR,      Z80::MiscSTR>::GetValue() = "INDR";       AnyType<Z80::OTDR,     Z80::MiscSTR>::GetValue() = "OTDR";
 
 
+    AnyType<0x10,LcdCHR>::GetValue() = { 0b00000000, 0b11111110, 0b01111100, 0b00111000, 0b00010000 };
+    AnyType<0x11,LcdCHR>::GetValue() = { 0b00010000, 0b00111000, 0b01111100, 0b11111110, 0b00000000 };
+    AnyType<0x12,LcdCHR>::GetValue() = { 0b01100000, 0b10100000, 0b00000000, 0b01100000, 0b10100000 };
+    AnyType<0x13,LcdCHR>::GetValue() = { 0b10100000, 0b11000000, 0b00000000, 0b10100000, 0b11000000 };
+    AnyType<0x14,LcdCHR>::GetValue() = { 0b00100010, 0b01100110, 0b11101110, 0b01100110, 0b00100010 };
+    AnyType<0x15,LcdCHR>::GetValue() = { 0b10001000, 0b11001100, 0b11101110, 0b11001100, 0b10001000 };
+    AnyType<0x16,LcdCHR>::GetValue() = { 0b00111000, 0b01111100, 0b01111100, 0b01111100, 0b00111000 };
+    AnyType<0x17,LcdCHR>::GetValue() = { 0b00001000, 0b00011100, 0b00101010, 0b00001000, 0b11111000 };
+    AnyType<0x18,LcdCHR>::GetValue() = { 0b00100000, 0b01000000, 0b11111110, 0b01000000, 0b00100000 };
+    AnyType<0x19,LcdCHR>::GetValue() = { 0b00001000, 0b00000100, 0b11111110, 0b00000100, 0b00001000 };
+    AnyType<0x1A,LcdCHR>::GetValue() = { 0b00010000, 0b00010000, 0b01010100, 0b00111000, 0b00010000 };
+    AnyType<0x1B,LcdCHR>::GetValue() = { 0b00010000, 0b00111000, 0b01010100, 0b00010000, 0b00010000 };
+    AnyType<0x1C,LcdCHR>::GetValue() = { 0b00000010, 0b00100010, 0b01010010, 0b10001010, 0b00000010 };
+    AnyType<0x1D,LcdCHR>::GetValue() = { 0b00000010, 0b10001010, 0b01010010, 0b00100010, 0b00000010 };
+    AnyType<0x1E,LcdCHR>::GetValue() = { 0b00000100, 0b00011100, 0b01111100, 0b00011100, 0b00000100 };
+    AnyType<0x1F,LcdCHR>::GetValue() = { 0b01000000, 0b01110000, 0b01111100, 0b01110000, 0b01000000 };
+
+    AnyType<'!', LcdCHR>::GetValue() = { 0b00000000, 0b00000000, 0b11110010, 0b00000000, 0b00000000 };
+    AnyType<'"', LcdCHR>::GetValue() = { 0b00000000, 0b11100000, 0b00000000, 0b11100000, 0b00000000 };
+    AnyType<'#', LcdCHR>::GetValue() = { 0b00101000, 0b11111110, 0b00101000, 0b11111110, 0b00101000 };
+    AnyType<'$', LcdCHR>::GetValue() = { 0b00100100, 0b01010100, 0b11111110, 0b01010100, 0b01001000 };
+    AnyType<'%', LcdCHR>::GetValue() = { 0b11000100, 0b11001000, 0b00010000, 0b00100110, 0b01000110 };
+    AnyType<'&', LcdCHR>::GetValue() = { 0b01101100, 0b10010010, 0b10101010, 0b01000100, 0b00001010 };
+    AnyType<'\'',LcdCHR>::GetValue() = { 0b00000000, 0b10100000, 0b11000000, 0b00000000, 0b00000000 };
+    AnyType<'(', LcdCHR>::GetValue() = { 0b00000000, 0b00111000, 0b01000100, 0b10000010, 0b00000000 };
+    AnyType<')', LcdCHR>::GetValue() = { 0b00000000, 0b10000010, 0b01000100, 0b00111000, 0b00000000 };
+    AnyType<'*', LcdCHR>::GetValue() = { 0b00101000, 0b00010000, 0b01111100, 0b00010000, 0b00101000 };
+    AnyType<'+', LcdCHR>::GetValue() = { 0b00010000, 0b00010000, 0b01111100, 0b00010000, 0b00010000 };
+    AnyType<',', LcdCHR>::GetValue() = { 0b00000000, 0b00001010, 0b00001100, 0b00000000, 0b00000000 };
+    AnyType<'-', LcdCHR>::GetValue() = { 0b00010000, 0b00010000, 0b00010000, 0b00010000, 0b00010000 };
+    AnyType<'.', LcdCHR>::GetValue() = { 0b00000000, 0b00000110, 0b00000110, 0b00000000, 0b00000000 };
+    AnyType<'/', LcdCHR>::GetValue() = { 0b00000100, 0b00001000, 0b00010000, 0b00010000, 0b00100000 };
+    
+    AnyType<'0', LcdCHR>::GetValue() = { 0b01111100, 0b10001010, 0b10010010, 0b10100010, 0b01111100 };
+    AnyType<'1', LcdCHR>::GetValue() = { 0b00000000, 0b01000010, 0b11111110, 0b00000010, 0b00000000 };
+    AnyType<'2', LcdCHR>::GetValue() = { 0b01000010, 0b10000110, 0b10001010, 0b10010010, 0b01100010 };
+    AnyType<'3', LcdCHR>::GetValue() = { 0b10000100, 0b10000010, 0b10100010, 0b11010010, 0b10001100 };
+    AnyType<'4', LcdCHR>::GetValue() = { 0b00011000, 0b00101000, 0b01001000, 0b11111110, 0b00001000 };
+    AnyType<'5', LcdCHR>::GetValue() = { 0b11100100, 0b10100010, 0b10100010, 0b10100010, 0b10011100 };
+    AnyType<'6', LcdCHR>::GetValue() = { 0b00111100, 0b01010010, 0b10010010, 0b10010010, 0b00001100 };
+    AnyType<'7', LcdCHR>::GetValue() = { 0b11000000, 0b10000000, 0b10001110, 0b10010000, 0b11100000 };
+    AnyType<'8', LcdCHR>::GetValue() = { 0b01101100, 0b10010010, 0b10010010, 0b10010010, 0b01101100 };
+    AnyType<'9', LcdCHR>::GetValue() = { 0b01100000, 0b10010010, 0b10010010, 0b10010100, 0b01111000 };
+    AnyType<':', LcdCHR>::GetValue() = { 0b00000000, 0b01101100, 0b01101100, 0b00000000, 0b00000000 };
+    AnyType<';', LcdCHR>::GetValue() = { 0b00000000, 0b01101010, 0b01101100, 0b00000000, 0b00000000 };
+    AnyType<'<', LcdCHR>::GetValue() = { 0b00010000, 0b00101000, 0b01000100, 0b10000010, 0b00000000 };
+    AnyType<'=', LcdCHR>::GetValue() = { 0b00101000, 0b00101000, 0b00101000, 0b00101000, 0b00101000 };
+    AnyType<'>', LcdCHR>::GetValue() = { 0b00000000, 0b10000010, 0b01000100, 0b00101000, 0b00010000 };
+    AnyType<'?', LcdCHR>::GetValue() = { 0b01000000, 0b10000000, 0b10001010, 0b10010000, 0b01100000 };
+
+    AnyType<'@', LcdCHR>::GetValue() = { 0b01001100, 0b10010010, 0b10011110, 0b10000010, 0b01111100 };
+    AnyType<'A', LcdCHR>::GetValue() = { 0b01111110, 0b10001000, 0b10001000, 0b10001000, 0b01111110 };
+    AnyType<'B', LcdCHR>::GetValue() = { 0b11111110, 0b10010010, 0b10010010, 0b10010010, 0b01101100 };
+    AnyType<'C', LcdCHR>::GetValue() = { 0b01111100, 0b10000010, 0b10000010, 0b10000010, 0b01000100 };
+    AnyType<'D', LcdCHR>::GetValue() = { 0b11111110, 0b10000010, 0b10000010, 0b01000100, 0b00111000 };
+    AnyType<'E', LcdCHR>::GetValue() = { 0b11111110, 0b10010010, 0b10010010, 0b10010010, 0b10000010 };
+    AnyType<'F', LcdCHR>::GetValue() = { 0b11111110, 0b10010000, 0b10010000, 0b10010000, 0b10000000 };
+    AnyType<'G', LcdCHR>::GetValue() = { 0b01111100, 0b10000010, 0b10010010, 0b10010010, 0b01011110 };
+    AnyType<'H', LcdCHR>::GetValue() = { 0b11111110, 0b00010000, 0b00010000, 0b00010000, 0b11111110 };
+    AnyType<'I', LcdCHR>::GetValue() = { 0b00000000, 0b10000010, 0b11111110, 0b10000010, 0b00000000 };
+    AnyType<'J', LcdCHR>::GetValue() = { 0b00000100, 0b00000010, 0b10000010, 0b11111100, 0b10000000 };
+    AnyType<'K', LcdCHR>::GetValue() = { 0b11111110, 0b00010000, 0b00101000, 0b01000100, 0b10000010 };
+    AnyType<'L', LcdCHR>::GetValue() = { 0b11111110, 0b00000010, 0b00000010, 0b00000010, 0b00000010 };
+    AnyType<'M', LcdCHR>::GetValue() = { 0b11111110, 0b01000000, 0b00110000, 0b01000000, 0b11111110 };
+    AnyType<'N', LcdCHR>::GetValue() = { 0b11111110, 0b00100000, 0b00010000, 0b00001000, 0b11111110 };
+    AnyType<'O', LcdCHR>::GetValue() = { 0b01111100, 0b10000010, 0b10000010, 0b10000010, 0b01111100 };
+
+    AnyType<'P', LcdCHR>::GetValue() = { 0b11111110, 0b10010000, 0b10010000, 0b10010000, 0b01100000 };
+    AnyType<'Q', LcdCHR>::GetValue() = { 0b01111100, 0b10000010, 0b10001010, 0b10000100, 0b01111000 };
+    AnyType<'R', LcdCHR>::GetValue() = { 0b11111110, 0b10010000, 0b10011000, 0b10010100, 0b01100010 };
+    AnyType<'S', LcdCHR>::GetValue() = { 0b01100010, 0b10010010, 0b10010010, 0b10010010, 0b10001100 };
+    AnyType<'T', LcdCHR>::GetValue() = { 0b10000000, 0b10000000, 0b11111110, 0b10000000, 0b10000000 };
+    AnyType<'U', LcdCHR>::GetValue() = { 0b11111100, 0b00000010, 0b00000010, 0b00000010, 0b11111100 };
+    AnyType<'V', LcdCHR>::GetValue() = { 0b11111000, 0b00000100, 0b00000010, 0b00000100, 0b11111000 };
+    AnyType<'W', LcdCHR>::GetValue() = { 0b11111100, 0b00000010, 0b00011100, 0b00000010, 0b11111100 };
+    AnyType<'X', LcdCHR>::GetValue() = { 0b11000110, 0b00101000, 0b00010000, 0b00101000, 0b11000110 };
+    AnyType<'Y', LcdCHR>::GetValue() = { 0b11100000, 0b00010000, 0b00001110, 0b00010000, 0b11100000 };
+    AnyType<'Z', LcdCHR>::GetValue() = { 0b10000110, 0b10001010, 0b10010010, 0b10100010, 0b11000010 };
+    AnyType<'[', LcdCHR>::GetValue() = { 0b11111110, 0b10000010, 0b10000010, 0b00000000, 0b00000000 };
+    AnyType<'\\',LcdCHR>::GetValue() = { 0b01000000, 0b00100000, 0b00010000, 0b00001000, 0b00000100 };
+    AnyType<']', LcdCHR>::GetValue() = { 0b00000000, 0b00000000, 0b10000010, 0b10000010, 0b11111110 };
+    AnyType<'^', LcdCHR>::GetValue() = { 0b00010000, 0b01000000, 0b10000000, 0b01000000, 0b00010000 };
+    AnyType<'_', LcdCHR>::GetValue() = { 0b00000010, 0b00000010, 0b00000010, 0b00000010, 0b00000010 };
+
+    AnyType<'`', LcdCHR>::GetValue() = { 0b00000000, 0b01000000, 0b00100000, 0b00010000, 0b00000000 };
+    AnyType<'a', LcdCHR>::GetValue() = { 0b00000100, 0b00101010, 0b00101010, 0b00101010, 0b00011110 };
+    AnyType<'b', LcdCHR>::GetValue() = { 0b11111110, 0b00010010, 0b00100010, 0b00100010, 0b00001110 };
+    AnyType<'c', LcdCHR>::GetValue() = { 0b00011100, 0b00100010, 0b00100010, 0b00100010, 0b00000100 };
+    AnyType<'d', LcdCHR>::GetValue() = { 0b00011100, 0b00100010, 0b00100010, 0b00010010, 0b11111110 };
+    AnyType<'e', LcdCHR>::GetValue() = { 0b00011100, 0b00101010, 0b00101010, 0b00101010, 0b00011000 };
+    AnyType<'f', LcdCHR>::GetValue() = { 0b00010000, 0b01111110, 0b10010000, 0b10000000, 0b01000000 };
+    AnyType<'g', LcdCHR>::GetValue() = { 0b00110000, 0b01001010, 0b01001010, 0b01001010, 0b01111100 };
+    AnyType<'h', LcdCHR>::GetValue() = { 0b11111110, 0b00010000, 0b00100000, 0b00100000, 0b00011110 };
+    AnyType<'i', LcdCHR>::GetValue() = { 0b00000000, 0b00100010, 0b10111110, 0b00000010, 0b00000000 };
+    AnyType<'j', LcdCHR>::GetValue() = { 0b00000100, 0b00000010, 0b00100010, 0b10111100, 0b00000000 };
+    AnyType<'k', LcdCHR>::GetValue() = { 0b11111110, 0b00001000, 0b00010100, 0b00100010, 0b00000000 };
+    AnyType<'l', LcdCHR>::GetValue() = { 0b00000000, 0b10000010, 0b11111110, 0b00000010, 0b00000000 };
+    AnyType<'m', LcdCHR>::GetValue() = { 0b00111110, 0b00100000, 0b00011100, 0b00100000, 0b00011110 };
+    AnyType<'n', LcdCHR>::GetValue() = { 0b00111110, 0b00010000, 0b00100000, 0b00100000, 0b00011110 };
+    AnyType<'o', LcdCHR>::GetValue() = { 0b00011100, 0b00100010, 0b00100010, 0b00100010, 0b00011100 };
   }
 };
 };

@@ -6,12 +6,18 @@ namespace Bus {
 class LCD : public Window::Window, public Device {
   enum { SEGMENT };
 
-  typedef std::array<uint8_t, LCD_SEGMENT_SIZE> SegmentT;
-
 public:
   LCD(Bus* b): bus(b) {
-    buffer[0] = { 0b01111101, 0b10000011, 0b10010011, 0b10010011,  0b01011101 };
-    buffer[1] = { 0b01111110, 0b10001000, 0b10001000, 0b10001000,  0b01111110  };
+    // buffer[0] = { 0b01111101, 0b10000011, 0b10010011, 0b10010011,  0b01011101 };
+    // buffer[1] = { 0b01111110, 0b10001000, 0b10001000, 0b10001000,  0b01111110  };
+
+    std::string str = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmno";
+
+    for (int32_t i = 0; i < buffer.size(); i++) {
+      AnyType<-1 , int32_t>::GetValue() = str[i];
+      auto c = foreach<LcdChars, AnyType<-1 , int32_t>>::Key2Value();
+      for (int32_t j = 0; j < LCD_SEGMENT_SIZE; j++) buffer[i][j] = c.val[j];
+    }
   }
 
   void Initialize(DimensionT dimensions) {
@@ -54,7 +60,10 @@ private:
   Bus* bus;
   uint16_t data = 0x0000;
 
-  std::array<SegmentT, 32> buffer;
+  // std::array<SegmentT, 32> buffer;
+  
+  // FIXME: Bitmask debug
+  std::array<SegmentT, 16 * 6> buffer;
 };
 
 };

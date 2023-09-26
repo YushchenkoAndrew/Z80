@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+#include <array>
 
 template<typename T>
 struct Type2Type {
@@ -28,6 +30,21 @@ struct TypeList<T, std::string> {
   template<class U> std::string& operator = (TypeList<U, std::string>& list) { return val = list.val; }
 
   std::string& operator ~ () { return val; }
+};
+
+template<class T, class U, int Y>
+struct TypeList<TypeList<T, Int2Type<Y>>, std::array<U, +Y>> {
+	typedef std::array<U, +Y> ArrT;
+
+	ArrT val;
+	inline TypeList() {}
+
+  ArrT& operator = (ArrT c) { return val = c; }
+  ArrT& operator = (ArrT& c) { return val = c; }
+  // std::array<uint8_t, 5>& operator = (std::array<uint8_t, 5>& c) { return val = c; }
+  // // template<class U> std::string& operator = (TypeList<U, std::string>& list) { return val = list.val; }
+
+  // std::array<uint8_t, U>& operator ~ () { return val; }
 };
 
 

@@ -62,7 +62,7 @@ private:
       error(advance(), "Unknown token.");
       return std::make_shared<Statement>();
     } else if (match<1>({ TokenT::HASH })) {
-      if (advance()->lexeme == "include") error(peekPrev(), "Expected 'include' keyword.");
+      if (advance()->lexeme != "include") error(peekPrev(), "Expected 'include' keyword.");
       consume(TokenT::STRING, "Expect string after include stmt.");
       return std::make_shared<StatementInclude>(std::make_shared<ExpressionLiteral>(peekPrev(), 0));
     }
@@ -307,6 +307,7 @@ public:
     auto cmd = peekPrev();
 
     switch(peek()->token) {
+      case TokenT::REG_C:
       case TokenT::FLAG_C:  advance(); return std::make_shared<StatementNoArgCommand>(0x00D8, cmd);
       case TokenT::FLAG_M:  advance(); return std::make_shared<StatementNoArgCommand>(0x00F8, cmd);
       case TokenT::FLAG_NC: advance(); return std::make_shared<StatementNoArgCommand>(0x00D0, cmd);
@@ -425,12 +426,13 @@ public:
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_CALL>) { 
     auto cmd = peekPrev();
 
-    if (!match<8>({ TokenT::FLAG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
+    if (!match<9>({ TokenT::REG_C, TokenT::FLAG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
       return std::make_shared<StatementOneArgCommand>(0x00CD, cmd, literal(2));
     }
 
     consume(TokenT::COMMA, "Expect ',' after first expression.");
     switch(peekPrev()->token) {
+      case TokenT::REG_C:
       case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DC, cmd, literal(2));
       case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FC, cmd, literal(2));
       case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D4, cmd, literal(2));
@@ -545,11 +547,12 @@ public:
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_JR>) {
     auto cmd = peekPrev();
 
-    if (!match<4>({ TokenT::FLAG_C, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_Z })) {
+    if (!match<5>({ TokenT::REG_C, TokenT::FLAG_C, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_Z })) {
       return std::make_shared<StatementOneArgCommand>(0x0018, cmd, literal(2));
     }
 
     switch(peekPrev()->token) {
+      case TokenT::REG_C:
       case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x0038, cmd, literal(1));
       case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x0030, cmd, literal(1));
       case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x0020, cmd, literal(1));

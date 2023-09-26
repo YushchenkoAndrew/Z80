@@ -1,4 +1,4 @@
-#inclide "Defs.asm"
+#include "Defs.asm"
 
 ;; Funcion HEX(arg) exptects value to display to be in high byte
 _HEX:
