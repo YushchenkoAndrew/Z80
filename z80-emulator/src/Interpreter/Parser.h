@@ -716,6 +716,16 @@ public:
 
         return std::make_shared<StatementOneArgCommand>(0x0001, cmd, literal(2));
 
+      case TokenT::REG_DE:
+        consume(TokenT::COMMA, "Expect ',' after expression.");
+        if (match<1>({ TokenT::LEFT_BRACE })) {
+          auto stmt = std::make_shared<StatementOneArgCommand>(0xED5B, cmd, literal(2));
+          consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+          return stmt;
+        }
+
+        return std::make_shared<StatementOneArgCommand>(0x0011, cmd, literal(2));
+
       case TokenT::REG_HL:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {

@@ -74,6 +74,7 @@ public:
     auto device = mreq ? mux(Int2Type<MREQ>(), addr, true) : mux(Int2Type<IORQ>(), addr, true);
     if (device == nullptr) return 0x00;
 
+  // TODO: Impl correct PPI
     return device->Read(addr, mreq);
   }
 
@@ -81,6 +82,7 @@ public:
     auto device = mreq ? mux(Int2Type<MREQ>(), addr, false) : mux(Int2Type<IORQ>(), addr, false);
     if (device == nullptr) return 0x00;
 
+  // TODO: Impl correct PPI
     return device->Write(addr, data, mreq);
   }
 
@@ -98,11 +100,12 @@ private:
     return nullptr;
   }
 
+  // TODO: Impl correct PPI
   inline std::shared_ptr<Device> mux(Int2Type<IORQ>, uint32_t addr, bool read) {
     switch((addr & 0x00F0) >> 4) {
       case MUX::IORQ::IO_DEVICE: if (read) return switches; else return led;
       case MUX::IORQ::HEX_DEVICE: return read ? nullptr : hexDisplay; 
-      case MUX::IORQ::PPI_PORT: // TODO:
+      case MUX::IORQ::PPI_PORT: return lcd;
       case MUX::IORQ::UART_PORT: break; 
     }
 

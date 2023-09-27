@@ -93,6 +93,7 @@ public:
   std::unordered_map<std::string, MemoryT> vars;
   std::unordered_map<std::string, std::vector<uint32_t>> unknown; // This map points to places which need to be updated 
 
+  // TODO: Change key to std::pair where first is line number and second is file path
   std::unordered_map<uint32_t, std::shared_ptr<Token>> tokens;
 };
 

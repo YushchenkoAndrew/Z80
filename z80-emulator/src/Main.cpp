@@ -28,7 +28,8 @@ public:
 
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
-    if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
+    // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
+    if (bool err = interpreter.Load("assets/TestingLCD/Test.asm")) {
       for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
       printf("\n");
 

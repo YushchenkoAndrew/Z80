@@ -790,13 +790,13 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IN_H_c>) { cycles = 12; regH(In8()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IN_L_c>) { cycles = 12; regL(In8()); }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_A>) { cycles = 12; Write(HIGH_SET(Read(), regB()), regA(), false); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_B>) { cycles = 12; Write(HIGH_SET(Read(), regB()), regB(), false); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_C>) { cycles = 12; Write(HIGH_SET(Read(), regB()), regC(), false); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_D>) { cycles = 12; Write(HIGH_SET(Read(), regB()), regD(), false); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_E>) { cycles = 12; Write(HIGH_SET(Read(), regB()), regE(), false); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_H>) { cycles = 12; Write(HIGH_SET(Read(), regB()), regH(), false); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_L>) { cycles = 12; Write(HIGH_SET(Read(), regB()), regL(), false); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_A>) { cycles = 12; Write(regBC(), regA(), false); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_B>) { cycles = 12; Write(regBC(), regB(), false); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_C>) { cycles = 12; Write(regBC(), regC(), false); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_D>) { cycles = 12; Write(regBC(), regD(), false); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_E>) { cycles = 12; Write(regBC(), regE(), false); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_H>) { cycles = 12; Write(regBC(), regH(), false); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_L>) { cycles = 12; Write(regBC(), regL(), false); }
 
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_BC>) { cycles = 15; regHL() = Add16(regHL(), regBC(), true); }

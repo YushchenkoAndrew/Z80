@@ -1,6 +1,6 @@
 #include "Defs.asm"
 
-;; Funcion HEX(arg) exptects value to display to be in high byte
+;; func HEX(arg) -> void; High byte will be displayed on HEX display
 _HEX:
   POP DE     ;; Get return addr
   POP AF     ;; Get value to display
