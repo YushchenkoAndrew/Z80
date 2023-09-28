@@ -27,7 +27,7 @@ _HEX_lp:
 
   LD A, E    ;; Load saved reg C value
   SLA D      ;; Dec a loop counter
-  JP C, _HEX_lp
+  JR C, _HEX_lp-$
   RET
 
 _HEX_DB:     ;; This array of values need for display HEX number

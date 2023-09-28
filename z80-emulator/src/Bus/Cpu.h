@@ -268,6 +268,12 @@ public:
   inline void Process(Int2Type<Instruction::RET_P>)  { cycles = Ret(!flagS()) ? 11 : 5; }
   inline void Process(Int2Type<Instruction::RET_M>)  { cycles = Ret(flagS())  ? 11 : 5; }
 
+  inline void Process(Int2Type<Instruction::JR_D>)    { cycles = 12;     OffsetPC(true,     Read());  }
+  inline void Process(Int2Type<Instruction::JR_NZ_D>) { cycles =  7; if (OffsetPC(!flagZ(), Read())) cycles = 12;  }
+  inline void Process(Int2Type<Instruction::JR_Z_D>)  { cycles =  7; if (OffsetPC(flagZ(),  Read())) cycles = 12;  }
+  inline void Process(Int2Type<Instruction::JR_NC_D>) { cycles =  7; if (OffsetPC(!flagC(), Read())) cycles = 12; }
+  inline void Process(Int2Type<Instruction::JR_C_D>)  { cycles =  7; if (OffsetPC(flagC(),  Read())) cycles = 12; }
+
   inline void Process(Int2Type<Instruction::JP_NN>)    { cycles = 10; Jump(true,     Word()); }
   inline void Process(Int2Type<Instruction::JP_NZ_NN>) { cycles = 10; Jump(!flagZ(), Word()); }
   inline void Process(Int2Type<Instruction::JP_Z_NN>)  { cycles = 10; Jump(flagZ(),  Word()); }
@@ -472,11 +478,6 @@ public:
   // TODO:
   // NOTE: Do the last one, maybe need to fix bug with asm compiler
   inline void Process(Int2Type<Instruction::DJNZ_D>) {}
-  inline void Process(Int2Type<Instruction::JR_NZ_D>) {}
-  inline void Process(Int2Type<Instruction::JR_NC_D>) {}
-  inline void Process(Int2Type<Instruction::JR_D>) {}
-  inline void Process(Int2Type<Instruction::JR_Z_D>) {}
-  inline void Process(Int2Type<Instruction::JR_C_D>) {}
 
 
   inline void Process(Int2Type<Instruction::DI>) {}
@@ -994,6 +995,15 @@ private:
   inline bool Ret(bool flag) { if (flag) regPC() = Pop(); return flag; }
   inline bool Call(bool flag, uint16_t addr) { if (flag) { Push(regPC()); regPC() = addr; } return flag; }
   inline bool Jump(bool flag, uint16_t addr) { if (flag) regPC() = addr; return flag; }
+  inline bool OffsetPC(bool flag, uint8_t offset) {
+    if (!flag) return false;
+
+    // NOTE: -2 its command offset & digit
+    if (SIGN(offset)) regPC() = (regPC() - 2 + (0xFF00 | offset)) & 0xFFFF;
+    else regPC() = (regPC() - 2 + offset) & 0xFFFF;
+    
+    return true;
+  }
 
   inline std::atomic<uint16_t>& regALT(REG offset) { return reg[REG::ALTERNATIVE + offset]; }
 

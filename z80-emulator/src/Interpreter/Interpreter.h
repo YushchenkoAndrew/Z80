@@ -11,6 +11,7 @@ public:
 
   bool Load(std::string path) {
     pwd = std::filesystem::path(path).remove_filename();
+    filename = std::filesystem::path(path).filename();
 
     std::ifstream f(path); std::stringstream buffer;
     buffer << f.rdbuf(); f.close();
@@ -19,29 +20,33 @@ public:
   }
 
   bool scan(std::string src) {
-    reset();
+    errors.clear();
 
     if (parser.scan(src)) { 
-      errors.insert(errors.end(), parser.errors.begin(), parser.errors.end());
+      for (auto& err : parser.errors) errors.push_back("File '" + filename.string() + "' " + err);
       return true;
     }
 
-    for (auto& stmt : parser.stmt) {
-      env.insert(evaluate(stmt.get()));
-    }
+    // Linker
+    env.reset(); env.unlock();
+    for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
 
     if (env.unknown.size()) {
       std::stringstream ss;
-      for (auto& pair : env.unknown) {
-        ss.str(""); ss << "Unknown variable '" << pair.first << "'.";
+      for (auto& var : env.unknown) {
+        ss.str(""); ss << "Unknown variable '" << var << "'.";
         error(nullptr, ss.str());
       }
+
+      return errors.size();
     }
+
+    // Interpreter
+    env.reset(); env.lock();
+    for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
 
     return errors.size();
   }
-
-  inline void reset() { errors.clear(); env.reset(); }
 
   MemoryT visitExprUnknown(Expression* expr) override {
     error(nullptr, "Unknown operation.");
@@ -192,7 +197,7 @@ public:
       return {};
     }
 
-    env.allocate(stmt->label->lexeme, expr);
+    env.allocate(expr);
     return {};
   }
 
@@ -201,6 +206,8 @@ public:
 
     for (auto& expr : stmt->data) {
       MemoryT bytes = evaluate(expr.get());
+      for (int32_t i = 1; i < stmt->size; i++) bytes.insert(bytes.begin(), 0);
+
       res.insert(res.end(), bytes.begin(), bytes.end());
     }
 
@@ -257,13 +264,20 @@ public:
   }
 
   MemoryT visitStmtInclude(StatementInclude * stmt) override { 
-    Interpreter included = Interpreter(env.addr);
-    included.Load(pwd / std::filesystem::path(stmt->expr->token->literal));
+    auto f = pwd / std::filesystem::path(stmt->expr->token->literal);
+    if (!std::filesystem::exists(f)) {
+      error(stmt->expr->token, "Include file doesn't exist.");
+      return MemoryT();
+    }
+
+    Interpreter included = Interpreter(env.addr); included.Load(f);
 
     errors.insert(errors.end(), included.errors.begin(), included.errors.end());
-    for (auto& v : included.env.vars) env.define(v.first, v.second);
+    if (included.errors.size()) return MemoryT();
 
+    for (auto& v : included.env.vars.second) env.define(v.first, v.second);
     included.env.memory.erase(included.env.memory.begin(), included.env.memory.begin() + env.addr);
+
     return included.env.memory;
   }
 
@@ -297,7 +311,7 @@ private:
   }
 
   void error(std::shared_ptr<Token> token, std::string message) {
-    std::stringstream ss;
+    std::stringstream ss; ss << "File '" << filename.string() << "' ";
 
     if (token == nullptr) ss << "[Ln 1] Error: " << message << "\n";
     else ss << "[Ln " << token->line << " Col " << token->col << "] Error at '" << token->lexeme << "': " << message << "\n";
@@ -309,8 +323,10 @@ public:
   Environment env;
   Parser parser;
 
-  std::string buffer;
   std::filesystem::path pwd;
+  std::filesystem::path filename;
+
+  std::string buffer;
   std::vector<std::string> errors;
 };
 

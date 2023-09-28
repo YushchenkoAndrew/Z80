@@ -9,7 +9,7 @@ bool Lexer::scan(std::string text) {
 
     const char c = advance();
     switch (c) {
-      case '#': addToken(TokenT::HASH); break;
+      case '$': addToken(TokenT::IDENTIFIER); break;
       case ',': addToken(TokenT::COMMA); break;
       case ':': addToken(TokenT::COLON); break;
       case '(': addToken(TokenT::LEFT_BRACE); break;
@@ -37,6 +37,10 @@ bool Lexer::scan(std::string text) {
 
       case '\n': nLine++; nCol = 1; break;
       case ' ': case '\r': case '\t': addToken(olc::BLANK); break; // Ignore whitespace.
+      case '#':
+        if (peekNext() != ' ') identifier();
+        else error("Unexpected character."); 
+        break;
 
       default:
         if (isDigit(c)) number();

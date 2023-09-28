@@ -8,7 +8,7 @@ namespace Interpreter {
  */
 enum TokenT {
   // Single char tokens
-  NONE, LEFT_BRACE,  RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE, HASH,
+  NONE, LEFT_BRACE,  RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE, 
   
   // Bit operation in assignment
   BIT_OR, BIT_AND, BIT_XOR, BIT_NOT,
@@ -36,7 +36,7 @@ enum TokenT {
   CMD_SCF,  CMD_SET,  CMD_SLA,  CMD_SRA,  CMD_SRL,  CMD_SUB,   CMD_XOR,
 
   // Operations
-  OP_ORG, OP_DB, OP_EQU,
+  OP_ORG, OP_DB, OP_DW, OP_EQU, OP_INCLUDE,
 
   OP_EOF, OP_NONE
 };
@@ -47,6 +47,7 @@ typedef TypeList<TokenT, olc::Pixel> TokenCOLOR;
 typedef TypeList<
   AnyType<TokenT::OP_ORG,   TokenSTR>, TypeList<
   AnyType<TokenT::OP_DB,    TokenSTR>, TypeList<
+  AnyType<TokenT::OP_DW,    TokenSTR>, TypeList<
   AnyType<TokenT::CMD_ADC,  TokenSTR>, TypeList<
   AnyType<TokenT::CMD_ADD,  TokenSTR>, TypeList<
   AnyType<TokenT::CMD_AND,  TokenSTR>, TypeList<
@@ -113,11 +114,12 @@ typedef TypeList<
   AnyType<TokenT::CMD_SRA,  TokenSTR>, TypeList<
   AnyType<TokenT::CMD_SRL,  TokenSTR>, TypeList<
   AnyType<TokenT::CMD_SUB,  TokenSTR>, TypeList<
-  AnyType<TokenT::CMD_XOR,  TokenSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::CMD_XOR,  TokenSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    CommandList;
 
 
 typedef TypeList<
+  AnyType<TokenT::OP_INCLUDE,TokenSTR>, TypeList<
   AnyType<TokenT::OP_EQU,   TokenSTR>, TypeList<
   AnyType<TokenT::REG_AF,   TokenSTR>, TypeList<
   AnyType<TokenT::REG_BC,   TokenSTR>, TypeList<
@@ -153,13 +155,14 @@ typedef TypeList<
   AnyType<TokenT::FLAG_P,   TokenSTR>, TypeList<
   AnyType<TokenT::FLAG_PE,  TokenSTR>, TypeList<
   AnyType<TokenT::FLAG_PO,  TokenSTR>, TypeList<
-  AnyType<TokenT::FLAG_Z,   TokenSTR>,  CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::FLAG_Z,   TokenSTR>,  CommandList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     KeywordList;
 
 
 typedef TypeList<
   AnyType<TokenT::OP_ORG,   TokenCOLOR>, TypeList<
   AnyType<TokenT::OP_DB,    TokenCOLOR>, TypeList<
+  AnyType<TokenT::OP_DW,    TokenCOLOR>, TypeList<
   AnyType<TokenT::OP_EQU,   TokenCOLOR>, TypeList<
 
   AnyType<TokenT::CMD_ADC,  TokenCOLOR>, TypeList<
@@ -273,16 +276,19 @@ typedef TypeList<
   
   AnyType<TokenT::NUMBER,  TokenCOLOR>, TypeList<
   AnyType<TokenT::STRING,  TokenCOLOR>, TypeList<
-  AnyType<TokenT::IDENTIFIER, TokenCOLOR>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::IDENTIFIER, TokenCOLOR>,TypeList<
+  AnyType<TokenT::OP_INCLUDE, TokenCOLOR>,NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     TokenColorList;
 
 class Defs {
 
 public:
   static void Init() {
-    AnyType<TokenT::OP_ORG,   TokenSTR>::GetValue() = "ORG";   AnyType<TokenT::OP_ORG,   TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
-    AnyType<TokenT::OP_DB,    TokenSTR>::GetValue() = "DB";    AnyType<TokenT::OP_DB,    TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
-    AnyType<TokenT::OP_EQU,   TokenSTR>::GetValue() = "EQU";   AnyType<TokenT::OP_EQU,   TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
+    AnyType<TokenT::OP_ORG,    TokenSTR>::GetValue() = "ORG";    AnyType<TokenT::OP_ORG,    TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
+    AnyType<TokenT::OP_DB,     TokenSTR>::GetValue() = "DB";     AnyType<TokenT::OP_DB,     TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
+    AnyType<TokenT::OP_DW,     TokenSTR>::GetValue() = "DW";     AnyType<TokenT::OP_DW,     TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
+    AnyType<TokenT::OP_EQU,    TokenSTR>::GetValue() = "EQU";    AnyType<TokenT::OP_EQU,    TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
+    AnyType<TokenT::OP_INCLUDE,TokenSTR>::GetValue()= "#include";AnyType<TokenT::OP_INCLUDE,TokenCOLOR>::GetValue() = AnyType<Colors::CYAN,    ColorT>::GetValue();
 
     AnyType<TokenT::CMD_ADC,  TokenSTR>::GetValue() = "ADC";   AnyType<TokenT::CMD_ADC,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
     AnyType<TokenT::CMD_ADD,  TokenSTR>::GetValue() = "ADD";   AnyType<TokenT::CMD_ADD,  TokenCOLOR>::GetValue() = AnyType<Colors::MAGENTA, ColorT>::GetValue();
@@ -399,6 +405,8 @@ public:
     AnyType<TokenT::NUMBER,     TokenCOLOR>::GetValue() = AnyType<Colors::RED,    ColorT>::GetValue();
     AnyType<TokenT::STRING,     TokenCOLOR>::GetValue() = AnyType<Colors::YELLOW, ColorT>::GetValue();
     AnyType<TokenT::IDENTIFIER, TokenCOLOR>::GetValue() = AnyType<Colors::WHITE,  ColorT>::GetValue();
+
+    // Additional operations
   }
 
   static inline uint32_t Reg2Mask(TokenT reg) {
