@@ -273,6 +273,7 @@ public:
   inline void Process(Int2Type<Instruction::JR_Z_D>)  { cycles =  7; if (OffsetPC(flagZ(),  Read())) cycles = 12;  }
   inline void Process(Int2Type<Instruction::JR_NC_D>) { cycles =  7; if (OffsetPC(!flagC(), Read())) cycles = 12; }
   inline void Process(Int2Type<Instruction::JR_C_D>)  { cycles =  7; if (OffsetPC(flagC(),  Read())) cycles = 12; }
+  inline void Process(Int2Type<Instruction::DJNZ_D>)  { cycles = 8;  if (OffsetPC(regB(regB() - 1)->regB(), Read())) cycles = 13; }
 
   inline void Process(Int2Type<Instruction::JP_NN>)    { cycles = 10; Jump(true,     Word()); }
   inline void Process(Int2Type<Instruction::JP_NZ_NN>) { cycles = 10; Jump(!flagZ(), Word()); }
@@ -475,16 +476,52 @@ public:
   inline void Process(Int2Type<Instruction::SCF>) { cycles = 4; flagC(true)->flagN(false)->flagH(false); }
   inline void Process(Int2Type<Instruction::CCF>) { cycles = 4; flagH(flagC())->flagC(!flagC())->flagN(false); }
 
+  inline void Process(Int2Type<Instruction::DAA>) {
+    cycles = 4; uint8_t low = regA() & 0x0F, high = (regA() & 0xF0) >> 4;
+
+    if (!flagN()) {
+      if (
+        (high >= 0x0 && high <= 0x8 && low >= 0xA && low <= 0xF && !flagC() && !flagH()) || 
+        (high >= 0x0 && high <= 0x9 && low >= 0x0 && low <= 0x3 && !flagC() &&  flagH())
+        ) {
+        regA((regA() + 0x06) & 0xFF)->flagC(false); return;
+      }
+
+      if (
+        (high >= 0xA && high <= 0xF && low >= 0x0 && low <= 0x9 && !flagC() && !flagH()) ||
+        (high >= 0x0 && high <= 0x2 && low >= 0x0 && low <= 0x9 &&  flagC() && !flagH())
+        ) {
+        regA((regA() + 0x60) & 0xFF)->flagC(true); return;
+      }
+
+      if (
+        (high >= 0x9 && high <= 0xF && low >= 0xA && low <= 0xF && !flagC() && !flagH()) ||
+        (high >= 0xA && high <= 0xF && low >= 0x0 && low <= 0x3 && !flagC() &&  flagH()) ||
+        (high >= 0x0 && high <= 0x2 && low >= 0xA && low <= 0xF &&  flagC() && !flagH()) ||
+        (high >= 0x0 && high <= 0x3 && low >= 0x0 && low <= 0x3 &&  flagC() &&  flagH())
+        ) {
+        regA((regA() + 0x66) & 0xFF)->flagC(true); return;
+      }
+    } else {
+      if ((high >= 0x0 && high <= 0x8 && low >= 0x6 && low <= 0xF && !flagC() &&  flagH())) {
+        regA((regA() + 0xFA) & 0xFF)->flagC(false); return;
+      }
+
+      if ((high >= 0x7 && high <= 0xF && low >= 0x0 && low <= 0x9 &&  flagC() && !flagH())) {
+        regA((regA() + 0xA0) & 0xFF)->flagC(false); return;
+      }
+
+      if ((high >= 0x6 && high <= 0xF && low >= 0x6 && low <= 0xF &&  flagC() &&  flagH())) {
+        regA((regA() + 0x9A) & 0xFF)->flagC(false); return;
+      }
+    }
+  }
+
   // TODO:
-  // NOTE: Do the last one, maybe need to fix bug with asm compiler
-  inline void Process(Int2Type<Instruction::DJNZ_D>) {}
-
-
   inline void Process(Int2Type<Instruction::DI>) {}
   inline void Process(Int2Type<Instruction::EI>) {}
   inline void Process(Int2Type<Instruction::HALT>) {}
 
-  inline void Process(Int2Type<Instruction::DAA>) {}
 
 
   inline void Process(Int2Type<Instruction::BIT_INSTR>, Int2Type<BitInstruction::BIT_0_A>) { cycles = 8; Bit8(regA(), 0); }
@@ -825,6 +862,24 @@ public:
     if (regBC() != 0 && regA() != Read(regHL())) { cycles = 21; regPC() -= 2; }
   }
 
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RLD>) {
+    cycles = 18;
+    auto byte = Read(regHL());
+    Write(regHL(), (uint8_t)((byte << 4) | (regA() & 0x0F)));
+    auto acc = regA((regA() & 0xF0) | (byte >> 4))->regA();
+
+    flagN(false)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagH(false)->flagPV(IsParity(acc));
+  }
+
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RRD>) {
+    cycles = 18;
+    auto byte = Read(regHL());
+    Write(regHL(), (uint8_t)((byte >> 4) | ((regA() & 0x0F) << 4)));
+    regA((regA() & 0xF0) | (byte & 0x0F));
+
+    flagN(false)->flagS(SIGN(regA()))->flagZ(!(regA() & 0xFF))->flagH(false)->flagPV(IsParity(regA()));
+  }
+
   // TODO:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_A_I>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_I_A>) {}
@@ -855,8 +910,6 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IND>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::INDR>) {}
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RRD>) {}
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RLD>) {}
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUTI>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OTIR>) {}

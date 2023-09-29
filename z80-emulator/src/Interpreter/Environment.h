@@ -48,14 +48,14 @@ public:
 
 
   void insert(MemoryT bytes) {
-    for (uint32_t i = 0; i < bytes.size(); i++) {
-      uint32_t index = addr + i;
+    for (uint32_t i = 0; i < bytes.size(); i++, addr++) {
+      // uint32_t index = addr + i;
 
-      if (index < memory.size()) memory[index] = bytes[i];
+      if (addr < memory.size()) memory[addr] = bytes[i];
       else memory.push_back(bytes[i]);
     }
 
-    addr += bytes.size();
+    // addr += bytes.size();
   }
 
   void save(std::string path) {
@@ -74,7 +74,7 @@ public:
   inline void lock() { vars.first = true; }
 
 private:
-  inline MemoryT addr2Bytes() { return { (uint8_t)((addr >>  8) & 0xFF), (uint8_t)(addr & 0xFF) }; }
+  inline MemoryT addr2Bytes() { return { (uint8_t)((addr >> 8) & 0xFF), (uint8_t)(addr & 0xFF) }; }
 
 public:
   MemoryT memory;

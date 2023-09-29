@@ -75,19 +75,20 @@ public:
     Process(Int2Type<NORMAL>(), GameEngine);
     if (mode == COMMAND) { if (!cmd.size()) mode = NORMAL; return; }
 
+    if (GameEngine->GetMouse(0).bPressed) {
+      auto mouse = GameEngine->GetMousePos();
+
+      if (EXIST(bus))    SELECTED(bus)    = IS_INSIDE(bus, mouse);
+      if (EXIST(memory)) SELECTED(memory) = IS_INSIDE(memory, mouse);
+      if (EXIST(lines))  SELECTED(lines)  = IS_INSIDE(lines, mouse);
+      if (EXIST(editor)) SELECTED(editor) = IS_INSIDE(editor, mouse);
+    }
+
 
     if (SELECTED(bus))    PTR(bus)->Process(GameEngine);
     if (SELECTED(memory)) PTR(memory)->Process(GameEngine);
     if (SELECTED(lines))  PTR(lines)->Process(GameEngine);
     if (SELECTED(editor)) PTR(editor)->Process(GameEngine);
-
-    if (!GameEngine->GetMouse(0).bPressed) return;
-    auto mouse = GameEngine->GetMousePos();
-
-    if (EXIST(bus))    SELECTED(bus)    = IS_INSIDE(bus, mouse);
-    if (EXIST(memory)) SELECTED(memory) = IS_INSIDE(memory, mouse);
-    if (EXIST(lines))  SELECTED(lines)  = IS_INSIDE(lines, mouse);
-    if (EXIST(editor)) SELECTED(editor) = IS_INSIDE(editor, mouse);
   }
 
   void Draw(PixelGameEngine* GameEngine) {

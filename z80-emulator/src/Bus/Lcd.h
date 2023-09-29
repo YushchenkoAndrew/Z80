@@ -33,19 +33,18 @@ public:
 
   uint8_t Read(uint32_t addr, bool) { return 0; }
   uint8_t Write(uint32_t addr, uint8_t data, bool bDataRegister) {
-    // TODO: Impl PPI
-    // if (!bDataRegister) {
-    //   if (IS_BIT(data, 7)) return Instruction(Int2Type<DDRAM>(), data);
-    //   if (IS_BIT(data, 6)) return Instruction(Int2Type<CGRAM>(), data);
-    //   if (IS_BIT(data, 5)) return Instruction(Int2Type<FUNCTION>(), data);
-    //   if (IS_BIT(data, 4)) return Instruction(Int2Type<CURSOR>(), data);
-    //   if (IS_BIT(data, 3)) return Instruction(Int2Type<DISPLAY>(), data);
-    //   if (IS_BIT(data, 2)) return Instruction(Int2Type<MODE>(), data);
-    //   if (IS_BIT(data, 1)) return Instruction(Int2Type<RETURN>(), data);
-    //   if (IS_BIT(data, 0)) return Instruction(Int2Type<CLEAR>(), data);
+    if (!bDataRegister) {
+      if (IS_BIT(data, 7)) return Instruction(Int2Type<DDRAM>(), data);
+      if (IS_BIT(data, 6)) return Instruction(Int2Type<CGRAM>(), data);
+      if (IS_BIT(data, 5)) return Instruction(Int2Type<FUNCTION>(), data);
+      if (IS_BIT(data, 4)) return Instruction(Int2Type<CURSOR>(), data);
+      if (IS_BIT(data, 3)) return Instruction(Int2Type<DISPLAY>(), data);
+      if (IS_BIT(data, 2)) return Instruction(Int2Type<MODE>(), data);
+      if (IS_BIT(data, 1)) return Instruction(Int2Type<RETURN>(), data);
+      if (IS_BIT(data, 0)) return Instruction(Int2Type<CLEAR>(), data);
 
-    //   return 0x00;
-    // }
+      return 0x00;
+    }
 
     AnyType<-1 , int32_t>::GetValue() = data;
     auto c = foreach<LcdChars, AnyType<-1 , int32_t>>::Key2Value();
@@ -56,7 +55,6 @@ public:
   }
 
 
-private:
   void Draw(Int2Type<CURSOR>, PixelGameEngine* GameEngine) {
     if (fBlink.first && (fBlink.second += AnyType<-1, float>::GetValue()) > 1.2f) fBlink.second -= 1.2f;
     if (fBlink.first && fBlink.second > 0.6f) return;
@@ -81,7 +79,7 @@ private:
       for (auto& byte : seg) byte = 0x00;
     }
 
-    cursor.second = cursor.second % 16;
+    cursor.second = (cursor.second / 16) * 16;
     return data;
   }
 

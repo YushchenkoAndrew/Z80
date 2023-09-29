@@ -34,39 +34,36 @@ MAIN:
   IN A, (LED_PORT)
   OUT (LED_PORT), A
 
-  PUSH AF     ;; Send arg to func
+  LD HL, 0x5000
+  LD (HL), A
+
+  PUSH HL     ;; Send ptr to func
   CALL _HEX   ;; Display value in hex display
   JP MAIN
 
-;; Funcion HEX(arg) exptects value to display to be in high byte
+;; func HEX(byte*) -> void; exptects ptr to byte to display 
 _HEX:
-  POP DE     ;; Get return addr
-  POP AF     ;; Get value to display
-  PUSH DE    ;; Restore return addr
+  POP HL     ;; Get return addr
+  EX (SP), HL;; Restore return addr & get ptr to value
+  LD A, (HL) ;; Get value to display
 
-  LD D, 0x80 ;; Set count & mask at the same time
-  LD E, A    ;; Save value in reg C
   LD B, 0    ;; Reset reg B
-
-  RRCA       ;; Move A0 -> A7
-  RRCA       ;; Move A0 -> A7
-  RRCA       ;; Move A0 -> A7
-  RRCA       ;; Move A0 -> A7
+  LD D, 0x80 ;; Set count & mask at the same time
+  PUSH HL    ;; Save in stack ptr to number
 
 _HEX_lp:
-  AND 0x0F   ;; Now just get low portion
+  XOR A      ;; Reset reg A
+  RLD        ;; Get high bits from ptr (HL)
   LD C, A    ;; Load high bit
   LD HL, _HEX_DB ;; Load start addr of db
   ADD HL, BC ;; Addr + offset
-
   LD A, (HL) ;; Load appropriet value
   OR D       ;; Apply mask to the value
   OUT (HEX_PORT), A ;; Display segment
-
-  LD A, E    ;; Load saved reg C value
+  POP HL     ;; Restore ptr to number / On last cycle have ret ptr
   SLA D      ;; Dec a loop counter
   JP C, _HEX_lp
-  RET
+  JP (HL)    ;; Aka return
 
 
 DELAY:

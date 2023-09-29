@@ -13,8 +13,15 @@ protected:
 
   virtual void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(key).bPressed) return;
+    bool bPressed = GameEngine->GetKey(key).bPressed;
 
+    if (GameEngine->GetKey(key).bReleased) fStrokeRepeat = .0f;
+    if (GameEngine->GetKey(key).bHeld) {
+      fStrokeRepeat += AnyType<-1, float>::GetValue();
+      if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
+    }
+
+    if (!bPressed) return;
     if (GameEngine->GetKey(olc::Key::CTRL).bHeld) cmd += "^";
 
     const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
@@ -59,6 +66,9 @@ protected:
   std::string err;
   std::string cmd = "";
   std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
+  
+  // Variables defines animation duration
+  float fStrokeRepeat = 0.f;
 
   bool bSync = false; // Flag that define is lambda func is sync or async
   std::function<void(void)> lambda = []() {};

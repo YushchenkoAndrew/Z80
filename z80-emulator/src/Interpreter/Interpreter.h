@@ -96,7 +96,7 @@ public:
 
     switch (expr->operation->token) {
       case TokenT::PLUS:
-        for (int32_t i = left.size(); i >= 0; i--) {
+        for (int32_t i = left.size() - 1; i >= 0; i--) {
           uint16_t acc = left[i] + right[i];
           uint8_t carry = (acc & 0xFF00) >> 8;
 
@@ -111,8 +111,8 @@ public:
         return left;
 
       case TokenT::MINUS:
-        for (int32_t i = left.size(); i >= 0; i--) {
-          uint16_t acc = left[i] + ~right[i] + 1;
+        for (int32_t i = left.size() - 1; i >= 0; i--) {
+          uint16_t acc = (uint16_t)left[i] + ((uint16_t)right[i] ^ 0xFFFF) + 1u;
           uint8_t carry = (acc & 0xFF00) >> 8;
 
           left[i] = acc & 0xFF;
@@ -154,8 +154,8 @@ public:
 
     switch (expr->operation->token) {
       case TokenT::MINUS:
-        for (int32_t i = right.size(); i >= 0; i--) {
-          uint16_t acc = ~right[i] + 1;
+        for (int32_t i = right.size() - 1; i >= 0; i--) {
+          uint16_t acc = ((uint16_t)right[i] ^ 0xFFFF) + 1;
           uint8_t carry = (acc & 0xFF00) >> 8;
 
           right[i] = acc & 0xFF;

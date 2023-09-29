@@ -3,11 +3,12 @@
 
 namespace Bus {
 
+#define BIT(word, pos) ((word >> pos) & 0x01)
 class Bus : public Window::Window, public Device {
 private:
   struct MUX { 
     enum MREQ { W27C512, IMS1423, HY62256A, KM28C17 };
-    enum IORQ { IO_DEVICE, HEX_DEVICE, PPI_PORT, UART_PORT };
+    enum IORQ { IN_OUT_PORT, HEX_PORT, PPI_PORT, UART_PORT, LCD_IO = 8 };
   };
 
   enum REQUEST { MREQ, IORQ };
@@ -19,6 +20,8 @@ public:
     switches(std::make_shared<Switch>(this)),
     hexDisplay(std::make_shared<HexDisplay>(this)),
     lcd(std::make_shared<LCD>(this)),
+
+    ppi(std::make_shared<PPI>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this)),
     W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
@@ -71,45 +74,72 @@ public:
   }
 
   uint8_t Read(uint32_t addr, bool mreq) {
-    auto device = mreq ? mux(Int2Type<MREQ>(), addr, true) : mux(Int2Type<IORQ>(), addr, true);
-    if (device == nullptr) return 0x00;
-
-  // TODO: Impl correct PPI
-    return device->Read(addr, mreq);
+    if (mreq) return mux(Int2Type<MREQ>(), addr);
+    else return mux(Int2Type<IORQ>(), addr);
   }
 
   uint8_t Write(uint32_t addr, uint8_t data, bool mreq) {
-    auto device = mreq ? mux(Int2Type<MREQ>(), addr, false) : mux(Int2Type<IORQ>(), addr, false);
-    if (device == nullptr) return 0x00;
-
-  // TODO: Impl correct PPI
-    return device->Write(addr, data, mreq);
+    if (mreq) return mux(Int2Type<MREQ>(), addr, data);
+    else return mux(Int2Type<IORQ>(), addr, data);
   }
 
   inline DisassembleT Disassemble() { return Z80->Disassemble(); }
 
 private:
-  inline std::shared_ptr<Device> mux(Int2Type<MREQ>, uint32_t addr, bool read) {
-    switch((addr & 0xC000) >> 14) {
-      case MUX::MREQ::W27C512: if (read) return W27C512; else return nullptr;
-      case MUX::MREQ::IMS1423: return IMS1423;
+  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16) {
+    auto addr = (addr16 & 0x3FFF) | ((ppi->Read(PPI::B, false) & 0x03) << 14);
+
+    switch((addr16 & 0xC000) >> 14) {
+      case MUX::MREQ::W27C512: return W27C512->Read(addr, true);
+      case MUX::MREQ::IMS1423: return IMS1423->Read(addr, true);
       case MUX::MREQ::HY62256A: // TODO:
       case MUX::MREQ::KM28C17: break;
     }
 
-    return nullptr;
+    return 0x00;
   }
 
-  // TODO: Impl correct PPI
-  inline std::shared_ptr<Device> mux(Int2Type<IORQ>, uint32_t addr, bool read) {
-    switch((addr & 0x00F0) >> 4) {
-      case MUX::IORQ::IO_DEVICE: if (read) return switches; else return led;
-      case MUX::IORQ::HEX_DEVICE: return read ? nullptr : hexDisplay; 
-      case MUX::IORQ::PPI_PORT: return lcd;
-      case MUX::IORQ::UART_PORT: break; 
+  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16, uint8_t data) {
+    auto addr = (addr16 & 0x3FFF) | ((ppi->Read(PPI::B, false) & 0x03) << 14);
+
+    switch((addr16 & 0xC000) >> 14) {
+      case MUX::MREQ::W27C512: return 0x00;
+      case MUX::MREQ::IMS1423: return IMS1423->Write(addr, data, true);
+      case MUX::MREQ::HY62256A: // TODO:
+      case MUX::MREQ::KM28C17: break;
     }
 
-    return nullptr;
+    return 0x00;
+  }
+
+  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr) {
+    switch((addr & 0x00F0) >> 4) {
+      case MUX::IORQ::IN_OUT_PORT:return switches->Read(addr & 0x00FF, true);
+      case MUX::IORQ::HEX_PORT:   return 0x00;
+      case MUX::IORQ::PPI_PORT:   return ppi->Read(addr, true);
+      case MUX::IORQ::UART_PORT:  break; 
+    }
+
+    return 0x00;
+  }
+
+  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr, uint8_t data) {
+    switch((addr & 0x00F0) >> 4) {
+      case MUX::IORQ::IN_OUT_PORT: return led->Write(addr, data, true);
+      case MUX::IORQ::HEX_PORT: return hexDisplay->Write(addr, data, true); 
+      case MUX::IORQ::UART_PORT: break; 
+      case MUX::IORQ::PPI_PORT: {
+
+      // ppi->Write(addr, data, true);
+      // FIXME: I dont exactly know how I impl hardware
+
+      // IO DEVICES
+      // if ((addr & 3) == 0)
+      lcd->Write(addr, data, BIT(addr, 0));
+      }
+    }
+
+    return 0x00;
   }
 
 
@@ -119,6 +149,8 @@ public:
   std::shared_ptr<HexDisplay> hexDisplay;
   std::shared_ptr<LCD> lcd;
 
+  std::shared_ptr<PPI> ppi;
+
   std::shared_ptr<Z80::CPU> Z80;
   std::shared_ptr<Memory<MemoryT::W27C512, W27C512_SIZE>> W27C512;
   std::shared_ptr<Memory<MemoryT::IMS1423, IMS1423_SIZE>> IMS1423;
@@ -127,5 +159,7 @@ public:
   // TODO: RAM ims1423  A14 = 1 A15 = 0  (NOTE: Without A13)
   // TODO: ROM KM28C17-20 A14 = 1 A15 = 1
 };
+
+#undef BIT
 
 };

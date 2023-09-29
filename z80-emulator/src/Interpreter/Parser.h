@@ -227,7 +227,7 @@ public:
   }
 
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_DJNZ>) {
-    return std::make_shared<StatementOneArgCommand>(0x0010, peekPrev(), literal(1));
+    return std::make_shared<StatementLambda>(StatementLambda(peekPrev(), term(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1000 | (argv.back() & 0xFF)); }));
   }
 
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_IM>) {
