@@ -1125,6 +1125,7 @@ public:
   inline void Normal() { mode = NORMAL; sync.second.notify_all(); }
 
   inline void Step() { if (mode == DEBUG) sync.second.notify_all(); }
+  inline uint16_t Stack() { return regSP(); }
   inline uint16_t Addr() { 
     std::unique_lock<std::mutex> lock(callback.first);
     callback.second.wait(lock);

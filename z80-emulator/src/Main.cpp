@@ -26,6 +26,7 @@ public:
 
     // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
 
+    auto lines = std::make_shared<Window::Lines>();
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
@@ -38,7 +39,9 @@ public:
       }
 
       printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
-    }
+
+      lines->SetLines(interpreter.errors);
+    } else lines->SetLines("OK");
 
     //  else {
     //   emulator.ROM.load(emulator.interpreter.env.memory);
@@ -63,20 +66,20 @@ public:
     // emulator.editor.size = {  };
 
 
-    auto lines = std::make_shared<Window::Lines>();
-    lines->lines = interpreter.errors;
+    // // lines->lines = interpreter.errors;
+    // lines->lines.push_back("Success !!");
 
+    // auto offset = 210;
+    olc::vi2d zero = olc::vi2d(0, 0);
+    olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight());
+    olc::vi2d window = olc::vi2d(size.x * 3 / 5, size.y * 9 / 10);
 
-    auto offset = 210;
     panels = {
       Panel(
-        // TODO: Load panes from lua
-        std::tuple(editor, std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth() - offset, ScreenHeight())))
-        ,
-        std::tuple(bus->W27C512,  std::pair(olc::vi2d(ScreenWidth() - offset, 0), olc::vi2d(offset, ScreenHeight())))
-        // ,
-        // TODO: Display errors
-        // std::tuple(true, lines,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+        std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
+        std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
+        std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
+        std::tuple(lines,        std::pair(olc::vi2d(zero.x,   window.y),            olc::vi2d(window.x,           size.y - window.y)))
       ),
       Panel(
         std::tuple(bus,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
@@ -170,7 +173,8 @@ public:
 
     Panel& p = panels[nPanel];
     if (p.Editor() != nullptr) p.Editor()->MoveTo(olc::vi2d(next.second->col - 1, next.second->line - 1));
-    if (p.Memory() != nullptr) p.Memory()->Move2Addr(next.first);
+    if (p.EEPROM() != nullptr) p.EEPROM()->Move2Addr(next.first);
+    if (p.Stack() != nullptr)  p.Stack()->Move2Addr(bus->Z80->Stack());
   }
 
   void Event(Int2Type<EXIT_DEBUG_MODE_CALLBACK>) override {
@@ -197,8 +201,8 @@ public:
       )) next = pos;
     }
 
-    if (next.second == nullptr || panels[nPanel].Memory() == nullptr) return;
-    panels[nPanel].Memory()->Move2Addr(next.first);
+    if (next.second == nullptr || panels[nPanel].EEPROM() == nullptr) return;
+    panels[nPanel].EEPROM()->Move2Addr(next.first);
   }
 
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 

@@ -41,7 +41,8 @@ public:
 
   void Preinitialize() {
     if (EXIST(bus))    PTR(bus)->Preinitialize();
-    if (EXIST(memory)) PTR(memory)->Preinitialize();
+    if (EXIST(eeprom)) PTR(eeprom)->Preinitialize();
+    if (EXIST(stack))  PTR(stack)->Preinitialize();
     if (EXIST(lines))  PTR(lines)->Preinitialize();
     if (EXIST(editor)) PTR(editor)->Preinitialize();
   }
@@ -50,14 +51,16 @@ public:
     this->absolute = dimensions.first; this->size = dimensions.second; bFullScreen = false;
 
     if (EXIST(bus))    PTR(bus)->Initialize(DIMENSION(bus));
-    if (EXIST(memory)) PTR(memory)->Initialize(DIMENSION(memory));
+    if (EXIST(eeprom)) PTR(eeprom)->Initialize(DIMENSION(eeprom));
+    if (EXIST(stack))  PTR(stack)->Initialize(DIMENSION(stack));
     if (EXIST(lines))  PTR(lines)->Initialize(DIMENSION(lines));
     if (EXIST(editor)) PTR(editor)->Initialize(DIMENSION(editor));
   }
 
   void Preprocess() {
     if (EXIST(bus))    PTR(bus)->Preprocess();
-    if (EXIST(memory)) PTR(memory)->Preprocess();
+    if (EXIST(eeprom)) PTR(eeprom)->Preprocess();
+    if (EXIST(stack))  PTR(stack)->Preprocess();
     if (EXIST(lines))  PTR(lines)->Preprocess();
     if (EXIST(editor)) PTR(editor)->Preprocess();
   }
@@ -79,14 +82,16 @@ public:
       auto mouse = GameEngine->GetMousePos();
 
       if (EXIST(bus))    SELECTED(bus)    = IS_INSIDE(bus, mouse);
-      if (EXIST(memory)) SELECTED(memory) = IS_INSIDE(memory, mouse);
+      if (EXIST(eeprom)) SELECTED(eeprom) = IS_INSIDE(eeprom, mouse);
+      if (EXIST(stack))  SELECTED(stack)  = IS_INSIDE(stack, mouse);
       if (EXIST(lines))  SELECTED(lines)  = IS_INSIDE(lines, mouse);
       if (EXIST(editor)) SELECTED(editor) = IS_INSIDE(editor, mouse);
     }
 
 
     if (SELECTED(bus))    PTR(bus)->Process(GameEngine);
-    if (SELECTED(memory)) PTR(memory)->Process(GameEngine);
+    if (SELECTED(eeprom)) PTR(eeprom)->Process(GameEngine);
+    if (SELECTED(stack))  PTR(stack)->Process(GameEngine);
     if (SELECTED(lines))  PTR(lines)->Process(GameEngine);
     if (SELECTED(editor)) PTR(editor)->Process(GameEngine);
   }
@@ -101,7 +106,8 @@ public:
     // for(auto& future : vFuture) future.wait();
 
     if (EXIST(bus)    && SHOULD_DRAW(bFullScreen, bus))    PTR(bus)->Draw(GameEngine);
-    if (EXIST(memory) && SHOULD_DRAW(bFullScreen, memory)) PTR(memory)->Draw(GameEngine);
+    if (EXIST(eeprom) && SHOULD_DRAW(bFullScreen, eeprom)) PTR(eeprom)->Draw(GameEngine);
+    if (EXIST(stack)  && SHOULD_DRAW(bFullScreen, stack)) PTR(stack)->Draw(GameEngine);
     if (EXIST(lines)  && SHOULD_DRAW(bFullScreen, lines))  PTR(lines)->Draw(GameEngine);
     if (EXIST(editor) && SHOULD_DRAW(bFullScreen, editor)) PTR(editor)->Draw(GameEngine);
 
@@ -111,14 +117,16 @@ public:
 
   void Lock() {
     if (EXIST(bus))    PTR(bus)->Lock();
-    if (EXIST(memory)) PTR(memory)->Lock();
+    if (EXIST(eeprom)) PTR(eeprom)->Lock();
+    if (EXIST(stack))  PTR(stack)->Lock();
     if (EXIST(lines))  PTR(lines)->Lock();
     if (EXIST(editor)) PTR(editor)->Lock();
   }
 
   void Unlock() {
     if (EXIST(bus))    PTR(bus)->Unlock();
-    if (EXIST(memory)) PTR(memory)->Unlock();
+    if (EXIST(eeprom)) PTR(eeprom)->Unlock();
+    if (EXIST(stack))  PTR(stack)->Unlock();
     if (EXIST(lines))  PTR(lines)->Unlock();
     if (EXIST(editor)) PTR(editor)->Unlock();
   }
@@ -130,9 +138,10 @@ private:
       GameEngine->DrawString(POS(tuple), std::string(1, '0' + WINDOW(tuple)), ~color, 4);
     };
 
-    if (EXIST(bus)) index(bus);
-    if (EXIST(memory)) index(memory);
-    if (EXIST(lines)) index(lines);
+    if (EXIST(bus))    index(bus);
+    if (EXIST(eeprom)) index(eeprom);
+    if (EXIST(stack))  index(stack);
+    if (EXIST(lines))  index(lines);
     if (EXIST(editor)) index(editor);
   }
 
@@ -142,7 +151,8 @@ public:
 
   inline void Command(Int2Type<Editor::VimT::CMD_z>) {
     if (SELECTED(bus))    { bFullScreen = (ZOOMED(bus)    ^= true); PTR(bus)->Initialize(   bFullScreen ? std::pair(absolute, size) : DIMENSION(bus)); }
-    if (SELECTED(memory)) { bFullScreen = (ZOOMED(memory) ^= true); PTR(memory)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(memory)); }
+    if (SELECTED(eeprom)) { bFullScreen = (ZOOMED(eeprom) ^= true); PTR(eeprom)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(eeprom)); }
+    if (SELECTED(stack))  { bFullScreen = (ZOOMED(stack) ^= true);  PTR(stack)->Initialize( bFullScreen ? std::pair(absolute, size) : DIMENSION(stack)); }
     if (SELECTED(lines))  { bFullScreen = (ZOOMED(lines)  ^= true); PTR(lines)->Initialize( bFullScreen ? std::pair(absolute, size) : DIMENSION(lines)); }
     if (SELECTED(editor)) { bFullScreen = (ZOOMED(editor) ^= true); PTR(editor)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(editor)); }
   }
@@ -166,7 +176,8 @@ public:
   inline void Command(Int2Type<Editor::VimT::CMD_q>) {
     int32_t digit = this->digit();
     if (EXIST(bus))    SELECTED(bus)    = WINDOW(bus)    == digit;
-    if (EXIST(memory)) SELECTED(memory) = WINDOW(memory) == digit;
+    if (EXIST(eeprom)) SELECTED(eeprom) = WINDOW(eeprom) == digit;
+    if (EXIST(stack))  SELECTED(stack)  = WINDOW(stack)  == digit;
     if (EXIST(lines))  SELECTED(lines)  = WINDOW(lines)  == digit;
     if (EXIST(editor)) SELECTED(editor) = WINDOW(editor) == digit;
   }
@@ -274,7 +285,8 @@ public:
   std::shared_ptr<Bus::Bus> Bus() { return PTR(bus); }
   std::shared_ptr<Window::Lines> Lines() { return PTR(lines); }
   std::shared_ptr<Editor::Editor> Editor() { return PTR(editor); }
-  std::shared_ptr<Bus::Memory<Bus::W27C512, W27C512_SIZE>> Memory() { return PTR(memory); }
+  std::shared_ptr<Bus::Memory<Bus::W27C512, W27C512_SIZE>> EEPROM() { return PTR(eeprom); }
+  std::shared_ptr<Bus::Memory<Bus::IMS1423, IMS1423_SIZE>> Stack() { return PTR(stack); }
 
 private:
   template<typename T, typename... Args>
@@ -286,7 +298,10 @@ private:
   inline void Init(WindowInitT<Bus::Memory<T, U>> m) { Init(Int2Type<T>(), m); }
   
   template<int32_t T>
-  inline void Init(Int2Type<Bus::W27C512>, WindowInitT<Bus::Memory<Bus::W27C512, T>> m) { memory = std::tuple_cat(std::make_tuple(nWindows == 1, false), m, std::make_tuple(++nWindows)); }
+  inline void Init(Int2Type<Bus::W27C512>, WindowInitT<Bus::Memory<Bus::W27C512, T>> m) { eeprom = std::tuple_cat(std::make_tuple(nWindows == 1, false), m, std::make_tuple(++nWindows)); }
+
+  template<int32_t T>
+  inline void Init(Int2Type<Bus::IMS1423>, WindowInitT<Bus::Memory<Bus::IMS1423, T>> m) { stack = std::tuple_cat(std::make_tuple(nWindows == 1, false), m, std::make_tuple(++nWindows)); }
 
   inline void Init(WindowInitT<Bus::Bus> b) { bus = std::tuple_cat(std::make_tuple(nWindows == 1, false), b, std::make_tuple(++nWindows)); }
   inline void Init(WindowInitT<Window::Lines> l) { lines = std::tuple_cat(std::make_tuple(nWindows == 1, false), l, std::make_tuple(++nWindows)); }
@@ -304,7 +319,8 @@ private:
   WindowT<Window::Lines> lines = { false, false, nullptr, {}, 0 };
   WindowT<Editor::Editor> editor = { false, false, nullptr, {}, 0 };
 
-  WindowT<Bus::Memory<Bus::W27C512, W27C512_SIZE>> memory = { false, false, nullptr, {}, 0 };
+  WindowT<Bus::Memory<Bus::W27C512, W27C512_SIZE>> eeprom = { false, false, nullptr, {}, 0 };
+  WindowT<Bus::Memory<Bus::IMS1423, IMS1423_SIZE>> stack = { false, false, nullptr, {}, 0 };
 };
 
 

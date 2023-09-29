@@ -17,7 +17,6 @@ namespace Bus {
 template<int32_t TypeT, int32_t SizeT>
 class Memory : public Window::Window, public Window::Command, public Device {
 public:
-  enum { type = TypeT };
   enum ModeT { NORMAL, REPLACE, CHARACTER, DISASSEMBLE };
 
   Memory(): mode(NORMAL), bus(nullptr) {}
@@ -44,9 +43,11 @@ public:
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset.first;
 
-    pages.x = 1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.first.x));
-    pages.y = ((size.y - vOffset.first.y * 2) / (vStep.first.y * pages.x)) * pages.x;
+    pages.x = (int)(1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.first.x)));
+    pages.y = (int)(size.y - vOffset.first.y) / vStep.first.y;
     Index2Pos(index());
+
+    if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
   }
 
   inline void Lock() { 
@@ -113,8 +114,14 @@ public:
     GameEngine->DrawString(pos, GetMode(), ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
     auto cmd = GetCmd();
-    pos.x = nWidth - ((int32_t)cmd.size() + 1) * vStep.first.y;
-    GameEngine->DrawString(pos, cmd, ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    if (!cmd.size()) {
+      auto name = GetType();
+      pos.x += nWidth - ((int32_t)name.size() + 1) * vStep.second.x;
+      GameEngine->DrawString(pos, name, ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    } else {
+      pos.x += nWidth - ((int32_t)cmd.size() + 2) * vStep.second.x;
+      GameEngine->DrawString(pos, cmd, ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    }
   }
 
 private:
@@ -210,7 +217,7 @@ private:
   }
 
   inline void Preprocess(Int2Type<NORMAL>) {
-    if (pos.y - vStartAt.first.y >= pages.y && pos.y < (((int32_t)memory.size() - 1) / pages.x)) vStartAt.first.y += pages.y;
+    if (pos.y - vStartAt.first.y >= pages.y && pos.y <= (((int32_t)memory.size() - 1) / pages.x)) vStartAt.first.y += pages.y;
     if (pos.y - vStartAt.first.y < 0 && pos.y) vStartAt.first.y -= pages.y;
   }
 
@@ -707,7 +714,7 @@ public:
     }
   }
 
-  inline void Move2Addr(uint32_t addr) { Index2Pos(addr); UpdateCursor(); }
+  inline void Move2Addr(uint32_t addr) { Index2Pos(addr & (memory.size() - 1)); UpdateCursor(); }
   inline void MoveTo(olc::vi2d offset) {
     for (int32_t i = 0; i < std::abs(offset.y); i++) {
       if (offset.y > 0) Command(Int2Type<Editor::VimT::CMD_j>());
@@ -739,6 +746,14 @@ public:
   inline std::string GetCmd() { 
     if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return "";
     return cmd;
+  }
+
+  inline std::string GetType() { 
+    switch (type) {
+      case MemoryT::W27C512: return "W27C512";
+      case MemoryT::IMS1423: return "IMS1423";
+    }
+    return "";
   }
 
 private:
@@ -821,6 +836,8 @@ private:
 
 
 private:
+  const int32_t type = +TypeT;
+
   olc::vi2d size = olc::vi2d(0, 0);
   olc::vi2d pages = olc::vi2d(0x10, 0);
   olc::vi2d absolute = olc::vi2d(0, 0);

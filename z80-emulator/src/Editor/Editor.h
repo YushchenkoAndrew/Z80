@@ -73,7 +73,7 @@ public:
     pos = (absolute + (cursor - vStartAt) * vStep + vOffset) / vStep; 
 
     std::stringstream ss;
-    for (int32_t i = 0, max = size.y / vStep.y; i < max; i++) {
+    for (int32_t i = 0, max = size.y / vStep.y; i < max - 1; i++) {
       ss.str(""); ss << cursor.y - pos.y + i + 1; auto str = ss.str();
       auto line = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y);
 
