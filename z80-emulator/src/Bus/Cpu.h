@@ -358,7 +358,7 @@ public:
 
   inline void Process(Int2Type<Instruction::OR_A>) { cycles = 4; regA(Or8(regA(), regA())); }
   inline void Process(Int2Type<Instruction::OR_B>) { cycles = 4; regA(Or8(regA(), regB())); }
-  inline void Process(Int2Type<Instruction::OR_C>) { cycles = 4; regA(Or8(regA(), regD())); }
+  inline void Process(Int2Type<Instruction::OR_C>) { cycles = 4; regA(Or8(regA(), regC())); }
   inline void Process(Int2Type<Instruction::OR_D>) { cycles = 4; regA(Or8(regA(), regD())); }
   inline void Process(Int2Type<Instruction::OR_E>) { cycles = 4; regA(Or8(regA(), regE())); }
   inline void Process(Int2Type<Instruction::OR_H>) { cycles = 4; regA(Or8(regA(), regH())); }

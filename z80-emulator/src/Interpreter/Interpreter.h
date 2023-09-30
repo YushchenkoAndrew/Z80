@@ -184,7 +184,7 @@ public:
 
   MemoryT visitExprVariable(ExpressionVariable* expr) override {
     auto bytes = env.get(expr->token->lexeme, expr->size);
-    if (bytes.size() == expr->size) return bytes;
+    if (!expr->size || bytes.size() == expr->size) return bytes;
 
     error(expr->token, "Variable byte size exceeded allowed size.");
     return {};

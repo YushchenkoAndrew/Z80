@@ -41,24 +41,15 @@ private:
   }
 
   void number() {
-    while (isDigit(peek())) advance();
-
     int32_t base = 10;
-    switch (peek()) {
-      case 'X': case 'x': base = 16; break;
-      case 'O': case 'o': base = 8; break;
-      case 'B': case 'b': base = 2; break;
-    }
 
-    if ((base == 2 || base == 8) && isDigit(peekNext())) {
-      advance(); // Consume 'x' || 'o' || 'b'
-      while (isDigit(peek())) advance();
-    }
-
-    if (base == 16 && isHexDigit(peekNext())) {
-      advance(); // Consume 'x' || 'o' || 'b'
-      while (isHexDigit(peek())) advance();
-    }
+    if (peekPrev() == '0' && match<6>({ 'X', 'x', 'O', 'o', 'B', 'b' })) {
+      switch (peekPrev()) {
+        case 'X': case 'x': base = 16; while (isHexDigit(peek())) advance(); break;
+        case 'O': case 'o': base = 8;  while (isOctDigit(peek())) advance(); break;
+        case 'B': case 'b': base = 2;  while (isBinDigit(peek())) advance(); break;
+      }
+    } else while (isDigit(peek())) advance();
 
     addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart), nullptr, base)));
   }
@@ -77,6 +68,12 @@ private:
   inline const char peek() { return isAtEnd() ? '\0' : src[nCurr]; }
   inline const char peekPrev() { return !nCurr ? '\0' : src[nCurr - 1]; }
   inline const char peekNext() { return nCurr + 1 >= src.length() ? '\0' : src[nCurr + 1]; }
+
+  template<int32_t T>
+  inline bool match(std::array<const char, T> arr) {
+    for (auto& el : arr) if (match(el)) return true;
+    return false;
+  }
 
   inline bool match(const char expected) {
     if (isAtEnd()) return false;
@@ -99,6 +96,8 @@ private:
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
   inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
+  inline bool isBinDigit(const char &c) { return c == '0' || c == '1'; }
+  inline bool isOctDigit(const char &c) { return c >= '0' && c <= '7'; }
   inline bool isHexDigit(const char &c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
   inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '\''; }
   inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || isDigit(c); }

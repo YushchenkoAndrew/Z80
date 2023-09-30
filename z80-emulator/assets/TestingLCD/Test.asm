@@ -10,7 +10,7 @@
   JP setup
 
 number:
-  db "Number: '%x'", 0
+  db "Number: '%d' %x '%c' %s", 0
 
 number2:
   db "123", 0
@@ -22,13 +22,7 @@ setup:
   LD A, 0b10010010
   OUT (0x23), A
 
-  LD A, 0x00
-  OUT (0x21), A
-
-  ; RESET LCD
-  LD A, 0x01
-  OUT (0x20), A
-
+  CALL _LCD_INIT
 
   ; LD BC, 0x00FF
   ; XOR A
@@ -50,8 +44,42 @@ main:
   IN A, (0x00)
   OUT (0x00), A
 
-  LD C, A
-  PUSH BC
+  PUSH AF
+
+  LD HL, PTR_FUNC_ARGS
+  LD (HL), A
+  PUSH HL
+  CALL _HEX
+
+  POP AF
+
+  ; POP HL     ;; Get return addr
+  ; POP DE     ;; Get string addr
+  ; POP BC     ;; Get output port
+  ; EX (SP), HL;; Restore return arg & Get ptr to args
+
+  ; LD BC, PTR_FUNC_ARGS
+  LD HL, PTR_FUNC_ARGS
+  LD (HL), A
+  PUSH HL
+
+  INC HL
+  LD (HL), A
+
+  INC HL
+  LD (HL), A
+
+  INC HL
+  LD (HL), "S"
+
+  INC HL
+  LD (HL), "T"
+
+  INC HL
+  LD (HL), "R"
+
+  INC HL
+  LD (HL), 0
 
   LD BC, 0x21 ;; PORT
   PUSH BC
@@ -63,105 +91,60 @@ main:
 
   JP main
 
+#include "../lib/Hex.asm"
+#include "../lib/Printf.asm"
 
 
-_PRINTF:
-  POP DE     ;; Get return addr
-  POP HL     ;; Get string addr
-  POP BC     ;; Get output port
-
-_PRINTF_lp:
-  LD A, (HL) ;; Get curr char
-  INC HL     ;; Inc string pointer
-  OR A       ;; Check if line is ended (Set flag Z)
-  JR Z, _PRINTF_esc-$
-  CP "%"     ;; Check if char need to be replaced
-  JR Z, _PRINTF_chg-$
-_PRINTF_out:
-  OUT (C), A ;; Display char
-  JR _PRINTF_lp-$
-
-_PRINTF_chg:
-  LD A, (HL) ;; Get char parametter
-  INC HL     ;; Inc string pointer
-
-_PRINTF_chg_c:
-  CP "c"     ;; Check if parm is char
-  JR NZ, _PRINTF_chg_s-$ 
-  EX (SP), HL;; Save string addr & Get char
-  OUT (C), L ;; Display char
-  POP HL     ;; Restore string addr
-  JR _PRINTF_lp-$
-
-_PRINTF_chg_s:
-  CP "s"     ;; Check if parm is string
-  JR NZ, _PRINTF_chg_d-$
-  EX (SP), HL;; Next string addr and save curr
-  PUSH DE    ;; Save return addr
-  LD DE, _PRINTF_chg_s_esc ;; Load to reg DE return addr
-  JR _PRINTF_lp-$
-_PRINTF_chg_s_esc:
-  POP DE     ;; Restore return addr
-  POP HL     ;; Restore string addr
-  JR _PRINTF_lp-$
-
-_PRINTF_chg_d:
-  CP "d"     ;; Check if parm is decimal
-  JR NZ, _PRINTF_chg_x-$
-  EX (SP), HL;; Save string addr & Get char
-  PUSH HL    ;; Move back number
-  LD HL, 0x00;; Reset reg HL
-  ADD HL, SP ;; Load curr stack address
-
-  LD A, (HL) ;; Get low byte
-  DAA        ;; Convert to decimal
-  LD B, A
-  INC HL
-  LD A, (HL) ;; Get low byte
-  ADC A, 0
-  DAA        ;; Convert to decimal
-  LD H, A
-  LD L, B
-  PUSH HL
-
-  OUT (C), L ;; Display char
-  POP HL     ;; Restore string addr
-  JR _PRINTF_lp-$
-  ; ADD 0x00  ;; Add 0 to reg A only to set flags
-  ; DAA       ;; Convert reg A from hex to number
-  ; TODO: impl this with DAA
-
-_PRINTF_chg_x:
-  CP "x"
-  JR  NZ, _PRINTF_out-$
-  EX (SP), HL;; Save string addr & Get number
-  PUSH HL    ;; Move back number
-  LD HL, 0x00;; Reset reg HL
-  ADD HL, SP ;; Load curr stack address
-  INC HL     ;; Move HL to high byte num val
-
-  LD B, 0x02 ;; Total amount of bytes to display
-_PRINTF_chg_x_lp_init:
-  PUSH BC    ;; Save curr reg B index (aka how much bytes to display)
-  LD B, 0x02 ;; Aka display high & low bits
-_PRINTF_chg_x_lp:
-  XOR A      ;; Reset reg A
-  RLD        ;; Load hight bits from (HL) -> A
-  ADD A, 0x90;; Acc = 90h - 9Fh
-  DAA        ;; Acc = 90h - 99h OR 00h - 15h
-  ADC A, 0x40;; Add char 'A'
-  DAA        ;; Acc = 30h - 39h (aka ascii 0 - 9) OR 40h - 45h (aka ascii 'A' - 'F')
-  OUT (C), A ;; Display char
-  DJNZ _PRINTF_chg_x_lp-$
-_PRINTF_chg_x_lp_esc:
-  DEC HL     ;; Get next byte
-  POP BC     ;; Restore reg B total loop cnt
-  DJNZ _PRINTF_chg_x_lp_init-$
-
-  POP HL     ;; Get number, now this is useless
-  POP HL     ;; Restore string addr
-  JR _PRINTF_lp-$
-
-_PRINTF_esc:  
-  PUSH DE    ;; Restore return addr
+#LCD_EXEC_CMD:
+  PUSH AF          ;; Save reg A in stack
+  LD A, LCD_IO_CMD ;; Enable output to LCD in CMD mode
+  OUT (PPI_PORT_C), A
+  POP AF           ;; Restore reg A
+  OUT (PPI_PORT_A), A
   RET
+
+_LCD_INIT:
+  PUSH HL    ;; Save HL value
+  LD HL, PTR_LCD_MODE ;; Load ptr to LCD MODE value
+  LD A, (HL) ;; Load LCD MODE CMD
+  CALL #LCD_EXEC_CMD
+  LD HL, PTR_LCD_DISPLAY ;; Load ptr to LCD DISPLAY value
+  LD A, (HL) ;; Load LCD DISPLAY CMD
+  CALL #LCD_EXEC_CMD
+  CALL _LCD_CLEAR 
+  CALL _LCD_RESET_CURSOR
+  POP HL     ;; Restore HL value
+  RET
+
+_LCD_CLEAR:
+  LD A, LCD_CLEAR ;; Load LCD RESET CMD
+  CALL #LCD_EXEC_CMD
+  RET
+
+_LCD_RESET_CURSOR:
+  LD HL, PTR_LCD_CURSOR ;; Load ptr to LCD CURSOR value
+  LD (HL), 0x00 ;; Reset cursor in memory
+  LD A, LCD_RETURN ;; Load RESET LCD CURSOR
+  CALL #LCD_EXEC_CMD
+  RET
+
+_LCD_CURSOR_MOVE_TO:
+  LD HL, PTR_LCD_CURSOR ;; Load ptr to LCD CURSOR value
+  LD B, (HL) ;; Load amount of offset
+  LD A, LCD_RETURN ;; Load RESET LCD CURSOR
+  CALL #LCD_EXEC_CMD
+_LCD_CURSOR_MOVE_TO_lp:
+  DJNZ _LCD_CURSOR_MOVE_TO_esc-$
+  LD A, LCD_CURSOR_RIGHT ;; Load RESET LCD CURSOR
+  CALL #LCD_EXEC_CMD
+  JR _LCD_CURSOR_MOVE_TO_lp-$
+_LCD_CURSOR_MOVE_TO_esc:
+  RET
+
+_LCD_CURSOR_MOVE_FROM:
+  POP HL     ;; Get return addr
+  EX (SP), HL;; Restore return addr & Get offset H - row, L - column
+  ;; TODO:
+  
+_LCD_PRINTF:
+  ; TODO: Change printf
