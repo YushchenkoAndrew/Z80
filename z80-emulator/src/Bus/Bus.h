@@ -20,6 +20,7 @@ public:
     switches(std::make_shared<Switch>(this)),
     hexDisplay(std::make_shared<HexDisplay>(this)),
     lcd(std::make_shared<LCD>(this)),
+    keyboard(std::make_shared<Keyboard>(this)),
 
     ppi(std::make_shared<PPI>(this)),
 
@@ -28,9 +29,11 @@ public:
     IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)) {}
 
   void Preinitialize() {
-    led->Preinitialize();
-    switches->Preinitialize();
-    hexDisplay->Preinitialize();
+    led->Preinitialize(); switches->Preinitialize();
+    hexDisplay->Preinitialize(); lcd->Preinitialize();
+    keyboard->Preinitialize();
+
+    ppi->Preinitialize();
 
     Z80->Preinitialize(); W27C512->Preinitialize(); 
   }
@@ -43,36 +46,40 @@ public:
     hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), olc::vi2d(0, 0)));
     lcd->Initialize(std::pair(olc::vi2d(10, 150), olc::vi2d(0, 0)));
 
+    ppi->Initialize(std::pair(olc::vi2d(300, 20), olc::vi2d(0, 0)));
+
     Z80->Initialize(std::pair(olc::vi2d(150, 20), olc::vi2d(0, 0)));
   }
 
   void Preprocess() {
-    led->Preprocess();
-    switches->Preprocess();
-    hexDisplay->Preprocess();
-    lcd->Preprocess();
+    led->Preprocess(); switches->Preprocess();
+    hexDisplay->Preprocess(); lcd->Preprocess();
+    keyboard->Preprocess();
 
     Z80->Preprocess();
   }
 
   void Process(PixelGameEngine* GameEngine) {
-    led->Process(GameEngine);
-    switches->Process(GameEngine);
-    hexDisplay->Process(GameEngine);
-    lcd->Process(GameEngine);
+    led->Process(GameEngine); switches->Process(GameEngine);
+    hexDisplay->Process(GameEngine); lcd->Process(GameEngine);
+    keyboard->Process(GameEngine);
+
+    ppi->Process(GameEngine);
 
     Z80->Process(GameEngine);
   }
 
   void Draw(PixelGameEngine* GameEngine) {
-    led->Draw(GameEngine);
-    switches->Draw(GameEngine);
-    hexDisplay->Draw(GameEngine);
-    lcd->Draw(GameEngine);
+    led->Draw(GameEngine); switches->Draw(GameEngine);
+    hexDisplay->Draw(GameEngine); lcd->Draw(GameEngine);
+    keyboard->Draw(GameEngine);
+
+    ppi->Draw(GameEngine);
 
     Z80->Draw(GameEngine);
   }
 
+  void Interrupt() { Z80->Interrupt(); }
   uint8_t Read(uint32_t addr, bool mreq) {
     if (mreq) return mux(Int2Type<MREQ>(), addr);
     else return mux(Int2Type<IORQ>(), addr);
@@ -129,13 +136,13 @@ private:
       case MUX::IORQ::HEX_PORT: return hexDisplay->Write(addr, data, true); 
       case MUX::IORQ::UART_PORT: break; 
       case MUX::IORQ::PPI_PORT: {
+        ppi->Write(addr, data, true);
+        // FIXME: I dont exactly know how I impl hardware
 
-      // ppi->Write(addr, data, true);
-      // FIXME: I dont exactly know how I impl hardware
-
-      // IO DEVICES
-      // if ((addr & 3) == 0)
-      lcd->Write(addr, data, BIT(addr, 0));
+        switch(ppi->regC(Int2Type<PPI::OUTPUT>())) {
+          case 1: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), false);
+          case 3: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), true);
+        }
       }
     }
 
@@ -148,6 +155,7 @@ public:
   std::shared_ptr<Switch> switches;
   std::shared_ptr<HexDisplay> hexDisplay;
   std::shared_ptr<LCD> lcd;
+  std::shared_ptr<Keyboard> keyboard;
 
   std::shared_ptr<PPI> ppi;
 

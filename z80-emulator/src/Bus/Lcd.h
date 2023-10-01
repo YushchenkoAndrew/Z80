@@ -28,7 +28,7 @@ public:
       Draw(Int2Type<SEGMENT>(), GameEngine, buffer[i], pos);
     }
 
-    Draw(Int2Type<CURSOR>(), GameEngine);
+    if (cursor.first) Draw(Int2Type<CURSOR>(), GameEngine);
   }
 
   uint8_t Read(uint32_t addr, bool) { return 0; }
@@ -50,7 +50,9 @@ public:
     auto c = foreach<LcdChars, AnyType<-1 , int32_t>>::Key2Value();
     for (int32_t j = 0; j < LCD_SEGMENT_SIZE; j++) buffer[cursor.second][j] = c.val[j];
 
-    Instruction(Int2Type<CURSOR>(), BIT_M(shift, 3) | BIT_M(inc, 2));
+    // TODO: Impl shift
+    // Instruction(Int2Type<CURSOR>(), BIT_M(shift, 3) | BIT_M(inc, 2));
+    Instruction(Int2Type<CURSOR>(), BIT_M(inc, 2));
     return data;
   }
 
@@ -59,8 +61,9 @@ public:
     if (fBlink.first && (fBlink.second += AnyType<-1, float>::GetValue()) > 1.2f) fBlink.second -= 1.2f;
     if (fBlink.first && fBlink.second > 0.6f) return;
 
-    auto pos = absolute + olc::vi2d(cursor.second % 16 , cursor.second / 16) * vStep;
-    GameEngine->FillRect(pos, size, ~AnyType<WHITE, ColorT>::GetValue());
+    const auto index = olc::vi2d(cursor.second % 16, cursor.second / 16);
+    const auto pos = absolute + index * (olc::vi2d(LCD_SEGMENT_SIZE, sizeof(uint8_t) * 8) * vStep + vOffset);
+    Draw(Int2Type<SEGMENT>(), GameEngine, AnyType<0xFF, LcdCHR>::GetValue().val, pos);
   }
 
   void Draw(Int2Type<SEGMENT>, PixelGameEngine* GameEngine, SegmentT& buffer, const olc::vi2d& absolute) {

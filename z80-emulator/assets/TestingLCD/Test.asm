@@ -10,19 +10,47 @@
   JP setup
 
 number:
-  db "Number: '%d' %x '%c' %s", 0
+  db "Number: '%d'", 0
 
 number2:
   db "123", 0
+
+lcd_settings:
+  db 0b00000111 ;; PTR_LCD_MODE,    
+  db 0b00001011 ;; PTR_LCD_DISPLAY
 
 setup:
   ; Set Memory Paging RAM
   LD SP, 0x5FFF
 
-  LD A, 0b10010010
+  ; INIT PPI
+  LD A, 0b10000000
   OUT (0x23), A
 
+
+  ;; Load settings
+  LD BC, 0x02
+  LD HL, lcd_settings
+  LD DE, PTR_LCD_MODE
+  LDIR
+
   CALL _LCD_INIT
+  
+  LD A, LCD_IO_EN   ;; Enter data mode
+  OUT (PPI_PORT_C), A
+
+  LD HL, PTR_FUNC_ARGS
+  PUSH HL         ;; ptr to arg
+  LD (HL), 0x18
+
+  LD BC, PPI_PORT_A ;; PORT
+  PUSH BC
+
+
+  LD BC, number ;; string
+  PUSH BC
+
+  CALL _PRINTF
 
   ; LD BC, 0x00FF
   ; XOR A
@@ -37,21 +65,21 @@ setup:
 
 main:
   ; RETURN LCD
-  LD A, 0x02
-  OUT (0x20), A
+  ; LD A, 0x02
+  ; OUT (0x20), A
 
   ; Show Number
   IN A, (0x00)
   OUT (0x00), A
 
-  PUSH AF
+  ; PUSH AF
 
   LD HL, PTR_FUNC_ARGS
   LD (HL), A
   PUSH HL
   CALL _HEX
 
-  POP AF
+  ; POP AF
 
   ; POP HL     ;; Get return addr
   ; POP DE     ;; Get string addr
@@ -59,35 +87,6 @@ main:
   ; EX (SP), HL;; Restore return arg & Get ptr to args
 
   ; LD BC, PTR_FUNC_ARGS
-  LD HL, PTR_FUNC_ARGS
-  LD (HL), A
-  PUSH HL
-
-  INC HL
-  LD (HL), A
-
-  INC HL
-  LD (HL), A
-
-  INC HL
-  LD (HL), "S"
-
-  INC HL
-  LD (HL), "T"
-
-  INC HL
-  LD (HL), "R"
-
-  INC HL
-  LD (HL), 0
-
-  LD BC, 0x21 ;; PORT
-  PUSH BC
-
-  LD BC, number ;; string
-  PUSH BC
-
-  CALL _PRINTF
 
   JP main
 
@@ -97,10 +96,12 @@ main:
 
 #LCD_EXEC_CMD:
   PUSH AF          ;; Save reg A in stack
-  LD A, LCD_IO_CMD ;; Enable output to LCD in CMD mode
+  LD A, 0          ;; Disable every IO device
   OUT (PPI_PORT_C), A
   POP AF           ;; Restore reg A
   OUT (PPI_PORT_A), A
+  LD A, LCD_IO_CMD ;; Enable output to LCD in CMD mode
+  OUT (PPI_PORT_C), A
   RET
 
 _LCD_INIT:

@@ -41,17 +41,21 @@ private:
   }
 
   void number() {
-    int32_t base = 10;
-
     if (peekPrev() == '0' && match<6>({ 'X', 'x', 'O', 'o', 'B', 'b' })) {
+      int32_t base = 10;
+
       switch (peekPrev()) {
         case 'X': case 'x': base = 16; while (isHexDigit(peek())) advance(); break;
         case 'O': case 'o': base = 8;  while (isOctDigit(peek())) advance(); break;
         case 'B': case 'b': base = 2;  while (isBinDigit(peek())) advance(); break;
       }
-    } else while (isDigit(peek())) advance();
 
-    addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart), nullptr, base)));
+      const auto nStart = this->nStart + 2;
+      return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart), nullptr, base)));
+    }
+    
+    while (isDigit(peek())) advance();
+    return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart))));
   }
 
   void identifier() {
@@ -99,7 +103,7 @@ private:
   inline bool isBinDigit(const char &c) { return c == '0' || c == '1'; }
   inline bool isOctDigit(const char &c) { return c >= '0' && c <= '7'; }
   inline bool isHexDigit(const char &c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
-  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '\''; }
+  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.' || c == '\''; }
   inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || isDigit(c); }
 
 

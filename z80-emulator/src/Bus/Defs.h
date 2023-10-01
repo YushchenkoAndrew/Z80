@@ -651,7 +651,93 @@ typedef TypeList<
    LcdChars; 
 
 
-// TODO: Add typelist
+typedef TypeList<
+  TypeList<Int2Type<olc::Key::Q>, Int2Type<0x15>>, TypeList<
+  TypeList<Int2Type<olc::Key::W>, Int2Type<0x1D>>, TypeList<
+  TypeList<Int2Type<olc::Key::E>, Int2Type<0x24>>, TypeList<
+  TypeList<Int2Type<olc::Key::R>, Int2Type<0x2D>>, TypeList<
+  TypeList<Int2Type<olc::Key::T>, Int2Type<0x2C>>, TypeList<
+  TypeList<Int2Type<olc::Key::Y>, Int2Type<0x35>>, TypeList<
+  TypeList<Int2Type<olc::Key::U>, Int2Type<0x3C>>, TypeList<
+  TypeList<Int2Type<olc::Key::I>, Int2Type<0x43>>, TypeList<
+  TypeList<Int2Type<olc::Key::O>, Int2Type<0x44>>, TypeList<
+  TypeList<Int2Type<olc::Key::P>, Int2Type<0x4D>>, TypeList<
+  TypeList<Int2Type<olc::Key::A>, Int2Type<0x1C>>, TypeList<
+  TypeList<Int2Type<olc::Key::S>, Int2Type<0x1B>>, TypeList<
+  TypeList<Int2Type<olc::Key::D>, Int2Type<0x23>>, TypeList<
+  TypeList<Int2Type<olc::Key::F>, Int2Type<0x2B>>, TypeList<
+  TypeList<Int2Type<olc::Key::G>, Int2Type<0x34>>, TypeList<
+  TypeList<Int2Type<olc::Key::H>, Int2Type<0x33>>, TypeList<
+  TypeList<Int2Type<olc::Key::J>, Int2Type<0x3B>>, TypeList<
+  TypeList<Int2Type<olc::Key::K>, Int2Type<0x42>>, TypeList<
+  TypeList<Int2Type<olc::Key::L>, Int2Type<0x4B>>, TypeList<
+  TypeList<Int2Type<olc::Key::Z>, Int2Type<0x1A>>, TypeList<
+  TypeList<Int2Type<olc::Key::X>, Int2Type<0x22>>, TypeList<
+  TypeList<Int2Type<olc::Key::C>, Int2Type<0x21>>, TypeList<
+  TypeList<Int2Type<olc::Key::V>, Int2Type<0x2A>>, TypeList<
+  TypeList<Int2Type<olc::Key::B>, Int2Type<0x32>>, TypeList<
+  TypeList<Int2Type<olc::Key::N>, Int2Type<0x33>>, TypeList<
+  TypeList<Int2Type<olc::Key::M>, Int2Type<0x3A>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::K1>, Int2Type<0x16>>, TypeList<
+  TypeList<Int2Type<olc::Key::K2>, Int2Type<0x1E>>, TypeList<
+  TypeList<Int2Type<olc::Key::K3>, Int2Type<0x26>>, TypeList<
+  TypeList<Int2Type<olc::Key::K4>, Int2Type<0x25>>, TypeList<
+  TypeList<Int2Type<olc::Key::K5>, Int2Type<0x2E>>, TypeList<
+  TypeList<Int2Type<olc::Key::K6>, Int2Type<0x36>>, TypeList<
+  TypeList<Int2Type<olc::Key::K7>, Int2Type<0x3D>>, TypeList<
+  TypeList<Int2Type<olc::Key::K8>, Int2Type<0x3E>>, TypeList<
+  TypeList<Int2Type<olc::Key::K9>, Int2Type<0x46>>, TypeList<
+  TypeList<Int2Type<olc::Key::K0>, Int2Type<0x45>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::NP0>, Int2Type<'0'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP1>, Int2Type<'1'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP2>, Int2Type<'2'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP3>, Int2Type<'3'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP4>, Int2Type<'4'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP5>, Int2Type<'5'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP6>, Int2Type<'6'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP7>, Int2Type<'7'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP8>, Int2Type<'8'>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP9>, Int2Type<'9'>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::TAB>,   Int2Type<0x0D>>, TypeList<
+  TypeList<Int2Type<olc::Key::BACK>,  Int2Type<0x66>>, TypeList<
+  TypeList<Int2Type<olc::Key::DEL>,   Int2Type<'\0'>>, TypeList<
+  TypeList<Int2Type<olc::Key::SPACE>, Int2Type<0x29>>, TypeList<
+  TypeList<Int2Type<olc::Key::ENTER>, Int2Type<0x5A>>, TypeList<
+  TypeList<Int2Type<olc::Key::ESCAPE>,Int2Type<0x76>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<0x4C>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<0x4A>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<0x0E>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<0x54>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<0x5D>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<0x5B>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<0x52>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::CAPS_LOCK>, Int2Type<0x58>>, TypeList<
+  TypeList<Int2Type<olc::Key::SHIFT>,     Int2Type<0x12>>, TypeList<
+  TypeList<Int2Type<olc::Key::CTRL>,      Int2Type<0x14>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::F1>, Int2Type<0x05>>, TypeList<
+  TypeList<Int2Type<olc::Key::F2>, Int2Type<0x06>>, TypeList<
+  TypeList<Int2Type<olc::Key::F3>, Int2Type<0x04>>, TypeList<
+  TypeList<Int2Type<olc::Key::F4>, Int2Type<0x0C>>, TypeList<
+  TypeList<Int2Type<olc::Key::F5>, Int2Type<0x03>>, TypeList<
+  TypeList<Int2Type<olc::Key::F6>, Int2Type<0x0B>>, TypeList<
+  TypeList<Int2Type<olc::Key::F7>, Int2Type<0x83>>, TypeList<
+  TypeList<Int2Type<olc::Key::F8>, Int2Type<0x0A>>, TypeList<
+  TypeList<Int2Type<olc::Key::F9>, Int2Type<0x01>>, TypeList<
+  TypeList<Int2Type<olc::Key::F10>,Int2Type<0x09>>, TypeList<
+  TypeList<Int2Type<olc::Key::F11>,Int2Type<0x78>>, TypeList<
+  TypeList<Int2Type<olc::Key::F12>,Int2Type<0x07>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<0x55>>, TypeList<
+  TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<0x49>>, TypeList<
+  TypeList<Int2Type<olc::Key::COMMA>, Int2Type<0x41>>, TypeList<
+  TypeList<Int2Type<olc::Key::MINUS>, Int2Type<0x4E>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   KeyboardScanCodes; 
 
 
 class Device {
@@ -1316,6 +1402,7 @@ public:
     AnyType<0xF5,LcdCHR>::GetValue() = { 0b00100110, 0b01001001, 0b01001001, 0b00101001, 0b01000110 };
     AnyType<0xF6,LcdCHR>::GetValue() = { 0b00001110, 0b01010001, 0b00010001, 0b01010001, 0b00001110 };
     AnyType<0xF7,LcdCHR>::GetValue() = { 0b00010000, 0b00010000, 0b01010100, 0b00010000, 0b00010000 };
+    AnyType<0xFF,LcdCHR>::GetValue() = { 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111 };
   }
 };
 };

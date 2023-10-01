@@ -93,6 +93,9 @@ public:
 
   DisassembleT Disassemble();
 
+  void Interrupt() {
+    // TODO: Impl
+  }
   
 private:
   void Runtime() {
@@ -850,13 +853,19 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_nn_BC>) { cycles = 20; Write(Word(), regBC()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_nn_SP>) { cycles = 20; Write(Word(), regSP()); }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDI>) { cycles = 16; Write(regDE(), Read(regHL())); regDE()++; regHL()++; regBC()--; flagH(false)->flagN(false)->flagPV(!regBC()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDI>) { cycles = 16; Write(regDE()++, Read(regHL()++)); flagH(false)->flagN(false)->flagPV(!--regBC()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDIR>) {
     Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::LDI>());
     if (regBC() != 0) { cycles = 21; regPC() -= 2; }
   }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPI>) { cycles = 16; auto carry = flagC(); Sub8(regA(), Read(regHL())); regHL()++; regBC()--; flagH(false)->flagN(false)->flagPV(!regBC())->flagC(carry); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDD>) { cycles = 16; Write(regDE()--, Read(regHL()--)); flagH(false)->flagN(false)->flagPV(!--regBC()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDDR>) {
+    Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::LDD>());
+    if (regBC() != 0) { cycles = 21; regPC() -= 2; }
+  }
+
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPI>) { cycles = 16; auto carry = flagC(); Sub8(regA(), Read(regHL()++)); flagH(false)->flagN(false)->flagPV(!--regBC())->flagC(carry); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPIR>) { 
     Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::CPI>());
     if (regBC() != 0 && regA() != Read(regHL())) { cycles = 21; regPC() -= 2; }
@@ -904,8 +913,6 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RETI>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RETN>) {}
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDD>) {}
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDDR>) {}
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IND>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::INDR>) {}
