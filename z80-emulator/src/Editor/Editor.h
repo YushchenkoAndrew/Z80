@@ -51,7 +51,7 @@ public:
 
   void Draw(PixelGameEngine* GameEngine) {
     olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (vim.GetPos().y + 1 - vStartAt.y) * vStep.y + vOffset.y);
-    GameEngine->FillRect(pos, { size.x, 8 }, ~AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+    GameEngine->FillRect(pos, { size.x, 8 }, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
 
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
 
@@ -78,21 +78,21 @@ public:
       auto line = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y);
 
       if (cursor.y - vStartAt.y == i) {
-        GameEngine->DrawString(line, str, ~AnyType<GREY, ColorT>::GetValue());
-      } else GameEngine->DrawString(line, str, ~AnyType<DARK_GREY, ColorT>::GetValue());
+        GameEngine->DrawString(line, str, *AnyType<GREY, ColorT>::GetValue());
+      } else GameEngine->DrawString(line, str, *AnyType<DARK_GREY, ColorT>::GetValue());
     }
 
     pos = olc::vi2d(absolute.x, absolute.y + size.y - vStep.y);
-    GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, ~AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), vim.GetMode(), ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), vim.GetMode(), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
     auto humanizedPos = vim.GetHumanizedPos();
 
     pos.x = size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
-    GameEngine->DrawString(pos, humanizedPos, ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, humanizedPos, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
     pos.x -= 5 * vStep.x;
-    GameEngine->DrawString(pos, vim.GetCmd(), ~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, vim.GetCmd(), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
   }
 
 public:

@@ -57,7 +57,7 @@ public:
       case REPLACE: size *= olc::vi2d(8,  2); pos += olc::vi2d(0, 10); break;
     }
 
-    GameEngine->FillRect(pos, size, ~AnyType<GREY, ColorT>::GetValue());
+    GameEngine->FillRect(pos, size, *AnyType<GREY, ColorT>::GetValue());
   }
 
   void Load(std::vector<std::shared_ptr<Interpreter::Token>>& dst) {
@@ -323,7 +323,7 @@ public:
 
   inline void Command(Int2Type<VimT::CMD_w>) { 
     auto curr = lines[pos.y][pos.x];
-    while ((isAlpha(lines[pos.y][pos.x]) && isAlpha(curr)) || (!isAlpha(curr) && lines[pos.y][pos.x] == curr)) {
+    while ((Utils::IsAlpha(lines[pos.y][pos.x]) && Utils::IsAlpha(curr)) || (!Utils::IsAlpha(curr) && lines[pos.y][pos.x] == curr)) {
       if (pos.x + 1 < lines[pos.y].size()) { pos.x++; continue; }
       if (pos.y + 1 < lines.size()) { pos.y++; pos.x = 0; }
       break;
@@ -355,7 +355,7 @@ public:
   // TODO: Create impl for this func
   inline void Command(Int2Type<VimT::CMD_e>) {
     auto curr = lines[pos.y][pos.x];
-    while ((isAlpha(lines[pos.y][pos.x]) && isAlpha(curr)) || (!isAlpha(curr) && lines[pos.y][pos.x] == curr)) {
+    while ((Utils::IsAlpha(lines[pos.y][pos.x]) && Utils::IsAlpha(curr)) || (!Utils::IsAlpha(curr) && lines[pos.y][pos.x] == curr)) {
       if (pos.x + 1 < lines[pos.y].size()) { pos.x++; continue; }
       if (pos.y + 1 < lines.size()) { pos.y++; pos.x = 0; }
       break;
@@ -378,13 +378,13 @@ public:
     }
 
     curr = lines[pos.y][pos.x];
-    while (isAlpha(lines[pos.y][pos.x])) {
+    while (Utils::IsAlpha(lines[pos.y][pos.x])) {
       if (pos.x - 1 >= 0) { pos.x--; continue; }
       break;
     }
 
     // nLastX = pos.x += isAlpha(curr);
-    nLastX = pos.x += isAlpha(lines[pos.y][pos.x]) ? 0 : isAlpha(curr);
+    nLastX = pos.x += Utils::IsAlpha(lines[pos.y][pos.x]) ? 0 : Utils::IsAlpha(curr);
   }
 
   inline void Command(Int2Type<VimT::CMD_B>) { 
@@ -478,7 +478,7 @@ public:
 
     if (nCurr == 0) {
       if (match<12>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
-      if (isDigit(peek()) && peek() != '0') { nCurr++; return; }
+      if (Utils::IsDigit(peek()) && peek() != '0') { nCurr++; return; }
 
       if (cmd.size() > 1 && match<1>({ '^' })) {
         if (peek() == 'd') { phrase(Int2Type<VimT::CMD_CTRL_d>(), false); return reset(); }
@@ -488,7 +488,7 @@ public:
       }
 
     } else {
-      uint8_t mask = ((uint8_t)isDigit(peekPrev()) << 1) + (uint8_t)isDigit(peek());
+      uint8_t mask = ((uint8_t)Utils::IsDigit(peekPrev()) << 1) + (uint8_t)Utils::IsDigit(peek());
 
       switch(mask) {
         case 0b11: nCurr++; return;
@@ -568,8 +568,8 @@ public:
 
   template<int32_t T, int32_t U>
   void Process(TypeList<Int2Type<T>, Int2Type<U>>) {
-    const char c = static_cast<char>(Int2Type<U>().value);
-    BasicStrokeHandler(static_cast<olc::Key>(Int2Type<T>().value), c, toupper(c));
+    const char c = static_cast<char>(+U);
+    BasicStrokeHandler(static_cast<olc::Key>(+T), c, toupper(c));
   }
 
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
@@ -785,7 +785,7 @@ private:
 
   template<int32_t T = VimT::CMD_NONE>
   void number(Int2Type<T> val = Int2Type<T>()) {
-    int32_t nCurr = 0; while (isDigit(peek(nCurr))) nCurr++;
+    int32_t nCurr = 0; while (Utils::IsDigit(peek(nCurr))) nCurr++;
     if (nCurr == 0) return;
 
     auto len = std::stoul(cmd.substr(0, nCurr)); if (len == 0) return;

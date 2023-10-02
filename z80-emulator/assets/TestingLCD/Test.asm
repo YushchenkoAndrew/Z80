@@ -24,8 +24,8 @@ setup:
   LD SP, 0x5FFF
 
   ; INIT PPI
-  LD A, 0b10000000
-  OUT (0x23), A
+  ; LD A, 0b10000000
+  ; OUT (0x23), A
 
 
   ;; Load settings
@@ -36,14 +36,14 @@ setup:
 
   CALL _LCD_INIT
   
-  LD A, LCD_IO_EN   ;; Enter data mode
-  OUT (PPI_PORT_C), A
+  ; LD A, LCD_IO_EN   ;; Enter data mode
+  ; OUT (PPI_PORT_C), A
 
   LD HL, PTR_FUNC_ARGS
   PUSH HL         ;; ptr to arg
   LD (HL), 0x18
 
-  LD BC, PPI_PORT_A ;; PORT
+  LD BC, 0x21 ;; PORT
   PUSH BC
 
 
@@ -95,13 +95,13 @@ main:
 
 
 #LCD_EXEC_CMD:
-  PUSH AF          ;; Save reg A in stack
-  LD A, 0          ;; Disable every IO device
-  OUT (PPI_PORT_C), A
-  POP AF           ;; Restore reg A
-  OUT (PPI_PORT_A), A
-  LD A, LCD_IO_CMD ;; Enable output to LCD in CMD mode
-  OUT (PPI_PORT_C), A
+  ; PUSH AF          ;; Save reg A in stack
+  ; LD A, 0          ;; Disable every IO device
+  ; OUT (PPI_PORT_C), A
+  ; POP AF           ;; Restore reg A
+  OUT (0x20), A
+  ; LD A, LCD_IO_CMD ;; Enable output to LCD in CMD mode
+  ; OUT (PPI_PORT_C), A
   RET
 
 _LCD_INIT:

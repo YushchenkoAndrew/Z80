@@ -135,7 +135,7 @@ private:
   void Draw(Int2Type<Editor::VimT::CMD_q>, PixelGameEngine* GameEngine) {
     auto index = [&](auto tuple) {
       auto color = std::get<0>(tuple) ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
-      GameEngine->DrawString(POS(tuple), std::string(1, '0' + WINDOW(tuple)), ~color, 4);
+      GameEngine->DrawString(POS(tuple), std::string(1, '0' + WINDOW(tuple)), *color, 4);
     };
 
     if (EXIST(bus))    index(bus);
@@ -215,8 +215,8 @@ public:
     if (match<1>({ 'z' })) { phrase(Int2Type<Editor::VimT::CMD_z>()); return reset(); } 
     if (match<1>({ '?' })) { phrase(Int2Type<Editor::VimT::CMD_QUESTION>()); return reset(); } 
 
-    if (peekPrev() == 'q' && isDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_q>()); return reset(); } 
-    if (isDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_NUMBER>()); return reset(); } 
+    if (peekPrev() == 'q' && Utils::IsDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_q>()); return reset(); } 
+    if (Utils::IsDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_NUMBER>()); return reset(); } 
 
     // verb
     if (match<1>({ 'q' })) return;
@@ -240,8 +240,8 @@ public:
 public:
   template<int32_t T, int32_t U>
   void Process(TypeList<Int2Type<T>, Int2Type<U>>) {
-    const char c = static_cast<char>(Int2Type<U>().value);
-    BasicStrokeHandler(static_cast<olc::Key>(Int2Type<T>().value), c, toupper(c));
+    const char c = static_cast<char>(+U);
+    BasicStrokeHandler(static_cast<olc::Key>(+T), c, toupper(c));
   }
 
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }

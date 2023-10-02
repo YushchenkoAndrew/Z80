@@ -22,8 +22,8 @@ public:
     for (int32_t i = 0, data = this->data; i < sizeof(uint8_t) * 8; i++, data = data << 1) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep + vOffset;
 
-      if (data & 0x80) GameEngine->FillRect(pos + olc::vi2d(1, 1), olc::vi2d(8, 8), ~AnyType<WHITE, ColorT>::GetValue());
-      GameEngine->DrawRect(pos, olc::vi2d(8, 8), ~AnyType<WHITE, ColorT>::GetValue());
+      if (data & 0x80) GameEngine->FillRect(pos + olc::vi2d(1, 1), olc::vi2d(8, 8), *AnyType<WHITE, ColorT>::GetValue());
+      GameEngine->DrawRect(pos, olc::vi2d(8, 8), *AnyType<WHITE, ColorT>::GetValue());
     }
   }
 

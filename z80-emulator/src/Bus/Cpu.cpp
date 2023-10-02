@@ -20,14 +20,14 @@ namespace Z80 {
           AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
           auto res = foreach<MiscMInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, res.second); break;
+          cmd = std::pair(*res.first, res.second); break;
         }
         
         case Z80::BIT_INSTR: {
           AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
           auto res = foreach<BitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, res.second); break;
+          cmd = std::pair(*res.first, res.second); break;
         }
 
         case Z80::IX_INSTR: {
@@ -37,13 +37,13 @@ namespace Z80 {
             AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
             auto res = foreach<IxBitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-            cmd = std::pair(~res.first, res.second); break;
+            cmd = std::pair(*res.first, res.second); break;
           } 
 
           AnyType<-1, int32_t>::GetValue() = instruction;
           auto res = foreach<IxInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, res.second); break;
+          cmd = std::pair(*res.first, res.second); break;
         }
 
         case Z80::IY_INSTR: {
@@ -53,19 +53,19 @@ namespace Z80 {
             AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
             auto res = foreach<IyBitInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-            cmd = std::pair(~res.first, res.second); break;
+            cmd = std::pair(*res.first, res.second); break;
           } 
 
           AnyType<-1, int32_t>::GetValue() = instruction;
           auto res = foreach<IyInstructions, AnyType<-1, int32_t>>::Key2Value();
 
-          cmd = std::pair(~res.first, res.second); break;
+          cmd = std::pair(*res.first, res.second); break;
         }
 
         default: {
           AnyType<-1, int32_t>::GetValue() = instruction;
           auto res = foreach<Instructions, AnyType<-1, int32_t>>::Key2Value();
-          cmd = std::pair(~res.first, res.second); break;
+          cmd = std::pair(*res.first, res.second); break;
         }
       }
       

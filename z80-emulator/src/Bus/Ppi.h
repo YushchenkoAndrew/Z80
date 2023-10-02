@@ -27,8 +27,8 @@ public:
     olc::vi2d pos = absolute;
 
     auto DrawReg = [&](std::string name, uint16_t val) {
-      GameEngine->DrawString(pos, name, ~AnyType<DARK_GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset, Int2Hex(val), ~AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos, name, *AnyType<DARK_GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), *AnyType<GREY, ColorT>::GetValue());
 
       pos.x += vOffset.x + vStep.x * 3;
     };
@@ -102,12 +102,6 @@ public:
     if (!options[REG::CH].second) regs[REG::C] = (regs[REG::C] & 0x0F) | (v & 0xF0);
     if (!options[REG::CL].second) regs[REG::C] = (regs[REG::C] & 0xF0) | (v & 0x0F);
     return v;
-  }
-
-private:
-  inline std::string Int2Hex(int32_t i, int32_t width = 2) { 
-    std::stringstream ss; ss << std::setfill('0') << std::setw(width) << std::hex << std::uppercase << +i;
-    return ss.str();
   }
 
 private:

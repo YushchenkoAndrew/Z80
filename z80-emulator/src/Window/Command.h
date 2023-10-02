@@ -34,9 +34,6 @@ protected:
   inline const char peek(int32_t nCurr) { return cmd[nCurr]; }
   inline const char peekPrev() { return nCurr == 0 ? '\0' : cmd[nCurr - 1]; }
   inline bool check(const char c) { return peek() == c; }
-  inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
-  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
-  inline bool isHex(const char &c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
   inline int32_t digit() { return peek() - '0'; }
 
   template<int32_t T>

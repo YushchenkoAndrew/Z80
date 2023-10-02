@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Defs.h"
+#include "src/Utils/Utils.h"
 
 namespace Window {
 

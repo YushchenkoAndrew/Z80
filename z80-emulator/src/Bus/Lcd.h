@@ -63,7 +63,7 @@ public:
 
     const auto index = olc::vi2d(cursor.second % 16, cursor.second / 16);
     const auto pos = absolute + index * (olc::vi2d(LCD_SEGMENT_SIZE, sizeof(uint8_t) * 8) * vStep + vOffset);
-    Draw(Int2Type<SEGMENT>(), GameEngine, AnyType<0xFF, LcdCHR>::GetValue().val, pos);
+    Draw(Int2Type<SEGMENT>(), GameEngine, *AnyType<0xFF, LcdCHR>::GetValue(), pos);
   }
 
   void Draw(Int2Type<SEGMENT>, PixelGameEngine* GameEngine, SegmentT& buffer, const olc::vi2d& absolute) {
@@ -72,7 +72,7 @@ public:
         const auto pos = absolute + olc::vi2d(j, i) * vStep;
         ColorT color = (buffer[j] & (0x80 >> i)) ? AnyType<WHITE, ColorT>::GetValue() : bg;
 
-        GameEngine->FillRectDither(pos, vStep, ~color, 1);
+        GameEngine->FillRectDither(pos, vStep, *color, 1);
       }
     }
   }

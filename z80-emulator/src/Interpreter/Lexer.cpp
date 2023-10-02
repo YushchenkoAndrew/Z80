@@ -31,7 +31,7 @@ bool Lexer::scan(std::string text) {
 
       case ';':
         while (peek() != '\n' && !isAtEnd()) advance();
-        addToken(~AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+        addToken(*AnyType<Colors::DARK_GREY, ColorT>::GetValue());
         break;
 
 
@@ -43,7 +43,7 @@ bool Lexer::scan(std::string text) {
         break;
 
       default:
-        if (isDigit(c)) number();
+        if (Utils::IsDigit(c)) number();
         else if (isAlpha(c)) identifier();
         else { addToken(TokenT::NONE); error(std::string("Unexpected char '") + std::string(1, c) + std::string("'.")); }
 

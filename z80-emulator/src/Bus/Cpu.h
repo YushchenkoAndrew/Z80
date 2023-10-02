@@ -34,6 +34,8 @@ private:
   enum FLAG { C, N, PV, X, H, x, Z, S };
 
   enum REG { AF, BC, DE, HL, ALTERNATIVE, IX = 8, IY, SP, IR, PC };
+
+  enum IM_T { IM0, IM1, IM2 };
   
 public:
   enum ModeT { NORMAL, DEBUG };
@@ -45,7 +47,7 @@ public:
     if (runtime != nullptr && runtime->joinable()) runtime->join();
   }
 
-  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; }
+  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; IFF.first = IFF.second = false; }
 
   void Preinitialize() { 
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
@@ -62,16 +64,16 @@ public:
     olc::vi2d pos = absolute;
 
     auto DrawReg = [&](std::string name, uint16_t val) {
-      GameEngine->DrawString(pos, name, ~AnyType<DARK_GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset, Int2Hex(val), ~AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos, name, *AnyType<DARK_GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val, 4), *AnyType<GREY, ColorT>::GetValue());
 
       if (++index % 2) pos.x += vOffset.x + vStep.x * 6;
       else pos = olc::vi2d(absolute.x, pos.y + vStep.y);
     };
 
     auto DrawFlag = [&](std::string name, bool val) {
-      GameEngine->DrawString(pos - olc::vi2d(vStep.x * (name.size() - 1) / 2, 0), name, ~AnyType<DARK_GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + olc::vi2d(0, vStep.y), val ? "1" : "0", ~AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos - olc::vi2d(vStep.x * (name.size() - 1) / 2, 0), name, *AnyType<DARK_GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + olc::vi2d(0, vStep.y), val ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
 
       pos.x += vStep.x * 3;
     };
@@ -93,14 +95,23 @@ public:
 
   DisassembleT Disassemble();
 
-  void Interrupt() {
-    // TODO: Impl
-  }
+  // void Interrupt() { interrupt.second = true; halt.second.notify_all(); }
+  void Interrupt() { interrupt.second = true; }
   
 private:
   void Runtime() {
     while (bExec) {
-      if (cycles > 0 && cycles--) continue;
+      if (cycles-- > 0) continue;
+
+      if (IFF.first && interrupt.second) {
+        interrupt.second = false; IFF.first = IFF.second = false;
+        switch (interrupt.first) {
+          case IM_T::IM0: ImProcess(Int2Type<IM_T::IM0>()); continue;
+          case IM_T::IM1: ImProcess(Int2Type<IM_T::IM1>()); continue;
+          case IM_T::IM2: ImProcess(Int2Type<IM_T::IM2>()); continue;
+        }
+      }
+
 
       AnyType<-1, int32_t>::GetValue() = Read();
       foreach<Instructions, CPU>::Key2Process(this);
@@ -126,6 +137,9 @@ private:
     return data;
   }
 
+  inline void ImProcess(Int2Type<IM_T::IM0>) { cycles = 4; Read(0x00, false); }
+  inline void ImProcess(Int2Type<IM_T::IM1>) { Process(Int2Type<Instruction::RST_38h>()); }
+  inline void ImProcess(Int2Type<IM_T::IM2>) { cycles = 11; Push(regPC()); regPC() = (uint16_t)regI() << 8 | Read(0x00, false); }
 
 public:
   template<int32_t T>
@@ -186,19 +200,23 @@ public:
 
 
   inline void Process(Int2Type<Instruction::NOP>) { cycles = 4; }
+  inline void Process(Int2Type<Instruction::HALT>) { cycles = 1; std::unique_lock<std::mutex> lock(halt.first); halt.second.wait(lock);  }
+  
+  inline void Process(Int2Type<Instruction::DI>) { cycles = 1; IFF.first = IFF.second = false; }
+  inline void Process(Int2Type<Instruction::EI>) { cycles = 1; IFF.first = IFF.second = true; }
 
   inline void Process(Int2Type<Instruction::IN_A_n>) { cycles = 11; regA(Read(HIGH_SET(Read(), regA()), false)); }
   inline void Process(Int2Type<Instruction::OUT_n_A>) { cycles = 11; Write(HIGH_SET(Read(), regA()), regA(), false); }
 
 
-  inline void Process(Int2Type<Instruction::RST_00h>) { cycles = 11; Push(regPC()); regPC() = 0x00; }
-  inline void Process(Int2Type<Instruction::RST_08h>) { cycles = 11; Push(regPC()); regPC() = 0x08; }
-  inline void Process(Int2Type<Instruction::RST_10h>) { cycles = 11; Push(regPC()); regPC() = 0x10; }
-  inline void Process(Int2Type<Instruction::RST_18h>) { cycles = 11; Push(regPC()); regPC() = 0x18; }
-  inline void Process(Int2Type<Instruction::RST_20h>) { cycles = 11; Push(regPC()); regPC() = 0x20; }
-  inline void Process(Int2Type<Instruction::RST_28h>) { cycles = 11; Push(regPC()); regPC() = 0x28; }
-  inline void Process(Int2Type<Instruction::RST_30h>) { cycles = 11; Push(regPC()); regPC() = 0x30; }
-  inline void Process(Int2Type<Instruction::RST_38h>) { cycles = 11; Push(regPC()); regPC() = 0x38; }
+  inline void Process(Int2Type<Instruction::RST_00h>) { cycles = 11; Call(true, 0x00); }
+  inline void Process(Int2Type<Instruction::RST_08h>) { cycles = 11; Call(true, 0x08); }
+  inline void Process(Int2Type<Instruction::RST_10h>) { cycles = 11; Call(true, 0x10); }
+  inline void Process(Int2Type<Instruction::RST_18h>) { cycles = 11; Call(true, 0x18); }
+  inline void Process(Int2Type<Instruction::RST_20h>) { cycles = 11; Call(true, 0x20); }
+  inline void Process(Int2Type<Instruction::RST_28h>) { cycles = 11; Call(true, 0x28); }
+  inline void Process(Int2Type<Instruction::RST_30h>) { cycles = 11; Call(true, 0x30); }
+  inline void Process(Int2Type<Instruction::RST_38h>) { cycles = 11; Call(true, 0x38); }
 
 
   inline void Process(Int2Type<Instruction::INC_BC>) { cycles = 6; regBC()++; }
@@ -520,10 +538,6 @@ public:
     }
   }
 
-  // TODO:
-  inline void Process(Int2Type<Instruction::DI>) {}
-  inline void Process(Int2Type<Instruction::EI>) {}
-  inline void Process(Int2Type<Instruction::HALT>) {}
 
 
 
@@ -823,6 +837,13 @@ public:
 
 
 
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IM_0>) { cycles = 2; interrupt.first = IM_T::IM0; }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IM_1>) { cycles = 2; interrupt.first = IM_T::IM1; }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IM_2>) { cycles = 2; interrupt.first = IM_T::IM2; }
+
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RETI>) { cycles = 4; Ret(true); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RETN>) { cycles = 4; IFF.first = IFF.second; Ret(true); }
+
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IN_A_c>) { cycles = 12; regA(In8()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IN_B_c>) { cycles = 12; regB(In8()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IN_C_c>) { cycles = 12; regC(In8()); }
@@ -839,6 +860,8 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_H>) { cycles = 12; Write(regBC(), regH(), false); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUT_c_L>) { cycles = 12; Write(regBC(), regL(), false); }
 
+
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::NEG>) { cycles = 2; regA(Sub8(0, regA())); }
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_BC>) { cycles = 15; regHL() = Add16(regHL(), regBC(), true); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_DE>) { cycles = 15; regHL() = Add16(regHL(), regDE(), true); }
@@ -865,9 +888,15 @@ public:
     if (regBC() != 0) { cycles = 21; regPC() -= 2; }
   }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPI>) { cycles = 16; auto carry = flagC(); Sub8(regA(), Read(regHL()++)); flagH(false)->flagN(false)->flagPV(!--regBC())->flagC(carry); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPI>) { cycles = 16; auto carry = flagC(); Sub8(regA(), Read(regHL()++)); flagH(false)->flagN(true)->flagPV(!--regBC())->flagC(carry); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPIR>) { 
     Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::CPI>());
+    if (regBC() != 0 && regA() != Read(regHL())) { cycles = 21; regPC() -= 2; }
+  }
+
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPD>) { cycles = 16; auto carry = flagC(); Sub8(regA(), Read(regHL()--)); flagH(false)->flagN(true)->flagPV(!--regBC())->flagC(carry); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPDR>) {
+    Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::CPD>());
     if (regBC() != 0 && regA() != Read(regHL())) { cycles = 21; regPC() -= 2; }
   }
 
@@ -901,18 +930,8 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_DE>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_HL>) {}
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::NEG>) {}
-
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IM_1>) {}
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IM_0>) {}
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IM_2>) {}
-
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::INI>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::INIR>) {}
-
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RETI>) {}
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RETN>) {}
-
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::IND>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::INDR>) {}
@@ -921,8 +940,6 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUTI>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OTIR>) {}
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPD>) {}
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPDR>) {}
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OUTD>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::OTDR>) {}
@@ -1121,11 +1138,6 @@ private:
    */
   inline bool IsParity(uint8_t x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (~x) & 1; }
 
-  inline std::string Int2Hex(int32_t i, int32_t width = 4) { 
-    std::stringstream ss; ss << std::setfill('0') << std::setw(width) << std::hex << std::uppercase << +i;
-    return ss.str();
-  }
-
 public:
   inline bool IsDebug() { return mode == DEBUG; }
   inline void Debug() { mode = DEBUG; }
@@ -1149,9 +1161,12 @@ private:
 
   uint32_t cycles = 0; // Show how many clock cycles are required to run specific command
   std::atomic<ModeT> mode = NORMAL;
+  std::pair<bool, bool> IFF;
 
   std::pair<std::mutex, std::condition_variable> sync;
   std::pair<std::mutex, std::condition_variable> callback;
+  std::pair<std::mutex, std::condition_variable> halt;
+  std::pair<IM_T, std::atomic<bool>> interrupt = std::pair(IM0, false);
 
   std::atomic<bool> bExec = true;
   std::unique_ptr<std::thread> runtime = nullptr;

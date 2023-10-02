@@ -38,7 +38,7 @@ public:
 
   inline void allocate(MemoryT address) {
     if (address.size() == 1) addr = (uint32_t)address[0];
-    else addr = ((uint32_t)address[1] << 8) | (uint32_t)address[0];
+    else addr = ((uint32_t)address[0] << 8) | (uint32_t)address[1];
 
     int32_t diff = memory.size() - addr;
     if (diff >= 0) return;

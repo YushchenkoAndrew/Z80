@@ -45,6 +45,7 @@ public:
     switches->Initialize(std::pair(olc::vi2d(10, 25), olc::vi2d(0, 0)));
     hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), olc::vi2d(0, 0)));
     lcd->Initialize(std::pair(olc::vi2d(10, 150), olc::vi2d(0, 0)));
+    keyboard->Initialize(std::pair(olc::vi2d(300, 50), olc::vi2d(0, 0)));
 
     ppi->Initialize(std::pair(olc::vi2d(300, 20), olc::vi2d(0, 0)));
 
@@ -123,8 +124,10 @@ private:
     switch((addr & 0x00F0) >> 4) {
       case MUX::IORQ::IN_OUT_PORT:return switches->Read(addr & 0x00FF, true);
       case MUX::IORQ::HEX_PORT:   return 0x00;
-      case MUX::IORQ::PPI_PORT:   return ppi->Read(addr, true);
-      case MUX::IORQ::UART_PORT:  break; 
+      case 0x03: return keyboard->Read(addr, true);
+      // FIXME: I dont exactly know how I impl hardware
+      // case MUX::IORQ::PPI_PORT:   return ppi->Read(addr, true);
+      // case MUX::IORQ::UART_PORT:  break; 
     }
 
     return 0x00;
@@ -134,16 +137,16 @@ private:
     switch((addr & 0x00F0) >> 4) {
       case MUX::IORQ::IN_OUT_PORT: return led->Write(addr, data, true);
       case MUX::IORQ::HEX_PORT: return hexDisplay->Write(addr, data, true); 
-      case MUX::IORQ::UART_PORT: break; 
-      case MUX::IORQ::PPI_PORT: {
-        ppi->Write(addr, data, true);
-        // FIXME: I dont exactly know how I impl hardware
-
-        switch(ppi->regC(Int2Type<PPI::OUTPUT>())) {
-          case 1: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), false);
-          case 3: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), true);
-        }
-      }
+      case 0x02: return lcd->Write(addr, data, BIT(addr, 0));
+      // FIXME: I dont exactly know how I impl hardware
+      // case MUX::IORQ::UART_PORT: break; 
+      // case MUX::IORQ::PPI_PORT: {
+      //   ppi->Write(addr, data, true);
+      //   switch(ppi->regC(Int2Type<PPI::OUTPUT>())) {
+      //     case 1: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), false);
+      //     case 3: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), true);
+      //   }
+      // }
     }
 
     return 0x00;

@@ -30,7 +30,7 @@ public:
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
-    if (bool err = interpreter.Load("assets/TestingLCD/Test.asm")) {
+    if (bool err = interpreter.Load("assets/TestKeyboard/Test.asm")) {
       for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
       printf("\n");
 
@@ -94,7 +94,7 @@ public:
   }
 
   bool OnUserUpdate(float fElapsedTime) override {
-	  Clear(~AnyType<Colors::BLACK, ColorT>::GetValue());
+	  Clear(*AnyType<Colors::BLACK, ColorT>::GetValue());
     AnyType<-1, float>::GetValue() = fElapsedTime;
 
     panels[nPanel].Preprocess();

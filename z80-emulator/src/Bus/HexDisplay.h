@@ -30,26 +30,26 @@ public:
 
 private:
   void Draw(Int2Type<HEX>, PixelGameEngine* GameEngine, uint8_t data, olc::vi2d pos) {
-    if (data & 0x01) GameEngine->FillRectDither(pos, olc::vi2d(vStep.x, 2), ~AnyType<DARK_GREY, ColorT>::GetValue());
-    else GameEngine->FillRectDither(pos, olc::vi2d(vStep.x, 2), ~AnyType<WHITE, ColorT>::GetValue());
+    if (data & 0x01) GameEngine->FillRectDither(pos, olc::vi2d(vStep.x, 2), *AnyType<DARK_GREY, ColorT>::GetValue());
+    else GameEngine->FillRectDither(pos, olc::vi2d(vStep.x, 2), *AnyType<WHITE, ColorT>::GetValue());
 
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, 0), olc::vi2d(2, vStep.y), ~AnyType<DARK_GREY, ColorT>::GetValue());
-    else GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, 0), olc::vi2d(2, vStep.y), ~AnyType<WHITE, ColorT>::GetValue());
+    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, 0), olc::vi2d(2, vStep.y), *AnyType<DARK_GREY, ColorT>::GetValue());
+    else GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, 0), olc::vi2d(2, vStep.y), *AnyType<WHITE, ColorT>::GetValue());
 
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, vStep.y), olc::vi2d(2, vStep.y), ~AnyType<DARK_GREY, ColorT>::GetValue());
-    else GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, vStep.y), olc::vi2d(2, vStep.y), ~AnyType<WHITE, ColorT>::GetValue());
+    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, vStep.y), olc::vi2d(2, vStep.y), *AnyType<DARK_GREY, ColorT>::GetValue());
+    else GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, vStep.y), olc::vi2d(2, vStep.y), *AnyType<WHITE, ColorT>::GetValue());
 
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y << 1), olc::vi2d(vStep.x, 2), ~AnyType<DARK_GREY, ColorT>::GetValue());
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y << 1), olc::vi2d(vStep.x, 2), ~AnyType<WHITE, ColorT>::GetValue());
+    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y << 1), olc::vi2d(vStep.x, 2), *AnyType<DARK_GREY, ColorT>::GetValue());
+    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y << 1), olc::vi2d(vStep.x, 2), *AnyType<WHITE, ColorT>::GetValue());
 
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(2, vStep.y), ~AnyType<DARK_GREY, ColorT>::GetValue());
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(2, vStep.y), ~AnyType<WHITE, ColorT>::GetValue());
+    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(2, vStep.y), *AnyType<DARK_GREY, ColorT>::GetValue());
+    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(2, vStep.y), *AnyType<WHITE, ColorT>::GetValue());
 
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, 0), olc::vi2d(2, vStep.y), ~AnyType<DARK_GREY, ColorT>::GetValue());
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, 0), olc::vi2d(2, vStep.y), ~AnyType<WHITE, ColorT>::GetValue());
+    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, 0), olc::vi2d(2, vStep.y), *AnyType<DARK_GREY, ColorT>::GetValue());
+    else GameEngine->FillRectDither(pos + olc::vi2d(0, 0), olc::vi2d(2, vStep.y), *AnyType<WHITE, ColorT>::GetValue());
 
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(vStep.x, 2), ~AnyType<DARK_GREY, ColorT>::GetValue());
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(vStep.x, 2), ~AnyType<WHITE, ColorT>::GetValue());
+    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(vStep.x, 2), *AnyType<DARK_GREY, ColorT>::GetValue());
+    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(vStep.x, 2), *AnyType<WHITE, ColorT>::GetValue());
   }
 
 private:

@@ -19,7 +19,7 @@ struct TypeList<T, olc::Pixel> {
   olc::Pixel& operator = (olc::Pixel c) { return val = c; }
   template<class U> olc::Pixel& operator = (TypeList<U, olc::Pixel>& list) { return val = list.val; }
 
-  olc::Pixel& operator ~ () { return val; }
+  olc::Pixel& operator* () { return val; }
 };
 
 #define HISTORY_SIZE 100

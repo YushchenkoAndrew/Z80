@@ -45,16 +45,16 @@ private:
       int32_t base = 10;
 
       switch (peekPrev()) {
-        case 'X': case 'x': base = 16; while (isHexDigit(peek())) advance(); break;
-        case 'O': case 'o': base = 8;  while (isOctDigit(peek())) advance(); break;
-        case 'B': case 'b': base = 2;  while (isBinDigit(peek())) advance(); break;
+        case 'X': case 'x': base = 16; while (Utils::IsHexDigit(peek())) advance(); break;
+        case 'O': case 'o': base = 8;  while (Utils::IsOctDigit(peek())) advance(); break;
+        case 'B': case 'b': base = 2;  while (Utils::IsBinDigit(peek())) advance(); break;
       }
 
       const auto nStart = this->nStart + 2;
       return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart), nullptr, base)));
     }
     
-    while (isDigit(peek())) advance();
+    while (Utils::IsDigit(peek())) advance();
     return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart))));
   }
 
@@ -99,12 +99,8 @@ private:
   }
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
-  inline bool isDigit(const char &c) { return c >= '0' && c <= '9'; }
-  inline bool isBinDigit(const char &c) { return c == '0' || c == '1'; }
-  inline bool isOctDigit(const char &c) { return c >= '0' && c <= '7'; }
-  inline bool isHexDigit(const char &c) { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
-  inline bool isAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.' || c == '\''; }
-  inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || isDigit(c); }
+  inline bool isAlpha(const char &c) { return Utils::IsAlpha(c) || c == '.' || c == '\''; }
+  inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || Utils::IsDigit(c); }
 
 
   inline void error(std::string message) {
