@@ -11,12 +11,14 @@ namespace Interpreter {
  *  program     -> declaration* EOF
  *  declaration -> variable | func | statement
  *  include     -> '#' IDENTIFIER '(' STRING ')'
- *  variable    -> IDENTIFIER 'EQU' term 
+ *  variable    -> IDENTIFIER 'EQU' shift 
  *  func        -> IDENTIFIER ':'
  *  statement   -> COMMAND (expression)?  // NOTE: Grammar for each command will be hardcoded based on manual, this grammar is just a common example
  * 
  *  offset      -> '+' literal
- *  term        -> unary (('+' | '-' | '|' | '&' | '^' | '..') unary)*
+ *  shift       -> term (('>>' | '<<') term)*
+ *  term        -> bit (('+' | '-' | '..') bit)*
+ *  bit         -> unary (('|' | '&' | '^') unary)*
  *  unary       -> ('~' | '-') unary | literal
  * 
  *  expression  -> argument  (',' argument)?
@@ -73,7 +75,7 @@ private:
   std::shared_ptr<Statement> variable() {
     std::shared_ptr<Token> label = peekPrev();
     consume(TokenT::OP_EQU, "Expect 'EQU' before expression.");
-    return std::make_shared<StatementVariable>(label, term());
+    return std::make_shared<StatementVariable>(label, shift());
   }
 
   std::shared_ptr<Statement> statement() {
@@ -81,10 +83,34 @@ private:
     return foreach<CommandList, Parser>::Key2Process(this);
   }
 
+  inline std::shared_ptr<Expression> shift(int32_t size = 0) {
+    auto expr = term(size);
+
+    while (match<2>({ TokenT::LEFT_SHIFT, TokenT::RIGHT_SHIFT })) {
+      std::shared_ptr<Token> operation = peekPrev();
+      auto right = term(size);
+      expr = std::make_shared<ExpressionBinary>(expr, operation, right);
+    }
+
+    return expr;
+  }
+
   inline std::shared_ptr<Expression> term(int32_t size = 0) {
+    auto expr = bit(size);
+
+    while (match<3>({ TokenT::PLUS, TokenT::MINUS, TokenT::CONCATENATE })) {
+      std::shared_ptr<Token> operation = peekPrev();
+      auto right = bit(size);
+      expr = std::make_shared<ExpressionBinary>(expr, operation, right);
+    }
+
+    return expr;
+  }
+
+  inline std::shared_ptr<Expression> bit(int32_t size = 0) {
     auto expr = unary(size);
 
-    while (match<6>({ TokenT::BIT_AND, TokenT::BIT_OR, TokenT::BIT_XOR, TokenT::PLUS, TokenT::MINUS, TokenT::CONCATENATE })) {
+    while (match<3>({ TokenT::BIT_AND, TokenT::BIT_OR, TokenT::BIT_XOR })) {
       std::shared_ptr<Token> operation = peekPrev();
       auto right = unary(size);
       expr = std::make_shared<ExpressionBinary>(expr, operation, right);
@@ -92,6 +118,7 @@ private:
 
     return expr;
   }
+
 
   inline std::shared_ptr<Expression> unary(int32_t size = 0) {
     if (match<2>({ TokenT::MINUS, TokenT::BIT_NOT })) {
@@ -133,7 +160,7 @@ public:
     auto expr = peekPrev();
     std::vector<std::shared_ptr<Expression>> data;
 
-    do { data.push_back(term()); } while(match<1>({ TokenT::COMMA }));
+    do { data.push_back(shift()); } while(match<1>({ TokenT::COMMA }));
     return std::make_shared<StatementAllocate>(expr, data, 1);
   }
 
@@ -141,7 +168,7 @@ public:
     auto expr = peekPrev();
     std::vector<std::shared_ptr<Expression>> data;
 
-    do { data.push_back(term()); } while(match<1>({ TokenT::COMMA }));
+    do { data.push_back(shift()); } while(match<1>({ TokenT::COMMA }));
     return std::make_shared<StatementAllocate>(expr, data, 2);
   }
 
@@ -227,7 +254,7 @@ public:
   }
 
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_DJNZ>) {
-    return std::make_shared<StatementLambda>(StatementLambda(peekPrev(), term(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1000 | (argv.back() & 0xFF)); }));
+    return std::make_shared<StatementLambda>(StatementLambda(peekPrev(), shift(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1000 | (argv.back() & 0xFF)); }));
   }
 
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_IM>) {
@@ -553,7 +580,7 @@ public:
       consume(TokenT::COMMA, "Expect ',' after first expression.");
 
       // NOTE: Need to do it such way because compiler crashed with internal error (| ~ | `) 
-      return std::make_shared<StatementLambda>(StatementLambda(cmd, term(2), [](std::vector<uint32_t> argv) {
+      return std::make_shared<StatementLambda>(StatementLambda(cmd, shift(2), [](std::vector<uint32_t> argv) {
         switch(argv.back()) {
           case (uint32_t)TokenT::REG_C:
           case (uint32_t)TokenT::FLAG_C:  return (uint32_t)(0x3800 | (argv[1] & 0xFF));
@@ -565,7 +592,7 @@ public:
         return (uint32_t)0x00;
       }, { (uint32_t)flag->token }));
 
-    } else return std::make_shared<StatementLambda>(StatementLambda(cmd, term(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1800 | (argv.back() & 0xFF)); }));
+    } else return std::make_shared<StatementLambda>(StatementLambda(cmd, shift(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1800 | (argv.back() & 0xFF)); }));
 
     return std::make_shared<Statement>();
   }

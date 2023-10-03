@@ -23,8 +23,17 @@ bool Lexer::scan(std::string text) {
       case '~': addToken(TokenT::BIT_NOT); break;
 
       case '.':
-       if (advance() != '.') { error("Unexpected character."); break; }
-       addToken(TokenT::CONCATENATE); break;
+       if (advance() == '.') { addToken(TokenT::CONCATENATE); break; }
+       else if (Utils::IsAlpha(peekPrev())) { identifier(); break; }
+       else error("Unexpected character."); break;
+
+      case '>':
+       if (advance() != '>') { error("Unexpected character."); break; }
+       addToken(TokenT::RIGHT_SHIFT); break;
+
+      case '<':
+       if (advance() != '<') { error("Unexpected character."); break; }
+       addToken(TokenT::LEFT_SHIFT); break;
 
 
       case '"': string(c); break;

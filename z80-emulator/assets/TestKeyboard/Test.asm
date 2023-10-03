@@ -26,7 +26,7 @@ SETUP:
   ; LD A, 0x00
   ; OUT (0x21), A
 
-
+  ; CALL _SCAN_CODE_INIT
 
   ; IN A, (0x00)
   ; OUT (0x50), A
@@ -34,29 +34,13 @@ SETUP:
   EI                ; Enable interrupts
   JP MAIN
 
-
-  ; ###################################################
-  ; ############  INTERRUPT HANDLER    ################
-  ; ###################################################
-  org 0x0038
-  EX AF, AF'        ; Save prev state
-  EXX               ; Save prev state
-
-  ; LD D, 0x05
-  ; CALL DELAY
-
-  IN A, (0x30)      ;; Reset RS-Trigger (Reset Initerrupt)
-  LD HL, PTR_FUNC_ARGS
-
-  LD (HL), A
-	PUSH HL
-
-	CALL _HEX
-
-END_INIT:
-  EX AF, AF'        ; Restore prev state
-  EXX               ; Restore prev state
-  EI                ; Enable interrupts
+;; Interrupt handler
+ORG 0x0038
+  PUSH AF     ; Save Acc & flags
+  IN A, (0x30); Reset RS-Trigger (Reset Initerrupt)
+  CALL #SCAN_CODE_IM
+  POP AF      ; Restore AF reg
+  EI          ; Restore interrupts
   RET
 
 
@@ -74,7 +58,8 @@ MAIN:
 
   ; LD D, 0xFF
   ; CALL DELAY
+  CALL _SCAN_CODE_HANDLE
   JP MAIN
 
 #include "../lib/Hex.asm"
-
+#include "Keyboard.asm"

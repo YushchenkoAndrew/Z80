@@ -130,6 +130,28 @@ public:
 
         return left;
 
+      case TokenT::RIGHT_SHIFT: 
+        for (int32_t i = 0; i < Bytes2Int(right); i++) {
+          for (int32_t j = 0, carry = 0; j < left.size(); j++) {
+            const auto prev = left[i] & 0x01;
+            left[i] = ((left[i] >> 1) & 0xFF) | (carry ? 0x80 : 0x00);
+            carry = prev;
+          }
+        }
+
+        return left;
+
+      case TokenT::LEFT_SHIFT:
+        for (int32_t i = 0; i < Bytes2Int(right); i++) {
+          for (int32_t j = left.size() - 1, carry = 0; j >= 0; j--) {
+            const auto prev = left[i] & 0x80;
+            left[i] = ((left[i] << 1) & 0xFF) | (carry ? 0x01 : 0x00);
+            carry = prev;
+          }
+        }
+
+        return left;
+
       case TokenT::BIT_OR:
         for (int32_t i = 0; i < left.size(); i++)  left[i] |= right[i];
         return left;
@@ -308,6 +330,13 @@ private:
     }
 
     return result;
+  }
+
+  inline uint32_t Bytes2Int(MemoryT& bytes) {
+    uint32_t acc = 0;
+    for (auto& byte : bytes) acc = (acc << 8) | byte;
+
+    return acc;
   }
 
   void error(std::shared_ptr<Token> token, std::string message) {
