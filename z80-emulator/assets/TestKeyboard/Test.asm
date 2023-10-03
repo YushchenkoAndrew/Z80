@@ -13,6 +13,7 @@
   ; ###################################################
 SETUP:
   LD SP, STACK      ; Set Memory Paging RAM
+  IM 1              ; Use interrupt Mode 1
 
   ; ;; Set MODE 0;  A: OUTPUT; B: OUTPUT; C: OUTPUT
   ; LD A, 0x80
@@ -26,12 +27,13 @@ SETUP:
   ; LD A, 0x00
   ; OUT (0x21), A
 
+  LD A, 0xF1
+  LD (SCAN_KEY_BUF), A ; Set scan code buff offset
   ; CALL _SCAN_CODE_INIT
 
   ; IN A, (0x00)
   ; OUT (0x50), A
-  IM 1              ; Use interrupt Mode 1
-  EI                ; Enable interrupts
+  EI          ; Restore interrupts
   JP MAIN
 
 ;; Interrupt handler
@@ -58,8 +60,8 @@ MAIN:
 
   ; LD D, 0xFF
   ; CALL DELAY
-  CALL _SCAN_CODE_HANDLE
+  ; CALL _SCAN_CODE_HANDLE
   JP MAIN
 
-#include "../lib/Hex.asm"
+; #include "../lib/Hex.asm"
 #include "Keyboard.asm"

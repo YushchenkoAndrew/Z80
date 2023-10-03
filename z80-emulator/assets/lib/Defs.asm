@@ -24,6 +24,7 @@ LCD_CURSOR_LEFT  EQU 0x10
 LCD_CURSOR_RIGHT EQU 0x14
 
 
+
 ;; Static FUNC ptr
 PTR_ADDR           EQU 0x4000
 PTR_LCD_MODE       EQU PTR_ADDR + 1
@@ -37,5 +38,9 @@ PTR_FUNC_ARGS      EQU PTR_ADDR + 6
 
 
 ;; Allocated memory
+SCAN_KEY_BUF       EQU 0x40F0  ;; 00h - 0Fh Keybuffer
 SCAN_KEY_MAP       EQU 0x4100  ;; 00h - FFh scan codes
 SCAN_LCD_MAP       EQU SCAN_KEY_MAP + 0x100 ;; 00h - 0Fh lcd buffer
+
+;; Keys alias
+KEY_SHIFT          EQU SCAN_KEY_MAP | 0x12

@@ -867,9 +867,11 @@ public:
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_SBC>) {
     auto cmd = peekPrev();
 
-    switch (advance()->token) {
+    std::shared_ptr<Token> reg = advance();
+    consume(TokenT::COMMA, "Expect ',' after first expression.");
+
+    switch (reg->token) {
       case TokenT::REG_A:
-        consume(TokenT::COMMA, "Expect ',' after first expression.");
         return basicRegisterOperation(0x009E, 0x0098, 0x00DE, cmd);
 
       case TokenT::REG_HL:

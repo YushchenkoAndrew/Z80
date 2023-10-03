@@ -11,6 +11,15 @@ namespace Bus {
 class Keyboard : public Window::Window, public Device {
 public:
   Keyboard(Bus* b): bus(b) {}
+  ~Keyboard() {
+    bExec = false; 
+
+    if (runtime != nullptr && runtime->joinable()) runtime->join();
+  }
+
+  void Preinitialize() { 
+    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&Keyboard::Runtime, this));
+  }
 
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
@@ -21,8 +30,6 @@ public:
 
     AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyboardScanCodes, Keyboard>::Process(this);
-
-    if (!IS_EMPTY(buffer)) Interrupt();
   }
 
   void Draw(PixelGameEngine* GameEngine) {
@@ -42,6 +49,15 @@ public:
 
   void Interrupt();
 
+private:
+  void Runtime() {
+    while (bExec) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      { Utils::Lock l(MUTEX(buffer)); if (!IS_EMPTY(buffer)) Interrupt(); }
+    }
+  }
+
+public:
   uint8_t Read(uint32_t addr, bool) {
     Utils::Lock l(MUTEX(buffer));
 
@@ -76,6 +92,9 @@ private:
   const olc::vi2d vStep = olc::vi2d(8, 0);
 
   Bus* bus;
+
+  std::atomic<bool> bExec = true;
+  std::unique_ptr<std::thread> runtime = nullptr;
 
   // Variables defines animation duration
   float fStrokeRepeat = 0.f;

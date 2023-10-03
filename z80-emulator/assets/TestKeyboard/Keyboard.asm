@@ -22,6 +22,42 @@ _SCAN_CODE_INIT_lp:
   POP HL      ; Restore reg HL
   RET
 
+#SCAN_CODE_ASCII:
+  PUSH HL     ; Save HL reg in stack
+  PUSH BC     ; Save BC reg in stack
+  ; LD BC, .SCAN_CODE_ASCII_VEC_ED-.SCAN_CODE_ASCII_VEC_ST ; Get vector size
+  LD BC, 49; Get vector size
+  LD HL, .SCAN_CODE_ASCII_VEC_ST
+  CPIR        ; Find index in SCAN_CODE_ASCII
+  JP PO, #SCAN_CODE_ASCII_bg
+  XOR A       ; Reset Acc
+  JR #SCAN_CODE_ASCII_esc-$
+
+#SCAN_CODE_ASCII_bg:
+  XOR A       ; Reset Acc & flags
+  LD BC, .SCAN_CODE_ASCII_VEC_ST
+  SBC HL, BC  ; Get offset from the start of vector
+  LD A, (KEY_SHIFT) ; Get shift status
+  CP 0b001    ; Check if shift key has stat pressed
+  JR Z, #SCAN_CODE_ASCII_up-$
+  CP 0b010    ; Check if shift key has stat hold
+  JR NZ, #SCAN_CODE_ASCII_lw-$
+#SCAN_CODE_ASCII_up:
+  LD BC, .UPPERCASE_VEC_ST
+  JR #SCAN_CODE_ASCII_lw_ed-$
+
+#SCAN_CODE_ASCII_lw:
+  LD BC, .LOWERCASE_VEC_ST
+#SCAN_CODE_ASCII_lw_ed:
+  ADD HL, BC  ; ASCII char location
+  LD A, (HL)  ; Get ASCII char
+
+#SCAN_CODE_ASCII_esc:
+  POP BC      ; Restore BC reg
+  POP HL      ; Restore HL reg
+  RET
+
+
 ;;
 ;; Example:
 ;;  IN A, (0x30) ; Reset RS-Trigger (Reset Initerrupt)
@@ -40,55 +76,86 @@ _SCAN_CODE_INIT_lp:
 ;;   reg HL -- unaffected
 #SCAN_CODE_IM:
   PUSH HL     ; Save HL reg in stack
-  PUSH AF     ; Save scan code in stack
+  PUSH BC     ; Save BC reg in stack
+  LD C, A     ; Save in reg C scan code
   CP 0xF0     ; Check if key is been released
   JR Z, #SCAN_CODE_IM_esc-$
 
-  PUSH BC     ; Save BC reg in stack
   LD HL, SCAN_KEY_MAP ;; Load scan code mapper area
   LD L, A     ; Load offset 
   LD A, (HL)  ; Get prev state of key
   OR A        ; Set flag Z if empty (state 000 = NULL)
   LD B, 0b001 ; Set state PRESSED if curr == 000
-  JR Z, #SCAN_CODE_nxt_st-$
+  JR Z, #SCAN_CODE_cmp_st-$
   DEC A       ; Check if state is 001 = Pressed, flag Z will be set
+  LD B, 0b010 ; Set state HOLD if curr == 001
   JR Z, #SCAN_CODE_cmp_st-$
   DEC A       ; Check if state is 010 = Hold, flag Z will be set
+  LD B, 0b010 ; Set state HOLD if curr == 010
   JR Z, #SCAN_CODE_cmp_st-$
   DEC A       ; Check if state is 011 = Released, flag Z will be set
-  LD B, 0b001 ; Set state PRESSED if key isn't been nulled
-  JR #SCAN_CODE_nxt_st-$
+  LD B, 0b001 ; Set state NULL if key isn't been nulled
+  ; JR #SCAN_CODE_nxt_st-$
 
 #SCAN_CODE_cmp_st:
-  LD B, 0b010 ; Set state HOLD if curr == 001 || curr == 010
   LD A, (PTR_PREV_SCAN_CODE); Get prev value from ptr
   CP 0xF0     ; Check if key is been released
-  JR NZ, #SCAN_CODE_nxt_st-$
-  INC B       ; Set state RELEASED if curr == 001 AND prev scan code == 0xF0
+  JR Z, #SCAN_CODE_st_rels-$
+
+  PUSH HL     ; Save HL reg in stack
+  LD HL, SCAN_KEY_BUF ; Load buffer count addr
+  LD L, (HL)  ; Load buf offset
+  LD A, C     ; Restore scan code to reg A
+  CALL #SCAN_CODE_ASCII
+  OR A        ; Check if ASCII was found
+  JR Z, #SCAN_CODE_cmp_buf_esc-$
+  LD (HL), A  ; Save scan code in buffer
+  LD A, L     ; Load buff offset to Acc
+  LD H, L     ; Save buff offset to reg H
+  AND 0xF0    ; Get only high bits
+  LD L, A     ; Save high bits in reg L
+  LD A, H     ; Restore buff offset to Acc
+  INC A       ; Get next addr
+  AND 0x0F    ; Get low bits
+  JR NZ, #SCAN_CODE_cmp_buf_ed-$
+  INC A       ; Start offset from 1
+#SCAN_CODE_cmp_buf_ed:
+  OR L        ; Combine high bits with low bits
+  LD (SCAN_KEY_BUF), A ; Save next buf offset
+#SCAN_CODE_cmp_buf_esc:
+  POP HL      ; Restore HL reg
+  JR #SCAN_CODE_nxt_st-$
+
+#SCAN_CODE_st_rels:
+  LD B, 0b011 ; Set state RELEASED if curr == 001 AND prev scan code == 0xF0
 #SCAN_CODE_nxt_st:
   LD (HL), B  ; Save key state
-  POP BC      ; Restore BC reg
 
 #SCAN_CODE_IM_esc:
-  POP AF      ; Restore scan code
-  POP HL      ; Restore HL reg
+  LD A, C     ; Restore from scan code from reg C
   LD (PTR_PREV_SCAN_CODE), A ; Save curr key in prev ptr
+  POP BC      ; Restore BC reg
+  POP HL      ; Restore HL reg
   RET
+
+
+
+
 
 #include "../lib/Hex.asm"
 
 _SCAN_CODE_HANDLE:
   LD B, 0     ; Set cnt to the max val aka 256
   LD HL, SCAN_KEY_MAP ;; Load scan code mapper area
-_SCAN_CODE_INIT_lp:
+_SCAN_CODE_HANDLE_lp:
   LD A, (HL)  ; Load key state to Acc
   OR A        ; Check if state is NULL
-  JR Z, _SCAN_CODE_INIT_nxt-$
+  JR Z, _SCAN_CODE_HANDLE_nxt-$
 
-  ; FIXME: quick check
+  ; ; FIXME: quick check
   PUSH HL
   CP 0x01
-  JR NZ, _SCAN_CODE_INIT_evt-$
+  JR NZ, _SCAN_CODE_HANDLE_evt-$
   PUSH BC
   LD BC, 49
   LD A, L
@@ -96,22 +163,22 @@ _SCAN_CODE_INIT_lp:
   CPIR
   POP BC
 
-  LD A, L
-  LD HL, .LOWERCASE_VEC_ST
-  LD L, A
-  LD A, (HL)
+  ; LD A, L
+  ; LD HL, .LOWERCASE_VEC_ST
+  ; LD L, A
+  ; LD A, (HL)
 
   LD HL, PTR_FUNC_ARGS
   LD (HL), A
   PUSH HL
   CALL _HEX
 
-_SCAN_CODE_INIT_evt:
+_SCAN_CODE_HANDLE_evt:
   POP HL
 
-_SCAN_CODE_INIT_nxt:
+_SCAN_CODE_HANDLE_nxt:
   INC HL      ; Go to the next addr
-  DJNZ _SCAN_CODE_INIT_lp-$
+  DJNZ _SCAN_CODE_HANDLE_lp-$
   RET
 
 
