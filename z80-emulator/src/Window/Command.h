@@ -15,7 +15,7 @@ protected:
     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     bool bPressed = GameEngine->GetKey(key).bPressed;
 
-    if (GameEngine->GetKey(key).bReleased) fStrokeRepeat = .0f;
+    if (GameEngine->GetKey(key).bReleased) { fStrokeRepeat = .0f; bReleased = true; }
     if (GameEngine->GetKey(key).bHeld) {
       fStrokeRepeat += AnyType<-1, float>::GetValue();
       if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
@@ -72,5 +72,6 @@ protected:
 
 public:
   bool bUpdated = false;
+  bool bReleased = false;
 };
 };

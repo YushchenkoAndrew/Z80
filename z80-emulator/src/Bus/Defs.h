@@ -754,9 +754,9 @@ class Defs {
 public:
   static void Init() {
     AnyType<Z80::NOP,     Z80::InstrSTR>::GetValue() = "NOP";                AnyType<Z80::LD_BC_NN, Z80::InstrSTR>::GetValue() = "LD BC, 0x%04x";
-    AnyType<Z80::DJNZ_D,  Z80::InstrSTR>::GetValue() = "DJNZ %d";            AnyType<Z80::LD_DE_NN, Z80::InstrSTR>::GetValue() = "LD DE, 0x%04x";
-    AnyType<Z80::JR_NZ_D, Z80::InstrSTR>::GetValue() = "JR NZ, %d";          AnyType<Z80::LD_HL_NN, Z80::InstrSTR>::GetValue() = "LD HL, 0x%04x";
-    AnyType<Z80::JR_NC_D, Z80::InstrSTR>::GetValue() = "JR NZ, %d";          AnyType<Z80::LD_SP_NN, Z80::InstrSTR>::GetValue() = "LD SP, 0x%04x";
+    AnyType<Z80::DJNZ_D,  Z80::InstrSTR>::GetValue() = "DJNZ 0x%02x";        AnyType<Z80::LD_DE_NN, Z80::InstrSTR>::GetValue() = "LD DE, 0x%04x";
+    AnyType<Z80::JR_NZ_D, Z80::InstrSTR>::GetValue() = "JR NZ, 0x%02x";      AnyType<Z80::LD_HL_NN, Z80::InstrSTR>::GetValue() = "LD HL, 0x%04x";
+    AnyType<Z80::JR_NC_D, Z80::InstrSTR>::GetValue() = "JR NZ, 0x%02x";      AnyType<Z80::LD_SP_NN, Z80::InstrSTR>::GetValue() = "LD SP, 0x%04x";
     AnyType<Z80::LD_B_B,  Z80::InstrSTR>::GetValue() = "LD B, B";            AnyType<Z80::LD_B_C,   Z80::InstrSTR>::GetValue() = "LD B, C";
     AnyType<Z80::LD_D_B,  Z80::InstrSTR>::GetValue() = "LD D, B";            AnyType<Z80::LD_D_C,   Z80::InstrSTR>::GetValue() = "LD D, C";
     AnyType<Z80::LD_H_B,  Z80::InstrSTR>::GetValue() = "LD H, B";            AnyType<Z80::LD_H_C,   Z80::InstrSTR>::GetValue() = "LD H, C";
@@ -774,7 +774,7 @@ public:
     AnyType<Z80::LD_bc_A,  Z80::InstrSTR>::GetValue() = "LD (BC), A";        AnyType<Z80::INC_BC,   Z80::InstrSTR>::GetValue() = "INC_BC";
     AnyType<Z80::LD_de_A,  Z80::InstrSTR>::GetValue() = "LD (DE), A";        AnyType<Z80::INC_DE,   Z80::InstrSTR>::GetValue() = "INC DE";
     AnyType<Z80::LD_nn_HL, Z80::InstrSTR>::GetValue() = "LD (0x%04x), HL";   AnyType<Z80::INC_HL,   Z80::InstrSTR>::GetValue() = "INC HL";
-    AnyType<Z80::LD_nn_A,  Z80::InstrSTR>::GetValue() = "LD (nn), A";        AnyType<Z80::INC_SP,   Z80::InstrSTR>::GetValue() = "INC SP";
+    AnyType<Z80::LD_nn_A,  Z80::InstrSTR>::GetValue() = "LD (0x%04x), A";    AnyType<Z80::INC_SP,   Z80::InstrSTR>::GetValue() = "INC SP";
     AnyType<Z80::LD_B_D,   Z80::InstrSTR>::GetValue() = "LD B, D";           AnyType<Z80::LD_B_E,   Z80::InstrSTR>::GetValue() = "LD B, E";
     AnyType<Z80::LD_D_D,   Z80::InstrSTR>::GetValue() = "LD D, D";           AnyType<Z80::LD_D_E,   Z80::InstrSTR>::GetValue() = "LD D, E";
     AnyType<Z80::LD_H_D,   Z80::InstrSTR>::GetValue() = "LD H, D";           AnyType<Z80::LD_H_E,   Z80::InstrSTR>::GetValue() = "LD H, E";
@@ -826,9 +826,9 @@ public:
 
 
     AnyType<Z80::EX_AF_AF, Z80::InstrSTR>::GetValue() = "EX AF, AF'";        AnyType<Z80::ADD_HL_BC, Z80::InstrSTR>::GetValue() = "ADD HL, BC";
-    AnyType<Z80::JR_D,     Z80::InstrSTR>::GetValue() = "JR D";              AnyType<Z80::ADD_HL_DE, Z80::InstrSTR>::GetValue() = "ADD HL, DE";
-    AnyType<Z80::JR_Z_D,   Z80::InstrSTR>::GetValue() = "JR Z, D";           AnyType<Z80::ADD_HL_HL, Z80::InstrSTR>::GetValue() = "ADD HL, HL";
-    AnyType<Z80::JR_C_D,   Z80::InstrSTR>::GetValue() = "JR C, D";           AnyType<Z80::ADD_HL_SP, Z80::InstrSTR>::GetValue() = "ADD HL, SP";
+    AnyType<Z80::JR_D,     Z80::InstrSTR>::GetValue() = "JR 0x%02x";         AnyType<Z80::ADD_HL_DE, Z80::InstrSTR>::GetValue() = "ADD HL, DE";
+    AnyType<Z80::JR_Z_D,   Z80::InstrSTR>::GetValue() = "JR Z, 0x%02x";      AnyType<Z80::ADD_HL_HL, Z80::InstrSTR>::GetValue() = "ADD HL, HL";
+    AnyType<Z80::JR_C_D,   Z80::InstrSTR>::GetValue() = "JR C, 0x%02x";      AnyType<Z80::ADD_HL_SP, Z80::InstrSTR>::GetValue() = "ADD HL, SP";
     AnyType<Z80::LD_C_B,   Z80::InstrSTR>::GetValue() = "LD C, B";           AnyType<Z80::LD_C_C,    Z80::InstrSTR>::GetValue() = "LD C, C";
     AnyType<Z80::LD_E_B,   Z80::InstrSTR>::GetValue() = "LD E, B";           AnyType<Z80::LD_E_C,    Z80::InstrSTR>::GetValue() = "LD E, C";
     AnyType<Z80::LD_L_B,   Z80::InstrSTR>::GetValue() = "LD L, B";           AnyType<Z80::LD_L_C,    Z80::InstrSTR>::GetValue() = "LD L, C";
@@ -1043,84 +1043,84 @@ public:
 
 
     // IxInstructions
-    AnyType<Z80::ADD_IX_BC, Z80::IxSTR>::GetValue() = "ADD IX, BC";         AnyType<Z80::ADD_IX_DE, Z80::IxSTR>::GetValue() = "ADD IX, DE";
-    AnyType<Z80::INC_ixd,   Z80::IxSTR>::GetValue() = "INC (IX+%d)";        AnyType<Z80::DEC_ixd,   Z80::IxSTR>::GetValue() = "DEC (IX+%d)";
-    AnyType<Z80::LD_ixd_B,  Z80::IxSTR>::GetValue() = "LD (IX+%d), B";      AnyType<Z80::LD_ixd_C,  Z80::IxSTR>::GetValue() = "LD (IX+%d), C";
-    AnyType<Z80::ADD_A_ixd, Z80::IxSTR>::GetValue() = "ADD A, (IX+%d)";     AnyType<Z80::ADC_A_ixd, Z80::IxSTR>::GetValue() = "ADC A, (IX+%d)";
-    AnyType<Z80::POP_IX,    Z80::IxSTR>::GetValue() = "POP IX";             AnyType<Z80::EX_sp_IX,  Z80::IxSTR>::GetValue() = "EX (SP), IX";
-    AnyType<Z80::LD_IX_NN,  Z80::IxSTR>::GetValue() = "LD IX, 0x%04x";      AnyType<Z80::LD_nn_IX,  Z80::IxSTR>::GetValue() = "LD (0x%04x), IX";
-    AnyType<Z80::LD_ixd_N,  Z80::IxSTR>::GetValue() = "LD (IX+%d), 0x%04x"; AnyType<Z80::ADD_IX_SP, Z80::IxSTR>::GetValue() = "ADD IX, SP";
-    AnyType<Z80::LD_ixd_D,  Z80::IxSTR>::GetValue() = "LD (IX+%d), D";      AnyType<Z80::LD_ixd_E,  Z80::IxSTR>::GetValue() = "LD (IX+%d), E";
-    AnyType<Z80::SUB_ixd,   Z80::IxSTR>::GetValue() = "SUB (IX+%d)";        AnyType<Z80::SBC_A_ixd, Z80::IxSTR>::GetValue() = "SBC A, (IX+%d)";
-    AnyType<Z80::PUSH_IX,   Z80::IxSTR>::GetValue() = "PUSH IX";            AnyType<Z80::JP_ix,     Z80::IxSTR>::GetValue() = "JP (IX)";
-    AnyType<Z80::INC_IX,    Z80::IxSTR>::GetValue() = "INC IX";             AnyType<Z80::ADD_IX_IX, Z80::IxSTR>::GetValue() = "ADD IX, IX";
-    AnyType<Z80::LD_B_ixd,  Z80::IxSTR>::GetValue() = "LD B, (IX+%d)";      AnyType<Z80::LD_C_ixd,  Z80::IxSTR>::GetValue() = "LD C, (IX+%d)";
-    AnyType<Z80::LD_ixd_H,  Z80::IxSTR>::GetValue() = "LD (IX+%d), H";      AnyType<Z80::LD_ixd_L,  Z80::IxSTR>::GetValue() = "LD (IX+%d), L";
-    AnyType<Z80::AND_ixd,   Z80::IxSTR>::GetValue() = "AND (IX+%d)";        AnyType<Z80::XOR_ixd,   Z80::IxSTR>::GetValue() = "XOR (IX+%d)";
-    AnyType<Z80::LD_IX_nn,  Z80::IxSTR>::GetValue() = "LD IX, 0x%04x";      AnyType<Z80::DEC_IX,    Z80::IxSTR>::GetValue() = "DEC IX";
-    AnyType<Z80::LD_D_ixd,  Z80::IxSTR>::GetValue() = "LD D, (IX+%d)";      AnyType<Z80::LD_E_ixd,  Z80::IxSTR>::GetValue() = "LD E, (IX+%d)";
-    AnyType<Z80::LD_H_ixd,  Z80::IxSTR>::GetValue() = "LD H, (IX+%d)";      AnyType<Z80::LD_L_ixd,  Z80::IxSTR>::GetValue() = "LD L, (IX+%d)";
-    AnyType<Z80::LD_ixd_A,  Z80::IxSTR>::GetValue() = "LD (IX+%d), A";      AnyType<Z80::LD_A_ixd,  Z80::IxSTR>::GetValue() = "LD A, (IX+%d)";
-    AnyType<Z80::OR_ixd,    Z80::IxSTR>::GetValue() = "OR (IX+%d)";         AnyType<Z80::CP_ixd,    Z80::IxSTR>::GetValue() = "CP (IX+%d)";
-    AnyType<Z80::LD_SP_IX,  Z80::IxSTR>::GetValue() = "LD SP, IX";          AnyType<Z80::IxBitInstr,Z80::IxSTR>::GetValue() = "";
+    AnyType<Z80::ADD_IX_BC, Z80::IxSTR>::GetValue() = "ADD IX, BC";             AnyType<Z80::ADD_IX_DE, Z80::IxSTR>::GetValue() = "ADD IX, DE";
+    AnyType<Z80::INC_ixd,   Z80::IxSTR>::GetValue() = "INC (IX+0x%02x)";        AnyType<Z80::DEC_ixd,   Z80::IxSTR>::GetValue() = "DEC (IX+%02x)";
+    AnyType<Z80::LD_ixd_B,  Z80::IxSTR>::GetValue() = "LD (IX+0x%02x), B";      AnyType<Z80::LD_ixd_C,  Z80::IxSTR>::GetValue() = "LD (IX+%02x), C";
+    AnyType<Z80::ADD_A_ixd, Z80::IxSTR>::GetValue() = "ADD A, (IX+0x%02x)";     AnyType<Z80::ADC_A_ixd, Z80::IxSTR>::GetValue() = "ADC A, (IX+%02x)";
+    AnyType<Z80::POP_IX,    Z80::IxSTR>::GetValue() = "POP IX";                 AnyType<Z80::EX_sp_IX,  Z80::IxSTR>::GetValue() = "EX (SP), IX";
+    AnyType<Z80::LD_IX_NN,  Z80::IxSTR>::GetValue() = "LD IX, 0x%04x";          AnyType<Z80::LD_nn_IX,  Z80::IxSTR>::GetValue() = "LD (0x%04x), IX";
+    AnyType<Z80::LD_ixd_N,  Z80::IxSTR>::GetValue() = "LD (IX+0x%02x), 0x%04x"; AnyType<Z80::ADD_IX_SP, Z80::IxSTR>::GetValue() = "ADD IX, SP";
+    AnyType<Z80::LD_ixd_D,  Z80::IxSTR>::GetValue() = "LD (IX+0x%02x), D";      AnyType<Z80::LD_ixd_E,  Z80::IxSTR>::GetValue() = "LD (IX+%02x), E";
+    AnyType<Z80::SUB_ixd,   Z80::IxSTR>::GetValue() = "SUB (IX+0x%02x)";        AnyType<Z80::SBC_A_ixd, Z80::IxSTR>::GetValue() = "SBC A, (IX+%02x)";
+    AnyType<Z80::PUSH_IX,   Z80::IxSTR>::GetValue() = "PUSH IX";                AnyType<Z80::JP_ix,     Z80::IxSTR>::GetValue() = "JP (IX)";
+    AnyType<Z80::INC_IX,    Z80::IxSTR>::GetValue() = "INC IX";                 AnyType<Z80::ADD_IX_IX, Z80::IxSTR>::GetValue() = "ADD IX, IX";
+    AnyType<Z80::LD_B_ixd,  Z80::IxSTR>::GetValue() = "LD B, (IX+0x%02x)";      AnyType<Z80::LD_C_ixd,  Z80::IxSTR>::GetValue() = "LD C, (IX+%02x)";
+    AnyType<Z80::LD_ixd_H,  Z80::IxSTR>::GetValue() = "LD (IX+0x%02x), H";      AnyType<Z80::LD_ixd_L,  Z80::IxSTR>::GetValue() = "LD (IX+%02x), L";
+    AnyType<Z80::AND_ixd,   Z80::IxSTR>::GetValue() = "AND (IX+0x%02x)";        AnyType<Z80::XOR_ixd,   Z80::IxSTR>::GetValue() = "XOR (IX+%02x)";
+    AnyType<Z80::LD_IX_nn,  Z80::IxSTR>::GetValue() = "LD IX, 0x%04x";          AnyType<Z80::DEC_IX,    Z80::IxSTR>::GetValue() = "DEC IX";
+    AnyType<Z80::LD_D_ixd,  Z80::IxSTR>::GetValue() = "LD D, (IX+0x%02x)";      AnyType<Z80::LD_E_ixd,  Z80::IxSTR>::GetValue() = "LD E, (IX+%02x)";
+    AnyType<Z80::LD_H_ixd,  Z80::IxSTR>::GetValue() = "LD H, (IX+0x%02x)";      AnyType<Z80::LD_L_ixd,  Z80::IxSTR>::GetValue() = "LD L, (IX+%02x)";
+    AnyType<Z80::LD_ixd_A,  Z80::IxSTR>::GetValue() = "LD (IX+0x%02x), A";      AnyType<Z80::LD_A_ixd,  Z80::IxSTR>::GetValue() = "LD A, (IX+%02x)";
+    AnyType<Z80::OR_ixd,    Z80::IxSTR>::GetValue() = "OR (IX+0x%02x)";         AnyType<Z80::CP_ixd,    Z80::IxSTR>::GetValue() = "CP (IX+%02x)";
+    AnyType<Z80::LD_SP_IX,  Z80::IxSTR>::GetValue() = "LD SP, IX";              AnyType<Z80::IxBitInstr,Z80::IxSTR>::GetValue() = "";
 
 
-    AnyType<Z80::RLC_ixd,   Z80::IxBitSTR>::GetValue() = "RLC (IX+%d)";     AnyType<Z80::RRC_ixd,   Z80::IxBitSTR>::GetValue() = "RRC (IX+%d)";
-    AnyType<Z80::RL_ixd,    Z80::IxBitSTR>::GetValue() = "RL (IX+%d)";      AnyType<Z80::RR_ixd,    Z80::IxBitSTR>::GetValue() = "RR (IX+%d)";
-    AnyType<Z80::SLA_ixd,   Z80::IxBitSTR>::GetValue() = "SLA (IX+%d)";     AnyType<Z80::SRA_ixd,   Z80::IxBitSTR>::GetValue() = "SRA (IX+%d)";
-    AnyType<Z80::SLL_ixd,   Z80::IxBitSTR>::GetValue() = "SLL (IX+%d)";     AnyType<Z80::SRL_ixd,   Z80::IxBitSTR>::GetValue() = "SRL (IX+%d)";
-    AnyType<Z80::BIT_0_ixd, Z80::IxBitSTR>::GetValue() = "BIT 0, (IX+%d)";  AnyType<Z80::BIT_1_ixd, Z80::IxBitSTR>::GetValue() = "BIT 1, (IX+%d)";
-    AnyType<Z80::RES_0_ixd, Z80::IxBitSTR>::GetValue() = "RES 0, (IX+%d)";  AnyType<Z80::RES_1_ixd, Z80::IxBitSTR>::GetValue() = "RES 1, (IX+%d)";
-    AnyType<Z80::SET_0_ixd, Z80::IxBitSTR>::GetValue() = "SET 0, (IX+%d)";  AnyType<Z80::SET_1_ixd, Z80::IxBitSTR>::GetValue() = "SET 1, (IX+%d)";
-    AnyType<Z80::BIT_2_ixd, Z80::IxBitSTR>::GetValue() = "BIT 2, (IX+%d)";  AnyType<Z80::BIT_3_ixd, Z80::IxBitSTR>::GetValue() = "BIT 3, (IX+%d)";
-    AnyType<Z80::RES_2_ixd, Z80::IxBitSTR>::GetValue() = "RES 2, (IX+%d)";  AnyType<Z80::RES_3_ixd, Z80::IxBitSTR>::GetValue() = "RES 3, (IX+%d)";
-    AnyType<Z80::SET_2_ixd, Z80::IxBitSTR>::GetValue() = "SET 2, (IX+%d)";  AnyType<Z80::SET_3_ixd, Z80::IxBitSTR>::GetValue() = "SET 3, (IX+%d)";
-    AnyType<Z80::BIT_4_ixd, Z80::IxBitSTR>::GetValue() = "BIT 4, (IX+%d)";  AnyType<Z80::BIT_5_ixd, Z80::IxBitSTR>::GetValue() = "BIT 5, (IX+%d)";
-    AnyType<Z80::RES_4_ixd, Z80::IxBitSTR>::GetValue() = "RES 4, (IX+%d)";  AnyType<Z80::RES_5_ixd, Z80::IxBitSTR>::GetValue() = "RES 5, (IX+%d)";
-    AnyType<Z80::SET_4_ixd, Z80::IxBitSTR>::GetValue() = "SET 4, (IX+%d)";  AnyType<Z80::SET_5_ixd, Z80::IxBitSTR>::GetValue() = "SET 5, (IX+%d)";
-    AnyType<Z80::BIT_6_ixd, Z80::IxBitSTR>::GetValue() = "BIT 6, (IX+%d)";  AnyType<Z80::BIT_7_ixd, Z80::IxBitSTR>::GetValue() = "BIT 7, (IX+%d)";
-    AnyType<Z80::RES_6_ixd, Z80::IxBitSTR>::GetValue() = "RES 6, (IX+%d)";  AnyType<Z80::RES_7_ixd, Z80::IxBitSTR>::GetValue() = "RES 7, (IX+%d)";
-    AnyType<Z80::SET_6_ixd, Z80::IxBitSTR>::GetValue() = "SET 6, (IX+%d)";  AnyType<Z80::SET_7_ixd, Z80::IxBitSTR>::GetValue() = "SET 7, (IX+%d)";
+    AnyType<Z80::RLC_ixd,   Z80::IxBitSTR>::GetValue() = "RLC (IX+0x%02x)";     AnyType<Z80::RRC_ixd,   Z80::IxBitSTR>::GetValue() = "RRC (IX+%02x)";
+    AnyType<Z80::RL_ixd,    Z80::IxBitSTR>::GetValue() = "RL (IX+0x%02x)";      AnyType<Z80::RR_ixd,    Z80::IxBitSTR>::GetValue() = "RR (IX+%02x)";
+    AnyType<Z80::SLA_ixd,   Z80::IxBitSTR>::GetValue() = "SLA (IX+0x%02x)";     AnyType<Z80::SRA_ixd,   Z80::IxBitSTR>::GetValue() = "SRA (IX+%02x)";
+    AnyType<Z80::SLL_ixd,   Z80::IxBitSTR>::GetValue() = "SLL (IX+0x%02x)";     AnyType<Z80::SRL_ixd,   Z80::IxBitSTR>::GetValue() = "SRL (IX+%02x)";
+    AnyType<Z80::BIT_0_ixd, Z80::IxBitSTR>::GetValue() = "BIT 0, (IX+0x%02x)";  AnyType<Z80::BIT_1_ixd, Z80::IxBitSTR>::GetValue() = "BIT 1, (IX+%02x)";
+    AnyType<Z80::RES_0_ixd, Z80::IxBitSTR>::GetValue() = "RES 0, (IX+0x%02x)";  AnyType<Z80::RES_1_ixd, Z80::IxBitSTR>::GetValue() = "RES 1, (IX+%02x)";
+    AnyType<Z80::SET_0_ixd, Z80::IxBitSTR>::GetValue() = "SET 0, (IX+0x%02x)";  AnyType<Z80::SET_1_ixd, Z80::IxBitSTR>::GetValue() = "SET 1, (IX+%02x)";
+    AnyType<Z80::BIT_2_ixd, Z80::IxBitSTR>::GetValue() = "BIT 2, (IX+0x%02x)";  AnyType<Z80::BIT_3_ixd, Z80::IxBitSTR>::GetValue() = "BIT 3, (IX+%02x)";
+    AnyType<Z80::RES_2_ixd, Z80::IxBitSTR>::GetValue() = "RES 2, (IX+0x%02x)";  AnyType<Z80::RES_3_ixd, Z80::IxBitSTR>::GetValue() = "RES 3, (IX+%02x)";
+    AnyType<Z80::SET_2_ixd, Z80::IxBitSTR>::GetValue() = "SET 2, (IX+0x%02x)";  AnyType<Z80::SET_3_ixd, Z80::IxBitSTR>::GetValue() = "SET 3, (IX+%02x)";
+    AnyType<Z80::BIT_4_ixd, Z80::IxBitSTR>::GetValue() = "BIT 4, (IX+0x%02x)";  AnyType<Z80::BIT_5_ixd, Z80::IxBitSTR>::GetValue() = "BIT 5, (IX+%02x)";
+    AnyType<Z80::RES_4_ixd, Z80::IxBitSTR>::GetValue() = "RES 4, (IX+0x%02x)";  AnyType<Z80::RES_5_ixd, Z80::IxBitSTR>::GetValue() = "RES 5, (IX+%02x)";
+    AnyType<Z80::SET_4_ixd, Z80::IxBitSTR>::GetValue() = "SET 4, (IX+0x%02x)";  AnyType<Z80::SET_5_ixd, Z80::IxBitSTR>::GetValue() = "SET 5, (IX+%02x)";
+    AnyType<Z80::BIT_6_ixd, Z80::IxBitSTR>::GetValue() = "BIT 6, (IX+0x%02x)";  AnyType<Z80::BIT_7_ixd, Z80::IxBitSTR>::GetValue() = "BIT 7, (IX+%02x)";
+    AnyType<Z80::RES_6_ixd, Z80::IxBitSTR>::GetValue() = "RES 6, (IX+0x%02x)";  AnyType<Z80::RES_7_ixd, Z80::IxBitSTR>::GetValue() = "RES 7, (IX+%02x)";
+    AnyType<Z80::SET_6_ixd, Z80::IxBitSTR>::GetValue() = "SET 6, (IX+0x%02x)";  AnyType<Z80::SET_7_ixd, Z80::IxBitSTR>::GetValue() = "SET 7, (IX+%02x)";
 
 
     // IyInstructions
-    AnyType<Z80::ADD_IY_BC, Z80::IySTR>::GetValue() = "ADD IY, BC";         AnyType<Z80::ADD_IY_DE, Z80::IySTR>::GetValue() = "ADD IY, DE";
-    AnyType<Z80::INC_iyd,   Z80::IySTR>::GetValue() = "INC (IY+%d)";        AnyType<Z80::DEC_iyd,   Z80::IySTR>::GetValue() = "DEC (IY+%d)";
-    AnyType<Z80::LD_iyd_B,  Z80::IySTR>::GetValue() = "LD (IY+%d), B";      AnyType<Z80::LD_iyd_C,  Z80::IySTR>::GetValue() = "LD (IY+%d), C";
-    AnyType<Z80::ADD_A_iyd, Z80::IySTR>::GetValue() = "ADD A, (IY+%d)";     AnyType<Z80::ADC_A_iyd, Z80::IySTR>::GetValue() = "ADC A, (IY+%d)";
-    AnyType<Z80::POP_IY,    Z80::IySTR>::GetValue() = "POP IY";             AnyType<Z80::EX_sp_IY,  Z80::IySTR>::GetValue() = "EX (SP), IY";
-    AnyType<Z80::LD_IY_NN,  Z80::IySTR>::GetValue() = "LD IY, 0x%04x";      AnyType<Z80::LD_nn_IY,  Z80::IySTR>::GetValue() = "LD (0x%04x), IY";
-    AnyType<Z80::LD_iyd_N,  Z80::IySTR>::GetValue() = "LD (IY+%d), 0x%04x"; AnyType<Z80::ADD_IY_SP, Z80::IySTR>::GetValue() = "ADD IY, SP";
-    AnyType<Z80::LD_iyd_D,  Z80::IySTR>::GetValue() = "LD (IY+%d), D";      AnyType<Z80::LD_iyd_E,  Z80::IySTR>::GetValue() = "LD (IY+%d), E";
-    AnyType<Z80::SUB_iyd,   Z80::IySTR>::GetValue() = "SUB (IY+%d)";        AnyType<Z80::SBC_A_iyd, Z80::IySTR>::GetValue() = "SBC A, (IY+%d)";
-    AnyType<Z80::PUSH_IY,   Z80::IySTR>::GetValue() = "PUSH IY";            AnyType<Z80::JP_iy,     Z80::IySTR>::GetValue() = "JP (IY)";
-    AnyType<Z80::INC_IY,    Z80::IySTR>::GetValue() = "INC IY";             AnyType<Z80::ADD_IY_IY, Z80::IySTR>::GetValue() = "ADD IY, IY";
-    AnyType<Z80::LD_B_iyd,  Z80::IySTR>::GetValue() = "LD B, (IY+%d)";      AnyType<Z80::LD_C_iyd,  Z80::IySTR>::GetValue() = "LD C, (IY+%d)";
-    AnyType<Z80::LD_iyd_H,  Z80::IySTR>::GetValue() = "LD (IY+%d), H";      AnyType<Z80::LD_iyd_L,  Z80::IySTR>::GetValue() = "LD (IY+%d), L";
-    AnyType<Z80::AND_iyd,   Z80::IySTR>::GetValue() = "AND (IY+%d)";        AnyType<Z80::XOR_iyd,   Z80::IySTR>::GetValue() = "XOR (IY+%d)";
-    AnyType<Z80::LD_IY_nn,  Z80::IySTR>::GetValue() = "LD IY, 0x%04x";      AnyType<Z80::DEC_IY,    Z80::IySTR>::GetValue() = "DEC IY";
-    AnyType<Z80::LD_D_iyd,  Z80::IySTR>::GetValue() = "LD D, (IY+%d)";      AnyType<Z80::LD_E_iyd,  Z80::IySTR>::GetValue() = "LD E, (IY+%d)";
-    AnyType<Z80::LD_H_iyd,  Z80::IySTR>::GetValue() = "LD H, (IY+%d)";      AnyType<Z80::LD_L_iyd,  Z80::IySTR>::GetValue() = "LD L, (IY+%d)";
-    AnyType<Z80::LD_iyd_A,  Z80::IySTR>::GetValue() = "LD (IY+%d), A";      AnyType<Z80::LD_A_iyd,  Z80::IySTR>::GetValue() = "LD A, (IY+%d)";
-    AnyType<Z80::OR_iyd,    Z80::IySTR>::GetValue() = "OR (IY+%d)";         AnyType<Z80::CP_iyd,    Z80::IySTR>::GetValue() = "CP (IY+%d)";
-    AnyType<Z80::LD_SP_IY,  Z80::IySTR>::GetValue() = "LD SP, IY";          AnyType<Z80::IyBitInstr,Z80::IySTR>::GetValue() = "";
+    AnyType<Z80::ADD_IY_BC, Z80::IySTR>::GetValue() = "ADD IY, BC";             AnyType<Z80::ADD_IY_DE, Z80::IySTR>::GetValue() = "ADD IY, DE";
+    AnyType<Z80::INC_iyd,   Z80::IySTR>::GetValue() = "INC (IY+0x%02x)";        AnyType<Z80::DEC_iyd,   Z80::IySTR>::GetValue() = "DEC (IY+%02x)";
+    AnyType<Z80::LD_iyd_B,  Z80::IySTR>::GetValue() = "LD (IY+0x%02x), B";      AnyType<Z80::LD_iyd_C,  Z80::IySTR>::GetValue() = "LD (IY+%02x), C";
+    AnyType<Z80::ADD_A_iyd, Z80::IySTR>::GetValue() = "ADD A, (IY+0x%02x)";     AnyType<Z80::ADC_A_iyd, Z80::IySTR>::GetValue() = "ADC A, (IY+%02x)";
+    AnyType<Z80::POP_IY,    Z80::IySTR>::GetValue() = "POP IY";                 AnyType<Z80::EX_sp_IY,  Z80::IySTR>::GetValue() = "EX (SP), IY";
+    AnyType<Z80::LD_IY_NN,  Z80::IySTR>::GetValue() = "LD IY, 0x%04x";          AnyType<Z80::LD_nn_IY,  Z80::IySTR>::GetValue() = "LD (0x%04x), IY";
+    AnyType<Z80::LD_iyd_N,  Z80::IySTR>::GetValue() = "LD (IY+0x%02x), 0x%04x"; AnyType<Z80::ADD_IY_SP, Z80::IySTR>::GetValue() = "ADD IY, SP";
+    AnyType<Z80::LD_iyd_D,  Z80::IySTR>::GetValue() = "LD (IY+0x%02x), D";      AnyType<Z80::LD_iyd_E,  Z80::IySTR>::GetValue() = "LD (IY+%02x), E";
+    AnyType<Z80::SUB_iyd,   Z80::IySTR>::GetValue() = "SUB (IY+0x%02x)";        AnyType<Z80::SBC_A_iyd, Z80::IySTR>::GetValue() = "SBC A, (IY+%02x)";
+    AnyType<Z80::PUSH_IY,   Z80::IySTR>::GetValue() = "PUSH IY";                AnyType<Z80::JP_iy,     Z80::IySTR>::GetValue() = "JP (IY)";
+    AnyType<Z80::INC_IY,    Z80::IySTR>::GetValue() = "INC IY";                 AnyType<Z80::ADD_IY_IY, Z80::IySTR>::GetValue() = "ADD IY, IY";
+    AnyType<Z80::LD_B_iyd,  Z80::IySTR>::GetValue() = "LD B, (IY+0x%02x)";      AnyType<Z80::LD_C_iyd,  Z80::IySTR>::GetValue() = "LD C, (IY+%02x)";
+    AnyType<Z80::LD_iyd_H,  Z80::IySTR>::GetValue() = "LD (IY+0x%02x), H";      AnyType<Z80::LD_iyd_L,  Z80::IySTR>::GetValue() = "LD (IY+%02x), L";
+    AnyType<Z80::AND_iyd,   Z80::IySTR>::GetValue() = "AND (IY+0x%02x)";        AnyType<Z80::XOR_iyd,   Z80::IySTR>::GetValue() = "XOR (IY+%02x)";
+    AnyType<Z80::LD_IY_nn,  Z80::IySTR>::GetValue() = "LD IY, 0x%04x";          AnyType<Z80::DEC_IY,    Z80::IySTR>::GetValue() = "DEC IY";
+    AnyType<Z80::LD_D_iyd,  Z80::IySTR>::GetValue() = "LD D, (IY+0x%02x)";      AnyType<Z80::LD_E_iyd,  Z80::IySTR>::GetValue() = "LD E, (IY+%02x)";
+    AnyType<Z80::LD_H_iyd,  Z80::IySTR>::GetValue() = "LD H, (IY+0x%02x)";      AnyType<Z80::LD_L_iyd,  Z80::IySTR>::GetValue() = "LD L, (IY+%02x)";
+    AnyType<Z80::LD_iyd_A,  Z80::IySTR>::GetValue() = "LD (IY+0x%02x), A";      AnyType<Z80::LD_A_iyd,  Z80::IySTR>::GetValue() = "LD A, (IY+%02x)";
+    AnyType<Z80::OR_iyd,    Z80::IySTR>::GetValue() = "OR (IY+0x%02x)";         AnyType<Z80::CP_iyd,    Z80::IySTR>::GetValue() = "CP (IY+%02x)";
+    AnyType<Z80::LD_SP_IY,  Z80::IySTR>::GetValue() = "LD SP, IY";              AnyType<Z80::IyBitInstr,Z80::IySTR>::GetValue() = "";
 
-    AnyType<Z80::RLC_iyd,   Z80::IyBitSTR>::GetValue() = "RLC (IY+%d)";     AnyType<Z80::RRC_iyd,   Z80::IyBitSTR>::GetValue() = "RRC (IY+%d)";
-    AnyType<Z80::RL_iyd,    Z80::IyBitSTR>::GetValue() = "RL (IY+%d)";      AnyType<Z80::RR_iyd,    Z80::IyBitSTR>::GetValue() = "RR (IY+%d)";
-    AnyType<Z80::SLA_iyd,   Z80::IyBitSTR>::GetValue() = "SLA (IY+%d)";     AnyType<Z80::SRA_iyd,   Z80::IyBitSTR>::GetValue() = "SRA (IY+%d)";
-    AnyType<Z80::SLL_iyd,   Z80::IyBitSTR>::GetValue() = "SLL (IY+%d)";     AnyType<Z80::SRL_iyd,   Z80::IyBitSTR>::GetValue() = "SRL (IY+%d)";
-    AnyType<Z80::BIT_0_iyd, Z80::IyBitSTR>::GetValue() = "BIT 0, (IY+%d)";  AnyType<Z80::BIT_1_iyd, Z80::IyBitSTR>::GetValue() = "BIT 1, (IY+%d)";
-    AnyType<Z80::RES_0_iyd, Z80::IyBitSTR>::GetValue() = "RES 0, (IY+%d)";  AnyType<Z80::RES_1_iyd, Z80::IyBitSTR>::GetValue() = "RES 1, (IY+%d)";
-    AnyType<Z80::SET_0_iyd, Z80::IyBitSTR>::GetValue() = "SET 0, (IY+%d)";  AnyType<Z80::SET_1_iyd, Z80::IyBitSTR>::GetValue() = "SET 1, (IY+%d)";
-    AnyType<Z80::BIT_2_iyd, Z80::IyBitSTR>::GetValue() = "BIT 2, (IY+%d)";  AnyType<Z80::BIT_3_iyd, Z80::IyBitSTR>::GetValue() = "BIT 3, (IY+%d)";
-    AnyType<Z80::RES_2_iyd, Z80::IyBitSTR>::GetValue() = "RES 2, (IY+%d)";  AnyType<Z80::RES_3_iyd, Z80::IyBitSTR>::GetValue() = "RES 3, (IY+%d)";
-    AnyType<Z80::SET_2_iyd, Z80::IyBitSTR>::GetValue() = "SET 2, (IY+%d)";  AnyType<Z80::SET_3_iyd, Z80::IyBitSTR>::GetValue() = "SET 3, (IY+%d)";
-    AnyType<Z80::BIT_4_iyd, Z80::IyBitSTR>::GetValue() = "BIT 4, (IY+%d)";  AnyType<Z80::BIT_5_iyd, Z80::IyBitSTR>::GetValue() = "BIT 5, (IY+%d)";
-    AnyType<Z80::RES_4_iyd, Z80::IyBitSTR>::GetValue() = "RES 4, (IY+%d)";  AnyType<Z80::RES_5_iyd, Z80::IyBitSTR>::GetValue() = "RES 5, (IY+%d)";
-    AnyType<Z80::SET_4_iyd, Z80::IyBitSTR>::GetValue() = "SET 4, (IY+%d)";  AnyType<Z80::SET_5_iyd, Z80::IyBitSTR>::GetValue() = "SET 5, (IY+%d)";
-    AnyType<Z80::BIT_6_iyd, Z80::IyBitSTR>::GetValue() = "BIT 6, (IY+%d)";  AnyType<Z80::BIT_7_iyd, Z80::IyBitSTR>::GetValue() = "BIT 7, (IY+%d)";
-    AnyType<Z80::RES_6_iyd, Z80::IyBitSTR>::GetValue() = "RES 6, (IY+%d)";  AnyType<Z80::RES_7_iyd, Z80::IyBitSTR>::GetValue() = "RES 7, (IY+%d)";
-    AnyType<Z80::SET_6_iyd, Z80::IyBitSTR>::GetValue() = "SET 6, (IY+%d)";  AnyType<Z80::SET_7_iyd, Z80::IyBitSTR>::GetValue() = "SET 7, (IY+%d)";
+    AnyType<Z80::RLC_iyd,   Z80::IyBitSTR>::GetValue() = "RLC (IY+0x%02x)";     AnyType<Z80::RRC_iyd,   Z80::IyBitSTR>::GetValue() = "RRC (IY+%02x)";
+    AnyType<Z80::RL_iyd,    Z80::IyBitSTR>::GetValue() = "RL (IY+0x%02x)";      AnyType<Z80::RR_iyd,    Z80::IyBitSTR>::GetValue() = "RR (IY+%02x)";
+    AnyType<Z80::SLA_iyd,   Z80::IyBitSTR>::GetValue() = "SLA (IY+0x%02x)";     AnyType<Z80::SRA_iyd,   Z80::IyBitSTR>::GetValue() = "SRA (IY+%02x)";
+    AnyType<Z80::SLL_iyd,   Z80::IyBitSTR>::GetValue() = "SLL (IY+0x%02x)";     AnyType<Z80::SRL_iyd,   Z80::IyBitSTR>::GetValue() = "SRL (IY+%02x)";
+    AnyType<Z80::BIT_0_iyd, Z80::IyBitSTR>::GetValue() = "BIT 0, (IY+0x%02x)";  AnyType<Z80::BIT_1_iyd, Z80::IyBitSTR>::GetValue() = "BIT 1, (IY+%02x)";
+    AnyType<Z80::RES_0_iyd, Z80::IyBitSTR>::GetValue() = "RES 0, (IY+0x%02x)";  AnyType<Z80::RES_1_iyd, Z80::IyBitSTR>::GetValue() = "RES 1, (IY+%02x)";
+    AnyType<Z80::SET_0_iyd, Z80::IyBitSTR>::GetValue() = "SET 0, (IY+0x%02x)";  AnyType<Z80::SET_1_iyd, Z80::IyBitSTR>::GetValue() = "SET 1, (IY+%02x)";
+    AnyType<Z80::BIT_2_iyd, Z80::IyBitSTR>::GetValue() = "BIT 2, (IY+0x%02x)";  AnyType<Z80::BIT_3_iyd, Z80::IyBitSTR>::GetValue() = "BIT 3, (IY+%02x)";
+    AnyType<Z80::RES_2_iyd, Z80::IyBitSTR>::GetValue() = "RES 2, (IY+0x%02x)";  AnyType<Z80::RES_3_iyd, Z80::IyBitSTR>::GetValue() = "RES 3, (IY+%02x)";
+    AnyType<Z80::SET_2_iyd, Z80::IyBitSTR>::GetValue() = "SET 2, (IY+0x%02x)";  AnyType<Z80::SET_3_iyd, Z80::IyBitSTR>::GetValue() = "SET 3, (IY+%02x)";
+    AnyType<Z80::BIT_4_iyd, Z80::IyBitSTR>::GetValue() = "BIT 4, (IY+0x%02x)";  AnyType<Z80::BIT_5_iyd, Z80::IyBitSTR>::GetValue() = "BIT 5, (IY+%02x)";
+    AnyType<Z80::RES_4_iyd, Z80::IyBitSTR>::GetValue() = "RES 4, (IY+0x%02x)";  AnyType<Z80::RES_5_iyd, Z80::IyBitSTR>::GetValue() = "RES 5, (IY+%02x)";
+    AnyType<Z80::SET_4_iyd, Z80::IyBitSTR>::GetValue() = "SET 4, (IY+0x%02x)";  AnyType<Z80::SET_5_iyd, Z80::IyBitSTR>::GetValue() = "SET 5, (IY+%02x)";
+    AnyType<Z80::BIT_6_iyd, Z80::IyBitSTR>::GetValue() = "BIT 6, (IY+0x%02x)";  AnyType<Z80::BIT_7_iyd, Z80::IyBitSTR>::GetValue() = "BIT 7, (IY+%02x)";
+    AnyType<Z80::RES_6_iyd, Z80::IyBitSTR>::GetValue() = "RES 6, (IY+0x%02x)";  AnyType<Z80::RES_7_iyd, Z80::IyBitSTR>::GetValue() = "RES 7, (IY+%02x)";
+    AnyType<Z80::SET_6_iyd, Z80::IyBitSTR>::GetValue() = "SET 6, (IY+0x%02x)";  AnyType<Z80::SET_7_iyd, Z80::IyBitSTR>::GetValue() = "SET 7, (IY+%02x)";
 
     
 

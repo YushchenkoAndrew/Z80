@@ -1,4 +1,5 @@
-WIDTH = 260 * 2; HIGHT = 300; PIXELS = 2
+-- WIDTH = 260 * 2; HIGHT = 300; PIXELS = 2
+WIDTH = 700; HIGHT = 400; PIXELS = 2
 
 PanelEnum = {
   editor = "editor",

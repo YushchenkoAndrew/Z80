@@ -10,6 +10,9 @@
 
 
 class App : public PixelGameEngine {
+private:
+  typedef std::pair<uint32_t, Interpreter::RealtiveToken> RelativeAddr;
+
 public:
   App(LuaScript& config): luaConfig(config) {
     sAppName = "Z80 Emulator";
@@ -48,7 +51,8 @@ public:
     // }
 
     auto editor = std::make_shared<Editor::Editor>();
-    editor->temp(interpreter.buffer);
+    for (auto f : interpreter.env.files()) editor->Open(f);
+    editor->Open(interpreter.filepath);
 
 
     // auto rom = bus->W27C512;
@@ -72,10 +76,11 @@ public:
     // auto offset = 210;
     olc::vi2d zero = olc::vi2d(0, 0);
     olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight());
-    olc::vi2d window = olc::vi2d(size.x * 3 / 5, size.y * 9 / 10);
+    olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y * 9 / 10);
 
     panels = {
       Panel(
+        // TODO: Load windows size from lua
         std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
         std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
         std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
@@ -158,21 +163,11 @@ public:
     if (!bus->Z80->IsDebug()) return;
     else bus->Z80->Step();
 
-    const uint32_t addr = bus->Z80->Addr();
-    std::pair<uint32_t, std::shared_ptr<Interpreter::Token>> next = std::pair(0, nullptr);
-
-    for (auto& pos : interpreter.env.tokens) {
-      if (
-        pos.first <= addr && (
-          next.second == nullptr || 
-          (pos.second->line >= next.second->line && pos.second->col >= next.second->col)
-      )) next = pos;
-    }
-
-    if (next.second == nullptr) return;
+    RelativeAddr next = Addr2Token(bus->Z80->Addr());
+    if (next.second.second == nullptr) return;
 
     Panel& p = panels[nPanel];
-    if (p.Editor() != nullptr) p.Editor()->MoveTo(olc::vi2d(next.second->col - 1, next.second->line - 1));
+    if (p.Editor() != nullptr) p.Editor()->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
     if (p.EEPROM() != nullptr) p.EEPROM()->Move2Addr(next.first);
     if (p.Stack() != nullptr)  p.Stack()->Move2Addr(bus->Z80->Stack());
   }
@@ -191,18 +186,23 @@ public:
     std::cout << "EDITOR_SELECT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    std::pair<uint32_t, std::shared_ptr<Interpreter::Token>> next = std::pair(0, nullptr);
+    // FIXME: Strange bug
+    // Panel& p = panels[nPanel];
+    // RelativeAddr next = std::pair(0, std::pair("", nullptr));
 
-    for (auto& pos : interpreter.env.tokens) {
-      if (
-        pos.second->line <= cursor.y + 1 && pos.second->col <= cursor.x + 1 && (
-          next.second == nullptr || 
-          (pos.second->line >= next.second->line && pos.second->col >= next.second->col)
-      )) next = pos;
-    }
+    // // for (auto& pos : interpreter.env.tokens) {
+    // //   if (
+    // //     pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1
+    // //      && filename == pos.second.first
+    // //   //     && (
+    // //   //     next.second.second == nullptr || 
+    // //   //     (pos.second.second->line >= next.second.second->line && pos.second.second->col >= next.second.second->col)
+    // //   // )
+    // //   ) next = pos;
+    // // }
 
-    if (next.second == nullptr || panels[nPanel].EEPROM() == nullptr) return;
-    panels[nPanel].EEPROM()->Move2Addr(next.first);
+    // if (next.second.second == nullptr) return;
+    // if (p.EEPROM() != nullptr) p.EEPROM()->Move2Addr(next.first);
   }
 
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
@@ -210,18 +210,9 @@ public:
     std::cout << "MEMORY_SELECT_CALLBACK [Addr " <<  std::setfill('0') << std::setw(5) << std::hex << std::uppercase << index << "]\n";
     #endif
 
-    std::pair<uint32_t, std::shared_ptr<Interpreter::Token>> next = std::pair(0, nullptr);
-
-    for (auto& pos : interpreter.env.tokens) {
-      if (
-        pos.first <= index && (
-          next.second == nullptr || 
-          (pos.second->line >= next.second->line && pos.second->col >= next.second->col)
-      )) next = pos;
-    }
-
-    if (next.second == nullptr || panels[nPanel].Editor() == nullptr) return;
-    panels[nPanel].Editor()->MoveTo(olc::vi2d(next.second->col - 1, next.second->line - 1));
+    const RelativeAddr next = Addr2Token(index);
+    if (next.second.second == nullptr || panels[nPanel].Editor() == nullptr) return;
+    panels[nPanel].Editor()->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
   }
 
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
@@ -233,6 +224,17 @@ public:
     panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
   }
 
+private:
+  inline RelativeAddr Addr2Token(uint32_t addr) {
+    RelativeAddr next = std::pair(0, std::pair("", nullptr));
+
+    for (auto& pos : interpreter.env.tokens) {
+      if (pos.first <= addr) next = pos;
+      else return next;
+    }
+
+    return next;
+  }
 
 private:
   int32_t nPanel = 0;

@@ -43,8 +43,8 @@ public:
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset.first;
 
-    pages.x = (int)(1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.first.x)));
-    pages.y = (int)(size.y - vOffset.first.y) / vStep.first.y;
+    pages.x = (int32_t)(1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.first.x)));
+    pages.y = (int32_t)(size.y - vOffset.first.y) / vStep.first.y;
     Index2Pos(index());
 
     if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
@@ -87,7 +87,7 @@ public:
       Index2Pos(addr); cursor.y = dasm.second[addr];
     }
 
-    bUpdated = false;
+    bUpdated = false; bReleased = false;
 
     switch (mode) {
       case NORMAL:    return Process(Int2Type<NORMAL>(), GameEngine);
@@ -141,7 +141,9 @@ private:
       
       for (int32_t j = 0; j < pages.x; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * vStep.first + vOffset.first;
-        GameEngine->DrawString(pos, Utils::Int2Hex(memory[index(j, i + vStartAt.first.y)]), *AnyType<WHITE, ColorT>::GetValue());
+
+        std::string val = index(j, i + vStartAt.first.y) >= (int32_t)memory.size() ? "--" : Utils::Int2Hex(memory[index(j, i + vStartAt.first.y)]);
+        GameEngine->DrawString(pos, val, *AnyType<WHITE, ColorT>::GetValue());
       }
     }
 
@@ -217,7 +219,11 @@ private:
   }
 
   inline void Preprocess(Int2Type<NORMAL>) {
-    if (pos.y - vStartAt.first.y >= pages.y && pos.y <= (((int32_t)memory.size() - 1) / pages.x)) vStartAt.first.y += pages.y;
+    if (pos.y - vStartAt.first.y >= pages.y && pos.y < ((int32_t)memory.size() / pages.x)) {
+      if (vStartAt.first.y + pages.y <= (int32_t)memory.size()) vStartAt.first.y += pages.y;
+      else vStartAt.first.y += (vStartAt.first.y + pages.y) % (int32_t)memory.size();
+    }
+
     if (pos.y - vStartAt.first.y < 0 && pos.y) vStartAt.first.y -= pages.y;
   }
 
@@ -260,7 +266,10 @@ public:
     Command(Int2Type<Editor::VimT::CMD_r>()); 
   }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_gd>)    { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>(), index()); }
+  inline void Command(Int2Type<Editor::VimT::CMD_gd>) { 
+    if (type != MemoryT::W27C512) return;
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>(), index());
+  }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
     if (!std::get<0>(search.second).size()) return;

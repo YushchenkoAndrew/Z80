@@ -10,13 +10,15 @@ public:
   Interpreter(Parser p): parser(p) {}
 
   bool Load(std::string path) {
-    pwd = std::filesystem::path(path).remove_filename();
+    filedir = std::filesystem::path(path).remove_filename();
+
+    filepath = std::filesystem::canonical(path);
     filename = std::filesystem::path(path).filename();
 
-    std::ifstream f(path); std::stringstream buffer;
-    buffer << f.rdbuf(); f.close();
+    std::ifstream f(path); std::stringstream buf;
+    buf << f.rdbuf(); f.close();
 
-    return scan((this->buffer = buffer.str()));
+    return scan((buf.str()));
   }
 
   bool scan(std::string src) {
@@ -251,12 +253,12 @@ public:
       return {};
     }
 
-    env.bind(stmt->token);
+    env.bind(filepath, stmt->token);
     return Int2Bytes(opcode);
   }
 
   MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) override {
-    env.bind(stmt->token);
+    env.bind(filepath, stmt->token);
     return Int2Bytes(stmt->opcode);
   }
 
@@ -266,7 +268,7 @@ public:
 
     result.insert(result.end(), expr.rbegin(), expr.rend());
 
-    env.bind(stmt->token);
+    env.bind(filepath, stmt->token);
     return result;
   }
 
@@ -286,7 +288,7 @@ public:
   }
 
   MemoryT visitStmtInclude(StatementInclude * stmt) override { 
-    auto f = pwd / std::filesystem::path(stmt->expr->token->literal);
+    auto f = filedir / std::filesystem::path(stmt->expr->token->literal);
     if (!std::filesystem::exists(f)) {
       error(stmt->expr->token, "Include file doesn't exist.");
       return MemoryT();
@@ -297,6 +299,7 @@ public:
     errors.insert(errors.end(), included.errors.begin(), included.errors.end());
     if (included.errors.size()) return MemoryT();
 
+    for (auto& t : included.env.tokens) env.tokens[t.first] = t.second;
     for (auto& v : included.env.vars.second) env.define(v.first, v.second);
     included.env.memory.erase(included.env.memory.begin(), included.env.memory.begin() + env.addr);
 
@@ -352,10 +355,10 @@ public:
   Environment env;
   Parser parser;
 
-  std::filesystem::path pwd;
+  std::filesystem::path filedir;
+  std::filesystem::path filepath;
   std::filesystem::path filename;
 
-  std::string buffer;
   std::vector<std::string> errors;
 };
 

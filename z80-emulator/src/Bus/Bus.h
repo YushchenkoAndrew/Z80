@@ -14,6 +14,8 @@ private:
   enum REQUEST { MREQ, IORQ };
 
 public:
+  typedef Memory<MemoryT::W27C512, W27C512_SIZE> W27C512_T;
+  typedef Memory<MemoryT::IMS1423, IMS1423_SIZE> IMS1423_T;
 
   Bus():
     led(std::make_shared<Led>(this)),
@@ -163,8 +165,8 @@ public:
   std::shared_ptr<PPI> ppi;
 
   std::shared_ptr<Z80::CPU> Z80;
-  std::shared_ptr<Memory<MemoryT::W27C512, W27C512_SIZE>> W27C512;
-  std::shared_ptr<Memory<MemoryT::IMS1423, IMS1423_SIZE>> IMS1423;
+  std::shared_ptr<W27C512_T> W27C512;
+  std::shared_ptr<IMS1423_T> IMS1423;
 
   // TODO: RAM HY62256A A14 = 0 A15 = 1 
   // TODO: RAM ims1423  A14 = 1 A15 = 0  (NOTE: Without A13)

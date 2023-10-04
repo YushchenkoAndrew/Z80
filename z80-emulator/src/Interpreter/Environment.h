@@ -68,10 +68,16 @@ public:
     f.close();
   }
 
-  inline void bind(std::shared_ptr<Token> token) { tokens[addr] = token; }
+  inline void bind(std::string filepath, std::shared_ptr<Token> token) { tokens[addr] = std::pair(filepath, token); }
 
   inline void unlock() { vars.first = false; vars.second.clear(); }
   inline void lock() { vars.first = true; }
+  inline std::list<std::string> files() {
+    std::list<std::string> set;
+    for (auto& t : tokens) set.push_back(t.second.first);
+
+    set.unique(); return set;
+  }
 
 private:
   inline MemoryT addr2Bytes() { return { (uint8_t)((addr >> 8) & 0xFF), (uint8_t)(addr & 0xFF) }; }
@@ -86,7 +92,7 @@ public:
   std::pair<bool, std::unordered_map<std::string, MemoryT>> vars; // first is shown if vars is locked or not
 
   // TODO: Change key to std::pair where first is line number and second is file path
-  std::unordered_map<uint32_t, std::shared_ptr<Token>> tokens;
+  std::map<uint32_t, RealtiveToken> tokens;
 };
 
 };

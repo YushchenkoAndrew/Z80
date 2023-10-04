@@ -73,10 +73,10 @@ public:
     // if (editor.first != nullptr) vFuture.push_back(std::async(&Editor::Editor::Process, editor.first, GameEngine)); 
 
     // for(auto& future : vFuture) future.wait();
-    bUpdated = false;
+    bUpdated = false; bReleased = false;
 
     Process(Int2Type<NORMAL>(), GameEngine);
-    if (mode == COMMAND) { if (!cmd.size()) mode = NORMAL; return; }
+    if (mode == COMMAND) { if (!cmd.size() && bReleased) mode = NORMAL; return; }
 
     if (GameEngine->GetMouse(0).bPressed) {
       auto mouse = GameEngine->GetMousePos();
@@ -202,7 +202,7 @@ public:
       }
 
       if (peek() == ' ' && GameEngine->GetMode() == PixelGameEngine::DEBUG) {
-        mode = COMMAND;
+        mode = COMMAND; 
         std::thread p([=]() { GameEngine->Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>()); }); p.detach();
       }
 
@@ -282,11 +282,11 @@ private:
   }
 
 public:
-  std::shared_ptr<Bus::Bus> Bus() { return PTR(bus); }
-  std::shared_ptr<Window::Lines> Lines() { return PTR(lines); }
-  std::shared_ptr<Editor::Editor> Editor() { return PTR(editor); }
-  std::shared_ptr<Bus::Memory<Bus::W27C512, W27C512_SIZE>> EEPROM() { return PTR(eeprom); }
-  std::shared_ptr<Bus::Memory<Bus::IMS1423, IMS1423_SIZE>> Stack() { return PTR(stack); }
+  std::shared_ptr<Bus::Bus>& Bus() { return PTR(bus); }
+  std::shared_ptr<Window::Lines>& Lines() { return PTR(lines); }
+  std::shared_ptr<Editor::Editor>& Editor() { return PTR(editor); }
+  std::shared_ptr<Bus::Bus::W27C512_T>& EEPROM() { return PTR(eeprom); }
+  std::shared_ptr<Bus::Bus::IMS1423_T>& Stack() { return PTR(stack); }
 
 private:
   template<typename T, typename... Args>
@@ -319,8 +319,8 @@ private:
   WindowT<Window::Lines> lines = { false, false, nullptr, {}, 0 };
   WindowT<Editor::Editor> editor = { false, false, nullptr, {}, 0 };
 
-  WindowT<Bus::Memory<Bus::W27C512, W27C512_SIZE>> eeprom = { false, false, nullptr, {}, 0 };
-  WindowT<Bus::Memory<Bus::IMS1423, IMS1423_SIZE>> stack = { false, false, nullptr, {}, 0 };
+  WindowT<Bus::Bus::W27C512_T> eeprom = { false, false, nullptr, {}, 0 };
+  WindowT<Bus::Bus::IMS1423_T> stack = { false, false, nullptr, {}, 0 };
 };
 
 

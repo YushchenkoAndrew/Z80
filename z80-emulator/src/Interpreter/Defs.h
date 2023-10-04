@@ -2,6 +2,10 @@
 #include "src/Window/Lines.h"
 
 namespace Interpreter {
+
+class Token;
+typedef std::pair<std::string, std::shared_ptr<Token>> RealtiveToken;
+
 /**
  * This code was hardly expired by the book {Creating Interpreters}
  * Check out this link for more info: http://www.craftinginterpreters.com/scanning.html#lexemes-and-tokens

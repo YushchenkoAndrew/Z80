@@ -260,11 +260,11 @@ public:
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_IM>) {
     return std::make_shared<StatementLambda>(StatementLambda(peekPrev(), literal(1), [](std::vector<uint32_t> argv) {
       switch (argv[0]) {
-        case 0x00: return 0xED46;
-        case 0x01: return 0xED56;
-        case 0x02: return 0xED5E;
+        case 0x00: return (uint32_t)0xED46;
+        case 0x01: return (uint32_t)0xED56;
+        case 0x02: return (uint32_t)0xED5E;
       }
-      return 0x00;
+      return (uint32_t)0x00;
     }));
   }
 
@@ -350,16 +350,16 @@ public:
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_RST>) {
     return std::make_shared<StatementLambda>(StatementLambda(peekPrev(), literal(1), [](std::vector<uint32_t> argv) {
       switch (argv[0]) {
-        case 0x00: return 0x00C7;
-        case 0x08: return 0x00CF;
-        case 0x10: return 0x00D7;
-        case 0x18: return 0x00DF;
-        case 0x20: return 0x00E7;
-        case 0x28: return 0x00EF;
-        case 0x30: return 0x00F7;
-        case 0x38: return 0x00FF;
+        case 0x00: return (uint32_t)0x00C7;
+        case 0x08: return (uint32_t)0x00CF;
+        case 0x10: return (uint32_t)0x00D7;
+        case 0x18: return (uint32_t)0x00DF;
+        case 0x20: return (uint32_t)0x00E7;
+        case 0x28: return (uint32_t)0x00EF;
+        case 0x30: return (uint32_t)0x00F7;
+        case 0x38: return (uint32_t)0x00FF;
       }
-      return 0x00;
+      return (uint32_t)0x00;
     }));
   }
 
@@ -431,9 +431,9 @@ public:
     if (match<1>({ TokenT::LEFT_BRACE })) {
       std::shared_ptr<Statement> stmt;
       switch (advance()->token) {
-        case TokenT::REG_HL: stmt = std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return argv[0] > 7 ? 0x00 : 0x00CB46 | (argv[0] << 3); })); break;
-        case TokenT::REG_IX: stmt = std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, offset(1) }, [](std::vector<uint32_t> argv) { return argv[0] > 7 ? 0x00 : 0xDDCB0046 | (argv[1] << 8) | (argv[0] << 3); })); break;
-        case TokenT::REG_IY: stmt = std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, offset(1) }, [](std::vector<uint32_t> argv) { return argv[0] > 7 ? 0x00 : 0xFDCB0046 | (argv[1] << 8) | (argv[0] << 3); })); break;
+        case TokenT::REG_HL: stmt = std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return (uint32_t)(argv[0] > 7 ? 0x00 : 0x00CB46 | (argv[0] << 3)); })); break;
+        case TokenT::REG_IX: stmt = std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, offset(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(argv[0] > 7 ? 0x00 : 0xDDCB0046 | (argv[1] << 8) | (argv[0] << 3)); })); break;
+        case TokenT::REG_IY: stmt = std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, offset(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(argv[0] > 7 ? 0x00 : 0xFDCB0046 | (argv[1] << 8) | (argv[0] << 3)); })); break;
         default: error(peekPrev(), "Expect register to be 'HL' | 'IY+o' | 'IX+o'");
       }
 
@@ -443,7 +443,7 @@ public:
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
       return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) {
-        return argv[0] > 7 ? 0x00 : 0xCB40 | (argv[0] << 3) | argv[1];
+        return (uint32_t)(argv[0] > 7 ? 0x00 : 0xCB40 | (argv[0] << 3) | argv[1]);
       }, { Defs::Reg2Mask(peekPrev()->token) }));
     }
 
@@ -636,10 +636,10 @@ public:
           consume(TokenT::COMMA, "Expect ',' after expression.");
 
           if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-            return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return 0xDD7000 | (argv[1] << 8) | argv[0]; }, { Defs::Reg2Mask(peekPrev()->token)}));
+            return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return (uint32_t)(0xDD7000 | (argv[1] << 8) | argv[0]); }, { Defs::Reg2Mask(peekPrev()->token)}));
           }
 
-          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, literal(1) }, [](std::vector<uint32_t> argv) { return 0xDD360000 | (argv[0] << 8) | argv[1]; }, { Defs::Reg2Mask(peekPrev()->token)}));
+          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, literal(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xDD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev()->token)}));
         }
 
         case TokenT::REG_IY: {
@@ -650,10 +650,10 @@ public:
           consume(TokenT::COMMA, "Expect ',' after expression.");
 
           if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-            return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return 0xFD7000 | (argv[1] << 8) | argv[0]; }, { Defs::Reg2Mask(peekPrev()->token)}));
+            return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return (uint32_t)(0xFD7000 | (argv[1] << 8) | argv[0]); }, { Defs::Reg2Mask(peekPrev()->token)}));
           }
 
-          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, literal(1) }, [](std::vector<uint32_t> argv) { return 0xFD360000 | (argv[0] << 8) | argv[1]; }, { Defs::Reg2Mask(peekPrev()->token)}));
+          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, literal(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xFD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev()->token)}));
         }
       }
 
@@ -856,7 +856,7 @@ public:
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
       return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) {
-        return argv[0] > 7 ? 0x00 : 0xCB80 | (argv[0] << 3) | argv[1];
+        return (uint32_t)(argv[0] > 7 ? 0x00 : 0xCB80 | (argv[0] << 3) | argv[1]);
       }, { Defs::Reg2Mask(peekPrev()->token) }));
     }
 
@@ -903,7 +903,7 @@ public:
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
       return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) {
-        return argv[0] > 7 ? 0x00 : 0xCBC0 | (argv[0] << 3) | argv[1];
+        return (uint32_t)(argv[0] > 7 ? 0x00 : 0xCBC0 | (argv[0] << 3) | argv[1]);
       }, { Defs::Reg2Mask(peekPrev()->token) }));
     }
 
@@ -959,8 +959,8 @@ private:
 
     switch (advance()->token) {
       case TokenT::REG_HL: return std::make_shared<StatementNoArgCommand>(opcode, cmd);
-      case TokenT::REG_IX: return std::make_shared<StatementLambda>(StatementLambda(cmd, offset(1), [](std::vector<uint32_t> argv) { return 0xDD000000 | argv[1] | (argv[0] << 8); }, { command | code }));
-      case TokenT::REG_IY: return std::make_shared<StatementLambda>(StatementLambda(cmd, offset(1), [](std::vector<uint32_t> argv) { return 0xFD000000 | argv[1] | (argv[0] << 8); }, { command | code }));
+      case TokenT::REG_IX: return std::make_shared<StatementLambda>(StatementLambda(cmd, offset(1), [](std::vector<uint32_t> argv) { return (uint32_t)(0xDD000000 | argv[1] | (argv[0] << 8)); }, { command | code }));
+      case TokenT::REG_IY: return std::make_shared<StatementLambda>(StatementLambda(cmd, offset(1), [](std::vector<uint32_t> argv) { return (uint32_t)(0xFD000000 | argv[1] | (argv[0] << 8)); }, { command | code }));
     }
 
     error(peekPrev(), "Expect register to be 'HL' | 'IY+o' | 'IX+o'");

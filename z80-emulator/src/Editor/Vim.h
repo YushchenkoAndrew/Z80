@@ -33,7 +33,7 @@ public:
   inline void Unlock() { locked = false; }
 
   void Process(PixelGameEngine* GameEngine) {
-    bUpdated = false;
+    bUpdated = false; bReleased = false;
 
     switch (mode) {
       case NORMAL:  return Process(Int2Type<NORMAL>(), GameEngine);
@@ -757,6 +757,8 @@ public:
     return ss.str();
   }
 
+  inline olc::vi2d& vStartAt() { return offset; }
+
 
 private:
   inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
@@ -815,7 +817,10 @@ private:
   float fStrokeRepeat = 0.f;
 
   int32_t nLastX = 0; // Used for saving max x pos, when moving from line to line
+
   olc::vi2d pos = olc::vi2d(0, 0);
+  olc::vi2d offset = olc::vi2d(0, 0);
+
   std::vector<std::string> lines;
 };
 };
