@@ -75,7 +75,7 @@ public:
 
     // auto offset = 210;
     olc::vi2d zero = olc::vi2d(0, 0);
-    olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight());
+    olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y);
     olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y * 9 / 10);
 
     panels = {
@@ -103,14 +103,15 @@ public:
     AnyType<-1, float>::GetValue() = fElapsedTime;
 
     panels[nPanel].Preprocess();
+    panels[nPanel].Process(this); 
+    panels[nPanel].Draw(this); 
+
+    Process();
+    Draw();
 
     // AnyType<-2, float>::GetValue() += fElapsedTime;
-    panels[nPanel].Process(this);
-
 
     // emulator.ROM.Draw(this);
-    panels[nPanel].Draw(this);
-
 
     // TODO: Text editor
     // std::ifstream t("../RTC_Test/Test.asm");
@@ -131,6 +132,38 @@ public:
     // // mMinecraft.Draw(*this, fElapsedTime);
     // // return mMinecraft.IsFinished();
     return true;
+  }
+
+  void Process() {
+    const auto mouse = GetMousePos();
+    const bool bPressed = GetMouse(0).bPressed;
+
+    const auto nWidth = ScreenWidth();
+    const auto nHeight = ScreenHeight();
+
+    if (bPressed && mouse.x > 0 && mouse.y > nHeight - vStep.y && mouse.x < nWidth && mouse.y < nHeight) {
+      auto pos = mouse / vStep;
+
+      for (int32_t i = 1, acc = 0; i <= panels.size(); acc += (int32_t)GetPanelName(i++).size() + 1) {
+        if (pos.x > acc && pos.x < acc + (int32_t)GetPanelName(i).size() + 1) return Event(Int2Type<PANEL_SELECT_CALLBACK>(), i);
+      }
+    }
+  }
+
+  void Draw() {
+    const auto nWidth = ScreenWidth();
+    const auto nHeight = ScreenHeight();
+
+    olc::vi2d pos = olc::vi2d(0, nHeight - vStep.y);
+    FillRect(pos - olc::vi2d(0, 2), olc::vi2d(nWidth, 10), *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+
+    for (int32_t i = 0; i < panels.size(); i++) {
+      auto str = GetPanelName(i + 1);
+      auto color = i == nPanel ? AnyType<Colors::GREY, ColorT>::GetValue() : AnyType<Colors::DARK_GREY, ColorT>::GetValue();
+
+      DrawString(pos + olc::vi2d(vStep.x, 0), str, *color);
+      pos.x += str.size() * vStep.x + vStep.x;
+    }
   }
 
   ModeT GetMode() override { return bus->Z80->IsDebug() ? DEBUG : NORMAL; }
@@ -236,7 +269,12 @@ private:
     return next;
   }
 
+  inline std::string GetPanelName(int32_t i) { return std::to_string(i) + " panel"; }
+
 private:
+  const olc::vi2d vOffset = olc::vi2d(0, 0);
+  const olc::vi2d vStep = olc::vi2d(8, 12);
+
   int32_t nPanel = 0;
   std::array<Panel, 2> panels;
   Interpreter::Interpreter interpreter;

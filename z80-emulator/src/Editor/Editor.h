@@ -58,7 +58,7 @@ public:
     const auto mouse = GameEngine->GetMousePos();
     const bool bPressed = GameEngine->GetMouse(0).bPressed;
 
-    if (bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x + vOffset.x && mouse.y < absolute.y + vOffset.y) {
+    if (bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x + vOffset.x && mouse.y < absolute.y + vOffset.y + vStep.y) {
       auto pos = (mouse - absolute) / vStep;
 
       for (int32_t i = 0, acc = 0; i < tabs.size(); acc += (int32_t)FILENAME(tabs[i++]).size() + 1) {
@@ -129,11 +129,12 @@ public:
 
       pos.x += 2;
       if (nTab == i) {
-        GameEngine->FillRect(pos, offset, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+        GameEngine->FillRect(pos, offset, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+
         GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), *AnyType<Colors::GREY, ColorT>::GetValue());
         GameEngine->DrawString(pos + olc::vi2d(4, 4), FILENAME(tabs[i]), *AnyType<Colors::GREY, ColorT>::GetValue());
       } else {
-        GameEngine->FillRect(pos, offset, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+        GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
         GameEngine->DrawString(pos + olc::vi2d(4, 4), FILENAME(tabs[i]), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
       }
 
@@ -172,7 +173,7 @@ private:
   olc::vi2d absolute = olc::vi2d(0, 0);
 
   const olc::vi2d vStep = olc::vi2d(8, 12);
-  const olc::vi2d vOffset = olc::vi2d(24, 12);
+  const olc::vi2d vOffset = olc::vi2d(24, 16);
 
   std::mutex mutex;
 

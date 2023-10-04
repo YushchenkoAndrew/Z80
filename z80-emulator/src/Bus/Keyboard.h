@@ -78,7 +78,7 @@ public:
     if (GameEngine->GetKey(key).bReleased) { fStrokeRepeat = .0f; LIST(buffer).push_back(0xF0); }
     if (GameEngine->GetKey(key).bHeld) {
       fStrokeRepeat += AnyType<-1, float>::GetValue();
-      if (fStrokeRepeat >= 0.5f) { fStrokeRepeat = .4f; bPressed = true; }
+      if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
     }
 
     if (!bPressed && !GameEngine->GetKey(key).bReleased) return;

@@ -37,7 +37,7 @@ public:
   inline uint8_t Write(uint32_t addr, uint8_t data, bool) { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
   // TODO: Load disassembler here
-  void Preinitialize() {}
+  void Preinitialize() { bInit = false; }
 
   // TODO: Maybe add ability to set local state with initialization
   void Initialize(DimensionT dimensions) {
@@ -47,7 +47,7 @@ public:
     pages.y = (int32_t)(size.y - vOffset.first.y) / vStep.first.y;
     Index2Pos(index());
 
-    if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
+    if (type == MemoryT::IMS1423 & !bInit) { Command(Int2Type<Editor::VimT::CMD_G>()); bInit = true; }
   }
 
   inline void Lock() { 
@@ -845,6 +845,8 @@ private:
   const std::pair<olc::vi2d, olc::vi2d> vOffset = std::pair(olc::vi2d(44, 12), olc::vi2d(24, 0));
 
   ModeT mode = NORMAL;
+
+  bool bInit = false;
   bool locked = false;
 
   std::vector<uint8_t> buffer = { }; 
