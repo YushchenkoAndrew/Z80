@@ -65,6 +65,10 @@ _PRINTF_chg_c:
 _PRINTF_chg_s:
   CP "s"     ;; Check if parm is string
   JR NZ, _PRINTF_chg_d-$
+  ; PUSH HL    ;; Save curr str addr
+  CALL #PRINT;; Print string
+  ; TODO: CALL #PRINTF_LEN_ADD1
+
 _PRINTF_chg_s_lp:
   LD A, (HL) ;; Get curr char
   INC HL     ;; Inc arg pointer

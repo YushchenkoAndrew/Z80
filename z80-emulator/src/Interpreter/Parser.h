@@ -454,22 +454,23 @@ public:
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_CALL>) { 
     auto cmd = peekPrev();
 
-    if (!match<9>({ TokenT::REG_C, TokenT::FLAG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
-      return std::make_shared<StatementOneArgCommand>(0x00CD, cmd, literal(2));
-    }
+    if (match<9>({ TokenT::REG_C, TokenT::FLAG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
+      std::shared_ptr<Token> flag = peekPrev();
+      consume(TokenT::COMMA, "Expect ',' after first expression.");
 
-    consume(TokenT::COMMA, "Expect ',' after first expression.");
-    switch(peekPrev()->token) {
-      case TokenT::REG_C:
-      case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DC, cmd, literal(2));
-      case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FC, cmd, literal(2));
-      case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D4, cmd, literal(2));
-      case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C4, cmd, literal(2));
-      case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F4, cmd, literal(2));
-      case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EC, cmd, literal(2));
-      case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E4, cmd, literal(2));
-      case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CC, cmd, literal(2));
-    }
+      switch(flag->token) {
+        case TokenT::REG_C:
+        case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DC, cmd, literal(2));
+        case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FC, cmd, literal(2));
+        case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D4, cmd, literal(2));
+        case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C4, cmd, literal(2));
+        case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F4, cmd, literal(2));
+        case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EC, cmd, literal(2));
+        case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E4, cmd, literal(2));
+        case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CC, cmd, literal(2));
+      }
+
+    } else return std::make_shared<StatementOneArgCommand>(0x00CD, cmd, literal(2));
 
     return std::make_shared<Statement>();
   }

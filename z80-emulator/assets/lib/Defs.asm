@@ -32,6 +32,8 @@ PTR_LCD_DISPLAY    EQU PTR_ADDR + 2
 PTR_LCD_CURSOR     EQU PTR_ADDR + 3
 PTR_PRINTF_RET     EQU PTR_ADDR + 4
 PTR_PREV_SCAN_CODE EQU PTR_ADDR + 5
+PTR_TEXT_BUFF_BGN  EQU PTR_ADDR + 6
+PTR_TEXT_BUFF_END  EQU PTR_ADDR + 7
 
 ; Dynamic args
 PTR_FUNC_ARGS      EQU PTR_ADDR + 6
@@ -40,7 +42,10 @@ PTR_FUNC_ARGS      EQU PTR_ADDR + 6
 ;; Allocated memory
 SCAN_KEY_BUF       EQU 0x40F0  ;; 00h - 0Fh Keybuffer
 SCAN_KEY_MAP       EQU 0x4100  ;; 00h - FFh scan codes
-SCAN_LCD_MAP       EQU SCAN_KEY_MAP + 0x100 ;; 00h - 0Fh lcd buffer
+TEXT_BUF_MAP       EQU 0x4200  ;; 00h - 0Fh text buffer
+
 
 ;; Keys alias
 KEY_SHIFT          EQU SCAN_KEY_MAP | 0x12
+
+#include "ASCII.asm"

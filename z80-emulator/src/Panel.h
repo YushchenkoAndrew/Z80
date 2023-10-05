@@ -81,11 +81,11 @@ public:
     if (GameEngine->GetMouse(0).bPressed) {
       auto mouse = GameEngine->GetMousePos();
 
-      if (EXIST(bus))    SELECTED(bus)    = IS_INSIDE(bus, mouse);
-      if (EXIST(eeprom)) SELECTED(eeprom) = IS_INSIDE(eeprom, mouse);
-      if (EXIST(stack))  SELECTED(stack)  = IS_INSIDE(stack, mouse);
-      if (EXIST(lines))  SELECTED(lines)  = IS_INSIDE(lines, mouse);
-      if (EXIST(editor)) SELECTED(editor) = IS_INSIDE(editor, mouse);
+      if (!bFullScreen && EXIST(bus))    SELECTED(bus)    = IS_INSIDE(bus, mouse);
+      if (!bFullScreen && EXIST(eeprom)) SELECTED(eeprom) = IS_INSIDE(eeprom, mouse);
+      if (!bFullScreen && EXIST(stack))  SELECTED(stack)  = IS_INSIDE(stack, mouse);
+      if (!bFullScreen && EXIST(lines))  SELECTED(lines)  = IS_INSIDE(lines, mouse);
+      if (!bFullScreen && EXIST(editor)) SELECTED(editor) = IS_INSIDE(editor, mouse);
     }
 
 

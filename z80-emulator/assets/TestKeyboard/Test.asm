@@ -6,6 +6,27 @@
 ;####################################################
 
   ORG 0x0000
+  JP SETUP
+
+ORG 0x0008
+RST8:
+  ; TODO: Think about this
+  CALL _ACK_BUFFERS; Check and reset state of the buf
+  EI          ; Restore interrupts
+  RET
+  
+
+ORG 0x0010
+RST10:
+  ; FIXME: Temp solution
+  OUT (0x21), A
+  RET
+
+ORG 0x0018
+RST18:
+  CALL #TEMP_CMD
+  RET
+
   ; JP SETUP
 
   ; ###################################################
@@ -27,8 +48,14 @@ SETUP:
   ; LD A, 0x00
   ; OUT (0x21), A
 
+  ;; Preinitilize ptr values
   LD A, 0xF1
   LD (SCAN_KEY_BUF), A ; Set scan code buff offset
+  XOR A
+
+  LD (PTR_PREV_SCAN_CODE), A
+  LD (PTR_TEXT_BUFF_BGN), A
+  LD (PTR_TEXT_BUFF_END), A
   ; CALL _SCAN_CODE_INIT
 
   ; IN A, (0x00)
@@ -62,45 +89,32 @@ MAIN:
   ; LD D, 0xFF
   ; CALL DELAY
   ; CALL _SCAN_CODE_HANDLE
-  JP PROCESS
+
+  RST 0x08
+  JP MAIN
   ; JP MAIN
 
 ;; TODO: Fix bug with double char when shift is pressed !!
 
-PROCESS:
-  LD HL, SCAN_KEY_BUF ; Load scan key buf offset ptr
-  LD A, (HL)  ; Load scan key buf offset val
-  AND 0x0F    ; Get only low bites
-  DEC A       ; Check if offset is reseted, flag Z
-  JP Z, TEMP       ; If nothing happend, then return
 
-  LD D, A     ; Save offset value
+OK_MSG:
+  db " OK", 0
 
-  RRD         ; Load to reg A only low bit
-  LD A, 0x01  ; Reset offset value to 1
-  RLD         ; Reset offset value, aka start from 1
-
-  PUSH HL     ;; Arg ptr, rand value
-
-  LD BC, 0x21 ;; PORT
+#TEMP_CMD:
+  PUSH HL
   PUSH BC
 
-  INC HL
-  LD C, D
+  LD HL, OK_MSG
+  LD C, 0x21
+  CALL #PRINT
 
-  LD DE, PTR_FUNC_ARGS
-  PUSH DE     ;; ptr to string
+  POP BC
+  POP HL
+  RET
 
-  LDIR        ; Copy the string to LCD
-
-  XOR A       ; Reset reg A
-  LD (DE), A  ; Mark the end of the string
-
-  CALL _PRINTF
-
-  EI          ; Restore interrupts
-  JP TEMP
 
 ; #include "../lib/Hex.asm"
-#include "../lib/Printf.asm"
+; #include "../lib/Printf.asm"
+#include "../lib/Utils.asm"
 #include "Keyboard.asm"
+#include "Buffer.asm"

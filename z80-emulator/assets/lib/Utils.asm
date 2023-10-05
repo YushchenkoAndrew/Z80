@@ -50,3 +50,24 @@
   DJNZ #BIN_BCD_lp-$
   POP BC     ;; Restore reg BC
   RET
+
+
+;;
+;; Example:
+;;  LD HL, number ;; string
+;;  CALL #PRINT
+;;
+;; func PRINT() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- unaffected
+;;   reg C  -- as deined
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+#PRINT:
+  LD A, (HL) ;; Get curr char
+  INC HL     ;; Inc arg pointer
+  OR A       ;; Check if line is ended (Set flag Z)
+  RET Z      ;; Return if str is ended 
+  OUT (C), A ;; Display char
+  JR #PRINT-$
+
