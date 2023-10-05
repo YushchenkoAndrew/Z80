@@ -22,25 +22,35 @@ _SCAN_CODE_INIT_lp:
   POP HL      ; Restore reg HL
   RET
 
+;;
+;; Example:
+;;  LD A, 0x0E
+;;  CALL #SCAN_CODE_ASCII
+;;
+;; proc SCAN_CODE_ASCII() -> reg A;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
 #SCAN_CODE_ASCII:
   PUSH HL     ; Save HL reg in stack
   PUSH BC     ; Save BC reg in stack
-  ; LD BC, .SCAN_CODE_ASCII_VEC_ED-.SCAN_CODE_ASCII_VEC_ST ; Get vector size
-  LD BC, 49; Get vector size
+  LD BC, SCAN_CODE_ASCII_VEC_SIZE; Get vector size
   LD HL, .SCAN_CODE_ASCII_VEC_ST
+  PUSH HL     ; Save scan code vector ptr
   CPIR        ; Find index in SCAN_CODE_ASCII
+  POP BC      ; Restore scan code vector ptr to reg BC
   JP PO, #SCAN_CODE_ASCII_bg
   XOR A       ; Reset Acc
   JR #SCAN_CODE_ASCII_esc-$
 
 #SCAN_CODE_ASCII_bg:
   XOR A       ; Reset Acc & flags
-  LD BC, .SCAN_CODE_ASCII_VEC_ST
   SBC HL, BC  ; Get offset from the start of vector
   LD A, (KEY_SHIFT) ; Get shift status
-  CP 0b001    ; Check if shift key has stat pressed
+  DEC A       ; Check if shift key has stat pressed
   JR Z, #SCAN_CODE_ASCII_up-$
-  CP 0b010    ; Check if shift key has stat hold
+  DEC A       ; Check if shift key has stat hold
   JR NZ, #SCAN_CODE_ASCII_lw-$
 #SCAN_CODE_ASCII_up:
   LD BC, .UPPERCASE_VEC_ST
@@ -103,25 +113,22 @@ _SCAN_CODE_INIT_lp:
   JR Z, #SCAN_CODE_st_rels-$
 
   PUSH HL     ; Save HL reg in stack
-  LD HL, SCAN_KEY_BUF ; Load buffer count addr
+  LD HL, SCAN_KEY_BUF ; Load buffer count addr, (aka offset)
   LD L, (HL)  ; Load buf offset
   LD A, C     ; Restore scan code to reg A
   CALL #SCAN_CODE_ASCII
   OR A        ; Check if ASCII was found
   JR Z, #SCAN_CODE_cmp_buf_esc-$
   LD (HL), A  ; Save scan code in buffer
-  LD A, L     ; Load buff offset to Acc
-  LD H, L     ; Save buff offset to reg H
-  AND 0xF0    ; Get only high bits
-  LD L, A     ; Save high bits in reg L
-  LD A, H     ; Restore buff offset to Acc
-  INC A       ; Get next addr
+  LD HL, SCAN_KEY_BUF ; Load buffer count addr, (aka offset)
+  XOR A       ; Reset reg A
+  RRD         ; Load to reg A only low bit
+  INC A       ; Inc offset by one
   AND 0x0F    ; Get low bits
   JR NZ, #SCAN_CODE_cmp_buf_ed-$
   INC A       ; Start offset from 1
 #SCAN_CODE_cmp_buf_ed:
-  OR L        ; Combine high bits with low bits
-  LD (SCAN_KEY_BUF), A ; Save next buf offset
+  RLD         ; Restore offset value, but incr it by one
 #SCAN_CODE_cmp_buf_esc:
   POP HL      ; Restore HL reg
   JR #SCAN_CODE_nxt_st-$
@@ -138,51 +145,6 @@ _SCAN_CODE_INIT_lp:
   POP HL      ; Restore HL reg
   RET
 
-
-
-
-
-#include "../lib/Hex.asm"
-
-_SCAN_CODE_HANDLE:
-  LD B, 0     ; Set cnt to the max val aka 256
-  LD HL, SCAN_KEY_MAP ;; Load scan code mapper area
-_SCAN_CODE_HANDLE_lp:
-  LD A, (HL)  ; Load key state to Acc
-  OR A        ; Check if state is NULL
-  JR Z, _SCAN_CODE_HANDLE_nxt-$
-
-  ; ; FIXME: quick check
-  PUSH HL
-  CP 0x01
-  JR NZ, _SCAN_CODE_HANDLE_evt-$
-  PUSH BC
-  LD BC, 49
-  LD A, L
-  LD HL, .SCAN_CODE_ASCII_VEC_ST
-  CPIR
-  POP BC
-
-  ; LD A, L
-  ; LD HL, .LOWERCASE_VEC_ST
-  ; LD L, A
-  ; LD A, (HL)
-
-  LD HL, PTR_FUNC_ARGS
-  LD (HL), A
-  PUSH HL
-  CALL _HEX
-
-_SCAN_CODE_HANDLE_evt:
-  POP HL
-
-_SCAN_CODE_HANDLE_nxt:
-  INC HL      ; Go to the next addr
-  DJNZ _SCAN_CODE_HANDLE_lp-$
-  RET
-
-
-ORG 0x0300
 .SCAN_CODE_ASCII_VEC_ST:
   db 0x0E, 0x16, 0x1E, 0x26, 0x25, 0x2E, 0x36, 0x3D, 0x3E, 0x46, 0x45
   db 0x4E, 0x55, 0x15, 0x1D, 0x24, 0x2D, 0x2C, 0x35, 0x3C, 0x43, 0x44
@@ -191,11 +153,12 @@ ORG 0x0300
   db 0x49, 0x4A, 0x29, 0x0D, 0x52 
 .SCAN_CODE_ASCII_VEC_ED:
 
-ORG 0x0400
 .LOWERCASE_VEC_ST:
   db "`1234567890-=qwertyuiop[]\asdfghjkl;zxcvbnm,./ ", 9, 39
-.LOWERCASE_VEC_ED:
 
 .UPPERCASE_VEC_ST:
   db "~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:ZXCVBNM<>? ", 9, 34
-.UPPERCASE_VEC_ED:
+
+
+;; Variables
+SCAN_CODE_ASCII_VEC_SIZE        EQU  .SCAN_CODE_ASCII_VEC_ED-.SCAN_CODE_ASCII_VEC_ST

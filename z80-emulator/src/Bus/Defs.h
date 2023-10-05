@@ -676,7 +676,7 @@ typedef TypeList<
   TypeList<Int2Type<olc::Key::C>, Int2Type<0x21>>, TypeList<
   TypeList<Int2Type<olc::Key::V>, Int2Type<0x2A>>, TypeList<
   TypeList<Int2Type<olc::Key::B>, Int2Type<0x32>>, TypeList<
-  TypeList<Int2Type<olc::Key::N>, Int2Type<0x33>>, TypeList<
+  TypeList<Int2Type<olc::Key::N>, Int2Type<0x31>>, TypeList<
   TypeList<Int2Type<olc::Key::M>, Int2Type<0x3A>>, TypeList<
 
   TypeList<Int2Type<olc::Key::K1>, Int2Type<0x16>>, TypeList<

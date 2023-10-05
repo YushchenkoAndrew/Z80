@@ -6,7 +6,7 @@
 ;####################################################
 
   ORG 0x0000
-  JP SETUP
+  ; JP SETUP
 
   ; ###################################################
   ; ##################   SETUP    #####################
@@ -33,6 +33,7 @@ SETUP:
 
   ; IN A, (0x00)
   ; OUT (0x50), A
+TEMP:
   EI          ; Restore interrupts
   JP MAIN
 
@@ -42,7 +43,7 @@ ORG 0x0038
   IN A, (0x30); Reset RS-Trigger (Reset Initerrupt)
   CALL #SCAN_CODE_IM
   POP AF      ; Restore AF reg
-  EI          ; Restore interrupts
+  ; EI          ; Restore interrupts
   RET
 
 
@@ -61,7 +62,45 @@ MAIN:
   ; LD D, 0xFF
   ; CALL DELAY
   ; CALL _SCAN_CODE_HANDLE
-  JP MAIN
+  JP PROCESS
+  ; JP MAIN
+
+;; TODO: Fix bug with double char when shift is pressed !!
+
+PROCESS:
+  LD HL, SCAN_KEY_BUF ; Load scan key buf offset ptr
+  LD A, (HL)  ; Load scan key buf offset val
+  AND 0x0F    ; Get only low bites
+  DEC A       ; Check if offset is reseted, flag Z
+  JP Z, TEMP       ; If nothing happend, then return
+
+  LD D, A     ; Save offset value
+
+  RRD         ; Load to reg A only low bit
+  LD A, 0x01  ; Reset offset value to 1
+  RLD         ; Reset offset value, aka start from 1
+
+  PUSH HL     ;; Arg ptr, rand value
+
+  LD BC, 0x21 ;; PORT
+  PUSH BC
+
+  INC HL
+  LD C, D
+
+  LD DE, PTR_FUNC_ARGS
+  PUSH DE     ;; ptr to string
+
+  LDIR        ; Copy the string to LCD
+
+  XOR A       ; Reset reg A
+  LD (DE), A  ; Mark the end of the string
+
+  CALL _PRINTF
+
+  EI          ; Restore interrupts
+  JP TEMP
 
 ; #include "../lib/Hex.asm"
+#include "../lib/Printf.asm"
 #include "Keyboard.asm"

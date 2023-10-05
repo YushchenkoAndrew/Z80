@@ -2,12 +2,6 @@
 #include "Ppi.h"
 
 namespace Bus {
-#define LAST_VAL(v)  std::get<0>(v)
-#define LIST(v)      std::get<1>(v)
-#define IS_EMPTY(v)  (LIST(v).size() == 0)
-
-#define MUTEX(v)     std::get<2>(v)
-
 class Keyboard : public Window::Window, public Device {
 public:
   Keyboard(Bus* b): bus(b) {}
@@ -26,7 +20,7 @@ public:
   }
 
   void Process(PixelGameEngine* GameEngine) {
-    Utils::Lock l(MUTEX(buffer));
+    Utils::Lock l(mutex);
 
     AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyboardScanCodes, Keyboard>::Process(this);
@@ -38,8 +32,8 @@ public:
     const olc::vi2d vOffset = olc::vi2d(GameEngine->GetTextSize(name).x, 0) + vStep;
     GameEngine->DrawString(pos, name, *AnyType<DARK_GREY, ColorT>::GetValue());
 
-    int32_t index = 0; Utils::Lock l(MUTEX(buffer));
-    for (auto& val : LIST(buffer)) {
+    int32_t index = 0; Utils::Lock l(mutex);
+    for (auto& val : buffer) {
       GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), *AnyType<GREY, ColorT>::GetValue());
 
       if (++index > 3) break;
@@ -53,16 +47,22 @@ private:
   void Runtime() {
     while (bExec) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      { Utils::Lock l(MUTEX(buffer)); if (!IS_EMPTY(buffer)) Interrupt(); }
+      if (bHandled) {
+        Utils::Lock l(mutex);
+
+        if (buffer.size()) { bHandled = false; Interrupt(); }
+      }
     }
   }
 
 public:
   uint8_t Read(uint32_t addr, bool) {
-    Utils::Lock l(MUTEX(buffer));
+    Utils::Lock l(mutex); bHandled = true;
 
-    if (!IS_EMPTY(buffer)) { LAST_VAL(buffer) = LIST(buffer).front(); LIST(buffer).pop_front(); }
-    return LAST_VAL(buffer);
+    uint8_t code = buffer.size() ? buffer.front() : '\0';
+    if (buffer.size()) buffer.pop_front();
+
+    return code;
   }
 
   uint8_t Write(uint32_t addr, uint8_t data, bool) { return 0x00; }
@@ -75,14 +75,14 @@ public:
     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     bool bPressed = GameEngine->GetKey(key).bPressed;
 
-    if (GameEngine->GetKey(key).bReleased) { fStrokeRepeat = .0f; LIST(buffer).push_back(0xF0); }
+    if (GameEngine->GetKey(key).bReleased) { fStrokeRepeat = .0f; buffer.push_back(0xF0); }
     if (GameEngine->GetKey(key).bHeld) {
       fStrokeRepeat += AnyType<-1, float>::GetValue();
       if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
     }
 
     if (!bPressed && !GameEngine->GetKey(key).bReleased) return;
-    LIST(buffer).push_back(static_cast<uint8_t>(+U));
+    buffer.push_back(static_cast<uint8_t>(+U));
   }
 
 private:
@@ -94,16 +94,14 @@ private:
   Bus* bus;
 
   std::atomic<bool> bExec = true;
+  std::atomic<bool> bHandled = true;
+
   std::unique_ptr<std::thread> runtime = nullptr;
 
   // Variables defines animation duration
   float fStrokeRepeat = 0.f;
-  std::tuple<uint8_t, std::list<uint8_t>, std::mutex> buffer;
+
+  std::mutex mutex;
+  std::list<uint8_t> buffer;
 };
-
-#undef LAST_VAL
-#undef LIST
-#undef IS_EMPTY
-#undef MUTEX
-
 };
