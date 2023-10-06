@@ -1,4 +1,4 @@
-#include "../lib/Defs.asm"
+#include "Command.asm"
 
 ;;
 ;; Example:
@@ -54,20 +54,20 @@ _ACK_BUFFERS:
   CP BACKSPACE; Check if need to del prev char
   JR NZ, #WR_BUFFER_out-$
   DEC E       ; Move dst string ptr, back by one char
+  RST 0x10    ; Output the char
+  JR #WR_BUFFER_nxt_esc-$
 
 #WR_BUFFER_out:
   RST 0x10    ; Output the char
 
 #WR_BUFFER_nxt:
   LD (DE), A  ; Save curr char in buffer
-  INC HL      ; Move src string ptr
   INC E       ; Move dst string ptr, reg DE will reset after 0xFF
 
+#WR_BUFFER_nxt_esc:
+  INC HL      ; Move src string ptr
   CP LINE_FEED ; Check if char was '\n'
-  JR NZ, #WR_BUFFER_lp_esc-$
-  RST 0x18     ; Exec comand
-
-#WR_BUFFER_lp_esc:
+  CALL Z, _CMD_EXEC
   LD A, E     ; Get next offset text buffer offset
   LD (PTR_TEXT_BUFF_END), A; Save offset in ptr
   DJNZ #WR_BUFFER-$

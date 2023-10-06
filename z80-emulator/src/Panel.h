@@ -162,11 +162,15 @@ public:
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SPACE>) {
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<ENTER_DEBUG_MODE_CALLBACK>()); 
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); 
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_a>) {
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); 
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_d>) {
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EXIT_DEBUG_MODE_CALLBACK>()); 
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); 
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_NUMBER>) {
@@ -211,6 +215,7 @@ public:
 
     // noun
     if (match<1>({ ' ' })) { phrase(Int2Type<Editor::VimT::CMD_SPACE>()); return reset(); } 
+    if (match<1>({ 'a' })) { phrase(Int2Type<Editor::VimT::CMD_a>()); return reset(); } 
     if (match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_d>()); return reset(); } 
     if (match<1>({ 'z' })) { phrase(Int2Type<Editor::VimT::CMD_z>()); return reset(); } 
     if (match<1>({ '?' })) { phrase(Int2Type<Editor::VimT::CMD_QUESTION>()); return reset(); } 

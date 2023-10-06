@@ -30,6 +30,48 @@
 
 ;;
 ;; Example:
+;;  LD HL, number ;; Number ptr
+;;  LD C, 0x20    ;; Load pot
+;;  CALL #HEX_ASCII
+;;
+;; number: db 0x25
+;;
+;; proc ASCII_HEX(...regs) -> reg A;
+;;   reg A  -- as defined
+;;   reg B  -- unaffected
+;;   reg C  -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+#ASCII_HEX:
+  CP "0"     ; Check the range of the received char
+  RET C      ; If it less then "0" = 48 then return
+  CP ":"     ; After a "9" goest char ":"
+  JR C, #ASCII_HEX_0-$
+  CP "A"     ; Check the range of the received char
+  RET C      ; If it less then "A" = 65 then return
+  CP "G"     ; After a "f" goest char "G"
+  JR C, #ASCII_HEX_A-$
+  CP "a"     ; Check the range of the received char
+  RET C      ; If it less then "A" = 97 then return
+  CP "g"     ; After a "f" goest char "G"
+  JR C, #ASCII_HEX_a-$
+  RET
+
+#ASCII_HEX_0:
+  SUB "0"    ; Convert '0'-'9' to 0h-9h
+  RET
+
+#ASCII_HEX_A:
+  SUB "7"    ; Convert 'A'-'F' to Ah-Fh, example sub 0x41 - 0x37 = A
+  RET
+
+#ASCII_HEX_a:
+  SUB "W"    ; Convert 'a'-'f' to Ah-Fh, example sub 0x61 - 0x57 = A
+  RET
+
+
+;;
+;; Example:
 ;;  LD A, 0x0F  ;; Load number
 ;;  CALL #BIN_BCD
 ;;

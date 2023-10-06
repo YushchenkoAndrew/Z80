@@ -22,12 +22,26 @@ RST10:
   OUT (0x21), A
   RET
 
-ORG 0x0018
-RST18:
-  CALL #TEMP_CMD
-  RET
 
-  ; JP SETUP
+ORG 0x0018
+RST18:       ;; aka PRINT
+  LD A, (HL) ;; Get curr char
+  OR A       ;; Check if line is ended (Set flag Z)
+  RET Z      ;; Return if str is ended 
+  INC HL     ;; Inc arg pointer
+  RST 0x10   ;; Output the char
+  JR RST18-$
+
+;; Interrupt handler
+ORG 0x0038
+  EXX         ; Save reg in alt regs
+  PUSH AF     ; Save Acc & flags
+  IN A, (0x30); Reset RS-Trigger (Reset Initerrupt)
+  CALL #SCAN_CODE_IM
+  POP AF      ; Restore AF reg
+  EXX         ; Restore reg from alt regs
+  ; EI          ; Restore interrupts
+  RET
 
   ; ###################################################
   ; ##################   SETUP    #####################
@@ -56,6 +70,7 @@ SETUP:
   LD (PTR_PREV_SCAN_CODE), A
   LD (PTR_TEXT_BUFF_BGN), A
   LD (PTR_TEXT_BUFF_END), A
+  LD (PTR_MOUNT_OPTION), A
   ; CALL _SCAN_CODE_INIT
 
   ; IN A, (0x00)
@@ -63,15 +78,6 @@ SETUP:
 TEMP:
   EI          ; Restore interrupts
   JP MAIN
-
-;; Interrupt handler
-ORG 0x0038
-  PUSH AF     ; Save Acc & flags
-  IN A, (0x30); Reset RS-Trigger (Reset Initerrupt)
-  CALL #SCAN_CODE_IM
-  POP AF      ; Restore AF reg
-  ; EI          ; Restore interrupts
-  RET
 
 
 
@@ -97,24 +103,10 @@ MAIN:
 ;; TODO: Fix bug with double char when shift is pressed !!
 
 
-OK_MSG:
-  db " OK", 0
-
-#TEMP_CMD:
-  PUSH HL
-  PUSH BC
-
-  LD HL, OK_MSG
-  LD C, 0x21
-  CALL #PRINT
-
-  POP BC
-  POP HL
-  RET
 
 
 ; #include "../lib/Hex.asm"
 ; #include "../lib/Printf.asm"
-#include "../lib/Utils.asm"
+; #include "../lib/Utils.asm"
 #include "Keyboard.asm"
 #include "Buffer.asm"

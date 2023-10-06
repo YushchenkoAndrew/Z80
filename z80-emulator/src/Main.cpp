@@ -168,15 +168,24 @@ public:
 
   ModeT GetMode() override { return bus->Z80->IsDebug() ? DEBUG : NORMAL; }
 
-  void Event(Int2Type<ENTER_DEBUG_MODE_CALLBACK>) override {
+  // TODO: Add DEBUG MODE ATTACH (aka without reset '^ a')
+
+  void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) override {
     #ifdef DEBUG_MODE 
-    std::cout << "ENTER_DEBUG_MODE_CALLBACK\n";
+    std::cout << "NEW_DEBUG_MODE_CALLBACK\n";
+    #endif
+
+    Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
+    Event(Int2Type<DEBUG_RESET_CALLBACK>());
+  }
+
+  void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "ATTACH_DEBUG_MODE_CALLBACK\n";
     #endif
 
     bus->Z80->Debug();
-
     for (auto& p : panels) p.Lock();
-    Event(Int2Type<DEBUG_RESET_CALLBACK>());
   }
 
   void Event(Int2Type<DEBUG_RESET_CALLBACK>) override {
@@ -205,9 +214,9 @@ public:
     if (p.Stack() != nullptr)  p.Stack()->Move2Addr(bus->Z80->Stack());
   }
 
-  void Event(Int2Type<EXIT_DEBUG_MODE_CALLBACK>) override {
+  void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override {
     #ifdef DEBUG_MODE 
-    std::cout << "EXIT_DEBUG_MODE_CALLBACK\n";
+    std::cout << "DETACH_DEBUG_MODE_CALLBACK\n";
     #endif
 
     bus->Z80->Normal();

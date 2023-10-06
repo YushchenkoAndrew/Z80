@@ -189,7 +189,8 @@ public:
 };
 
 enum Events {
-  ENTER_DEBUG_MODE_CALLBACK, EXIT_DEBUG_MODE_CALLBACK, NEXT_DEBUG_STEP_CALLBACK, DEBUG_RESET_CALLBACK,
+  NEW_DEBUG_MODE_CALLBACK, ATTACH_DEBUG_MODE_CALLBACK, DETACH_DEBUG_MODE_CALLBACK,
+  NEXT_DEBUG_STEP_CALLBACK, DEBUG_RESET_CALLBACK,
 
   EDITOR_SELECT_CALLBACK, MEMORY_SELECT_CALLBACK, PANEL_SELECT_CALLBACK,
 };
@@ -198,10 +199,12 @@ class PixelGameEngine : public olc::PixelGameEngine {
   public:
   enum ModeT { NORMAL, DEBUG };
 
-  virtual void Event(Int2Type<ENTER_DEBUG_MODE_CALLBACK>) = 0;
+  virtual void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) = 0;
+  virtual void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) = 0;
+  virtual void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) = 0;
+
   virtual void Event(Int2Type<DEBUG_RESET_CALLBACK>) = 0;
   virtual void Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>) = 0;
-  virtual void Event(Int2Type<EXIT_DEBUG_MODE_CALLBACK>) = 0;
 
   virtual void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d) = 0;
   virtual void Event(Int2Type<PANEL_SELECT_CALLBACK>, int32_t) = 0;
