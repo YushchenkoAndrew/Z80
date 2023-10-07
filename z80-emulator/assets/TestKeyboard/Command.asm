@@ -41,7 +41,6 @@ _CMD_EXEC:
 _CMD_EXEC_bgn:
   PUSH BC     ; Save commands counter in Stack
   CALL #CMD_EXEC_BUF_CALC; Sets value in reg B - amount of chars & reg HL buf start pos
-  LD C, 2     ; Check next char when reg B is ended
 
 _CMD_EXEC_lp:
   LD A, (DE)  ; Load char from command
@@ -52,10 +51,10 @@ _CMD_EXEC_lp:
   INC HL      ; Move buf ptr by one
   INC DE      ; Move cmd ptr by one
   DJNZ _CMD_EXEC_lp-$
-  DEC C       ; Decrement offset when reg B is ended
-  LD B, C     ; Set loop counter to 1
-  JR NZ, _CMD_EXEC_lp-$
-  JR _CMD_EXEC_nxt-$; If buf counter is ended, aka buf word is less then cmd
+  LD A, (DE)  ; Load next char from command, (which was skiped)
+  OR A        ; Check if this char is 0, aka end of the word
+  JR NZ, _CMD_EXEC_nxt-$; If buf counter is ended, aka buf word is less then cmd
+  INC B       ; If cmd was found, then set reg B to 1, it will be reset after
 
 _CMD_EXEC_cmp:
   LD A, (HL)  ; Get buf char
@@ -205,12 +204,36 @@ _CMD_EXEC_esc:
   ; TODO:
   JP #MSG_OK
 
+;;
+;; Example:
+;;  LD B, 0
+;;  LD DE, number+5
+;;  CALL #CMD_MKDIR
+;; 
+;; number:
+;;  db "mkdir test"
+;;
+;; proc CMD_MKDIR() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+;;
+#CMD_MKDIR:
+  LD IX, (PTR_MOUNT_ADDR_LW)
+  LD (IX+FS_INODE_UID),  FS_MODE_USR_W
+  LD (IX+FS_INODE_MODE+1), FS_MODE_DIR | FS_MODE_USR_R
+
+  ; TODO:
+  JP #MSG_OK
+
 
 
 .COMMANDS_VEC_ST:
   db "echo", 0, #CMD_ECHO
   db "mount", 0, #CMD_MOUNT
   db "umount", 0, #CMD_UMOUNT
+  db "mkdir", 0, #CMD_MKDIR
 .COMMANDS_VEC_ED:
 
 #include "Message.asm"

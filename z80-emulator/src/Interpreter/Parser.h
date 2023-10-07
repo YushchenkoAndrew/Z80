@@ -15,7 +15,7 @@ namespace Interpreter {
  *  func        -> IDENTIFIER ':'
  *  statement   -> COMMAND (expression)?  // NOTE: Grammar for each command will be hardcoded based on manual, this grammar is just a common example
  * 
- *  offset      -> '+' literal
+ *  offset      -> '+' shift
  *  shift       -> term (('>>' | '<<') term)*
  *  term        -> bit (('+' | '-' | '..') bit)*
  *  bit         -> unary (('|' | '&' | '^') unary)*
@@ -83,6 +83,11 @@ private:
     return foreach<CommandList, Parser>::Key2Process(this);
   }
 
+  inline std::shared_ptr<Expression> offset(int32_t size = 0) {
+    consume(TokenT::PLUS, "Expect '+' before expression.");
+    return shift(size);
+  }
+
   inline std::shared_ptr<Expression> shift(int32_t size = 0) {
     auto expr = term(size);
 
@@ -126,11 +131,6 @@ private:
       return std::make_shared<ExpressionUnary>(operation, unary(size));
     }
 
-    return literal(size);
-  }
-
-  inline std::shared_ptr<Expression> offset(int32_t size = 0) {
-    consume(TokenT::PLUS, "Expect '+' before expression.");
     return literal(size);
   }
 
@@ -460,17 +460,17 @@ public:
 
       switch(flag->token) {
         case TokenT::REG_C:
-        case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DC, cmd, literal(2));
-        case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FC, cmd, literal(2));
-        case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D4, cmd, literal(2));
-        case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C4, cmd, literal(2));
-        case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F4, cmd, literal(2));
-        case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EC, cmd, literal(2));
-        case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E4, cmd, literal(2));
-        case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CC, cmd, literal(2));
+        case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DC, cmd, shift(2));
+        case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FC, cmd, shift(2));
+        case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D4, cmd, shift(2));
+        case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C4, cmd, shift(2));
+        case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F4, cmd, shift(2));
+        case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EC, cmd, shift(2));
+        case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E4, cmd, shift(2));
+        case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CC, cmd, shift(2));
       }
 
-    } else return std::make_shared<StatementOneArgCommand>(0x00CD, cmd, literal(2));
+    } else return std::make_shared<StatementOneArgCommand>(0x00CD, cmd, shift(2));
 
     return std::make_shared<Statement>();
   }
@@ -513,7 +513,7 @@ public:
     consume(TokenT::COMMA, "Expect ',' after expression.");
     consume(TokenT::LEFT_BRACE, "Expect '(' after expression.");
     if (reg->token == TokenT::REG_A && !check(TokenT::REG_C)) {
-      auto stmt = std::make_shared<StatementOneArgCommand>(0x00DB, cmd, literal(1));
+      auto stmt = std::make_shared<StatementOneArgCommand>(0x00DB, cmd, shift(1));
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       return stmt;
     }
@@ -558,16 +558,16 @@ public:
 
       switch(flag->token) {
         case TokenT::REG_C:
-        case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DA, cmd, literal(2));
-        case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FA, cmd, literal(2));
-        case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D2, cmd, literal(2));
-        case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C2, cmd, literal(2));
-        case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F2, cmd, literal(2));
-        case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EA, cmd, literal(2));
-        case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E2, cmd, literal(2));
-        case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CA, cmd, literal(2));
+        case TokenT::FLAG_C:  return std::make_shared<StatementOneArgCommand>(0x00DA, cmd, shift(2));
+        case TokenT::FLAG_M:  return std::make_shared<StatementOneArgCommand>(0x00FA, cmd, shift(2));
+        case TokenT::FLAG_NC: return std::make_shared<StatementOneArgCommand>(0x00D2, cmd, shift(2));
+        case TokenT::FLAG_NZ: return std::make_shared<StatementOneArgCommand>(0x00C2, cmd, shift(2));
+        case TokenT::FLAG_P:  return std::make_shared<StatementOneArgCommand>(0x00F2, cmd, shift(2));
+        case TokenT::FLAG_PE: return std::make_shared<StatementOneArgCommand>(0x00EA, cmd, shift(2));
+        case TokenT::FLAG_PO: return std::make_shared<StatementOneArgCommand>(0x00E2, cmd, shift(2));
+        case TokenT::FLAG_Z:  return std::make_shared<StatementOneArgCommand>(0x00CA, cmd, shift(2));
       }
-    } else return std::make_shared<StatementOneArgCommand>(0xC3, cmd, literal(2));
+    } else return std::make_shared<StatementOneArgCommand>(0xC3, cmd, shift(2));
 
 
     return std::make_shared<Statement>();
@@ -627,7 +627,7 @@ public:
             return std::make_shared<StatementNoArgCommand>(0x70 | Defs::Reg2Mask(peekPrev()->token), cmd);
           }
 
-          return std::make_shared<StatementOneArgCommand>(0x36, cmd, literal(1));
+          return std::make_shared<StatementOneArgCommand>(0x36, cmd, shift(1));
 
         case TokenT::REG_IX: {
           consume(TokenT::REG_IX, "Expect 'IX' after expression.");
@@ -640,7 +640,7 @@ public:
             return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return (uint32_t)(0xDD7000 | (argv[1] << 8) | argv[0]); }, { Defs::Reg2Mask(peekPrev()->token)}));
           }
 
-          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, literal(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xDD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev()->token)}));
+          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, shift(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xDD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev()->token)}));
         }
 
         case TokenT::REG_IY: {
@@ -654,12 +654,12 @@ public:
             return std::make_shared<StatementLambda>(StatementLambda(cmd, expr, [](std::vector<uint32_t> argv) { return (uint32_t)(0xFD7000 | (argv[1] << 8) | argv[0]); }, { Defs::Reg2Mask(peekPrev()->token)}));
           }
 
-          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, literal(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xFD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev()->token)}));
+          return std::make_shared<StatementLambda>(StatementLambda(cmd, { expr, shift(1) }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xFD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev()->token)}));
         }
       }
 
 
-      auto expr = literal(2);
+      auto expr = shift(2);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       consume(TokenT::COMMA, "Expect ',' after expression.");
 
@@ -692,7 +692,7 @@ public:
             case TokenT::REG_IX: 
             case TokenT::REG_IY: stmt = addressRegisterOperation(0x007E, cmd); break;
           
-            default: stmt = std::make_shared<StatementOneArgCommand>(0x003A, cmd, literal(2)); break;
+            default: stmt = std::make_shared<StatementOneArgCommand>(0x003A, cmd, shift(2)); break;
           }
 
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
@@ -706,7 +706,7 @@ public:
         if (match<1>({ TokenT::REG_I })) return std::make_shared<StatementNoArgCommand>(0xED57, cmd);
         if (match<1>({ TokenT::REG_R })) return std::make_shared<StatementNoArgCommand>(0xED5F, cmd);
 
-        return std::make_shared<StatementOneArgCommand>(0x003E, cmd, literal(1));
+        return std::make_shared<StatementOneArgCommand>(0x003E, cmd, shift(1));
 
       case TokenT::REG_B:
         consume(TokenT::COMMA, "Expect ',' after expression.");
@@ -745,58 +745,58 @@ public:
       case TokenT::REG_BC:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = std::make_shared<StatementOneArgCommand>(0xED4B, cmd, literal(2));
+          auto stmt = std::make_shared<StatementOneArgCommand>(0xED4B, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return std::make_shared<StatementOneArgCommand>(0x0001, cmd, literal(2));
+        return std::make_shared<StatementOneArgCommand>(0x0001, cmd, shift(2));
 
       case TokenT::REG_DE:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = std::make_shared<StatementOneArgCommand>(0xED5B, cmd, literal(2));
+          auto stmt = std::make_shared<StatementOneArgCommand>(0xED5B, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return std::make_shared<StatementOneArgCommand>(0x0011, cmd, literal(2));
+        return std::make_shared<StatementOneArgCommand>(0x0011, cmd, shift(2));
 
       case TokenT::REG_HL:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = std::make_shared<StatementOneArgCommand>(0x002A, cmd, literal(2));
+          auto stmt = std::make_shared<StatementOneArgCommand>(0x002A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return std::make_shared<StatementOneArgCommand>(0x0021, cmd, literal(2));
+        return std::make_shared<StatementOneArgCommand>(0x0021, cmd, shift(2));
 
 
       case TokenT::REG_IX:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = std::make_shared<StatementOneArgCommand>(0xDD2A, cmd, literal(2));
+          auto stmt = std::make_shared<StatementOneArgCommand>(0xDD2A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return std::make_shared<StatementOneArgCommand>(0xDD21, cmd, literal(2));
+        return std::make_shared<StatementOneArgCommand>(0xDD21, cmd, shift(2));
 
       case TokenT::REG_IY:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = std::make_shared<StatementOneArgCommand>(0xFD2A, cmd, literal(2));
+          auto stmt = std::make_shared<StatementOneArgCommand>(0xFD2A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return std::make_shared<StatementOneArgCommand>(0xFD21, cmd, literal(2));
+        return std::make_shared<StatementOneArgCommand>(0xFD21, cmd, shift(2));
 
       case TokenT::REG_SP: 
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = std::make_shared<StatementOneArgCommand>(0x002A, cmd, literal(2));
+          auto stmt = std::make_shared<StatementOneArgCommand>(0x002A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
@@ -807,7 +807,7 @@ public:
           case TokenT::REG_IY: advance(); return std::make_shared<StatementNoArgCommand>(0xFDF9, cmd);
         }
 
-        return std::make_shared<StatementOneArgCommand>(0x0031, cmd, literal(2));
+        return std::make_shared<StatementOneArgCommand>(0x0031, cmd, shift(2));
 
     }
 
@@ -821,7 +821,7 @@ public:
     consume(TokenT::LEFT_BRACE, "Expect '(' after expression.");
 
     if (!match<1>({ TokenT::REG_C })) {
-      auto expr = literal(1);
+      auto expr = shift(1);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       consume(TokenT::COMMA, "Expect ',' after expression.");
       consume(TokenT::REG_A, "Expect register to be 'A'");
@@ -925,7 +925,7 @@ private:
       return std::make_shared<StatementNoArgCommand>(op1 | Defs::Reg2Mask(peekPrev()->token), cmd);
     }
 
-    return std::make_shared<StatementOneArgCommand>(op2, cmd, literal(1));
+    return std::make_shared<StatementOneArgCommand>(op2, cmd, shift(1));
   }
 
   inline std::shared_ptr<Statement> basicRegisterOperation(uint32_t op0, uint32_t op1, std::shared_ptr<Token> cmd) {

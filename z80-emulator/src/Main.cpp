@@ -63,10 +63,10 @@ public:
     // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
 
-    std::ofstream f("Test.asm");
-    interpreter.env.save("out.bin");
-    f << bus->Disassemble().first << "\n";
-    f.close();
+    // std::ofstream f("Test.asm");
+    // interpreter.env.save("out.bin");
+    // f << bus->Disassemble().first << "\n";
+    // f.close();
     // emulator.editor.size = {  };
 
 

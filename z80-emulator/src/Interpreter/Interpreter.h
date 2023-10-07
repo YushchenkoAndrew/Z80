@@ -155,15 +155,15 @@ public:
         return left;
 
       case TokenT::BIT_OR:
-        for (int32_t i = 0; i < left.size(); i++)  left[i] |= right[i];
+        for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] | right[i];
         return left;
 
       case TokenT::BIT_AND:
-        for (int32_t i = 0; i < left.size(); i++)  left[i] &= right[i];
+        for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] & right[i];
         return left;
 
       case TokenT::BIT_XOR:
-        for (int32_t i = 0; i < left.size(); i++)  left[i] ^= right[i];
+        for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] ^ right[i];
         return left;
 
 
