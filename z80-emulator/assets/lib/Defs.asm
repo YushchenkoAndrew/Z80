@@ -37,22 +37,21 @@ PTR_PRINTF_RET     EQU PTR_ADDR + 4
 PTR_PREV_SCAN_CODE EQU PTR_ADDR + 5
 PTR_TEXT_BUFF_BGN  EQU PTR_ADDR + 6
 PTR_TEXT_BUFF_END  EQU PTR_ADDR + 7
-PTR_MOUNT_OPTION   EQU PTR_ADDR + 8
-PTR_MOUNT_ADDR_LW  EQU PTR_ADDR + 9
-PTR_MOUNT_ADDR_HG  EQU PTR_ADDR + 10
 
 ; Dynamic args
 PTR_FUNC_ARGS      EQU PTR_ADDR + 6
 
 
 ;; Allocated memory
-SCAN_KEY_BUF       EQU 0x40F0  ;; 00h - 0Fh Keybuffer
+SCAN_KEY_BUF       EQU 0x40F0  ;; F0h - FFh Keybuffer
 SCAN_KEY_MAP       EQU 0x4100  ;; 00h - FFh scan codes
-TEXT_BUF_MAP       EQU 0x4200  ;; 00h - 0Fh text buffer
+TEXT_BUF_MAP       EQU 0x4200  ;; 00h - FFh text buffer
+SUPER_BLOCK_MAP    EQU 0x4300  ;; 00h - 1Fh Super block map
+INODE_MAP          EQU 0x4320  ;; 20h - FFh Inode map
+DATA_ZONE_MAP      EQU 0x4400  ;; 00h - FFh Data zone map
 
 
 ;; Keys alias
 KEY_SHIFT          EQU SCAN_KEY_MAP | 0x12
 
 #include "ASCII.asm"
-#include "FileSystem.asm"

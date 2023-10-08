@@ -151,15 +151,19 @@ _CMD_EXEC_esc:
   OR A        ; Check if remaining chars exist
   JP Z, #MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
-  LD A, MOUNT_EN; Set reg A to enable mount mode
-  LD (PTR_MOUNT_OPTION), A; Update mount mode, aka enable it
-  LD HL, PTR_MOUNT_ADDR_LW; Get ptr to low byte addr
   XOR A       ; Reset Acc
+  PUSH DE     ; Save ptr to buf in stack
+  LD DE, INODE_MAP+FS_INODE_ZONE0; Load addr to first inode map zone0
+  LD HL, (SUPER_BLOCK_MAP+FS_SP_BLK_INODES); Get amount of inodes
+  ADD HL, DE  ; Find next inode addr of zone 0
+  PUSH HL     ; Temp save calculated addr 
+  POP IX      ; Load this addr in reg IX
+  POP DE      ; Restore ptr to buf
   LD (HL), A  ; Reset low byte of the addr
 
 #CMD_MOUNT_bgn:
-  LD A, (HL) ; Get low byte of the addr
-  LD (PTR_MOUNT_ADDR_HG), A; Shift low byte -> high byte
+  LD A, (HL)  ; Get low byte of the addr
+  LD (IX+1), A; Shift low byte -> high byte
   XOR A       ; Reset inner loop counter, aka bit offset counter
 
 #CMD_MOUNT_lp:
@@ -176,13 +180,37 @@ _CMD_EXEC_esc:
   JR NZ, #CMD_MOUNT_esc-$ ; If so then reset 
   INC A       ; Increment counter
   DJNZ #CMD_MOUNT_lp-$
-  LD HL, PTR_MOUNT_ADDR_HG; Get ptr to high byte addr
+  INC HL      ; Get ptr to high byte addr
   XOR A       ; Reset Acc
   RRD         ; Shift value pointed by reg HL by 4, uses when there are 3 digit
-  JP #MSG_OK
+  JR #CMD_MOUNT_init-$
 
 #CMD_MOUNT_esc:
   DJNZ  #CMD_MOUNT_bgn-$
+
+#CMD_MOUNT_init:
+  CALL _NEW_INODE; Get curr inode addr in reg HL & IX
+
+  LD (IX+FS_INODE_MODE),  FS_MODE_USR_W; Set inode mode low byte
+  LD (IX+FS_INODE_MODE+1), FS_MODE_DIR | FS_MODE_USR_R; Set inode mode high byte
+
+  PUSH IX     ; Temp save addr of curr inode
+  CALL _NEW_DATA_BLOCK
+  POP IX      ; Restore ptr to inode
+
+  LD (IX+FS_INODE_ZONE0),   L; Set directory data zone0, low byte
+  LD (IX+FS_INODE_ZONE0+1), H; Set directory data zone0, high byte
+  PUSH HL     ; Temp save calculated addr 
+  POP IX      ; Load this addr in reg IX
+
+  LD HL, (SUPER_BLOCK_MAP+FS_SP_BLK_INODES); Get amount of inodes
+
+  LD (IX+FS_DIR_INODE),   L; Set directory inode, low byte
+  LD (IX+FS_DIR_INODE+1), H; Set directory inode, high byte
+
+  ; TODO: Change this to filename
+  LD (IX+FS_DIR_FILENAME),   "F"; Set directory inode, low byte
+
   JP #MSG_OK
 
 ;;
@@ -220,13 +248,43 @@ _CMD_EXEC_esc:
 ;;   reg HL -- unaffected
 ;;
 #CMD_MKDIR:
-  LD IX, (PTR_MOUNT_ADDR_LW)
-  LD (IX+FS_INODE_UID),  FS_MODE_USR_W
-  LD (IX+FS_INODE_MODE+1), FS_MODE_DIR | FS_MODE_USR_R
+  LD B, A     ; Load counter to reg B
+  LD A, (SUPER_BLOCK_MAP+FS_SP_BLK_STATE); Get the mount state
+  JP Z, #MSG_ARG_ERR
+  XOR A       ; Reset Acc
+
+  CALL _NEW_INODE; Get curr inode addr in reg HL & IX
+  LD (IX+FS_INODE_MODE),  FS_MODE_USR_W; Set inode mode low byte
+  LD (IX+FS_INODE_MODE+1), FS_MODE_DIR | FS_MODE_USR_R; Set inode mode high byte
+
+  PUSH IX     ; Temp save addr of curr inode
+  CALL _NEW_DATA_BLOCK
+  POP IX      ; Restore ptr to inode
+
+  LD (IX+FS_INODE_ZONE0),   L; Set directory data zone0, low byte
+  LD (IX+FS_INODE_ZONE0+1), H; Set directory data zone0, high byte
+  PUSH HL     ; Temp save calculated addr 
+  POP IX      ; Load this addr in reg IX
+  PUSH HL     ; Temp save calculated addr 
+
+  LD HL, (SUPER_BLOCK_MAP+FS_SP_BLK_INODES); Get amount of inodes
+
+  LD (IX+FS_DIR_INODE),   L; Set directory inode, low byte
+  LD (IX+FS_DIR_INODE+1), H; Set directory inode, high byte
+
+  ; TODO:
+  LD (IX+FS_DIR_FILENAME),   "F"; Set directory inode, low byte
+  ; LD C, B
+  ; LD B, 0
+  ; LD BC, 0x05
+  ; POP HL
+  ; INC HL
+  ; INC HL
+
+  ; LDIR        ; Copy file name
 
   ; TODO:
   JP #MSG_OK
-
 
 
 .COMMANDS_VEC_ST:
@@ -239,4 +297,6 @@ _CMD_EXEC_esc:
 #include "Message.asm"
 
 ;; Variables
-COMMANDS_SIZE        EQU  3
+COMMANDS_SIZE        EQU  4
+
+#include "../lib/FileSystem.asm"

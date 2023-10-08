@@ -975,7 +975,7 @@ public:
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_E>) { cycles = 19; Write(regIX() + Read(), regE()); }
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_H>) { cycles = 19; Write(regIX() + Read(), regH()); }
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_L>) { cycles = 19; Write(regIX() + Read(), regL()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_N>) { cycles = 19; Write(regIX() + Read(), Read()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_N>) { cycles = 19; auto addr = regIX() + Read(); Write(addr, Read()); }
 
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_A_ixd>) { cycles = 19; regA(Read(regIX() + Read())); }
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_B_ixd>) { cycles = 19; regB(Read(regIX() + Read())); }
@@ -1065,7 +1065,7 @@ public:
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_E>) { cycles = 19; Write(regIY() + Read(), regE()); }
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_H>) { cycles = 19; Write(regIY() + Read(), regH()); }
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_L>) { cycles = 19; Write(regIY() + Read(), regL()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_N>) { cycles = 19; Write(regIY() + Read(), Read()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_N>) { cycles = 19; auto addr = regIY() + Read(); Write(addr, Read()); }
 
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_A_iyd>) { cycles = 19; regA(Read(regIY() + Read())); }
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_B_iyd>) { cycles = 19; regB(Read(regIY() + Read())); }
