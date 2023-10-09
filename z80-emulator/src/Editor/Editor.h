@@ -9,6 +9,8 @@ namespace Editor {
 
 class Editor : public Window::Window {
 public:
+  typedef std::tuple<std::string, std::string, Interpreter::Lexer, Vim> TabT;
+
   Editor() {}
 
   Editor* Open(std::string path) { 
@@ -61,8 +63,10 @@ public:
     if (bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x + vOffset.x && mouse.y < absolute.y + vOffset.y + vStep.y) {
       auto pos = (mouse - absolute) / vStep;
 
-      for (int32_t i = 0, acc = 0; i < tabs.size(); acc += (int32_t)FILENAME(tabs[i++]).size() + 1) {
-        if (pos.x > acc && pos.x < acc + (int32_t)FILENAME(tabs[i]).size() + 1) { nTab = i; return; }
+      for (int32_t i = 0, acc = 0; i < tabs.size(); i++) {
+        auto filename = GetTabName(tabs[i], 1);
+        if (pos.x > acc && pos.x < acc + (int32_t)filename.size() + 1) { nTab = i; return; }
+        acc += (int32_t)filename.size() + 1;
       }
 
       return;
@@ -125,17 +129,18 @@ public:
 
     pos = olc::vi2d(absolute.x, absolute.y + vOffset.y - 10);
     for (int32_t i = 0; i < tabs.size(); i++) {
-      auto offset = olc::vi2d((FILENAME(tabs[i]).size() + 1) * vStep.x, 14);
+      auto filename = GetTabName(tabs[i], 1);
+      auto offset = olc::vi2d((filename.size() + 1) * vStep.x, 14);
 
       pos.x += 2;
       if (nTab == i) {
         GameEngine->FillRect(pos, offset, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
 
         GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), *AnyType<Colors::GREY, ColorT>::GetValue());
-        GameEngine->DrawString(pos + olc::vi2d(4, 4), FILENAME(tabs[i]), *AnyType<Colors::GREY, ColorT>::GetValue());
+        GameEngine->DrawString(pos + olc::vi2d(4, 4), filename, *AnyType<Colors::GREY, ColorT>::GetValue());
       } else {
         GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
-        GameEngine->DrawString(pos + olc::vi2d(4, 4), FILENAME(tabs[i]), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+        GameEngine->DrawString(pos + olc::vi2d(4, 4), filename, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
       }
 
       pos.x += offset.x;
@@ -166,6 +171,13 @@ public:
 
 public:
   inline void MoveTo(olc::vi2d next) { Utils::Lock l(mutex); VIM(tabs[nTab]).MoveTo(next - VIM(tabs[nTab]).GetPos()); }
+  inline std::string GetTabName(TabT& tab, int32_t offset = 0) {
+    auto& filename = FILENAME(tab);
+    const int32_t nWidth = (vOffset.x + size.x) / (((int32_t)tabs.size() + offset) * vStep.x);
+
+    if (nWidth >= filename.size()) return filename;
+    return filename.substr(0, nWidth);
+  }
   // inline std::string File() { Utils::Lock l(mutex); return PATH(tabs[nTab]); }
 
 private:
@@ -178,7 +190,7 @@ private:
   std::mutex mutex;
 
   int32_t nTab = 0;
-  std::vector<std::tuple<std::string, std::string, Interpreter::Lexer, Vim>> tabs;
+  std::vector<TabT> tabs;
 };
 
 };

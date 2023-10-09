@@ -394,10 +394,12 @@ public:
 
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_ADD>) {
     auto cmd = peekPrev();
-    uint32_t mask = 0x0000;
-
     std::shared_ptr<Token> reg = advance();
     consume(TokenT::COMMA, "Expect ',' after first expression.");
+
+    const uint32_t mask =
+      reg->token == TokenT::REG_IX ? 0xDD00 :
+      reg->token == TokenT::REG_IY ? 0xFD00 : 0x0000;
 
     switch (reg->token) {
       case TokenT::REG_A:
@@ -405,8 +407,6 @@ public:
 
       case TokenT::REG_IX:
       case TokenT::REG_IY:
-        mask = peekPrev()->token == TokenT::REG_IX ? 0xDD00 : 0xFD00;
-
       case TokenT::REG_HL:
         switch(advance()->token) {
           case TokenT::REG_BC: return std::make_shared<StatementNoArgCommand>(0x0009 | mask, cmd);

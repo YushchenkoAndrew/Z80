@@ -130,7 +130,10 @@ private:
   Bus* bus;
   uint16_t data = 0x0000;
 
-  std::array<SegmentT, 32> buffer;
+  // std::array<SegmentT, 32> buffer;
+
+  // FIXME: Develop options
+  std::array<SegmentT, 32 * 4> buffer;
 };
 
 #undef BIT_M
