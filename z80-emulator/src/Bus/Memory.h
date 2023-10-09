@@ -37,7 +37,9 @@ public:
   inline uint8_t Write(uint32_t addr, uint8_t data, bool) { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
   // TODO: Load disassembler here
-  void Preinitialize() { bInit = false; }
+  void Preinitialize() { 
+    if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
+  }
 
   // TODO: Maybe add ability to set local state with initialization
   void Initialize(DimensionT dimensions) {
@@ -46,8 +48,6 @@ public:
     pages.x = (int32_t)(1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.first.x)));
     pages.y = (int32_t)(size.y - vOffset.first.y) / vStep.first.y;
     Index2Pos(index());
-
-    if (type == MemoryT::IMS1423 & !bInit) { Command(Int2Type<Editor::VimT::CMD_G>()); bInit = true; }
   }
 
   inline void Lock() { 
@@ -507,12 +507,12 @@ public:
 private:
   void Process(Int2Type<REPLACE>, PixelGameEngine* GameEngine) {
     AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
-    foreach<Editor::KeyEvent, Memory>::Process(this);
+    foreach<KeyEvent, Memory>::Process(this);
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
     AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
-    foreach<Editor::KeyEvent, Memory>::Process(this);
+    foreach<KeyEvent, Memory>::Process(this);
 
     if (!bUpdated) return;
     else bUpdated = false;
@@ -845,8 +845,6 @@ private:
   const std::pair<olc::vi2d, olc::vi2d> vOffset = std::pair(olc::vi2d(44, 12), olc::vi2d(24, 0));
 
   ModeT mode = NORMAL;
-
-  bool bInit = false;
   bool locked = false;
 
   std::vector<uint8_t> buffer = { }; 

@@ -18,6 +18,8 @@ public:
     sAppName = "Z80 Emulator";
   }
 
+  ~App() { if (offload != nullptr && offload->joinable()) offload->join(); }
+
   bool OnUserCreate() override {
     // std::ifstream f("../RTC_Test/Test.asm");
     // std::ifstream f(file);
@@ -29,7 +31,8 @@ public:
 
     // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
 
-    auto lines = std::make_shared<Window::Lines>();
+    // TODO: Impl terminal
+    auto terminal = std::make_shared<Window::Terminal>();
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
@@ -43,8 +46,8 @@ public:
 
       printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
 
-      lines->SetLines(interpreter.errors);
-    } else lines->SetLines("OK");
+      terminal->PushOut(interpreter.errors);
+    } else terminal->PushOut("OK");
 
     //  else {
     //   emulator.ROM.load(emulator.interpreter.env.memory);
@@ -58,7 +61,6 @@ public:
     // auto rom = bus->W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
     bus->W27C512->load(interpreter.env.memory);
-    bus->W27C512->Disassemble();
 
     // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
@@ -84,16 +86,22 @@ public:
         std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
         std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
         std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
-        std::tuple(lines,        std::pair(olc::vi2d(zero.x,   window.y),            olc::vi2d(window.x,           size.y - window.y)))
+        std::tuple(terminal,     std::pair(olc::vi2d(zero.x,   window.y),            olc::vi2d(window.x,           size.y - window.y)))
       ),
       Panel(
         std::tuple(bus,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
       )
     };
 
-    for (auto& p : panels) p.Preinitialize();
     panels[nPanel].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
+
+    offload = std::make_unique<std::thread>([&]() {
+      bus->W27C512->Disassemble(); 
+      for (auto& p : panels) p.Preinitialize();
+      
+      bSyncing.first = false;
+    });
 
     return true;
   }
@@ -131,7 +139,7 @@ public:
 
     // // mMinecraft.Draw(*this, fElapsedTime);
     // // return mMinecraft.IsFinished();
-    return true;
+    return bExec;
   }
 
   void Process() {
@@ -164,11 +172,14 @@ public:
       DrawString(pos + olc::vi2d(vStep.x, 0), str, *color);
       pos.x += str.size() * vStep.x + vStep.x;
     }
+
+
+    if (!bSyncing.first) return;
+    pos.x = nWidth - ((int32_t)bSyncing.second.size() + 1) * vStep.x;
+    DrawString(pos, bSyncing.second, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
   }
 
   ModeT GetMode() override { return bus->Z80->IsDebug() ? DEBUG : NORMAL; }
-
-  // TODO: Add DEBUG MODE ATTACH (aka without reset '^ a')
 
   void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) override {
     #ifdef DEBUG_MODE 
@@ -266,6 +277,13 @@ public:
     panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
   }
 
+  void Event(Int2Type<PROGRAM_EXIT>) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "PROGRAM_EXIT\n";
+    #endif
+    bExec = false;
+  }
+
 private:
   inline RelativeAddr Addr2Token(uint32_t addr) {
     RelativeAddr next = std::pair(0, std::pair("", nullptr));
@@ -289,6 +307,10 @@ private:
   Interpreter::Interpreter interpreter;
   std::shared_ptr<Bus::Bus> bus = std::make_shared<Bus::Bus>();
 
+  std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
+  std::unique_ptr<std::thread> offload = nullptr;
+
+  std::atomic<bool> bExec = true;
   LuaScript& luaConfig;
 };
 

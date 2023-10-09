@@ -33,6 +33,8 @@ public:
   inline void Unlock() { locked = false; }
 
   void Process(PixelGameEngine* GameEngine) {
+    if ((fBlink += AnyType<-1, float>::GetValue()) > 1.2f) fBlink -= 1.2f;
+
     bUpdated = false; bReleased = false;
 
     switch (mode) {
@@ -43,7 +45,6 @@ public:
   }
 
   void Draw(PixelGameEngine* GameEngine, std::function<olc::vi2d(olc::vi2d pos)> lambda) {
-    if ((fBlink += AnyType<-1, float>::GetValue()) > 1.2f) fBlink -= 1.2f;
     if (fBlink > 0.6f) return;
 
     bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');

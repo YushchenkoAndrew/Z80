@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Window/Lines.h"
+#include "src/Window/Terminal.h"
 
 namespace Interpreter {
 
