@@ -38,7 +38,7 @@ private:
   enum IM_T { IM0, IM1, IM2 };
   
 public:
-  enum ModeT { NORMAL, DEBUG };
+  enum ModeT { NORMAL, DEBUG, FREEZE };
 
   CPU(Bus* b): bus(b) { Reset(); }
   ~CPU() {
@@ -57,7 +57,9 @@ public:
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 
-  void Process(PixelGameEngine* GameEngine) {}
+  void Process(PixelGameEngine* GameEngine) {
+    if (mode == FREEZE) GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
+  }
 
   void Draw(PixelGameEngine* GameEngine) {
     int32_t index = 0;
@@ -112,12 +114,16 @@ private:
         }
       }
 
-
       AnyType<-1, int32_t>::GetValue() = Read();
       foreach<Instructions, CPU>::Key2Process(this);
       std::this_thread::sleep_for(std::chrono::milliseconds(2));
 
-      if (mode != DEBUG) continue;
+
+      if (mode == NORMAL) {
+        { Utils::Lock l(mutex); if (!IsBreakpoint(regPC())) continue; }
+        mode = FREEZE;
+      }
+
       callback.second.notify_all();
 
       std::unique_lock<std::mutex> lock(sync.first);
@@ -1345,6 +1351,17 @@ public:
     return regPC();
   }
 
+  inline bool IsBreakpoint(uint16_t addr) {
+    for (auto& bp : breakpoints) if (addr == bp) return true;
+    return false;
+  }
+
+  inline void SetBreakpoint(uint16_t addr) {
+    Utils::Lock l(mutex);
+    if (IsBreakpoint(addr)) breakpoints.remove(addr);
+    else breakpoints.push_back(addr);
+  }
+
 private:
   olc::vi2d size = olc::vi2d(0, 0);
   olc::vi2d absolute = olc::vi2d(0, 0);
@@ -1365,6 +1382,9 @@ private:
   std::unique_ptr<std::thread> runtime = nullptr;
 
   std::array<std::atomic<uint16_t>, 13> reg;
+  
+  std::mutex mutex;
+  std::list<uint16_t> breakpoints;
 
   Bus* bus;
 };

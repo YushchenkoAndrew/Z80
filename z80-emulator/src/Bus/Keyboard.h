@@ -75,10 +75,11 @@ public:
     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     bool bPressed = GameEngine->GetKey(key).bPressed;
 
-    if (GameEngine->GetKey(key).bReleased) { fStrokeRepeat = .0f; buffer.push_back(0xF0); }
+    if (GameEngine->GetKey(key).bPressed) fStrokeRepeat[+T] = .0f;
+    if (GameEngine->GetKey(key).bReleased) { fStrokeRepeat[+T] = .0f; buffer.push_back(0xF0); }
     if (GameEngine->GetKey(key).bHeld) {
-      fStrokeRepeat += AnyType<-1, float>::GetValue();
-      if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
+      fStrokeRepeat[+T] += AnyType<-1, float>::GetValue();
+      if (fStrokeRepeat[+T] >= 0.3f) { fStrokeRepeat[+T] = .2f; bPressed = true; }
     }
 
     if (!bPressed && !GameEngine->GetKey(key).bReleased) return;
@@ -99,7 +100,7 @@ private:
   std::unique_ptr<std::thread> runtime = nullptr;
 
   // Variables defines animation duration
-  float fStrokeRepeat = 0.f;
+  std::unordered_map<int32_t, float> fStrokeRepeat;
 
   std::mutex mutex;
   std::list<uint8_t> buffer;

@@ -173,9 +173,12 @@ public:
       pos.x += str.size() * vStep.x + vStep.x;
     }
 
+    std::string name = GetMode() == NORMAL ? "NORMAL" : "DEBUG";
+    pos.x = nWidth - ((int32_t)name.size() + 2) * vStep.x;
+    DrawString(pos, name, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
     if (!bSyncing.first) return;
-    pos.x = nWidth - ((int32_t)bSyncing.second.size() + 1) * vStep.x;
+    pos.x -= ((int32_t)bSyncing.second.size() + 2) * vStep.x;
     DrawString(pos, bSyncing.second, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
   }
 
@@ -239,23 +242,26 @@ public:
     std::cout << "EDITOR_SELECT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    // FIXME: Strange bug
-    // Panel& p = panels[nPanel];
-    // RelativeAddr next = std::pair(0, std::pair("", nullptr));
+    if (panels[nPanel].Editor() == nullptr) return;
 
-    // // for (auto& pos : interpreter.env.tokens) {
-    // //   if (
-    // //     pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1
-    // //      && filename == pos.second.first
-    // //   //     && (
-    // //   //     next.second.second == nullptr || 
-    // //   //     (pos.second.second->line >= next.second.second->line && pos.second.second->col >= next.second.second->col)
-    // //   // )
-    // //   ) next = pos;
-    // // }
+    const RelativeAddr next = Pos2Token(cursor, panels[nPanel].Editor()->File());
+    if (next.second.second == nullptr || panels[nPanel].EEPROM() == nullptr) return;
+    panels[nPanel].EEPROM()->Move2Addr(next.first);
+  }
 
-    // if (next.second.second == nullptr) return;
-    // if (p.EEPROM() != nullptr) p.EEPROM()->Move2Addr(next.first);
+  void Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>, olc::vi2d cursor) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "EDITOR_SELECT_LINE_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
+    #endif
+
+    if (panels[nPanel].Editor() == nullptr) return;
+
+    const RelativeAddr next = Pos2Token(cursor, panels[nPanel].Editor()->File());
+    if (next.second.second == nullptr) return;
+    std::cout << next.second.second->line << std::endl;
+
+    bus->Z80->SetBreakpoint((uint16_t)next.first);
+    panels[nPanel].Editor()->SelectLine((int32_t)next.second.second->line - 1);
   }
 
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
@@ -291,6 +297,17 @@ private:
     for (auto& pos : interpreter.env.tokens) {
       if (pos.first <= addr) next = pos;
       else return next;
+    }
+
+    return next;
+  }
+
+  inline RelativeAddr Pos2Token(olc::vi2d cursor, std::string filename) {
+    RelativeAddr next = std::pair(0, std::pair(filename, nullptr));
+
+    for (auto& pos : interpreter.env.tokens) {
+      if (next.second.first != pos.second.first) continue;
+      if (pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1) next = pos;
     }
 
     return next;

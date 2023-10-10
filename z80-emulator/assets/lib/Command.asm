@@ -1,4 +1,4 @@
-#include "../lib/Utils.asm"
+#include "Utils.asm"
 
 ;;
 ;; Example:

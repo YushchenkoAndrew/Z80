@@ -112,5 +112,5 @@ MAIN:
 ; #include "../lib/Hex.asm"
 ; #include "../lib/Printf.asm"
 ; #include "../lib/Utils.asm"
-#include "Keyboard.asm"
-#include "Buffer.asm"
+#include "../lib/Keyboard.asm"
+#include "../lib/Buffer.asm"

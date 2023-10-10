@@ -147,11 +147,12 @@ public:
     }
 
 
-    std::stringstream ss;
     for (int32_t i = 0, max = nHeight / vStep.y; i < max; i++) {
-      ss.str(""); ss << vStartAt.y + i + 1; auto str = ss.str();
+      auto str = std::to_string(vStartAt.y + i + 1);
       auto line = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y + vOffset.y);
-      auto color = cursor.y - vStartAt.y == i ? AnyType<GREY, ColorT>::GetValue() : AnyType<DARK_GREY, ColorT>::GetValue();
+      auto color =
+        vim.IsSelected(vStartAt.y + i) ? AnyType<RED, ColorT>::GetValue() : 
+        (cursor.y - vStartAt.y == i ? AnyType<GREY, ColorT>::GetValue() : AnyType<DARK_GREY, ColorT>::GetValue());
 
       GameEngine->DrawString(line, str, *color);
     }
@@ -178,7 +179,9 @@ public:
     if (nWidth >= filename.size()) return filename;
     return filename.substr(0, nWidth);
   }
-  // inline std::string File() { Utils::Lock l(mutex); return PATH(tabs[nTab]); }
+
+  inline std::string File() { Utils::Lock l(mutex); return PATH(tabs[nTab]); }
+  inline void SelectLine(int32_t line) { Utils::Lock l(mutex); VIM(tabs[nTab]).SelectLine(line); }
 
 private:
   olc::vi2d size = olc::vi2d(0, 0);

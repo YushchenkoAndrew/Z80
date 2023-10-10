@@ -1,4 +1,4 @@
-#include "../lib/Defs.asm"
+#include "Defs.asm"
 
 ;;
 ;; Example:

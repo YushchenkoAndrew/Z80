@@ -34,10 +34,8 @@ public:
     for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
 
     if (env.unknown.size()) {
-      std::stringstream ss;
       for (auto& var : env.unknown) {
-        ss.str(""); ss << "Unknown variable '" << var << "'.";
-        error(nullptr, ss.str());
+        error(nullptr, "Unknown variable '" + var + "'.");
       }
 
       return errors.size();

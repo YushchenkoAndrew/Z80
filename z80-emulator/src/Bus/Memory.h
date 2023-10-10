@@ -207,9 +207,8 @@ private:
 
     pos = (absolute + (cursor - vStartAt.second) * vStep.second + vOffset.second) / vStep.second; 
 
-    std::stringstream ss;
     for (int32_t i = 0, max = size.y / vStep.second.y; i < max; i++) {
-      ss.str(""); ss << cursor.y - pos.y + i + 1; auto str = ss.str();
+      auto str = std::to_string(cursor.y - pos.y + i + 1);
       auto line = olc::vi2d(absolute.x + vOffset.second.x - str.size() * vStep.second.x, (i + 1) * vStep.second.y);
 
       if (cursor.y - vStartAt.second.y == i) {

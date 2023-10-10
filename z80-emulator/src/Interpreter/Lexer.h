@@ -104,9 +104,7 @@ private:
 
 
   inline void error(std::string message) {
-    std::stringstream ss;
-    ss << "[Ln " << nLine << " Col " << nCurr << "] Error: " << message << "\n";
-    errors.push_back(ss.str());
+    errors.push_back("[Ln " + std::to_string(nLine) + " Col " + std::to_string(nCurr) + "] Error: " + message + "\n");
   }
 
 

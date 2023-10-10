@@ -47,14 +47,10 @@ protected:
   }
 
   void error(const char c, std::string message) {
-    std::stringstream ss; 
-    ss << "Error at '" << c << "': " << message << "\n";
-    reset(false); err = ss.str();
+    reset(false); err = "Error at '" + std::to_string(c) + "': " + message + "\n";
   }
 
-  void error(std::string message) {
-    std::stringstream ss; ss << "Error " << message << "\n"; err = ss.str();
-  }
+  void error(std::string message) { err = "Error " + message + "\n"; }
 
 protected:
   int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme

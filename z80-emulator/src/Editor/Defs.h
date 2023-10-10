@@ -8,7 +8,7 @@ enum VimT {
   CMD_i, CMD_I, CMD_a, CMD_A, CMD_o, CMD_O, CMD_C, CMD_D, CMD_r, CMD_R, CMD_u, CMD_U,
 
   // noun
-  CMD_h, CMD_j, CMD_k, CMD_l, CMD_w, CMD_W, CMD_b, CMD_B, CMD_e, CMD_0, CMD_gg, CMD_gd, CMD_G, CMD_n, CMD_N, CMD_f, CMD_F,
+  CMD_h, CMD_j, CMD_k, CMD_l, CMD_w, CMD_W, CMD_b, CMD_B, CMD_e, CMD_0, CMD_gg, CMD_gd, CMD_gp, CMD_G, CMD_n, CMD_N, CMD_f, CMD_F,
   CMD_CARET, CMD_DOLLAR, CMD_UNDERLINE, CMD_SLASH, CMD_QUESTION, CMD_COMMA, CMD_SEMICOLON, CMD_SQUIGGLE,
 
   CMD_SPACE,

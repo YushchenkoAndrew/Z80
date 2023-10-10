@@ -107,6 +107,7 @@ public:
   inline void Command(Int2Type<VimT::CMD_cc>) { Command(Int2Type<VimT::CMD_dd>()); Command(Int2Type<VimT::CMD_I>()); }
 
   inline void Command(Int2Type<VimT::CMD_gd>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_CALLBACK>(), pos); }
+  inline void Command(Int2Type<VimT::CMD_gp>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>(), pos); }
 
   inline void Command(Int2Type<VimT::CMD_o>) { 
     Command(Int2Type<VimT::CMD_I>());
@@ -497,6 +498,15 @@ public:
       }
     }
 
+    // double adverb
+    if (peekPrev() == 'c' && match<1>({ 'c' })) { phrase(Int2Type<VimT::CMD_cc>()); number(); return reset(); } 
+    if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_dd>()); number(); return reset(); } 
+    if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<VimT::CMD_yy>()); number(); return reset(); } 
+
+    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<VimT::CMD_gg>(), false); number();  verb(peek(nCurr - 3)); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_gd>(), false); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'p' })) { phrase(Int2Type<VimT::CMD_gp>(), false); return reset(); } 
+
 
     if (match<26>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
       switch (peekPrev()) {
@@ -514,12 +524,6 @@ public:
 
     // adverb
     if (match<2>({ 'p' , 'P' })) { phrase(peekPrev()); number(); return reset(); }
-    if (peekPrev() == 'c' && match<1>({ 'c' })) { phrase(Int2Type<VimT::CMD_cc>()); number(); return reset(); } 
-    if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_dd>()); number(); return reset(); } 
-    if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<VimT::CMD_yy>()); number(); return reset(); } 
-
-    if (peekPrev() == 'g' && match<1>({ 'g' })) {  phrase(Int2Type<VimT::CMD_gg>()); number();  verb(peek(nCurr - 3)); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'd' })) {  phrase(Int2Type<VimT::CMD_gd>()); return reset(); } 
 
     // verb
     if (match<4>({ 'c', 'd', 'y', 'g' })) return;
@@ -754,11 +758,20 @@ public:
   }
 
   inline std::string GetHumanizedPos() {
-    std::stringstream ss; ss << "Ln " << pos.y + 1 << ", Col " << pos.x + 1;
-    return ss.str();
+    return "Ln " + std::to_string(pos.y + 1) + ", Col " + std::to_string(pos.x + 1);
   }
 
   inline olc::vi2d& vStartAt() { return offset; }
+
+  inline bool IsSelected(int32_t y) { 
+    for (auto& line : lSeleted) if (line == y) return true;
+    return false;
+  }
+
+  inline void SelectLine(int32_t line) {
+    if (IsSelected(line)) lSeleted.remove(line);
+    else lSeleted.push_back(line);
+  }
 
 
 private:
@@ -823,5 +836,6 @@ private:
   olc::vi2d offset = olc::vi2d(0, 0);
 
   std::vector<std::string> lines;
+  std::list<int32_t> lSeleted;
 };
 };
