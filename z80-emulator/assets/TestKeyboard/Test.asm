@@ -18,8 +18,7 @@ RST8:
 
 ORG 0x0010
 RST10:
-  ; FIXME: Temp solution
-  OUT (0x21), A
+  CALL #LCD_OUT
   RET
 
 
@@ -77,6 +76,8 @@ SETUP:
   LD DE, SUPER_BLOCK_MAP
   LDIR
 
+  CALL _LCD_INIT
+
   ; IN A, (0x00)
   ; OUT (0x50), A
 TEMP:
@@ -114,3 +115,4 @@ MAIN:
 ; #include "../lib/Utils.asm"
 #include "../lib/Keyboard.asm"
 #include "../lib/Buffer.asm"
+#include "../lib/Lcd.asm"

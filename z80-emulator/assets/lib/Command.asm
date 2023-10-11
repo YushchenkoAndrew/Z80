@@ -89,15 +89,23 @@ _CMD_EXEC_nxt:
   POP BC      ; Restore commands coutner
   DJNZ _CMD_EXEC_bgn-$
 
+  CALL #CMD_EXEC_BUF_CALC; Sets value in reg B - amount of chars & reg HL buf start pos
+  LD A, B     ; Load counter to Acc
+  OR A        ; Check of counter is empty
+  JR Z, _CMD_EXEC_esc-$; If counter is empty just end execution
+
+  PUSH HL     ; Temporary save reg HL, ptr to the buf
   LD HL, MSG_COMMAND_NOT_FOUND
   RST 0x18    ; Print string
-  CALL #CMD_EXEC_BUF_CALC; Sets value in reg B - amount of chars & reg HL buf start pos
+  POP HL      ; Restore reg HL
   EX DE, HL   ; Load to reg DE start buf pos
   CALL #CMD_ECHO_lp; Display command
-  LD A, "'"    ; Load Signle quote to reg A to display
-  RST 0x10     ; Dispay single quote
+  LD A, "'"   ; Print the close single quoute
+  RST 0x10    ; Print string
 
 _CMD_EXEC_esc:
+  LD A, LINE_FEED; Go to the next line when cmd is finished
+  RST 0x10    ; Output the char
   LD A, (PTR_TEXT_BUFF_END); Get the end of the buf offset
   INC A       ; Move start ptr to the next char, aka skip "\n"
   LD (PTR_TEXT_BUFF_BGN), A; Save the end buffer offset as the next start
@@ -131,6 +139,101 @@ _CMD_EXEC_esc:
   DJNZ #CMD_ECHO_lp-$
   RET         ; Return to the addr of _CMD_EXEC_esc 
 
+;;
+;; Example:
+;;  LD DE, number+5
+;;  CALL #CMD_CLEAR
+;; 
+;; number:
+;;  db "clear"
+;;
+;; proc CMD_CLEAR() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- unaeffected
+;;   reg DE -- unaeffected
+;;   reg HL -- unaffected
+;;
+#CMD_CLEAR:
+  LD A, FORM_FEED; Load to Acc char that correspondes to Clear display
+  RST 0x10    ; Output the char
+  RET         ; Return to the addr of _CMD_EXEC_esc 
+
+;;
+;; Example:
+;;  LD DE, number+5
+;;  CALL #CMD_CLEAR
+;; 
+;; number:
+;;  db "mem 10..12"
+;;
+;; proc CMD_CLEAR() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- unaeffected
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+;;
+#CMD_MEM:
+  OR A        ; Check if remaining chars exist
+  JP Z, #MSG_ARG_ERR
+  LD B, A     ; Load counter to reg B
+  LD A, (DE)  ; Get buf char
+  CALL #IS_HEX; Check if the value is hex
+  JP Z, #MSG_NUM_ERR; If char wasn't change that meen that its not correct
+
+  LD HL, PTR_TEMP_WORD; Load ptr where result be saved
+  CALL #STR_HEX
+  LD A, (DE)  ; Load the next char from buf
+  CP LINE_FEED; Check if only requisted mem block
+  JR NZ, #CMD_MEM_range-$
+  LD HL, (PTR_TEMP_WORD); Load parsed number as a ptr
+  CALL #HEX_ASCII; Display char
+
+  LD A, LINE_FEED; Go to then next line
+  RST 0x10    ; Print the char
+  JP #MSG_OK
+
+#CMD_MEM_range:
+  CP "."      ; Check if requisted mem range
+  JR NZ, #CMD_MEM_input-$
+  INC DE      ; Move buf ptr by one
+  LD A, (DE)  ; Load the next char from buf
+  CP "."      ; Check if next char is also "."
+  JP NZ, #MSG_ARG_ERR; If not show the err
+
+  INC DE      ; Move buf ptr by one
+  LD A, (DE)  ; Load the next char from buf
+  CALL #IS_HEX; Check if the value is hex
+  JP Z, #MSG_NUM_ERR; If char wasn't change that meen that its not correct
+  LD HL, (PTR_TEMP_WORD); Load parsed number as start addr
+  PUSH HL     ; Save ptr start in stack
+  LD HL, PTR_TEMP_WORD; Load ptr where result be saved
+  CALL #STR_HEX
+  LD HL, (PTR_TEMP_WORD); Load parsed number as a end addr
+  EX DE, HL   ; Load in reg DE end of ptr addr
+  EX (SP), HL ; Save in stack buf ptr and load in reg HL ptr start
+
+#CMD_MEM_range_lp:
+  CALL #HEX_ASCII; Display char
+  PUSH HL     ; Temp save reg HL
+  SBC HL, DE  ; Check if start addr reach the end addr
+  POP HL      ; Restore reg HL, aka ignore subtraction
+  JR Z, #CMD_MEM_range_end-$
+  INC HL      ; Increment start addr by one
+  LD A, " "   ; Add separation by space between values
+  RST 0x10    ; Print the char
+  JR #CMD_MEM_range_lp-$
+
+#CMD_MEM_range_end:
+  POP DE      ; Restore buf ptr from stack
+  LD A, LINE_FEED; Go to then next line
+  RST 0x10    ; Print the char
+  JP #MSG_OK
+
+
+
+#CMD_MEM_input:
+  ; TODO: ... add ability to write to memory by one & display range
+  JP #MSG_OK
 
 ;;
 ;; Example:
@@ -151,7 +254,6 @@ _CMD_EXEC_esc:
   OR A        ; Check if remaining chars exist
   JP Z, #MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
-  XOR A       ; Reset Acc
   PUSH DE     ; Save ptr to buf in stack
   ;; TODO: Change this to, because this logic is incorrect
   ;; TODO: Need to save requested addr in data block
@@ -161,36 +263,9 @@ _CMD_EXEC_esc:
   PUSH HL     ; Temp save calculated addr 
   POP IX      ; Load this addr in reg IX
   POP DE      ; Restore ptr to buf
-  LD (HL), A  ; Reset low byte of the addr
+  CALL #STR_HEX
+  JP Z, #MSG_NUM_ERR; If flag Z is set, show error
 
-#CMD_MOUNT_bgn:
-  LD A, (HL)  ; Get low byte of the addr
-  LD (IX+1), A; Shift low byte -> high byte
-  XOR A       ; Reset inner loop counter, aka bit offset counter
-
-#CMD_MOUNT_lp:
-  PUSH AF     ; Save bit offset cnt
-  LD A, (DE)  ; Get buf char
-  LD C, A     ; Save curr char in reg C
-  CALL #ASCII_HEX; Convert Acc to hex if char is valid
-  CP C        ; Check if char has changed
-  JP Z, #MSG_NUM_ERR
-  RLD         ; Save result memory
-  INC DE      ; Move buf ptr to the next char
-  POP AF      ; Get bit offset count
-  OR A        ; Check if loop CMD_MOUNT_lp happend once
-  JR NZ, #CMD_MOUNT_esc-$ ; If so then reset 
-  INC A       ; Increment counter
-  DJNZ #CMD_MOUNT_lp-$
-  INC HL      ; Get ptr to high byte addr
-  XOR A       ; Reset Acc
-  RRD         ; Shift value pointed by reg HL by 4, uses when there are 3 digit
-  JR #CMD_MOUNT_init-$
-
-#CMD_MOUNT_esc:
-  DJNZ  #CMD_MOUNT_bgn-$
-
-#CMD_MOUNT_init:
   LD BC, FS_MODE_DIR | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
   CALL #NEW_INODE
   
@@ -322,10 +397,12 @@ _CMD_EXEC_esc:
 
 .COMMANDS_VEC_ST:
   db "echo", 0, #CMD_ECHO
+  db "clear", 0, #CMD_CLEAR
   db "mount", 0, #CMD_MOUNT
   db "umount", 0, #CMD_UMOUNT
   db "mkdir", 0, #CMD_MKDIR
   db "ls", 0, #CMD_LS
+  db "mem", 0, #CMD_MEM
 .COMMANDS_VEC_ED:
 
 .MOUNT_NAME_ST:
@@ -335,6 +412,6 @@ _CMD_EXEC_esc:
 #include "Message.asm"
 
 ;; Variables
-COMMANDS_SIZE        EQU  5
+COMMANDS_SIZE        EQU  7
 
 #include "../lib/FileSystem.asm"

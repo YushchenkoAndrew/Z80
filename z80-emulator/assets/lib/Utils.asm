@@ -11,10 +11,12 @@
 ;; proc HEX_2_ASCII(...regs) -> void;
 ;;   reg A  -- as defined
 ;;   reg B  -- as defined
-;;   reg C  -- output port
+;;   reg C  -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- ptr to number
 #HEX_ASCII:
+  LD A, (HL) ;; Load value from ptr
+  PUSH AF    ;; Store curr value in stack
   LD B, 0x02 ;; Aka display high & low bits
 #HEX_ASCII_lp:
   XOR A      ;; Reset reg A
@@ -23,9 +25,12 @@
   DAA        ;; Acc = 90h - 99h OR 00h - 15h
   ADC A, 0x40;; Add char 'A'
   DAA        ;; Acc = 30h - 39h (aka ascii 0 - 9) OR 40h - 45h (aka ascii 'A' - 'F')
-  OUT (C), A ;; Display char
+  RST 0x10   ;; Display char
   DJNZ #HEX_ASCII_lp-$
+  POP AF     ;; Restore reg A mem value
+  LD (HL), A ;; Undo any changes
   RET
+
 
 
 ;;
@@ -67,6 +72,94 @@
 
 #ASCII_HEX_a:
   SUB "W"    ; Convert 'a'-'f' to Ah-Fh, example sub 0x61 - 0x57 = A
+  RET
+
+;;
+;; Example:
+;;  LD A, "F"
+;;  CALL #IS_HEX
+;;
+;; number: db 0x25
+;;
+;; proc IS_HEX() -> reg F(Z);
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+#IS_HEX:
+  PUSH BC     ; Save reg C in stack
+  LD C, A     ; Save curr char in reg C
+  CALL #ASCII_HEX; Convert Acc to hex if char is valid
+  CP C        ; Check if char has changed
+  POP BC      ; Restore reg C
+  RET
+
+;;
+;; Example:
+;;
+;; proc STR_HEX(...regs) -> reg F(Z);
+;;   reg A  -- as defined
+;;   reg BC -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- as defiend
+;;   reg IX -- unaffected
+;;
+#STR_HEX:
+  PUSH IX     ; Save reg IX in stack
+  XOR A       ; Reset Acc
+  LD (HL), A  ; Reset low byte of the addr
+  PUSH HL     ; Temp save calculated addr 
+  POP IX      ; Load this addr in reg IX
+
+#STR_HEX_bgn:
+  LD A, (HL)  ; Get low byte of the addr
+  LD (IX+1), A; Shift low byte -> high byte
+  XOR A       ; Reset inner loop counter, aka bit offset counter
+
+#STR_HEX_lp:
+  PUSH AF     ; Save bit offset cnt
+  LD A, (DE)  ; Get buf char
+  LD C, A     ; Save curr char in reg C
+  CALL #ASCII_HEX; Convert Acc to hex if char is valid
+  CP C        ; Check if char has changed
+  JR Z, #STR_HEX_ret-$
+  RLD         ; Save result memory
+  INC DE      ; Move buf ptr to the next char
+  POP AF      ; Get bit offset count
+  OR A        ; Check if loop STR_HEX_lp happend once
+  JR NZ, #STR_HEX_esc-$ ; If so then reset 
+  INC A       ; Increment counter
+  DJNZ #STR_HEX_lp-$
+#STR_HEX_adj:
+  INC HL      ; Get ptr to high byte addr
+  XOR A       ; Reset Acc
+  RRD         ; Shift value pointed by reg HL by 4, uses when there are 3 digit
+  JR #STR_HEX_end-$
+
+#STR_HEX_esc:
+  ; PUSH AF     ; Save the result in Stack
+  ; LD A, (DE)  ; Get buf char
+  ; CALL #IS_HEX; Check if the next char is hex or not
+  ; JR Z, #STR_HEX_ret-$
+  ; POP AF      ; Restore result Acc
+  DJNZ  #STR_HEX_bgn-$
+#STR_HEX_end:
+  OR 0xFF     ; Reset Z flag
+  POP IX      ; Restore reg IX
+  RET
+
+#STR_HEX_ret:
+  POP AF      ; Restore result Acc
+  POP AF      ; Get bit offset count
+  OR A        ; Check if loop STR_HEX_lp happend once
+  JR NZ, #STR_HEX_ret_adj-$
+  CALL #STR_HEX_end ; If so then reset 
+  XOR A       ; Set flag Z
+  RET
+
+#STR_HEX_ret_adj:
+  CALL #STR_HEX_adj
+  XOR A       ; Set flag Z
   RET
 
 

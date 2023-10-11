@@ -182,6 +182,10 @@ FS_UID_ROOT            EQU 0x00
 FS_GID_ROOT            EQU 0x00
 
 
+;; Mount state
+FS_MOUNT_DI       EQU 0x00
+FS_MOUNT_EN       EQU 0x01
+
 ; Sizes
 FS_SZ_INODE            EQU 0x20
 FS_SZ_DIR_BLK          EQU 0x20
@@ -191,5 +195,5 @@ FS_SZ_DIR_BLK          EQU 0x20
   dw  0x00,    0x00,    0x00,         0x00,        DATA_ZONE_MAP,     0xFF,       0x00
   
   ;; RAND VAL  MOUNT STATE
-  dw  0x00,     MOUNT_EN
+  dw  0x00,     FS_MOUNT_EN
 .SUPER_BLOCK_ED:
