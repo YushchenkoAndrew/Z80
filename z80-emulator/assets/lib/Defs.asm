@@ -33,7 +33,4 @@ INODE_MAP          EQU 0x4320  ;; 20h - FFh Inode map
 DATA_ZONE_MAP      EQU 0x4400  ;; 00h - FFh Data zone map
 
 
-;; Keys alias
-KEY_SHIFT          EQU SCAN_KEY_MAP | 0x12
-
 #include "ASCII.asm"
