@@ -137,11 +137,9 @@
   JR #STR_HEX_end-$
 
 #STR_HEX_esc:
-  ; PUSH AF     ; Save the result in Stack
-  ; LD A, (DE)  ; Get buf char
-  ; CALL #IS_HEX; Check if the next char is hex or not
-  ; JR Z, #STR_HEX_ret-$
-  ; POP AF      ; Restore result Acc
+  LD A, (DE)  ; Get buf char
+  CALL #IS_HEX; Check if the next char is hex or not
+  JR Z, #STR_HEX_ret_end-$
   DJNZ  #STR_HEX_bgn-$
 #STR_HEX_end:
   OR 0xFF     ; Reset Z flag
@@ -149,19 +147,17 @@
   RET
 
 #STR_HEX_ret:
-  POP AF      ; Restore result Acc
   POP AF      ; Get bit offset count
   OR A        ; Check if loop STR_HEX_lp happend once
-  JR NZ, #STR_HEX_ret_adj-$
-  CALL #STR_HEX_end ; If so then reset 
-  XOR A       ; Set flag Z
-  RET
+  JR Z, #STR_HEX_ret_end-$
+  INC HL      ; Get ptr to high byte addr
+  XOR A       ; Reset Acc
+  RRD         ; Shift value pointed by reg HL by 4, uses when there are 3 digit
 
-#STR_HEX_ret_adj:
-  CALL #STR_HEX_adj
+#STR_HEX_ret_end:
   XOR A       ; Set flag Z
+  POP IX      ; Restore reg IX
   RET
-
 
 ;;
 ;; Example:

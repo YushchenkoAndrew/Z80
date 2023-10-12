@@ -22,7 +22,6 @@ public:
   void Process(PixelGameEngine* GameEngine) {
     Utils::Lock l(mutex);
 
-    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyboardScanCodes, Keyboard>::Process(this);
   }
 

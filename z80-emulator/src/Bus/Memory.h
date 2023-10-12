@@ -45,9 +45,10 @@ public:
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset.first;
 
+    const int32_t prev = index();
     pages.x = (int32_t)(1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.first.x)));
     pages.y = (int32_t)(size.y - vOffset.first.y) / vStep.first.y;
-    Index2Pos(index());
+    Index2Pos(prev);
   }
 
   inline void Lock() { 
@@ -505,12 +506,10 @@ public:
 
 private:
   void Process(Int2Type<REPLACE>, PixelGameEngine* GameEngine) {
-    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyEvent, Memory>::Process(this);
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyEvent, Memory>::Process(this);
 
     if (!bUpdated) return;

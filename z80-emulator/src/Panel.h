@@ -191,7 +191,6 @@ public:
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyEvent, Panel>::Process(this);
 
     if (!bUpdated) return;

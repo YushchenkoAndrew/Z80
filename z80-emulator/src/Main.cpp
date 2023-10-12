@@ -16,6 +16,7 @@ private:
 public:
   App(LuaScript& config): luaConfig(config) {
     sAppName = "Z80 Emulator";
+    AnyType<-1, PixelGameEngine*>::GetValue() = this;
   }
 
   ~App() { if (offload != nullptr && offload->joinable()) offload->join(); }

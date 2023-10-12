@@ -14,7 +14,6 @@ public:
 
     bUpdated = false;
 
-    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyEvent, Terminal>::Process(this);
 
     if (!bUpdated) return;

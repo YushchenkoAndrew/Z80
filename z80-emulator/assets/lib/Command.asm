@@ -142,6 +142,30 @@ _CMD_EXEC_esc:
 ;;
 ;; Example:
 ;;  LD DE, number+5
+;;  CALL #CMD_HISTORY
+;; 
+;; number:
+;;  db "history"
+;;
+;; proc CMD_HISTORY() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- as defined
+;;
+#CMD_HISTORY:
+  PUSH DE     ; Buf ptr in stack
+  LD A, (PTR_TEXT_BUFF_END); Get the end of the buf offset
+  LD DE, TEXT_BUF_MAP;Load addr of text buf start
+  CALL #CMD_ECHO; Print the history
+  POP DE      ; Restore buf ptr
+  LD A, LINE_FEED; Go to then next line
+  RST 0x10    ; Print the char
+  JP #MSG_OK
+
+;;
+;; Example:
+;;  LD DE, number+5
 ;;  CALL #CMD_CLEAR
 ;; 
 ;; number:
@@ -161,16 +185,16 @@ _CMD_EXEC_esc:
 ;;
 ;; Example:
 ;;  LD DE, number+5
-;;  CALL #CMD_CLEAR
+;;  CALL #CMD_MEM
 ;; 
 ;; number:
-;;  db "mem 10..12"
+;;  db "mem 10.12"
 ;;
-;; proc CMD_CLEAR() -> void;
+;; proc CMD_MEM() -> void;
 ;;   reg A  -- as defined
-;;   reg B  -- unaeffected
+;;   reg BC -- as defined
 ;;   reg DE -- as defined
-;;   reg HL -- unaffected
+;;   reg HL -- as defined
 ;;
 #CMD_MEM:
   OR A        ; Check if remaining chars exist
@@ -182,32 +206,25 @@ _CMD_EXEC_esc:
 
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
   CALL #STR_HEX
+  LD HL, (PTR_TEMP_WORD); Load parsed number as start addr
   LD A, (DE)  ; Load the next char from buf
+
   CP LINE_FEED; Check if only requisted mem block
   JR NZ, #CMD_MEM_range-$
-  LD HL, (PTR_TEMP_WORD); Load parsed number as a ptr
   CALL #HEX_ASCII; Display char
-
-  LD A, LINE_FEED; Go to then next line
-  RST 0x10    ; Print the char
-  JP #MSG_OK
+  JR #CMD_MEM_end-$
 
 #CMD_MEM_range:
   CP "."      ; Check if requisted mem range
   JR NZ, #CMD_MEM_input-$
-  INC DE      ; Move buf ptr by one
-  LD A, (DE)  ; Load the next char from buf
-  CP "."      ; Check if next char is also "."
-  JP NZ, #MSG_ARG_ERR; If not show the err
 
   INC DE      ; Move buf ptr by one
   LD A, (DE)  ; Load the next char from buf
   CALL #IS_HEX; Check if the value is hex
   JP Z, #MSG_NUM_ERR; If char wasn't change that meen that its not correct
-  LD HL, (PTR_TEMP_WORD); Load parsed number as start addr
   PUSH HL     ; Save ptr start in stack
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
-  CALL #STR_HEX
+  CALL #STR_HEX; Convert buf string to number
   LD HL, (PTR_TEMP_WORD); Load parsed number as a end addr
   EX DE, HL   ; Load in reg DE end of ptr addr
   EX (SP), HL ; Save in stack buf ptr and load in reg HL ptr start
@@ -215,6 +232,7 @@ _CMD_EXEC_esc:
 #CMD_MEM_range_lp:
   CALL #HEX_ASCII; Display char
   PUSH HL     ; Temp save reg HL
+  XOR A       ; Reset flag C
   SBC HL, DE  ; Check if start addr reach the end addr
   POP HL      ; Restore reg HL, aka ignore subtraction
   JR Z, #CMD_MEM_range_end-$
@@ -225,15 +243,109 @@ _CMD_EXEC_esc:
 
 #CMD_MEM_range_end:
   POP DE      ; Restore buf ptr from stack
+  JR #CMD_MEM_end-$
+
+#CMD_MEM_input:
+  CP " "      ; Check if requisted mem is input
+  JP NZ, #MSG_ARG_ERR
+
+#CMD_MEM_input_lp:
+  PUSH HL     ; Save ptr start in stack
+  LD A, (DE)  ; Load the next char from buf
+  CP " "      ; Check if another number exist
+  JR NZ, #CMD_MEM_input_end-$
+  INC DE      ; Move buf ptr by one
+  LD HL, PTR_TEMP_WORD; Load ptr where result be saved
+  CALL #STR_HEX; Convert buf string to number
+  POP HL      ; Restore reg HL, aka start ptr
+  CALL #HEX_ASCII; Display prev value
+  LD A, ARROW_RIGHT; Load char to show next state
+  RST 0x10    ; Display char
+  LD A, (PTR_TEMP_WORD); Get low byte of the converted number
+  LD (HL), A  ; Rewrite memory value with requested one
+  CALL #HEX_ASCII; Display curr value
+  LD A, " "   ; Load char to show next state
+  RST 0x10    ; Display char
+  INC HL      ; Move start ptr by one
+  JR #CMD_MEM_input_lp-$
+
+#CMD_MEM_input_end:
+  POP HL      ; Restore start ptr, now is usless
+
+#CMD_MEM_end:
   LD A, LINE_FEED; Go to then next line
   RST 0x10    ; Print the char
   JP #MSG_OK
 
+;;
+;; Example:
+;;  LD DE, number+5
+;;  CALL #CMD_DEV
+;; 
+;; number:
+;;  db "dev 0 FF"
+;;
+;; proc CMD_DEV() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- as defined
+;;
+#CMD_DEV:
+  OR A        ; Check if remaining chars exist
+  JP Z, #MSG_ARG_ERR
+  LD B, A     ; Load counter to reg B
+  LD A, (DE)  ; Get buf char
+  CALL #IS_HEX; Check if the value is hex
+  JP Z, #MSG_NUM_ERR; If char wasn't change that meen that its not correct
 
+  LD HL, PTR_TEMP_WORD; Load ptr where result be saved
+  CALL #STR_HEX
+  LD HL, PTR_TEMP_WORD; Load ptr where result be saved
+  LD A, (DE)  ; Load the next char from buf
 
-#CMD_MEM_input:
-  ; TODO: ... add ability to write to memory by one & display range
+  CP LINE_FEED; Check if only requisted mem block
+  JR NZ, #CMD_DEV_input-$
+  LD C, (HL)  ; Load low byte from the parsed word
+  INC HL      ; Move ptr to the high byte
+  LD B, (HL)  ; Load high byte from the parsed word
+  IN A, (C)   ; Load value from the device
+  LD (HL), A  ; Overwrite high byte with input val
+  CALL #HEX_ASCII; Display char
+  JR #CMD_DEV_end-$
+
+#CMD_DEV_input:
+  CP " "      ; Check if requisted mem is input
+  JP NZ, #MSG_ARG_ERR
+  LD HL, (PTR_TEMP_WORD); Get device addr
+
+#CMD_DEV_input_lp:
+  PUSH HL     ; Save device addr in stack
+  LD A, (DE)  ; Load the next char from buf
+  CP " "      ; Check if another number exist
+  JR NZ, #CMD_DEV_input_end-$
+  INC DE      ; Move buf ptr by one
+  LD HL, PTR_TEMP_WORD; Load ptr where result be saved
+  CALL #STR_HEX; Convert buf string to number
+  LD HL, PTR_TEMP_WORD; Load ptr where result be saved
+  CALL #HEX_ASCII; Display low byte value
+  LD A, " "   ; Load char to show next state
+  RST 0x10    ; Display char
+  POP HL      ; Restore reg HL, aka device addr
+  LD C, L     ; Load low byte from the parsed word
+  LD B, H     ; Load high byte from the parsed word
+  LD A, (PTR_TEMP_WORD); Get low byte of the converted number
+  OUT (C), A  ; Output value to the device
+  JR #CMD_DEV_input_lp-$
+
+#CMD_DEV_input_end:
+  POP HL      ; Restore device addr, now is usless
+
+#CMD_DEV_end:
+  LD A, LINE_FEED; Go to then next line
+  RST 0x10    ; Print the char
   JP #MSG_OK
+
 
 ;;
 ;; Example:
@@ -403,6 +515,8 @@ _CMD_EXEC_esc:
   db "mkdir", 0, #CMD_MKDIR
   db "ls", 0, #CMD_LS
   db "mem", 0, #CMD_MEM
+  db "dev", 0, #CMD_DEV
+  db "history", 0, #CMD_HISTORY
 .COMMANDS_VEC_ED:
 
 .MOUNT_NAME_ST:
@@ -412,6 +526,6 @@ _CMD_EXEC_esc:
 #include "Message.asm"
 
 ;; Variables
-COMMANDS_SIZE        EQU  7
+COMMANDS_SIZE        EQU  9
 
 #include "../lib/FileSystem.asm"

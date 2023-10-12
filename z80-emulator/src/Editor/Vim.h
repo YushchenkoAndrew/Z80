@@ -450,12 +450,10 @@ public:
   }
 
   void Process(Int2Type<INSERT>, PixelGameEngine* GameEngine) {
-    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyEvent, Vim>::Process(this);
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    AnyType<-1, PixelGameEngine*>::GetValue() = GameEngine;
     foreach<KeyEvent, Vim>::Process(this);
 
     if (!bUpdated) return;
@@ -503,9 +501,9 @@ public:
     if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_dd>()); number(); return reset(); } 
     if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<VimT::CMD_yy>()); number(); return reset(); } 
 
-    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<VimT::CMD_gg>(), false); number();  verb(peek(nCurr - 3)); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_gd>(), false); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'p' })) { phrase(Int2Type<VimT::CMD_gp>(), false); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<VimT::CMD_gg>(), false, true); number();  verb(peek(nCurr - 3)); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_gd>(), false, true); return reset(); } 
+    if (peekPrev() == 'g' && match<1>({ 'p' })) { phrase(Int2Type<VimT::CMD_gp>(), false, true); return reset(); } 
 
 
     if (match<26>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {

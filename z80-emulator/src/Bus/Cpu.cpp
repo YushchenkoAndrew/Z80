@@ -71,9 +71,10 @@ namespace Z80 {
       
 
       std::string phrase = cmd.first;
-      for (int32_t cnt = cmd.second & 0x0F, bytes = (int32_t)(cmd.second >> 4); cnt != 1; bytes = (bytes >> 4)) {
-        int32_t word = 0x00; cnt -= (int32_t)(bytes & 0x0F);
-        for (int32_t j = 0; j < (int32_t)(bytes & 0x0F); j++) {
+      for (int32_t cnt = cmd.second & 0x0F, offset = 1; cnt != 1; offset++) {
+        const int32_t bytes = (cmd.second >> (4 * offset)) & 0x0F;
+        int32_t word = 0x00; cnt -= bytes;
+        for (int32_t j = 0; j < bytes; j++) {
           word = word | (bus->Read(++i, true) << (j * 8));
         }
       

@@ -57,9 +57,7 @@ public:
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 
-  void Process(PixelGameEngine* GameEngine) {
-    if (mode == FREEZE) GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
-  }
+  void Process(PixelGameEngine* GameEngine) {}
 
   void Draw(PixelGameEngine* GameEngine) {
     int32_t index = 0;
@@ -121,7 +119,7 @@ private:
 
       if (mode == NORMAL) {
         { Utils::Lock l(mutex); if (!IsBreakpoint(regPC())) continue; }
-        mode = FREEZE;
+        mode = FREEZE; AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
       }
 
       callback.second.notify_all();
@@ -886,7 +884,7 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_BC>) { cycles = 15; regHL() = Sub16(regHL(), regBC(), flagC()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_DE>) { cycles = 15; regHL() = Sub16(regHL(), regDE(), flagC()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_HL>) { cycles = 15; regHL() = Sub16(regHL(), regHL(), flagC()); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_SP>) { cycles = 15; regHL() = Sub16(regHL(), regBC(), flagC()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_SP>) { cycles = 15; regHL() = Sub16(regHL(), regSP(), flagC()); }
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_BC_nn>) { cycles = 20; regBC() = Word(Word()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_DE_nn>) { cycles = 20; regDE() = Word(Word()); }
@@ -1174,12 +1172,12 @@ private:
   }
 
   inline uint16_t Add16(uint16_t a, uint16_t b, bool carry = false) {
-    uint32_t acc = (uint32_t)a + b + (carry && flagC());
+    uint32_t acc = (uint32_t)a + b + (uint32_t)(carry && flagC());
 
     if (carry) { 
       // When adding operands with similar signs and the result contains a different sign,
       // the Overflow Flag is set
-      flagPV(SIGN(a >> 8) != SIGN(b >> 8) && SIGN(a >> 8) != SIGN(acc >> 8));
+      flagPV(SIGN(a >> 8) != SIGN(b >> 8) && SIGN(a >> 8) != SIGN(acc >> 8))->flagZ(!(acc & 0xFFFF))->flagS(SIGN(acc >> 8));
     }
 
     flagN(false)->flagC(acc & 0xFF0000)->flagH(((a & 0x0FFF) + (b & 0x0FFF) + (carry && flagC())) & 0xF000);
@@ -1199,8 +1197,8 @@ private:
     return (uint8_t)(acc & 0xFF);
   }
 
-  inline uint8_t Sub16(uint16_t a, uint16_t b, bool carry = false) {
-    uint32_t acc = (uint32_t)a + (b ^ 0xFFFF) + 1 + (carry && flagC()) * 0xFFFF;
+  inline uint16_t Sub16(uint16_t a, uint16_t b, bool carry = false) {
+    uint32_t acc = (uint32_t)a + (uint32_t)(b ^ 0xFFFF) + 1 + (uint32_t)(carry && flagC()) * 0xFFFF;
 
     // When adding operands with similar signs and the result contains a different sign,
     // the Overflow Flag is set
@@ -1208,7 +1206,7 @@ private:
 
     flagN(true)->flagS(SIGN(acc >> 8))->flagZ(!(acc & 0xFFFF))->flagC(!(acc & 0xFF0000))->flagH(!(((a & 0x0FFF) + (((b ^ 0xFFFF) + 1) & 0x0FFF) + (carry && flagC()) * 0xFFFF) & 0xF000));
 
-    return (uint8_t)(acc & 0xFFFF);
+    return (uint16_t)(acc & 0xFFFF);
   }
 
   inline uint8_t Or8(uint8_t a, uint8_t b)  { return BitOperation(a, b, a | b); }

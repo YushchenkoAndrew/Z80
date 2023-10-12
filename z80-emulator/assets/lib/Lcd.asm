@@ -124,12 +124,16 @@ _LCD_CLEAR:
 ;;
 _LCD_BACKSPACE:
   PUSH AF    ; Save reg A in stack
+  PUSH HL    ; Save reg HL in stack
+  LD HL, PTR_LCD_CURSOR; Load cursor pos ptr
+  DEC (HL)   ; Move cursor pos to the left by one
   LD A, LCD_CURSOR; Move cursor to the left by one
   CALL #LCD_EXEC
   LD A, " "  ; Manualy make deleted char invisible
   CALL #LCD_WR
   LD A, LCD_CURSOR; Move cursor to the left by one, one more time
   CALL #LCD_EXEC
+  POP HL     ; Restore reg HL
   POP AF     ; Restore reg A & flags
   RET
 
