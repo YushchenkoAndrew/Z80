@@ -25,6 +25,23 @@ _SCAN_CODE_INIT_lp:
 ;;
 ;; Example:
 ;;  LD A, 0x0E
+;;  CALL #IS_KEY_PRESSED
+;;
+;; proc IS_KEY_PRESSED() -> reg F(Z);
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+#IS_KEY_PRESSED:
+  AND 0x03    ; Get only state mask
+  DEC A       ; Check if shift key has stat pressed
+  RET Z       ; Return if state is 001
+  DEC A       ; Check if shift key has stat hold
+  RET         ; Return if state is 010
+
+;;
+;; Example:
+;;  LD A, 0x0E
 ;;  CALL #SCAN_CODE_ASCII
 ;;
 ;; proc SCAN_CODE_ASCII() -> reg A;
@@ -47,20 +64,34 @@ _SCAN_CODE_INIT_lp:
 #SCAN_CODE_ASCII_bg:
   XOR A       ; Reset Acc & flags
   SBC HL, BC  ; Get offset from the start of vector
-  LD A, (KEY_SHIFT) ; Get shift status
-  AND 0x07    ; Check if ASCII was found
-  DEC A       ; Check if shift key has stat pressed
-  JR Z, #SCAN_CODE_ASCII_up-$
-  DEC A       ; Check if shift key has stat hold
-  JR NZ, #SCAN_CODE_ASCII_lw-$
-#SCAN_CODE_ASCII_up:
-  LD BC, .UPPERCASE_VEC_ST
-  JR #SCAN_CODE_ASCII_lw_ed-$
+  LD BC, .SCAN_CODE_ASCII_VEC_ED
+  ADD HL, BC  ; Add offset to then of scan code vec
+  LD A, (KEY_CTRL) ; Get ctrl status
+  CALL #IS_KEY_PRESSED;Check if shift key is pressed
+  JR Z, #SCAN_CODE_ASCII_char-$
 
+  LD A, (KEY_CAPS_LOCK) ; Get caps lock status
+  CP 0x04     ; Check if key is locked
+  LD A, 0xFF  ; Set all bits in Acc
+  JR Z, #SCAN_CODE_ASCII_caps_lock_esc-$
+  XOR A       ; Reset Acc
+#SCAN_CODE_ASCII_caps_lock_esc:
+  LD B, A     ; Save state of caps lock to reg B
+
+  LD A, (KEY_SHIFT) ; Get shift status
+  CALL #IS_KEY_PRESSED;Check if shift key is pressed
+  LD A, 0xFF  ; Set all bits in Acc
+  JR Z, #SCAN_CODE_ASCII_shift_esc-$
+  XOR A       ; Reset Acc
+#SCAN_CODE_ASCII_shift_esc:
+  XOR B       ; Invert shift operation with caps lock
+  LD BC, SCAN_CODE_ASCII_VEC_SIZE; Get vector size, aka vector step
+  JR Z, #SCAN_CODE_ASCII_lw-$
+
+  ADD HL, BC  ; Add vector offset, aka go to the next vector
 #SCAN_CODE_ASCII_lw:
-  LD BC, .LOWERCASE_VEC_ST
-#SCAN_CODE_ASCII_lw_ed:
-  ADD HL, BC  ; ASCII char location
+  ADD HL, BC  ; Add vector offset, aka go to the next vector
+#SCAN_CODE_ASCII_char:
   LD A, (HL)  ; Get ASCII char
 
 #SCAN_CODE_ASCII_esc:
@@ -94,21 +125,17 @@ _SCAN_CODE_INIT_lp:
   CP 0xF0     ; Check if key is been released
   JR Z, #SCAN_CODE_IM_esc-$
 
+  LD B, 0     ; Reset high byte reg
   LD HL, SCAN_KEY_MAP ;; Load scan code mapper area
-  LD L, A     ; Load offset 
+  ADD HL, BC  ; Calc offset of the key
   LD A, (HL)  ; Get prev state of key
-  AND 0x07    ; Set flag Z if empty (state 000 = NULL)
-  LD B, 0b001 ; Set state PRESSED if curr == 000
+  AND 0x03    ; Set flag Z if empty (state 000 = NULL)
+  LD B, 0b101 ; Set state PRESSED if curr == 000
   JR Z, #SCAN_CODE_cmp_st-$
   DEC A       ; Check if state is 001 = Pressed, flag Z will be set
-  LD B, 0b010 ; Set state HOLD if curr == 001
+  LD B, 0b110 ; Set state HOLD if curr == 001
   JR Z, #SCAN_CODE_cmp_st-$
-  DEC A       ; Check if state is 010 = Hold, flag Z will be set
-  LD B, 0b010 ; Set state HOLD if curr == 010
-  JR Z, #SCAN_CODE_cmp_st-$
-  DEC A       ; Check if state is 011 = Released, flag Z will be set
-  LD B, 0b001 ; Set state NULL if key isn't been nulled
-  ; JR #SCAN_CODE_nxt_st-$
+  LD B, 0b110 ; Set state HOLD if state is 010 = Hold
 
 #SCAN_CODE_cmp_st:
   LD A, (PTR_PREV_SCAN_CODE); Get prev value from ptr
@@ -137,12 +164,11 @@ _SCAN_CODE_INIT_lp:
   JR #SCAN_CODE_nxt_st-$
 
 #SCAN_CODE_st_rels:
-  LD B, 0b011 ; Set state RELEASED if curr == 001 AND prev scan code == 0xF0
+  LD B, 0b000 ; Set state RELEASED if curr == 001 AND prev scan code == 0xF0
 #SCAN_CODE_nxt_st:
   LD A, (HL)  ; Get prev state of key
-  AND 0xF8    ; Get non state bytes
-  XOR 0x80    ; Invert enabled flag, (need to for capslock)
-  OR B        ; Add curr state to the mask
+  AND 0xFC    ; Get non state bytes
+  XOR B        ; Add curr state to the mask & Invert lock flag
   LD (HL), A  ; Save key state
 
 #SCAN_CODE_IM_esc:
@@ -160,6 +186,13 @@ _SCAN_CODE_INIT_lp:
   db 0x49, 0x4A, 0x29, 0x0D, 0x52, 0x5A, 0x66
 .SCAN_CODE_ASCII_VEC_ED:
 
+.NON_PRINTABLE_VEC_ST:
+  db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1E, 0x00, 0x00, 0x00, 0x00
+  db 0x1F, 0x00, 0x11, 0x17, 0x05, 0x12, 0x14, 0x19, 0x15, 0x09, 0x0F
+  db 0x10, 0x1B, 0x1D, 0x1C, 0x01, 0x13, 0x04, 0x06, 0x07, 0x08, 0x0A
+  db 0x0B, 0x0C, 0x00, 0x1A, 0x18, 0x03, 0x16, 0x02, 0x0E, 0x0D, 0x00
+  db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
 .LOWERCASE_VEC_ST:
   db "`1234567890-=qwertyuiop[]\asdfghjkl;zxcvbnm,./ ", HORIZ_TAB, SINGLE_QUOTE, LINE_FEED, BACKSPACE
 
@@ -171,4 +204,6 @@ _SCAN_CODE_INIT_lp:
 SCAN_CODE_ASCII_VEC_SIZE        EQU  .SCAN_CODE_ASCII_VEC_ED-.SCAN_CODE_ASCII_VEC_ST
 
 ;; Keys alias
-KEY_SHIFT          EQU SCAN_KEY_MAP | 0x12
+KEY_SHIFT          EQU SCAN_KEY_MAP + 0x12
+KEY_CTRL           EQU SCAN_KEY_MAP + 0x14
+KEY_CAPS_LOCK      EQU SCAN_KEY_MAP + 0x56

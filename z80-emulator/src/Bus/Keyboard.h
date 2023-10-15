@@ -71,6 +71,7 @@ public:
   void Process(TypeList<Int2Type<T>, Int2Type<U>>) {
     const olc::Key key = static_cast<olc::Key>(+T);
 
+    // TODO: Fix a bug with caps-lock
     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     bool bPressed = GameEngine->GetKey(key).bPressed;
 
