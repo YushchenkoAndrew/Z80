@@ -1,4 +1,4 @@
-#include "Utils.asm"
+#include "Defs.asm"
 
 ;;
 ;; Example:
@@ -436,6 +436,34 @@ _CMD_EXEC_esc:
   CALL #NEW_DIR_BLK
   JP #MSG_OK
 
+;; Example:
+;;  LD B, 0
+;;  LD DE, number+5
+;;  CALL #CMD_TOUCH
+;; 
+;; number:
+;;  db "touch test"
+;;
+;; proc CMD_TOUCH() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+;;
+#CMD_TOUCH:
+  OR A        ; Check if buf conter is not empty
+  JP Z, #MSG_ARG_ERR
+  LD C, A     ; Load counter to reg C
+  LD B, 0     ; Reset reg B
+
+  PUSH BC     ; Save buf char counter in stack, reg B
+  LD BC, FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
+  CALL #NEW_INODE
+  
+  POP BC      ; Restore buf char counter
+  CALL #NEW_DIR_BLK
+  JP #MSG_OK
+
 ;;
 ;; Example:
 ;;  LD B, 0
@@ -452,17 +480,11 @@ _CMD_EXEC_esc:
 ;;   reg HL -- unaffected
 ;;
 #CMD_LS:
-  LD C, A     ; Load counter to reg C
-  LD B, 0     ; Reset reg B
-
-  LD BC, FS_SZ_INODE; Load byte offset of inode
   LD DE, INODE_MAP; Load addr to first inode map
   LD HL, (SUPER_BLOCK_MAP+FS_SP_BLK_INODES); Get amount of inodes
   EX DE, HL   ; Load to reg DE inodes count, and in reg HL inode start addr
-  PUSH HL
-
-  ; LD IX, SUPER_BLOCK_MAP; Load ptr to start of super block
-  POP IX
+  PUSH HL     ; Temp save calc inode addr
+  POP IX      ; Load calc inode addr in reg IX
 
   INC DE      ; Inc DE by, need to check if reg is 0
 #CMD_LS_offset:
@@ -473,33 +495,11 @@ _CMD_EXEC_esc:
   CP E        ; Check if reg E is empty
   JR Z, #CMD_LS_offset_esc-$
 #CMD_LS_offset_nxt:
-  ; LD A, 0x40
-  ; AND (IX+FS_INODE_MODE+1); Check if node is a dir
-  ; JR NZ, #NEW_INODE_offset_end-$
-
-  ; EXX
-  ; LD C, (IX+FS_INODE_SIZE); Get low byte of inodes size
-  ; LD B, (IX+FS_INODE_SIZE+1); Get high byte of inodes size
-
-  ; TODO: Check IX MODE on file type and etc ...
-
-  LD L, (IX+FS_INODE_ZONE0); Set directory data zone0, low byte
-  LD H, (IX+FS_INODE_ZONE0+1); Set directory data zone0, high byte
-  ; PUSH HL
-
-  INC HL
-#CMD_LS_lp:
-  INC HL
-  LD A, (HL)
-  OR A
-  JR Z, #CMD_LS_lp_esc-$
-  RST 0x10
-  JR #CMD_LS_lp-$
-
-#CMD_LS_lp_esc:
-  LD A, LINE_FEED
+  CALL #PRINT_INODE; Print info about curr inode
+  LD A, LINE_FEED; Go to the next line
   RST 0x10
 
+  LD BC, FS_SZ_INODE; Load byte offset of inode
   ADD IX, BC  ; Find next inode addr of zone 0
   JR #CMD_LS_offset-$
 
@@ -513,6 +513,7 @@ _CMD_EXEC_esc:
   db "mount", 0, #CMD_MOUNT
   db "umount", 0, #CMD_UMOUNT
   db "mkdir", 0, #CMD_MKDIR
+  db "touch", 0, #CMD_TOUCH
   db "ls", 0, #CMD_LS
   db "mem", 0, #CMD_MEM
   db "dev", 0, #CMD_DEV
@@ -526,6 +527,6 @@ _CMD_EXEC_esc:
 #include "Message.asm"
 
 ;; Variables
-COMMANDS_SIZE        EQU  9
+COMMANDS_SIZE        EQU  10
 
 #include "../lib/FileSystem.asm"

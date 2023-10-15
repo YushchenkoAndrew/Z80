@@ -98,7 +98,9 @@ public:
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
 
     offload = std::make_unique<std::thread>([&]() {
-      bus->W27C512->Disassemble(); 
+      // FIXME: Sometimes syncing requires just too much time
+      // FIXME: Think there is a problem with CPU::Disassembler
+      // bus->W27C512->Disassemble(); 
       for (auto& p : panels) p.Preinitialize();
       
       bSyncing.first = false;

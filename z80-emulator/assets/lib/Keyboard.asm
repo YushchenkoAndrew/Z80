@@ -48,6 +48,7 @@ _SCAN_CODE_INIT_lp:
   XOR A       ; Reset Acc & flags
   SBC HL, BC  ; Get offset from the start of vector
   LD A, (KEY_SHIFT) ; Get shift status
+  AND 0x07    ; Check if ASCII was found
   DEC A       ; Check if shift key has stat pressed
   JR Z, #SCAN_CODE_ASCII_up-$
   DEC A       ; Check if shift key has stat hold
@@ -85,6 +86,8 @@ _SCAN_CODE_INIT_lp:
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 #SCAN_CODE_IM:
+  CP 0xE0     ; Check if key is an alternative key
+  RET Z       ; If so then just exit
   PUSH HL     ; Save HL reg in stack
   PUSH BC     ; Save BC reg in stack
   LD C, A     ; Save in reg C scan code
@@ -94,7 +97,7 @@ _SCAN_CODE_INIT_lp:
   LD HL, SCAN_KEY_MAP ;; Load scan code mapper area
   LD L, A     ; Load offset 
   LD A, (HL)  ; Get prev state of key
-  OR A        ; Set flag Z if empty (state 000 = NULL)
+  AND 0x07    ; Set flag Z if empty (state 000 = NULL)
   LD B, 0b001 ; Set state PRESSED if curr == 000
   JR Z, #SCAN_CODE_cmp_st-$
   DEC A       ; Check if state is 001 = Pressed, flag Z will be set
@@ -136,7 +139,11 @@ _SCAN_CODE_INIT_lp:
 #SCAN_CODE_st_rels:
   LD B, 0b011 ; Set state RELEASED if curr == 001 AND prev scan code == 0xF0
 #SCAN_CODE_nxt_st:
-  LD (HL), B  ; Save key state
+  LD A, (HL)  ; Get prev state of key
+  AND 0xF8    ; Get non state bytes
+  XOR 0x80    ; Invert enabled flag, (need to for capslock)
+  OR B        ; Add curr state to the mask
+  LD (HL), A  ; Save key state
 
 #SCAN_CODE_IM_esc:
   LD A, C     ; Restore from scan code from reg C
@@ -162,3 +169,6 @@ _SCAN_CODE_INIT_lp:
 
 ;; Variables
 SCAN_CODE_ASCII_VEC_SIZE        EQU  .SCAN_CODE_ASCII_VEC_ED-.SCAN_CODE_ASCII_VEC_ST
+
+;; Keys alias
+KEY_SHIFT          EQU SCAN_KEY_MAP | 0x12

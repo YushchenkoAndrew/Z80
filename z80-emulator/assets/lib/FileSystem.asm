@@ -1,4 +1,4 @@
-#include "Defs.asm"
+#include "Utils.asm"
 
 ;; NOTE: Inspired by this article
 ;; http://ohm.hgesser.de/sp-ss2012/Intro-MinixFS.pdf
@@ -119,6 +119,77 @@
   RET
 
 
+;;
+;; Example:
+;;  LD BC, 5
+;;  LD DE, mount_name
+;;  CALL #PRINT_INODE
+;; 
+;; PRINT_INODE:
+;;   db "mount"
+;; 
+;; proc PRINT_INODE() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+;;   reg IX -- as defined
+;;
+#PRINT_INODE:
+  LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
+  AND FS_MODE_MASK; Get only 
+  CP FS_MODE_SOKET_MASK; Check if node is a socket
+  LD C, "s"   ; Load "s" char into reg C
+  JR Z, #PRINT_INODE_size-$
+  CP FS_MODE_SLINK_MASK; Check if node is a dir
+  LD C, "l"   ; Load "l" char into reg C
+  JR Z, #PRINT_INODE_size-$
+  CP FS_MODE_BLOCK_MASK; Check if node is a block
+  LD C, "b"   ; Load "b" char into reg C
+  JR Z, #PRINT_INODE_size-$
+  CP FS_MODE_DIR_MASK; Check if node is a dir
+  LD C, "d"   ; Load "d" char into reg C
+  JR Z, #PRINT_INODE_size-$
+  LD C, "f"   ; Load "f" char into reg C
+
+#PRINT_INODE_size:
+  LD A, C     ; Load char into Acc
+  RST 0x10    ; Print the char
+  LD A, " "   ; Make a break between prev value
+  RST 0x10
+
+  LD BC, 0x0400; Display only first 4 bytes & reset reg C
+  LD HL, PTR_TEMP_WORD      ; Load ptr to the temp val
+  PUSH IX     ; Temp save ptr to the curr inode
+
+#PRINT_INODE_size_lp:
+  LD A, (IX+FS_INODE_SIZE+3); Load file mask into to Acc
+  OR A        ; Check if Acc is empty
+  JR NZ, #PRINT_INODE_size_lp_print-$
+  OR C        ; Check we reach to non zero number and we cant ignore it now
+  JR Z, #PRINT_INODE_size_lp_end-$
+#PRINT_INODE_size_lp_print:
+  LD C, B     ; Save random value to reg C, shoud be not null
+  LD (HL), A  ; Copy size byte into temp ptr
+  PUSH BC     ; Save curr loop counter
+  CALL #HEX_ASCII; Display first byte
+  POP BC      ; Restore curr loop counter
+#PRINT_INODE_size_lp_end:
+  DEC IX      ; Move inode ptr back to one
+  DJNZ #PRINT_INODE_size_lp-$
+  POP IX      ; Restore ptr to the start of curr inode
+
+  LD A, " "   ; Make a break between prev value
+  RST 0x10
+
+  LD L, (IX+FS_INODE_ZONE0); Set directory data zone0, low byte
+  LD H, (IX+FS_INODE_ZONE0+1); Set directory data zone0, high byte
+  INC HL      ; Move ptr to the byte before of file name start
+  INC HL      ; Move ptr to the start of the name
+  RST 0x18    ; Print filaname
+  RET
+
+
 ;; File System Inode offsets
 FS_INODE_MODE          EQU 0x00
 FS_INODE_UID           EQU 0x02
@@ -152,6 +223,13 @@ FS_SP_BLK_STATE         EQU 0x12
 FS_DIR_INODE           EQU 0x00
 FS_DIR_FILENAME        EQU 0x02
 
+;; Mode masks
+FS_MODE_MASK          EQU 0xF0
+FS_MODE_SOKET_MASK    EQU 0xC0
+FS_MODE_SLINK_MASK    EQU 0xA0
+FS_MODE_FILE_MASK     EQU 0x80
+FS_MODE_BLOCK_MASK    EQU 0x60
+FS_MODE_DIR_MASK      EQU 0x40
 
 ;; File System Inode mode
 FS_MODE_SOKET          EQU 0xC000
