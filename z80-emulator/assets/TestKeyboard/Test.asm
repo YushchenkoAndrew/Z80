@@ -78,6 +78,10 @@ SETUP:
 
   CALL _LCD_INIT
 
+  LD A, ">"   ; Print ">" which means that curr state is cmd mode
+  LD (PTR_INPUT_STATE), A
+  RST 0x10    ; Output the char
+
   ; IN A, (0x00)
   ; OUT (0x50), A
 TEMP:

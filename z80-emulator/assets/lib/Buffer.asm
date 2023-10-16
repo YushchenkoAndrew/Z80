@@ -65,9 +65,32 @@ _ACK_BUFFERS:
   INC E       ; Move dst string ptr, reg DE will reset after 0xFF
 
 #WR_BUFFER_nxt_esc:
-  INC HL      ; Move src string ptr
+  PUSH HL     ; Save src string ptr in Stack
+  LD HL, (PTR_INPUT_TO_ADDR); Load ptr to jump addr
+  XOR A       ; Reset Acc
+  OR H        ; Bit or to 0 reg H
+  OR L        ; Bit or to reg H + reg L
+  JR Z, #WR_BUFFER_cmd-$
+  PUSH HL     ; Temp save jump addr in stakc
+  LD HL, #WR_BUFFER_end_of_txt_end; Load return addr
+  EX (SP), HL ; Save return addr & get in reg HL jump addr
+  JP (HL)     ; Manual call
+#WR_BUFFER_end_of_txt_end:
+  POP HL      ; Restore src string ptr in Stack
+  JR #WR_BUFFER_end-$
+
+#WR_BUFFER_cmd:
+  POP HL      ; Restore src string ptr in Stack
+  LD A, (HL)  ; Load char from the str ptr
+  CP END_OF_TXT ; Check if char was Ctrl+L
+  CALL Z, _CMD_EXEC_ESC
+  CP FORM_FEED ; Check if char was Ctrl+L
+  CALL Z, _CMD_EXEC
   CP LINE_FEED ; Check if char was '\n'
   CALL Z, _CMD_EXEC
+
+#WR_BUFFER_end:
+  INC HL      ; Move src string ptr
   LD A, E     ; Get next offset text buffer offset
   LD (PTR_TEXT_BUFF_END), A; Save offset in ptr
   DJNZ #WR_BUFFER-$

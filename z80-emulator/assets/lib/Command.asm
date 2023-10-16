@@ -35,6 +35,7 @@
 ;;   reg HL'-- as defined
 _CMD_EXEC:
   EXX         ; Save reg in alt regs
+  EX AF, AF'  ; Save reg A & flags in alt regs
   LD DE, .COMMANDS_VEC_ST; Load ptr to cmd vector
   LD B, COMMANDS_SIZE; Load amount of avaliable commands
 
@@ -106,11 +107,33 @@ _CMD_EXEC_nxt:
 _CMD_EXEC_esc:
   LD A, LINE_FEED; Go to the next line when cmd is finished
   RST 0x10    ; Output the char
+  LD A, (PTR_INPUT_STATE); Print ">" | "|" which means that curr state is cmd mode or input redirected
+  RST 0x10    ; Output the char
   LD A, (PTR_TEXT_BUFF_END); Get the end of the buf offset
   INC A       ; Move start ptr to the next char, aka skip "\n"
   LD (PTR_TEXT_BUFF_BGN), A; Save the end buffer offset as the next start
   EXX         ; Restore reg from alt regs
+  EX AF, AF'  ; Restore reg A & flags
   RET
+
+
+;;
+;; Example:
+;;  CALL _CMD_EXEC_ESC
+;;
+;; func _CMD_EXEC_ESC() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;
+;;   reg BC'-- as defined
+;;   reg DE'-- as defined
+;;   reg HL'-- as defined
+_CMD_EXEC_ESC:
+  EXX         ; Save reg in alt regs
+  EX AF, AF'  ; Restore reg A & flags
+  JR _CMD_EXEC_esc-$
 
 
 ;;
@@ -347,6 +370,42 @@ _CMD_EXEC_esc:
   JP #MSG_OK
 
 
+
+;; Example:
+;;  LD B, 0
+;;  LD DE, number+5
+;;  CALL #CMD_HELP
+;; 
+;; number:
+;;  db "help"
+;;
+;; proc CMD_HELP() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+;;
+#CMD_HELP:
+  LD HL, .COMMANDS_VEC_ST; Load ptr to the start of command
+  LD B, COMMANDS_SIZE; Load command size
+
+#CMD_HELP_lp:
+  LD A, (HL)  ; Get curr cmd char
+  INC HL      ; Move char ptr by one
+  OR A        ; Check if char is \0
+  JR Z, #CMD_HELP_lp_end-$
+  RST 0x10    ; Print the char
+  JR #CMD_HELP_lp-$
+
+#CMD_HELP_lp_end:
+  LD A, " "   ; Load to Acc ' '
+  RST 0x10    ; Print the char
+  INC HL      ; Skip cmd high byte addr
+  INC HL      ; Skip cmd low byte addr
+  DJNZ #CMD_HELP_lp-$
+  RET
+
+
 ;;
 ;; Example:
 ;;  LD B, 0
@@ -457,12 +516,102 @@ _CMD_EXEC_esc:
   LD B, 0     ; Reset reg B
 
   PUSH BC     ; Save buf char counter in stack, reg B
+  ; TODO: Check if file already exists
+
   LD BC, FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
   CALL #NEW_INODE
   
   POP BC      ; Restore buf char counter
   CALL #NEW_DIR_BLK
   JP #MSG_OK
+
+;; Example:
+;;  LD B, 0
+;;  LD DE, number+5
+;;  CALL #CMD_TOUCH
+;; 
+;; number:
+;;  db "cat test"
+;;
+;; proc CMD_CAT() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+;;
+#CMD_CAT:
+  ;; TODO: Impl this
+  RET
+
+
+;; Example:
+;;  LD B, 0
+;;  LD DE, number+5
+;;  CALL #CMD_TOUCH
+;; 
+;; number:
+;;  db "touch test"
+;;
+;; proc CMD_TOUCH() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+;;
+#CMD_WR:
+  CALL #CMD_TOUCH; Create file
+  LD HL, PTR_INPUT_TO_ADDR; Load value to addr ptr
+  LD BC, #CMD_WR_INPUT; Load input call function
+  LD (HL), C  ; Save low byte of the word addr
+  INC HL      ; Move ptr to the high byte
+  LD (HL), B  ; Save high byte of the addr
+  LD A, "|"   ; Set new state
+  LD (PTR_INPUT_STATE), A; Save new buf command state
+  RET
+
+;;
+;; proc CMD_WR_INPUT() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;
+;;   reg BC'-- as defined
+;;   reg DE'-- as defined
+;;   reg HL'-- as defined
+#CMD_WR_INPUT:
+  PUSH HL     ; Save reg HL in stack
+  LD HL, TEXT_BUF_MAP; Get ptr to allocated text arae
+  LD A, (PTR_TEXT_BUFF_END); Get buf-ptr offset
+  LD L, A     ; Move text ptr to curr char
+  LD A, (HL)  ; Load curr char
+
+  ; TODO: copy char into file
+
+  CP LINE_FEED; Check if curr char is a new line aka '\n'
+  JR NZ, #CMD_WR_INPUT_esc-$
+  LD A, (PTR_INPUT_STATE); Print ">" | "|" which means that curr state is cmd mode or input redirected
+  RST 0x10    ; Output the char
+#CMD_WR_INPUT_end:
+  POP HL      ; Restore reg HL
+  RET
+
+#CMD_WR_INPUT_esc:
+  CP END_OF_TXT; Check if buf redirect is ended
+  JR NZ, #CMD_WR_INPUT_end-$
+  XOR A       ; Reset reg A
+  LD HL, PTR_INPUT_TO_ADDR; Load value to addr ptr
+  LD (HL), A  ; Reset low byte addr
+  INC HL      ; Move ptr to the high byte
+  LD (HL), A  ; Reset high byte addr
+  LD A, ">"   ; Set new state, cmd
+  LD (PTR_INPUT_STATE), A; Save new buf command state
+
+  POP HL      ; Restore reg HL
+  EX AF, AF'  ; Temp swap reg A & flags, need for _CMD_EXEC_esc
+  EXX         ; Temp swap reg with alt
+  JP _CMD_EXEC_esc; Mark the end of buf redirection
+
 
 ;;
 ;; Example:
@@ -514,10 +663,15 @@ _CMD_EXEC_esc:
   db "umount", 0, #CMD_UMOUNT
   db "mkdir", 0, #CMD_MKDIR
   db "touch", 0, #CMD_TOUCH
+  db "cat", 0, #CMD_CAT
+  db "wr", 0, #CMD_WR
   db "ls", 0, #CMD_LS
   db "mem", 0, #CMD_MEM
   db "dev", 0, #CMD_DEV
+  db "help", 0, #CMD_HELP
   db "history", 0, #CMD_HISTORY
+
+  db FORM_FEED, 0, #CMD_CLEAR
 .COMMANDS_VEC_ED:
 
 .MOUNT_NAME_ST:
@@ -527,6 +681,6 @@ _CMD_EXEC_esc:
 #include "Message.asm"
 
 ;; Variables
-COMMANDS_SIZE        EQU  10
+COMMANDS_SIZE        EQU  14
 
 #include "../lib/FileSystem.asm"
