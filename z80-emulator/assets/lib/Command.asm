@@ -387,7 +387,7 @@ _CMD_EXEC_ESC:
 ;;
 #CMD_HELP:
   LD HL, .COMMANDS_VEC_ST; Load ptr to the start of command
-  LD B, COMMANDS_SIZE; Load command size
+  LD B, COMMANDS_PRNT_SIZE; Load command size
 
 #CMD_HELP_lp:
   LD A, (HL)  ; Get curr cmd char
@@ -442,7 +442,7 @@ _CMD_EXEC_ESC:
   
   LD BC, .MOUNT_NAME_ED-.MOUNT_NAME_ST; Load 
   LD DE, .MOUNT_NAME_ST
-  CALL #NEW_DIR_BLK
+  CALL #NEW_FILENAME_BLK
 
   JP #MSG_OK
 
@@ -484,15 +484,19 @@ _CMD_EXEC_ESC:
 #CMD_MKDIR:
   OR A        ; Check if buf conter is not empty
   JP Z, #MSG_ARG_ERR
-  LD C, A     ; Load counter to reg C
-  LD B, 0     ; Reset reg B
+  LD B, A     ; Load counter to reg B
+  CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  JP NZ, #MSG_OK  ; If so then just end the handler
 
+  LD C, B     ; Load counter to reg C
+  LD B, 0     ; Reset reg B
   PUSH BC     ; Save buf char counter in stack, reg B
+
   LD BC, FS_MODE_DIR | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
   CALL #NEW_INODE
   
   POP BC      ; Restore buf char counter
-  CALL #NEW_DIR_BLK
+  CALL #NEW_FILENAME_BLK
   JP #MSG_OK
 
 ;; Example:
@@ -512,17 +516,19 @@ _CMD_EXEC_ESC:
 #CMD_TOUCH:
   OR A        ; Check if buf conter is not empty
   JP Z, #MSG_ARG_ERR
-  LD C, A     ; Load counter to reg C
-  LD B, 0     ; Reset reg B
+  LD B, A     ; Load counter to reg B
+  CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  JP NZ, #MSG_OK  ; If so then just end the handler
 
+  LD C, B     ; Move counter to the low byte of reg BC
+  LD B, 0     ; Reset reg B
   PUSH BC     ; Save buf char counter in stack, reg B
-  ; TODO: Check if file already exists
 
   LD BC, FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
   CALL #NEW_INODE
   
   POP BC      ; Restore buf char counter
-  CALL #NEW_DIR_BLK
+  CALL #NEW_FILENAME_BLK
   JP #MSG_OK
 
 ;; Example:
@@ -543,34 +549,24 @@ _CMD_EXEC_ESC:
   OR A        ; Check if buf conter is not empty
   JP Z, #MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
-
-  XOR A       ; Reset reg Acc
-  LD (PTR_TEMP_WORD),   A; Reset low byte of the word
-  LD (PTR_TEMP_WORD+1), A; Reset high byte of the word
-
-  LD HL, #FILENAME_FIND_ITER; Load handler func for iter to call
-  CALL #ITER_INODE; Iterate throgh inodes
-
-  LD HL, (PTR_TEMP_WORD); Load inode addr into reg HL
-  XOR A       ; Reset reg Acc
-  OR H        ; Check if inode addr is empty
-  OR L        ; Check if inode addr is empty
-  JP Z, #MSG_ARG_ERR
+  CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  JP Z, #MSG_ARG_ERR; If file not exist dipslay the error
 
   PUSH HL     ; Temp save inode addr in Stack
   POP IX      ; Load inode addr into reg IX
 
-  LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
-  AND FS_MODE_MASK; Get only file types
-  CP FS_MODE_FILE_MASK; Check if node is a dir
-  JP NZ, #MSG_FILE_TYPE_ERR
-
-  ;; TODO: Impl this
+  LD HL, #CMD_CAT_iter; Save callback func
+  CALL #ITER_FILE_BLK; Iterate data block
+  JP NZ, #MSG_FILE_TYPE_ERR; If type is not file show an error
 
   LD A, LINE_FEED; Go to the next line
   RST 0x10    ; Display the char
   JP #MSG_OK
 
+#CMD_CAT_iter:
+  LD A, (DE)  ; Load in Acc char from data block
+  RST 0x10    ; Display char
+  RET
 
 
 ;; Example:
@@ -687,5 +683,6 @@ _CMD_EXEC_ESC:
 
 ;; Variables
 COMMANDS_SIZE        EQU  14
+COMMANDS_PRNT_SIZE   EQU  COMMANDS_SIZE - 1
 
 #include "../lib/FileSystem.asm"

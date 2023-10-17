@@ -11,7 +11,7 @@
 ;; #TEMP:
 ;;  RET
 ;; 
-;; proc ITER_INODE() -> reg IX;
+;; proc ITER_INODE() -> callback;
 ;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
@@ -111,6 +111,32 @@
 
 ;;
 ;; Example:
+;;  LD B, 5
+;;  CALL #IS_FILENAME_EXIST
+;; 
+;; proc IS_FILENAME_EXIST() -> reg HL & reg F(Z);
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;   reg IX -- as defined
+;;
+#IS_FILENAME_EXIST:
+  XOR A       ; Reset reg Acc
+  LD (PTR_TEMP_WORD),   A; Reset low byte of the word
+  LD (PTR_TEMP_WORD+1), A; Reset high byte of the word
+
+  LD HL, #FILENAME_FIND_ITER; Load handler func for iter to call
+  CALL #ITER_INODE; Iterate throgh inodes
+
+  LD HL, (PTR_TEMP_WORD); Load inode addr into reg HL
+  XOR A       ; Reset reg Acc
+  OR H        ; Check if inode addr is empty
+  OR L        ; Check if inode addr is empty
+  RET
+
+;;
+;; Example:
 ;;  LD BC, FS_MODE_DIR | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
 ;;  CALL #NEW_INODE
 ;; 
@@ -170,24 +196,24 @@
 ;; Example:
 ;;  LD BC, 5
 ;;  LD DE, mount_name
-;;  CALL #NEW_DIR_BLK
+;;  CALL #NEW_FILENAME_BLK
 ;; 
 ;; mount_name:
 ;;   db "mount"
 ;; 
-;; proc NEW_DIR_BLK() -> reg IX;
+;; proc NEW_FILENAME_BLK() -> reg IX;
 ;;   reg A  -- unaffected
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
 ;;   reg IX -- as defined
 ;;
-#NEW_DIR_BLK:
+#NEW_FILENAME_BLK:
   PUSH HL     ; Save addr to data blk in stack
   PUSH BC     ; Save string counter in stack
   LD L, (IX+FS_INODE_SIZE); Get curr inode size, low byte
   LD H, (IX+FS_INODE_SIZE+1); Get curr inode size, high byte
-  LD BC, FS_SZ_DIR_BLK; Load directory blk size
+  LD BC, FS_SZ_FILENAME_BLK; Load filename blk size
   ADD HL, BC  ; Calc new inode size
 
   LD (IX+FS_INODE_SIZE),   L; Save calculated size in inode, low byte
@@ -208,6 +234,63 @@
   EX DE, HL   ; Restore src & dst as it was prev
   RET
 
+
+;;
+;; Example:
+;;  LD HL, #TEMP
+;;  CALL #ITER_INODE
+;; 
+;; #TEMP:
+;;  RET
+;; 
+;; proc ITER_FILE_BLK() -> callback;
+;;   reg A  -- as defined
+;;   reg BC -- uneffected
+;;   reg DE -- uneffected
+;;   reg HL -- as defined
+;;   reg IX -- as defined
+;;
+#ITER_FILE_BLK:
+  LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
+  AND FS_MODE_MASK; Get only file types
+  CP FS_MODE_FILE_MASK; Check if node is a dir
+  RET NZ      ; If file is not the file then just end exec 
+
+  PUSH DE     ; Save reg DE in stack
+  PUSH BC     ; Save reg BC in stack
+  PUSH HL     ; Temp save function addr
+  LD BC, FS_SZ_FILENAME_BLK; Load filename blk size
+  LD L, (IX+FS_INODE_SIZE)  ; Get curr inode size, low byte
+  LD H, (IX+FS_INODE_SIZE+1); Get curr inode size, high byte
+
+  OR A        ; Reset flags
+  SBC HL, BC  ; Calculate file size without zone 0 (aka filename)
+  PUSH HL     ; Temp save file size in Stack
+  POP BC      ; Load file size into reg BC
+  POP HL      ; Restore function addr
+
+  ;; TODO: Add ability to load another zone aka (INC IX)
+  LD E, (IX+FS_INODE_ZONE1)  ; Get data zone 1 addr, low byte
+  LD D, (IX+FS_INODE_ZONE1+1); Get data zone 1 addr, high byte
+
+  DEC DE      ; Dec DE by, need just for adjustmens
+  INC BC      ; Inc BC by, need to check if reg is 0
+#ITER_FILE_BLK_lp:
+  INC DE      ; Move data block ptr by one
+  DEC BC      ; Decrement counter
+  XOR A       ; Reset Acc
+  OR C        ; Check if counter DE is empty
+  OR B        ; Check if counter DE is empty
+  JR Z, #ITER_FILE_BLK_end-$
+  PUSH HL     ; Temp save func addr in stack
+  LD HL, #ITER_FILE_BLK_lp; Load return addr
+  EX (SP), HL ; Save return addr in stack & get in HL func addr
+  JP (HL)     ; Manual call
+
+#ITER_FILE_BLK_end:
+  POP BC      ; Restore reg BC
+  POP DE      ; Restore reg DE
+  RET
 
 ;;
 ;; Example:
@@ -359,7 +442,7 @@ FS_MOUNT_EN       EQU 0x01
 
 ; Sizes
 FS_SZ_INODE            EQU 0x20
-FS_SZ_DIR_BLK          EQU 0x20
+FS_SZ_FILENAME_BLK     EQU 0x20
 
 .SUPER_BLOCK:
   ;;  INDOES  ZONES   IMAP BLOCKS   ZMAP BLOCKS   DATA ZONE START   ZONE SIZE   MAX FILE SIZE
@@ -368,3 +451,5 @@ FS_SZ_DIR_BLK          EQU 0x20
   ;; RAND VAL  MOUNT STATE
   dw  0x00,     FS_MOUNT_EN
 .SUPER_BLOCK_ED:
+
+; TODO: Add DEFAULT INODE BLOCK & DATA BLOCK for each map & buffer
