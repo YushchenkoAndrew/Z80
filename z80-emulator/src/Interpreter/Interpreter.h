@@ -227,10 +227,13 @@ public:
     MemoryT res;
 
     for (auto& expr : stmt->data) {
-      MemoryT bytes = evaluate(expr.get());
-      for (int32_t i = 1; i < stmt->size; i++) bytes.insert(bytes.begin(), 0);
+      MemoryT bytes = evaluate(expr.get()); const auto nSize = (int32_t)bytes.size() / 2;
+      for (int32_t i = 1; i < stmt->size - nSize; i++) bytes.insert(bytes.begin(), 0);
 
-      res.insert(res.end(), bytes.begin(), bytes.end());
+      // TODO: Bellow is quick fix, need to think about how impl this better
+      // Right now `dw "key"` works incorrectly
+      if (stmt->reverse) res.insert(res.end(), bytes.rbegin(), bytes.rend());
+      else res.insert(res.end(), bytes.begin(), bytes.end());
     }
 
     return res;

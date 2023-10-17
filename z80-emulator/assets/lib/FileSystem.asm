@@ -444,12 +444,43 @@ FS_MOUNT_EN       EQU 0x01
 FS_SZ_INODE            EQU 0x20
 FS_SZ_FILENAME_BLK     EQU 0x20
 
+;; Inodes
+FILENAME_SCAN_KEY_BUF     EQU DATA_ZONE_MAP ;; Map SCAN_KEY_BUF
+FILENAME_TEXT_BUF_MAP     EQU DATA_ZONE_MAP +  FS_SZ_FILENAME_BLK;; Map TEXT_BUF_MAP
+
+;; FS MODE
+FS_FILE_TYPE      EQU FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W
+
 .SUPER_BLOCK:
   ;;  INDOES  ZONES   IMAP BLOCKS   ZMAP BLOCKS   DATA ZONE START   ZONE SIZE   MAX FILE SIZE
-  dw  0x00,    0x00,    0x00,         0x00,        DATA_ZONE_MAP,     0xFF,       0x00
+  dw   0x02,   0x00,    0x00,         0x00,        DATA_ZONE_MAP,     0xFF,       0x00
   
   ;; RAND VAL  MOUNT STATE
   dw  0x00,     FS_MOUNT_EN
 .SUPER_BLOCK_ED:
 
-; TODO: Add DEFAULT INODE BLOCK & DATA BLOCK for each map & buffer
+.INODE_BLOCK:
+  ;; ====================================================================
+  ;;   MODE           UID     SIZE       TIME     GID|LINKS     ZONE0
+  dw  FS_FILE_TYPE,   0x00,  0x002F, 0,  0x00, 0,   0x00,    FILENAME_SCAN_KEY_BUF
+  
+  ;;     ZONE1       ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
+  dw  SCAN_KEY_BUF,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
+
+  ;; ====================================================================
+  ;;   MODE           UID      SIZE      TIME     GID|LINKS       ZONE0
+  dw  FS_FILE_TYPE,   0x00,  0x011F, 0,  0x00, 0,   0x00,    FILENAME_TEXT_BUF_MAP
+  
+  ;;     ZONE1       ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
+  dw  TEXT_BUF_MAP,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
+.INODE_BLOCK_ED:
+
+.FILENAME_BLOCK:
+  ;; ====================================================================
+  dw  0x01 ;; FILENAME_SCAN_KEY_BUF
+  db "scan-key", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0xFF
+  ;; ====================================================================
+  dw  0x02 ;; FILENAME_TEXT_BUF_MAP
+  db "text-buf", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF
+  ;; ====================================================================
+.FILENAME_BLOCK_ED:

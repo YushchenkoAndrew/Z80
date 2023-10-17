@@ -76,6 +76,16 @@ SETUP:
   LD DE, SUPER_BLOCK_MAP
   LDIR
 
+  LD BC, .INODE_BLOCK_ED-.INODE_BLOCK
+  LD HL, .INODE_BLOCK
+  LD DE, INODE_MAP
+  LDIR
+
+  LD BC, .FILENAME_BLOCK_ED-.FILENAME_BLOCK
+  LD HL, .FILENAME_BLOCK
+  LD DE, DATA_ZONE_MAP
+  LDIR
+
   CALL _LCD_INIT
 
   LD A, ">"   ; Print ">" which means that curr state is cmd mode

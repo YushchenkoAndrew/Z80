@@ -627,7 +627,6 @@ _CMD_EXEC_ESC:
   EXX         ; Temp swap reg with alt
   JP _CMD_EXEC_esc; Mark the end of buf redirection
 
-
 ;;
 ;; Example:
 ;;  LD B, 0
@@ -646,9 +645,44 @@ _CMD_EXEC_ESC:
 #CMD_LS:
   LD HL, #CMD_LS_iter; Load handler func for iter to call
   CALL #ITER_INODE; Iterate throgh inodes
+  LD A, LINE_FEED; Go to the next line
+  RST 0x10    ; Display the char
   JP #MSG_OK
 
 #CMD_LS_iter:
+  PUSH HL     ; Save reg HL in stack
+  LD L, (IX+FS_INODE_ZONE0); Set directory data zone0, low byte
+  LD H, (IX+FS_INODE_ZONE0+1); Set directory data zone0, high byte
+  INC HL      ; Move ptr to the byte before of file name start
+  INC HL      ; Move ptr to the start of the name
+  RST 0x18    ; Print filaname
+  LD A, " "   ; Add space separator between files
+  RST 0x10    ; Display the char
+  POP HL      ; Restore reg HL
+  RET
+
+
+;;
+;; Example:
+;;  LD B, 0
+;;  LD DE, number+5
+;;  CALL #CMD_MKDIR
+;; 
+;; number:
+;;  db "mkdir test"
+;;
+;; proc CMD_MKDIR() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+;;
+#CMD_LL:
+  LD HL, #CMD_LL_iter; Load handler func for iter to call
+  CALL #ITER_INODE; Iterate throgh inodes
+  JP #MSG_OK
+
+#CMD_LL_iter:
   PUSH HL     ; Save reg HL in stack
   CALL #PRINT_INODE; Print info about curr inode
   LD A, LINE_FEED; Go to the next line
@@ -666,6 +700,7 @@ _CMD_EXEC_ESC:
   db "touch", 0, #CMD_TOUCH
   db "cat", 0, #CMD_CAT
   db "wr", 0, #CMD_WR
+  db "ll", 0, #CMD_LL
   db "ls", 0, #CMD_LS
   db "mem", 0, #CMD_MEM
   db "dev", 0, #CMD_DEV
@@ -682,7 +717,7 @@ _CMD_EXEC_ESC:
 #include "Message.asm"
 
 ;; Variables
-COMMANDS_SIZE        EQU  14
+COMMANDS_SIZE        EQU  15
 COMMANDS_PRNT_SIZE   EQU  COMMANDS_SIZE - 1
 
 #include "../lib/FileSystem.asm"

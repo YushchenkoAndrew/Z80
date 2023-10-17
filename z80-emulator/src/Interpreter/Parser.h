@@ -169,7 +169,7 @@ public:
     std::vector<std::shared_ptr<Expression>> data;
 
     do { data.push_back(shift()); } while(match<1>({ TokenT::COMMA }));
-    return std::make_shared<StatementAllocate>(expr, data, 2);
+    return std::make_shared<StatementAllocate>(expr, data, 2, true);
   }
 
   // NOTE: No Arg Command
