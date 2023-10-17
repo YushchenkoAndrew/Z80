@@ -540,8 +540,37 @@ _CMD_EXEC_ESC:
 ;;   reg HL -- unaffected
 ;;
 #CMD_CAT:
+  OR A        ; Check if buf conter is not empty
+  JP Z, #MSG_ARG_ERR
+  LD B, A     ; Load counter to reg B
+
+  XOR A       ; Reset reg Acc
+  LD (PTR_TEMP_WORD),   A; Reset low byte of the word
+  LD (PTR_TEMP_WORD+1), A; Reset high byte of the word
+
+  LD HL, #FILENAME_FIND_ITER; Load handler func for iter to call
+  CALL #ITER_INODE; Iterate throgh inodes
+
+  LD HL, (PTR_TEMP_WORD); Load inode addr into reg HL
+  XOR A       ; Reset reg Acc
+  OR H        ; Check if inode addr is empty
+  OR L        ; Check if inode addr is empty
+  JP Z, #MSG_ARG_ERR
+
+  PUSH HL     ; Temp save inode addr in Stack
+  POP IX      ; Load inode addr into reg IX
+
+  LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
+  AND FS_MODE_MASK; Get only file types
+  CP FS_MODE_FILE_MASK; Check if node is a dir
+  JP NZ, #MSG_FILE_TYPE_ERR
+
   ;; TODO: Impl this
-  RET
+
+  LD A, LINE_FEED; Go to the next line
+  RST 0x10    ; Display the char
+  JP #MSG_OK
+
 
 
 ;; Example:
@@ -561,7 +590,7 @@ _CMD_EXEC_ESC:
 #CMD_WR:
   CALL #CMD_TOUCH; Create file
   LD HL, PTR_INPUT_TO_ADDR; Load value to addr ptr
-  LD BC, #CMD_WR_INPUT; Load input call function
+  LD BC, #CMD_WR_input; Load input call function
   LD (HL), C  ; Save low byte of the word addr
   INC HL      ; Move ptr to the high byte
   LD (HL), B  ; Save high byte of the addr
@@ -569,17 +598,7 @@ _CMD_EXEC_ESC:
   LD (PTR_INPUT_STATE), A; Save new buf command state
   RET
 
-;;
-;; proc CMD_WR_INPUT() -> void;
-;;   reg A  -- as defined
-;;   reg BC -- unaffected
-;;   reg DE -- unaffected
-;;   reg HL -- unaffected
-;;
-;;   reg BC'-- as defined
-;;   reg DE'-- as defined
-;;   reg HL'-- as defined
-#CMD_WR_INPUT:
+#CMD_WR_input:
   PUSH HL     ; Save reg HL in stack
   LD HL, TEXT_BUF_MAP; Get ptr to allocated text arae
   LD A, (PTR_TEXT_BUFF_END); Get buf-ptr offset
@@ -589,16 +608,16 @@ _CMD_EXEC_ESC:
   ; TODO: copy char into file
 
   CP LINE_FEED; Check if curr char is a new line aka '\n'
-  JR NZ, #CMD_WR_INPUT_esc-$
+  JR NZ, #CMD_WR_input_esc-$
   LD A, (PTR_INPUT_STATE); Print ">" | "|" which means that curr state is cmd mode or input redirected
   RST 0x10    ; Output the char
-#CMD_WR_INPUT_end:
+#CMD_WR_input_end:
   POP HL      ; Restore reg HL
   RET
 
-#CMD_WR_INPUT_esc:
+#CMD_WR_input_esc:
   CP END_OF_TXT; Check if buf redirect is ended
-  JR NZ, #CMD_WR_INPUT_end-$
+  JR NZ, #CMD_WR_input_end-$
   XOR A       ; Reset reg A
   LD HL, PTR_INPUT_TO_ADDR; Load value to addr ptr
   LD (HL), A  ; Reset low byte addr
@@ -629,31 +648,17 @@ _CMD_EXEC_ESC:
 ;;   reg HL -- unaffected
 ;;
 #CMD_LS:
-  LD DE, INODE_MAP; Load addr to first inode map
-  LD HL, (SUPER_BLOCK_MAP+FS_SP_BLK_INODES); Get amount of inodes
-  EX DE, HL   ; Load to reg DE inodes count, and in reg HL inode start addr
-  PUSH HL     ; Temp save calc inode addr
-  POP IX      ; Load calc inode addr in reg IX
+  LD HL, #CMD_LS_iter; Load handler func for iter to call
+  CALL #ITER_INODE; Iterate throgh inodes
+  JP #MSG_OK
 
-  INC DE      ; Inc DE by, need to check if reg is 0
-#CMD_LS_offset:
-  XOR A       ; Reset Acc
-  DEC DE      ; Decrement counter
-  CP D        ; Check if reg D is empty
-  JR NZ, #CMD_LS_offset_nxt-$
-  CP E        ; Check if reg E is empty
-  JR Z, #CMD_LS_offset_esc-$
-#CMD_LS_offset_nxt:
+#CMD_LS_iter:
+  PUSH HL     ; Save reg HL in stack
   CALL #PRINT_INODE; Print info about curr inode
   LD A, LINE_FEED; Go to the next line
-  RST 0x10
-
-  LD BC, FS_SZ_INODE; Load byte offset of inode
-  ADD IX, BC  ; Find next inode addr of zone 0
-  JR #CMD_LS_offset-$
-
-#CMD_LS_offset_esc:
-  JP #MSG_OK
+  RST 0x10    ; Display the char
+  POP HL      ; Restore reg HL
+  RET
 
 
 .COMMANDS_VEC_ST:

@@ -3,6 +3,111 @@
 ;; NOTE: Inspired by this article
 ;; http://ohm.hgesser.de/sp-ss2012/Intro-MinixFS.pdf
 
+;;
+;; Example:
+;;  LD HL, #TEMP
+;;  CALL #ITER_INODE
+;; 
+;; #TEMP:
+;;  RET
+;; 
+;; proc ITER_INODE() -> reg IX;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+;;   reg IX -- as defined
+;;
+#ITER_INODE:
+  PUSH DE     ; Temp save reg DE in stack
+  PUSH HL     ; Temp save function addr
+  LD DE, INODE_MAP; Load addr to first inode map
+  LD HL, (SUPER_BLOCK_MAP+FS_SP_BLK_INODES); Get amount of inodes
+  EX DE, HL   ; Load to reg DE inodes count, and in reg HL inode start addr
+  PUSH HL     ; Temp save calc inode addr
+  POP IX      ; Load calc inode addr in reg IX
+  POP HL      ; Restore func addr
+
+  INC DE      ; Inc DE by, need to check if reg is 0
+#ITER_INODE_offset:
+  DEC DE      ; Decrement counter
+  XOR A       ; Reset Acc
+  OR D        ; Check if counter DE is empty
+  OR E        ; Check if counter DE is empty
+  JR Z, #ITER_INODE_end-$
+
+  EX DE, HL   ; Swap reg DE & HL, only need for `EX (SP), HL`
+  EX (SP), HL ; Swap prev DE with curr aka inode counter
+  EX DE, HL   ; Restore reg HL & DE = prev value
+
+  PUSH HL     ;  Temp save function addr
+  LD HL, #ITER_INODE_ret
+  EX (SP), HL ; Save return addr & get addr for manual call
+  JP (HL)     ; Manual call to the func
+
+#ITER_INODE_ret:
+  EX DE, HL   ; Swap reg DE & HL, only need for `EX (SP), HL`
+  EX (SP), HL ; Swap prev DE with curr aka inode counter
+  EX DE, HL   ; Restore reg HL & DE = inode counter
+
+  PUSH BC     ; Temp save reg BC in stack
+  LD BC, FS_SZ_INODE; Load byte offset of inode
+  ADD IX, BC  ; Find next inode addr of zone 0
+  POP BC      ; Restore reg BC after calculation
+  JR #ITER_INODE_offset-$
+
+#ITER_INODE_end:
+  POP DE      ; Restore reg DE
+  RET
+
+;;
+;; Example:
+;;  LD HL, #TEMP
+;;  CALL #ITER_INODE
+;; 
+;; #TEMP:
+;;  RET
+;; 
+;; proc ITER_INODE() -> reg IX;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;   reg IX -- as defined
+;;
+#FILENAME_FIND_ITER:
+  PUSH HL     ; Save reg HL in stack
+  PUSH DE     ; Save reg DE in stack
+  PUSH BC     ; Save reg BC in stack
+
+  LD L, (IX+FS_INODE_ZONE0); Set directory data zone0, low byte
+  LD H, (IX+FS_INODE_ZONE0+1); Set directory data zone0, high byte
+  INC HL      ; Move ptr to the byte before of file name start
+  INC HL      ; Move ptr to the start of the name
+
+#FILENAME_FIND_ITER_lp:
+  LD A, (DE)  ; Load filename char from text buf
+  CP (HL)     ; Check if chars are equal to inode
+  JR NZ, #FILENAME_FIND_ITER_end-$
+  INC HL      ; Move buf ptr by one
+  INC DE      ; Move cmd ptr by one
+  DJNZ #FILENAME_FIND_ITER_lp-$
+  LD A, (HL)  ; Check if filename is ended
+  OR A        ; Check if this char is 0, aka end of the word
+  JR NZ, #FILENAME_FIND_ITER_end-$; If buf counter is ended, aka buf word is less then cmd
+
+  PUSH IX     ; Temp save reg IX in stack
+  POP HL      ; Load reg IX into reg HL
+  LD A, L     ; Load into reg A low byte of the inode
+  LD (PTR_TEMP_WORD),   A; Reset low byte of the word
+  LD A, H     ; Load into reg A high byte of the inode
+  LD (PTR_TEMP_WORD+1), A; Reset high byte of the word
+
+#FILENAME_FIND_ITER_end:
+  POP BC      ; Restore reg BC
+  POP DE      ; Restore reg DE
+  POP HL      ; Restore reg HL
+  RET
 
 ;;
 ;; Example:
@@ -18,27 +123,10 @@
 ;;
 #NEW_INODE:
   PUSH DE     ; Save reg DE in stack
-  PUSH BC     ; Save reg BC in stack
-  LD BC, FS_SZ_INODE; Load byte offset of inode
-  LD DE, INODE_MAP; Load addr to first inode map
-  LD HL, (SUPER_BLOCK_MAP+FS_SP_BLK_INODES); Get amount of inodes
-  EX DE, HL   ; Load to reg DE inodes count, and in reg HL inode start addr
-  INC DE      ; Inc DE by, need to check if reg is 0
-  XOR A       ; Reset Acc
-#NEW_INODE_offset:
-  DEC DE      ; Decrement counter
-  CP D        ; Check if reg D is empty
-  JR NZ, #NEW_INODE_offset_nxt-$
-  CP E        ; Check if reg E is empty
-  JR Z, #NEW_INODE_offset_esc-$
-#NEW_INODE_offset_nxt:
-  ADD HL, BC  ; Find next inode addr of zone 0
-  JR #NEW_INODE_offset-$
 
-#NEW_INODE_offset_esc:
-  PUSH HL     ; Temp save calculated addr 
-  POP IX      ; Load this addr in reg IX
-  POP BC      ; Restore reg BC
+  LD HL, #NEW_INODE_iter; Load handler func for iter to call
+  CALL #ITER_INODE; Get the next inode addr in IX
+
   LD (IX+FS_INODE_MODE),   C; Set inode mode low byte
   LD (IX+FS_INODE_MODE+1), B; Set inode mode high byte
   PUSH IX     ; Temp save addr of curr inode
@@ -56,11 +144,10 @@
 
 #NEW_INODE_blk_offset:
   DEC BC      ; Decrement conter
-  CP B        ; Check if reg B is empty
-  JR NZ, #NEW_INODE_blk_offset_nxt-$
-  CP C        ; Check if reg C is empty
+  XOR A       ; Reset Acc
+  OR B        ; Check if reg BC is empty
+  OR C        ; Check if reg BC is empty
   JR Z, #NEW_INODE_blk_esc-$
-#NEW_INODE_blk_offset_nxt:
   LD E, (IX+FS_INODE_SIZE); Get low byte of inodes size
   LD D, (IX+FS_INODE_SIZE+1); Get high byte of inodes size
   ADD HL, DE  ; Calc next data block addr
@@ -73,6 +160,9 @@
   LD (IX+FS_INODE_ZONE0),   L; Set directory data zone0, low byte
   LD (IX+FS_INODE_ZONE0+1), H; Set directory data zone0, high byte
   POP DE      ; Restore reg DE
+  RET
+
+#NEW_INODE_iter:
   RET
 
 
@@ -137,7 +227,7 @@
 ;;
 #PRINT_INODE:
   LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
-  AND FS_MODE_MASK; Get only 
+  AND FS_MODE_MASK; Get only file type
   CP FS_MODE_SOKET_MASK; Check if node is a socket
   LD C, "s"   ; Load "s" char into reg C
   JR Z, #PRINT_INODE_size-$
@@ -178,6 +268,9 @@
   DEC IX      ; Move inode ptr back to one
   DJNZ #PRINT_INODE_size_lp-$
   POP IX      ; Restore ptr to the start of curr inode
+
+  LD A, "h"   ; Show that size displaied in hex
+  RST 0x10
 
   LD A, " "   ; Make a break between prev value
   RST 0x10
