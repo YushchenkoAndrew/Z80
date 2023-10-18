@@ -486,6 +486,8 @@ _CMD_EXEC_ESC:
   JP Z, #MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
   CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  PUSH HL     ; Temp save inode addr in Stack
+  POP IX      ; Load inode addr into reg IX
   JP NZ, #MSG_OK  ; If so then just end the handler
 
   LD C, B     ; Load counter to reg C
@@ -518,6 +520,8 @@ _CMD_EXEC_ESC:
   JP Z, #MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
   CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  PUSH HL     ; Temp save inode addr in Stack
+  POP IX      ; Load inode addr into reg IX
   JP NZ, #MSG_OK  ; If so then just end the handler
 
   LD C, B     ; Move counter to the low byte of reg BC
@@ -550,10 +554,9 @@ _CMD_EXEC_ESC:
   JP Z, #MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
   CALL #IS_FILENAME_EXIST; Check if such filename already exist
-  JP Z, #MSG_ARG_ERR; If file not exist dipslay the error
-
   PUSH HL     ; Temp save inode addr in Stack
   POP IX      ; Load inode addr into reg IX
+  JP Z, #MSG_ARG_ERR; If file not exist dipslay the error
 
   LD HL, #CMD_CAT_iter; Save callback func
   CALL #ITER_FILE_BLK; Iterate data block
@@ -585,11 +588,21 @@ _CMD_EXEC_ESC:
 ;;
 #CMD_WR:
   CALL #CMD_TOUCH; Create file
-  LD HL, PTR_INPUT_TO_ADDR; Load value to addr ptr
-  LD BC, #CMD_WR_input; Load input call function
-  LD (HL), C  ; Save low byte of the word addr
-  INC HL      ; Move ptr to the high byte
-  LD (HL), B  ; Save high byte of the addr
+  JR NZ, #CMD_WR_bg-$; If file already exist then skip initialization
+  CALL #NEXT_DATA_BLK; Calculate next data block addr
+  LD (IX+FS_INODE_ZONE1),   L; Set data zone 1 addr, low byte
+  LD (IX+FS_INODE_ZONE1+1), H; Set data zone 1 addr, high byte
+
+  LD HL, FS_SZ_DATA_BLK; Preallocate default file size
+  LD (IX+FS_INODE_ALLOCATED),   L; Set data zone 1 addr, low byte
+  LD (IX+FS_INODE_ALLOCATED+1), H; Set data zone 1 addr, high byte
+
+#CMD_WR_bg:
+  PUSH IX     ; Temp save created inode addr in stack
+  POP HL      ; Load inode addr into reg HL
+  LD (PTR_INPUT_FILE), HL; Save inode of file
+  LD HL, #CMD_WR_input; Load input call function
+  LD (PTR_INPUT_FUNC), HL; Save handler func in memory
   LD A, "|"   ; Set new state
   LD (PTR_INPUT_STATE), A; Save new buf command state
   RET
@@ -601,10 +614,29 @@ _CMD_EXEC_ESC:
   LD L, A     ; Move text ptr to curr char
   LD A, (HL)  ; Load curr char
 
-  ; TODO: copy char into file
+  CP END_OF_TXT; Check if buf redirect is ended
+  JR Z, #CMD_WR_input_esc-$
+
+  ; TODO: Add ability to allocate other zones
+  PUSH HL     ; Save text ptr in stack
+  PUSH DE     ; Temp save reg DE in stack
+  LD IX, (PTR_INPUT_FILE); Load file inode into reg IX
+  LD E, (IX+FS_INODE_SIZE)  ; Get curr inode size, low byte
+  LD D, (IX+FS_INODE_SIZE+1); Get curr inode size, high byte
+  LD L, (IX+FS_INODE_ZONE1)  ; Get data zone 1 addr, low byte
+  LD H, (IX+FS_INODE_ZONE1+1); Get data zone 1 addr, high byte
+  ADD HL, DE  ; Calculate next char position, with filename blk
+  INC DE      ; Increase file size by one
+  LD (IX+FS_INODE_SIZE),   E; Save calculated size in inode, low byte
+  LD (IX+FS_INODE_SIZE+1), D; Save calculated size in inode, high byte
+  LD DE, FS_SZ_FILENAME_BLK; Get filename block size
+  SBC HL, DE  ; Calcuate next char position without filename block
+  LD (HL), A  ; Save curr char in to file buffer
+  POP DE      ; Restore reg DE from stack
+  POP HL      ; Restore text ptr from stack
 
   CP LINE_FEED; Check if curr char is a new line aka '\n'
-  JR NZ, #CMD_WR_input_esc-$
+  JR NZ, #CMD_WR_input_end-$
   LD A, (PTR_INPUT_STATE); Print ">" | "|" which means that curr state is cmd mode or input redirected
   RST 0x10    ; Output the char
 #CMD_WR_input_end:
@@ -612,13 +644,8 @@ _CMD_EXEC_ESC:
   RET
 
 #CMD_WR_input_esc:
-  CP END_OF_TXT; Check if buf redirect is ended
-  JR NZ, #CMD_WR_input_end-$
-  XOR A       ; Reset reg A
-  LD HL, PTR_INPUT_TO_ADDR; Load value to addr ptr
-  LD (HL), A  ; Reset low byte addr
-  INC HL      ; Move ptr to the high byte
-  LD (HL), A  ; Reset high byte addr
+  LD HL, 0    ; Reset reg HL
+  LD (PTR_INPUT_FUNC), HL; Reset input handler
   LD A, ">"   ; Set new state, cmd
   LD (PTR_INPUT_STATE), A; Save new buf command state
 

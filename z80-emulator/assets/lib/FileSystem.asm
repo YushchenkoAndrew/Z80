@@ -155,7 +155,46 @@
 
   LD (IX+FS_INODE_MODE),   C; Set inode mode low byte
   LD (IX+FS_INODE_MODE+1), B; Set inode mode high byte
+  CALL #NEXT_DATA_BLK; Calc next data block
+
   PUSH IX     ; Temp save addr of curr inode
+  LD IX, SUPER_BLOCK_MAP; Load ptr to start of super block
+  LD C, (IX+FS_SP_BLK_INODES); Get low byte of inodes size
+  LD B, (IX+FS_SP_BLK_INODES+1); Get high byte of inodes size
+  INC BC      ; Increment amount of inode by one
+  LD (IX+FS_SP_BLK_INODES),   C; Save new value in super block, low byte
+  LD (IX+FS_SP_BLK_INODES+1), B; Save new value in super block, high byte
+  POP IX      ; Restore ptr to curr inode
+
+  LD (IX+FS_INODE_ZONE0),   L; Set directory data zone0, low byte
+  LD (IX+FS_INODE_ZONE0+1), H; Set directory data zone0, high byte
+  POP DE      ; Restore reg DE
+  RET
+
+#NEW_INODE_iter:
+  RET
+
+
+;;
+;; Example:
+;;  LD BC, 5
+;;  LD DE, mount_name
+;;  CALL #NEW_FILENAME_BLK
+;; 
+;; mount_name:
+;;   db "mount"
+;; 
+;; proc NEXT_DATA_BLK() -> reg HL;
+;;   reg A  -- as defined
+;;   reg BC -- as defined
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+;;   reg IX -- unaffected
+;;
+#NEXT_DATA_BLK:
+  PUSH IX     ; Save reg IX in reg
+  PUSH DE     ; Save reg DE in reg
+  PUSH BC     ; Save reg BC in reg
 
   LD IX, SUPER_BLOCK_MAP; Load ptr to start of super block
   LD L, (IX+FS_SP_BLK_DATA_ST); Get low byte of data block
@@ -163,32 +202,26 @@
   LD C, (IX+FS_SP_BLK_INODES); Get low byte of inodes size
   LD B, (IX+FS_SP_BLK_INODES+1); Get high byte of inodes size
 
-  INC BC      ; Increment amount of inode by one
-  LD (IX+FS_SP_BLK_INODES),   C; Save new value in super block, low byte
-  LD (IX+FS_SP_BLK_INODES+1), B; Save new value in super block, high byte
   LD IX, INODE_MAP; Load addr to first inode map
+  INC BC      ; Add small adjustment to inlcude first inode
 
-#NEW_INODE_blk_offset:
+#NEXT_DATA_BLK_lp:
   DEC BC      ; Decrement conter
   XOR A       ; Reset Acc
   OR B        ; Check if reg BC is empty
   OR C        ; Check if reg BC is empty
-  JR Z, #NEW_INODE_blk_esc-$
-  LD E, (IX+FS_INODE_SIZE); Get low byte of inodes size
-  LD D, (IX+FS_INODE_SIZE+1); Get high byte of inodes size
+  JR Z, #NEXT_DATA_BLK_end-$
+  LD E, (IX+FS_INODE_ALLOCATED); Get low byte of inodes size
+  LD D, (IX+FS_INODE_ALLOCATED+1); Get high byte of inodes size
   ADD HL, DE  ; Calc next data block addr
   LD DE, FS_SZ_INODE; Load byte offset of inode
   ADD IX, DE  ; Calc next inode addr
-  JR #NEW_INODE_blk_offset-$
+  JR #NEXT_DATA_BLK_lp-$
 
-#NEW_INODE_blk_esc:
-  POP IX      ; Restore ptr to curr inode
-  LD (IX+FS_INODE_ZONE0),   L; Set directory data zone0, low byte
-  LD (IX+FS_INODE_ZONE0+1), H; Set directory data zone0, high byte
+#NEXT_DATA_BLK_end:
+  POP BC      ; Restore reg BC
   POP DE      ; Restore reg DE
-  RET
-
-#NEW_INODE_iter:
+  POP IX      ; Restore reg IX
   RET
 
 
@@ -209,6 +242,7 @@
 ;;   reg IX -- as defined
 ;;
 #NEW_FILENAME_BLK:
+  PUSH IX     ; Save inode addr in stack
   PUSH HL     ; Save addr to data blk in stack
   PUSH BC     ; Save string counter in stack
   LD L, (IX+FS_INODE_SIZE); Get curr inode size, low byte
@@ -218,6 +252,8 @@
 
   LD (IX+FS_INODE_SIZE),   L; Save calculated size in inode, low byte
   LD (IX+FS_INODE_SIZE+1), H; Save calculated size in inode, high byte
+  LD (IX+FS_INODE_ALLOCATED),   L; Save calculated size in inode, low byte
+  LD (IX+FS_INODE_ALLOCATED+1), H; Save calculated size in inode, high byte
   POP BC      ; Restore string counter
   POP IX      ; Restore data blk addr in reg IX
 
@@ -232,6 +268,7 @@
   EX DE, HL   ; Change string src & dst
   LDIR        ; Copy file name from reg DE to HL
   EX DE, HL   ; Restore src & dst as it was prev
+  POP IX      ; Restore inode addr
   RET
 
 
@@ -331,12 +368,12 @@
   LD A, " "   ; Make a break between prev value
   RST 0x10
 
-  LD BC, 0x0400; Display only first 4 bytes & reset reg C
+  LD BC, 0x0200; Display only first 2 bytes & reset reg C
   LD HL, PTR_TEMP_WORD      ; Load ptr to the temp val
   PUSH IX     ; Temp save ptr to the curr inode
 
 #PRINT_INODE_size_lp:
-  LD A, (IX+FS_INODE_SIZE+3); Load file mask into to Acc
+  LD A, (IX+FS_INODE_SIZE+1); Load file mask into to Acc
   OR A        ; Check if Acc is empty
   JR NZ, #PRINT_INODE_size_lp_print-$
   OR C        ; Check we reach to non zero number and we cant ignore it now
@@ -370,7 +407,9 @@
 FS_INODE_MODE          EQU 0x00
 FS_INODE_UID           EQU 0x02
 FS_INODE_SIZE          EQU 0x04
-FS_INODE_TIME          EQU 0x08
+FS_INODE_ALLOCATED     EQU 0x06
+FS_INODE_CREATED       EQU 0x08
+FS_INODE_UPDATED       EQU 0x08
 FS_INODE_GID           EQU 0x0C
 FS_INODE_LINKS         EQU 0x0D
 FS_INODE_ZONE0         EQU 0x0E
@@ -443,6 +482,7 @@ FS_MOUNT_EN       EQU 0x01
 ; Sizes
 FS_SZ_INODE            EQU 0x20
 FS_SZ_FILENAME_BLK     EQU 0x20
+FS_SZ_DATA_BLK         EQU 0x200
 
 ;; Inodes
 FILENAME_SCAN_KEY_BUF     EQU DATA_ZONE_MAP ;; Map SCAN_KEY_BUF
@@ -461,15 +501,15 @@ FS_FILE_TYPE      EQU FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W
 
 .INODE_BLOCK:
   ;; ====================================================================
-  ;;   MODE           UID     SIZE       TIME     GID|LINKS     ZONE0
-  dw  FS_FILE_TYPE,   0x00,  0x002F, 0,  0x00, 0,   0x00,    FILENAME_SCAN_KEY_BUF
+  ;;   MODE           UID     SIZE    ALLOCATED   CREATED   UPDATED  GID|LINKS     ZONE0
+  dw  FS_FILE_TYPE,   0x00,  0x002F,   0x0020,      0x00,    0x00,     0x00,    FILENAME_SCAN_KEY_BUF
   
   ;;     ZONE1       ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
   dw  SCAN_KEY_BUF,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
 
   ;; ====================================================================
-  ;;   MODE           UID      SIZE      TIME     GID|LINKS       ZONE0
-  dw  FS_FILE_TYPE,   0x00,  0x011F, 0,  0x00, 0,   0x00,    FILENAME_TEXT_BUF_MAP
+  ;;   MODE           UID     SIZE    ALLOCATED   CREATED  UPDATED   GID|LINKS     ZONE0
+  dw  FS_FILE_TYPE,   0x00,  0x011F,   0x0020,     0x00,     0x00,     0x00,    FILENAME_TEXT_BUF_MAP
   
   ;;     ZONE1       ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
   dw  TEXT_BUF_MAP,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
@@ -477,10 +517,10 @@ FS_FILE_TYPE      EQU FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W
 
 .FILENAME_BLOCK:
   ;; ====================================================================
-  dw  0x01 ;; FILENAME_SCAN_KEY_BUF
+  dw  0x00 ;; FILENAME_SCAN_KEY_BUF
   db "scan-key", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0xFF
   ;; ====================================================================
-  dw  0x02 ;; FILENAME_TEXT_BUF_MAP
+  dw  0x01 ;; FILENAME_TEXT_BUF_MAP
   db "text-buf", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF
   ;; ====================================================================
 .FILENAME_BLOCK_ED:

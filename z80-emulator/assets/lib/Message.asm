@@ -12,7 +12,10 @@
 ;;
 #MSG_OK:
   LD HL, MSG_OK
+#MSG_OUT:
+  PUSH AF     ; Save reg A & flags in stack
   RST 0x18    ; Print string
+  POP AF      ; Restore reg A & flags
   RET
 
 MSG_OK:
@@ -30,8 +33,7 @@ MSG_OK:
 ;;
 #MSG_NUM_ERR:
   LD HL, MSG_INVALID_ADDRESS
-  RST 0x18    ; Print string
-  RET 
+  JR #MSG_OUT-$
 
 MSG_INVALID_ADDRESS:
   db "invalid address", 0
@@ -48,8 +50,7 @@ MSG_INVALID_ADDRESS:
 ;;
 #MSG_ARG_ERR:
   LD HL, MSG_INVALID_COMMAND_ARG
-  RST 0x18    ; Print string
-  RET 
+  JR #MSG_OUT-$
 
 MSG_INVALID_COMMAND_ARG:
   db "invalid command arg", 0
@@ -66,8 +67,7 @@ MSG_INVALID_COMMAND_ARG:
 ;;
 #MSG_FILE_TYPE_ERR:
   LD HL, MSG_INVALID_FILE_TYPE
-  RST 0x18    ; Print string
-  RET 
+  JR #MSG_OUT-$
 
 MSG_INVALID_FILE_TYPE:
   db "invalid file type", 0

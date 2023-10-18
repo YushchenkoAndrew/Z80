@@ -66,7 +66,7 @@ _ACK_BUFFERS:
 
 #WR_BUFFER_nxt_esc:
   PUSH HL     ; Save src string ptr in Stack
-  LD HL, (PTR_INPUT_TO_ADDR); Load ptr to jump addr
+  LD HL, (PTR_INPUT_FUNC); Load ptr to jump addr
   XOR A       ; Reset Acc
   OR H        ; Bit or to 0 reg H
   OR L        ; Bit or to reg H + reg L
