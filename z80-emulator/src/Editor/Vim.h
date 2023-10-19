@@ -331,13 +331,6 @@ public:
     } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
   }
 
-  inline void Command(Int2Type<VimT::CMD_COLON>) { 
-    if (search.nSize <= 0) return;
-
-    std::cout << "Impl this cmd: " << search.sPhrase << std::endl;
-    // TODO: Impl this !!
-  }
-
   inline void Command(Int2Type<VimT::CMD_w>) { 
     auto curr = lines[pos.y][pos.x];
     while ((Utils::IsAlpha(lines[pos.y][pos.x]) && Utils::IsAlpha(curr)) || (!Utils::IsAlpha(curr) && lines[pos.y][pos.x] == curr)) {
@@ -517,13 +510,12 @@ public:
     if (peekPrev() == 'g' && match<1>({ 'p' })) { phrase(Int2Type<VimT::CMD_gp>(), false, true); return reset(); } 
 
 
-    if (match<27>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';', ':' })) {
+    if (match<26>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
       switch (peekPrev()) {
         case 'g': search = Window::SearchT(true, 1, 1, true, pos); return;
         case 'r': search = Window::SearchT(true, 1, 1, true, pos); break;
         case 'f': case 'F': search = Window::SearchT(true, 1,  1, true, pos); break;
         case '/': case '?': search = Window::SearchT(true, 1, -1, true, pos); break;
-        case ':': search = Window::SearchT(true, 1, -1, true, pos); break;
       }
 
       // (noun * number) + verb
@@ -625,7 +617,7 @@ public:
 
     switch (mode) {
       case NORMAL: break;
-      case INSERT: lines[pos.y].insert(pos.x += 2, "  "); break;
+      case INSERT: lines[pos.y].insert(pos.x, "  "); nLastX = pos.x += 2; break;
     }
   }
 
@@ -754,7 +746,7 @@ public:
       case REPLACE: return "-- REPLACE --";
       case INSERT: return "-- INSERT --";
       case NORMAL: 
-        if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
+        if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?' || cmd.front() == ':')) return cmd;
         if (err.size()) return err;
         return "-- NORMAL --";
     }
@@ -763,7 +755,7 @@ public:
   }
 
   inline std::string GetCmd() { 
-    if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?')) return "";
+    if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?' || cmd.front() == ':')) return "";
     return cmd;
   }
 

@@ -47,7 +47,7 @@ public:
     if (runtime != nullptr && runtime->joinable()) runtime->join();
   }
 
-  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; IFF.first = IFF.second = false; }
+  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; cycles = 0; IFF.first = IFF.second = false; }
 
   void Preinitialize() { 
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
@@ -101,7 +101,7 @@ public:
 private:
   void Runtime() {
     while (bExec) {
-      if (cycles-- > 0) continue;
+      if (cycles != 0) { cycles--; continue; }
 
       if (IFF.first && interrupt.second) {
         interrupt.second = false; IFF.first = IFF.second = false;

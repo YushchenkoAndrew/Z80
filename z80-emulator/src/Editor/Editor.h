@@ -31,6 +31,20 @@ public:
     return this;
   }
 
+  void Save() { 
+    Utils::Lock l(mutex);
+
+    for (auto& tab : tabs) {
+      std::ofstream f(PATH(tab)); f << VIM(tab).Text(); f.close();
+    }
+  }
+
+  void Save(bool) { 
+    Utils::Lock l(mutex);
+
+    std::ofstream f(PATH(tabs[nTab])); f << VIM(tabs[nTab]).Text(); f.close();
+  }
+
   inline void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
   }

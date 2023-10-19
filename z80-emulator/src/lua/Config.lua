@@ -12,6 +12,7 @@ Init = {
   nScreenWidth = WIDTH,
   nScreenHeight = HIGHT,
   nPixel = PIXELS,
+  sFile = "assets/TestKeyboard/Test.asm",
 
   vPanels = {
     {

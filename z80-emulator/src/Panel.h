@@ -80,6 +80,7 @@ public:
 
     if (GameEngine->GetMouse(0).bPressed) {
       auto mouse = GameEngine->GetMousePos();
+      if (mouse.y - size.y > 0) return;
 
       if (!bFullScreen && EXIST(bus))      SELECTED(bus)      = IS_INSIDE(bus, mouse);
       if (!bFullScreen && EXIST(eeprom))   SELECTED(eeprom)   = IS_INSIDE(eeprom, mouse);
@@ -173,6 +174,10 @@ public:
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); 
   }
 
+  inline void Command(Int2Type<Editor::VimT::CMD_COLON>) { 
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<CMD_EXEC_CALLBACK>());
+  }
+
   inline void Command(Int2Type<Editor::VimT::CMD_NUMBER>) {
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), digit()); 
   }
@@ -200,6 +205,8 @@ public:
     if (mode == COMMAND) printf("Panel: '%s'\n", cmd.c_str());
     #endif
 
+    if (search.bEnabled) return GameEngine->Event(Int2Type<CMD_UPDATE_CALLBACK>(), cmd.substr(search.nStartAt));
+
     if (nCurr == 0) {
       if (cmd.size() > 1 && match<1>({ '^' })) {
         if (match<1>({ ' ' })) { mode = COMMAND; return; }
@@ -223,6 +230,11 @@ public:
     if (match<1>({ 'z' })) { phrase(Int2Type<Editor::VimT::CMD_z>()); return reset(); } 
     if (match<1>({ '?' })) { phrase(Int2Type<Editor::VimT::CMD_QUESTION>()); return reset(); } 
     if (match<1>({ '&' })) { phrase(Int2Type<Editor::VimT::CMD_AND>()); return reset(); } 
+    if (match<1>({ ':' })) {
+      mode = COMMAND; search = Window::SearchT(true, 2, -1, true, {});
+      GameEngine->Event(Int2Type<CMD_UPDATE_CALLBACK>(), cmd.substr(search.nStartAt));
+      return phrase(Int2Type<Editor::VimT::CMD_COLON>());
+    }
 
     if (peekPrev() == 'q' && Utils::IsDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_q>()); return reset(); } 
     if (Utils::IsDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_NUMBER>()); return reset(); } 
@@ -242,7 +254,8 @@ public:
   inline void reset(bool exec = true) {
     if (exec) lambda();
 
-    cmd = ""; nStart = nCurr = 0; lambda = []() {}; 
+    cmd = ""; nStart = nCurr = 0; search.bEnabled = false; lambda = []() {}; 
+    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<CMD_UPDATE_CALLBACK>(), cmd);
   }
 
 
@@ -278,16 +291,39 @@ public:
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::MINUS>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::MINUS,  '-', '_'); }
 
   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DEL>, Int2Type<U>>)    { EscapeStrokeHandler(olc::Key::DEL); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>)   { EscapeStrokeHandler(olc::Key::BACK); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>)  { EscapeStrokeHandler(olc::Key::ENTER); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) { EscapeStrokeHandler(olc::Key::ENTER); }
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) { EscapeStrokeHandler(olc::Key::ESCAPE); }
+
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>)   {
+    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+    if (!GameEngine->GetKey(olc::Key::BACK).bPressed) return;
+
+    
+    bUpdated = true; 
+    switch (mode) {
+      case NORMAL: return;
+      case COMMAND:
+        if (!search.bEnabled) return reset(false);
+        if (cmd.size()) cmd.pop_back();
+        if (cmd.size()) break;
+
+        mode = NORMAL; reset(false);
+        break;
+    }
+  }
+
+  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>)  {
+    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+    if (!GameEngine->GetKey(olc::Key::ENTER).bPressed) return;
+    
+    bUpdated = true; mode = NORMAL; reset(search.bEnabled);
+  }
 
 private:
   inline void EscapeStrokeHandler(olc::Key key) {
     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
     if (!GameEngine->GetKey(key).bPressed) return;
 
-    bUpdated = true; reset(false);
+    bUpdated = true; mode = NORMAL; reset(false);
   }
 
 public:

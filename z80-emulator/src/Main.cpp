@@ -33,26 +33,11 @@ public:
     // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
 
     // TODO: Impl terminal
-    auto terminal = std::make_shared<Window::Terminal>();
+    // auto terminal = std::make_shared<Window::Terminal>();
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
-    if (bool err = interpreter.Load("assets/TestKeyboard/Test.asm")) {
-      for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
-      printf("\n");
-
-      for (auto err : interpreter.errors) {
-        printf("%s", err.c_str());
-      }
-
-      printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
-
-      terminal->PushOut(interpreter.errors);
-    } else terminal->PushOut("OK");
-
-    //  else {
-    //   emulator.ROM.load(emulator.interpreter.env.memory);
-    // }
+    Compile();
 
     auto editor = std::make_shared<Editor::Editor>();
     for (auto f : interpreter.env.files()) editor->Open(f);
@@ -79,15 +64,15 @@ public:
     // auto offset = 210;
     olc::vi2d zero = olc::vi2d(0, 0);
     olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y);
-    olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y * 9 / 10);
+    olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y);
 
     panels = {
       Panel(
         // TODO: Load windows size from lua
         std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
         std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
-        std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
-        std::tuple(terminal,     std::pair(olc::vi2d(zero.x,   window.y),            olc::vi2d(window.x,           size.y - window.y)))
+        std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4)))
+        // std::tuple(terminal,     std::pair(olc::vi2d(zero.x,   window.y),            olc::vi2d(window.x,           size.y - window.y)))
       ),
       Panel(
         std::tuple(bus,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
@@ -168,13 +153,16 @@ public:
     olc::vi2d pos = olc::vi2d(0, nHeight - vStep.y);
     FillRect(pos - olc::vi2d(0, 2), olc::vi2d(nWidth, 10), *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
 
-    for (int32_t i = 0; i < panels.size(); i++) {
+    const auto nCmd = cmd.size();
+    for (int32_t i = 0; !nCmd && i < panels.size(); i++) {
       auto str = GetPanelName(i + 1);
       auto color = i == nPanel ? AnyType<Colors::GREY, ColorT>::GetValue() : AnyType<Colors::DARK_GREY, ColorT>::GetValue();
 
       DrawString(pos + olc::vi2d(vStep.x, 0), str, *color);
       pos.x += str.size() * vStep.x + vStep.x;
     }
+
+    if (nCmd) DrawString(pos + olc::vi2d(vStep.x, 0), cmd, *AnyType<Colors::GREY, ColorT>::GetValue());
 
     std::string name = GetMode() == NORMAL ? "NORMAL" : "DEBUG";
     pos.x = nWidth - ((int32_t)name.size() + 2) * vStep.x;
@@ -210,6 +198,7 @@ public:
     std::cout << "DEBUG_RESET_CALLBACK\n";
     #endif
 
+    bus->Z80->Addr(); // Wait until cpu will enter debug mode
     bus->Z80->Reset();
   }
 
@@ -286,6 +275,46 @@ public:
     panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
   }
 
+  void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string cmd) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "CMD_UPDATE_CALLBACK " << cmd << std::endl;
+    #endif
+
+    nCurr = 0; this->cmd = cmd;
+  }
+
+  void Event(Int2Type<CMD_EXEC_CALLBACK>) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "CMD_EXEC_CALLBACK\n";
+    #endif
+
+    auto editor = panels[nPanel].Editor();
+    if (editor == nullptr) { nCurr = 0; cmd = ""; return; }
+
+    advance(); // Consume ':'
+
+    switch (advance()) {
+      case 'w': 
+        if (peek() == 'a') editor->Save();
+        else editor->Save(true);
+
+        Compile();
+
+        for (auto f : interpreter.env.files()) editor->Open(f);
+        editor->Open(interpreter.filepath);
+
+        Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>());
+        bus->W27C512->load(interpreter.env.memory);
+        Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>());
+        break;
+        
+    }
+    
+    nCurr = 0; cmd = "";
+  }
+
+
+
   void Event(Int2Type<PROGRAM_EXIT>) override {
     #ifdef DEBUG_MODE 
     std::cout << "PROGRAM_EXIT\n";
@@ -318,6 +347,25 @@ private:
 
   inline std::string GetPanelName(int32_t i) { return std::to_string(i) + " panel"; }
 
+  inline bool isAtEnd() { return nCurr >= cmd.size(); }
+  inline const char advance() { return isAtEnd() ? '\0': cmd[nCurr++]; }
+  inline const char peek() { return isAtEnd() ? '\0' : cmd[nCurr]; }
+
+  void Compile() {
+    if (bool err = interpreter.Load(luaConfig.GetTableValue<std::string>(nullptr, "sFile"))) {
+      #ifdef DEBUG_MODE 
+      for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
+      printf("\n");
+
+      for (auto err : interpreter.errors) {
+        printf("%s", err.c_str());
+      }
+
+      printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
+      #endif
+    }
+  }
+
 private:
   const olc::vi2d vOffset = olc::vi2d(0, 0);
   const olc::vi2d vStep = olc::vi2d(8, 12);
@@ -330,6 +378,8 @@ private:
   std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
   std::unique_ptr<std::thread> offload = nullptr;
 
+  int32_t nCurr = 0;
+  std::string cmd = "";
   std::atomic<bool> bExec = true;
   LuaScript& luaConfig;
 };
