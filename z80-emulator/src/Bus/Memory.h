@@ -3,6 +3,8 @@
 
 namespace Bus {
 
+typedef Window::SearchT SearchT;
+
 /**
  * Grammar:
  *  command     -> phrase | motion | order
@@ -55,7 +57,7 @@ public:
     locked = true;
 
     switch (mode) {
-      case REPLACE: mode = NORMAL;
+      // case REPLACE: mode = NORMAL;
       case NORMAL: case CHARACTER: case DISASSEMBLE: break;
     }
   }
@@ -68,7 +70,7 @@ public:
       case NORMAL:      return Preprocess(Int2Type<NORMAL>());
       case CHARACTER:   return Preprocess(Int2Type<NORMAL>());
       case DISASSEMBLE: return Preprocess(Int2Type<DISASSEMBLE>()); 
-      case REPLACE:     return Preprocess(Int2Type<NORMAL>());
+      // case REPLACE:     return Preprocess(Int2Type<NORMAL>());
     }
   }
 
@@ -94,7 +96,7 @@ public:
       case NORMAL:    return Process(Int2Type<NORMAL>(), GameEngine);
       case CHARACTER: return Process(Int2Type<NORMAL>(), GameEngine);
       case DISASSEMBLE: return Process(Int2Type<NORMAL>(), GameEngine); 
-      case REPLACE:   return Process(Int2Type<REPLACE>(), GameEngine);
+      // case REPLACE:   return Process(Int2Type<REPLACE>(), GameEngine);
     }
   }
 
@@ -102,7 +104,7 @@ public:
   void Draw(PixelGameEngine* GameEngine) {
     switch (mode) {
       case NORMAL:    Draw(Int2Type<NORMAL>(), GameEngine); break;
-      case REPLACE:   Draw(Int2Type<NORMAL>(), GameEngine); break;
+      // case REPLACE:   Draw(Int2Type<NORMAL>(), GameEngine); break;
       case CHARACTER: Draw(Int2Type<CHARACTER>(), GameEngine); break;
       case DISASSEMBLE: Draw(Int2Type<DISASSEMBLE>(), GameEngine); break;
     }
@@ -148,8 +150,8 @@ private:
       }
     }
 
-    bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
-    auto pos = bSearch ? std::get<3>(search.second) : this->pos;
+    bool bSearch = search.bEnabled && cmd.size() - search.nStartAt > 0 && search.vPos != this->pos && (cmd.front() == '/' || cmd.front() == '?');
+    auto pos = bSearch ? search.vPos : this->pos;
 
     olc::vi2d cursor = absolute + (pos - vStartAt.first) * vStep.first + vOffset.first;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 18, 12 }, *AnyType<GREY, ColorT>::GetValue());
@@ -176,8 +178,8 @@ private:
       }
     }
 
-    bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
-    auto pos = bSearch ? std::get<3>(search.second) : this->pos;
+    bool bSearch = search.bEnabled && cmd.size() - search.nStartAt > 0 && search.vPos != this->pos && (cmd.front() == '/' || cmd.front() == '?');
+    auto pos = bSearch ? search.vPos : this->pos;
 
     olc::vi2d cursor = absolute + (pos - vStartAt.first) * olc::vi2d(vStep.first.y, vStep.first.y) + vOffset.first;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 12, 12 }, *AnyType<GREY, ColorT>::GetValue());
@@ -237,7 +239,7 @@ public:
   inline void Command(Int2Type<T>) {}
 
   inline void Command(Int2Type<Editor::VimT::CMD_C>) { mode = mode == NORMAL ? CHARACTER : NORMAL; }
-  inline void Command(Int2Type<Editor::VimT::CMD_r>) { mode = REPLACE; Command(Int2Type<Editor::VimT::CMD_x>()); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_r>) { mode = REPLACE; Command(Int2Type<Editor::VimT::CMD_x>()); }
   inline void Command(Int2Type<Editor::VimT::CMD_x>) { memory[index()] = 0x00; }
   inline void Command(Int2Type<Editor::VimT::CMD_yy>) { buffer = { memory[index()] }; }
   inline void Command(Int2Type<Editor::VimT::CMD_e>) { Command(Int2Type<Editor::VimT::CMD_b>()); }
@@ -262,8 +264,9 @@ public:
   inline void Command(Int2Type<Editor::VimT::CMD_i>) { 
     for (int32_t i = memory.size() - 1, size = index() + 1; i >= size; i--) memory[i] = memory[i - 1];
 
-    search = { false, { "", 2, true, {} } }; 
-    Command(Int2Type<Editor::VimT::CMD_r>()); 
+    search = SearchT(false, 1, 2, true, pos); 
+    // TODO: Impl this
+    // Command(Int2Type<Editor::VimT::CMD_r>()); 
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_gd>) { 
@@ -272,27 +275,27 @@ public:
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (!std::get<0>(search.second).size() > 1) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (cmd.size() - search.nStartAt > 1) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_f>());
+    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_f>());
     else Command(Int2Type<Editor::VimT::CMD_F>());
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_COMMA>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (!std::get<0>(search.second).size() > 1) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (cmd.size() - search.nStartAt > 1) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_F>());
+    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_F>());
     else Command(Int2Type<Editor::VimT::CMD_f>());
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_f>) { 
-    if (!std::get<0>(search.second).size()) return;
-    if (!Utils::IsHexDigit(std::get<0>(search.second).front())) return;
-    if (search.first) std::get<2>(search.second) = true;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (!Utils::IsHexDigit(search.sPhrase.front())) return;
+    if (search.bEnabled) search.bDirection = true;
 
-    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
     for (int32_t i = index() + 1; i < memory.size(); i++) {
       if (digit != memory[i]) continue;
 
@@ -302,11 +305,11 @@ public:
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_F>) { 
-    if (!std::get<0>(search.second).size()) return;
-    if (!Utils::IsHexDigit(std::get<0>(search.second).front())) return;
-    if (search.first) std::get<2>(search.second) = false;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (!Utils::IsHexDigit(search.sPhrase.front())) return;
+    if (search.bEnabled) search.bDirection = false;
 
-    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
     for (int32_t i = index() - 1; i >= 0; i--) {
       if (digit != memory[i]) continue;
       pos.x = i & (pages.x - 1); pos.y = i / pages.x;
@@ -314,29 +317,33 @@ public:
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_n>) {
-    if (!std::get<0>(search.second).size()) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_SLASH>());
+    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_SLASH>());
     else Command(Int2Type<Editor::VimT::CMD_QUESTION>());
 
-    pos = std::get<3>(search.second);
+    pos = search.vPos;
   }
 
   inline void Command(Int2Type<Editor:: VimT::CMD_N>) {
-    if (!std::get<0>(search.second).size()) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<Editor::VimT::CMD_QUESTION>());
+    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_QUESTION>());
     else Command(Int2Type<Editor::VimT::CMD_SLASH>());
 
-    pos = std::get<3>(search.second);
+    pos = search.vPos;
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SLASH>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (search.first) std::get<2>(search.second) = true;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (search.bEnabled) search.bDirection = true;
+
+    bool isValid = true;
+    for (auto& c : search.sPhrase) isValid = isValid && Utils::IsHexDigit(c);
+    if (!isValid) return;
 
     std::vector<int32_t> foundAt = {};
-    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
 
     for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
       if (memory[i] != digit) continue;
@@ -345,17 +352,25 @@ public:
       else foundAt.insert(foundAt.begin() + offset++, i);
     }
 
-    if (!foundAt.size()) return;
-    int32_t index = foundAt.front();
-    std::get<3>(search.second) = olc::vi2d(index & (pages.x - 1), index / pages.x);
+    if (foundAt.size())  {
+      int32_t index = foundAt.front();
+      auto next = olc::vi2d(index & (pages.x - 1), index / pages.x);
+
+      if (search.vPos != next) search.vPrev = search.vPos;
+      search.vPos = next;
+    } else { search.vPrev = search.vPos = this->pos; }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (search.first) std::get<2>(search.second) = false;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (search.bEnabled) search.bDirection = false;
+
+    bool isValid = true;
+    for (auto& c : search.sPhrase) isValid = isValid && Utils::IsHexDigit(c);
+    if (!isValid) return;
 
     std::vector<int32_t> foundAt = {};
-    uint8_t digit = std::stoul(std::get<0>(search.second), nullptr, 16);
+    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
 
     for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
       if (memory[i] != digit) continue;
@@ -364,9 +379,13 @@ public:
       else foundAt.insert(foundAt.end() - offset++, i);
     }
 
-    if (!foundAt.size()) return;
-    int32_t index = foundAt.front();
-    std::get<3>(search.second) = olc::vi2d(index & (pages.x - 1), index / pages.x);
+    if (foundAt.size())  {
+      int32_t index = foundAt.front();
+      auto next = olc::vi2d(index & (pages.x - 1), index / pages.x);
+
+      if (search.vPos != next) search.vPrev = search.vPos;
+      search.vPos = next;
+    } else { search.vPrev = search.vPos = this->pos; }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_P>) { 
@@ -519,10 +538,11 @@ private:
     printf("Memory: '%s'\n", cmd.c_str());
     #endif
 
-    if (search.first) {
+    if (search.bEnabled) {
       // TODO: ADD ability to edit this string
-      std::get<0>(search.second).push_back(cmd.back());
+      // std::get<0>(search2.second).push_back(cmd.back());
       // if (std::get<0>(search.second).size() == std::get<1>(search.second)) 
+      if (cmd.size() - search.nStartAt >= 0) search.sPhrase = cmd.substr(search.nStartAt);
       return reset(); 
     }
 
@@ -549,10 +569,10 @@ private:
 
     if (match<21>({ 'h', 'j', 'k', 'l', 'x', 'r', 'w', 'b', 'e', '0', '$', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
       switch (peekPrev()) {
-        case 'g': search = { true, { "", 1, true, {} } }; return;
-        case 'r': search = { false, { "", 2, true, {} } }; break;
-        case 'f': case 'F': search = { true, { "", 1, true, {} } }; break;
-        case '/': case '?': search = { true, { "", -1, true, {} } }; break;
+        case 'g': search = SearchT(true, 1, 1, true, pos); return;
+        // case 'r': search = SearchT(true, 1, 2, true, pos); break; // TODO: Impl replace logic
+        case 'f': case 'F': search = SearchT(true, 1, 1, true, pos); break;
+        case '/': case '?': search = SearchT(true, 1, -1, true, pos); break;
       }
 
       // (noun * number) + verb
@@ -607,8 +627,8 @@ private:
       else { std::thread t(lambda); t.detach(); }
     }
 
-    if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
-    cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false; bSync = false;
+    if (search.bEnabled && cmd.size() - search.nStartAt != search.nSize) return;
+    cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.bEnabled = false; bSync = false;
   }
 
 public:
@@ -660,7 +680,7 @@ public:
       case CHARACTER:
       case NORMAL: reset(false); break;
 
-      case REPLACE: memory[index()] = 0x00; std::get<0>(search.second) = ""; break;
+      case REPLACE: memory[index()] = 0x00; break;
     }
   }
 
@@ -674,11 +694,11 @@ public:
     switch (mode) {
       case CHARACTER: 
       case DISASSEMBLE: 
-      case NORMAL: reset(false); break;
+      case NORMAL: if (cmd.size()) cmd.pop_back(); reset(false); break;
 
       case REPLACE: 
         memory[index()] = (memory[index()] / pages.x) & 0xF0;
-        if (std::get<0>(search.second).size()) std::get<0>(search.second).pop_back();
+        if (cmd.size()) cmd.pop_back();
         break;
     }
   }
@@ -693,12 +713,9 @@ public:
     switch (mode) {
       case NORMAL: 
       case CHARACTER:
-        if (search.first) {
-          std::get<1>(search.second) = std::get<0>(search.second).size();
-          pos = std::get<3>(search.second); UpdateCursor();
-        }
+        if (search.bEnabled) { search.nSize = cmd.size() - search.nStartAt; pos = search.vPos; UpdateCursor(); }
 
-        reset(search.first);
+        reset(search.bEnabled);
         break;
 
       case DISASSEMBLE: 
@@ -716,7 +733,7 @@ public:
     switch (mode) {
       case CHARACTER:
       case DISASSEMBLE:
-      case NORMAL: search.first = false; reset(false);
+      case NORMAL: search.bEnabled = false; reset(false);
       case REPLACE: mode = NORMAL; break;
     }
   }
@@ -736,14 +753,14 @@ public:
 
   inline std::string GetMode() {
     switch (mode) {
-      case REPLACE: return "-- REPLACE --";
+      // case REPLACE: return "-- REPLACE --";
       case DISASSEMBLE: return "-- DISASSEMBLE --";
       case CHARACTER: 
-        if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
+        if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
         return "-- CHARACTER --";
 
       case NORMAL: 
-        if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
+        if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
         return "-- NORMAL --";
     }
 
@@ -751,7 +768,7 @@ public:
   }
 
   inline std::string GetCmd() { 
-    if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return "";
+    if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?')) return "";
     return cmd;
   }
 
@@ -785,16 +802,16 @@ private:
       case DISASSEMBLE: cmd += isCtrl ? "^" : "";
       case CHARACTER: case NORMAL: cmd += std::string(1, c); break;
 
-      case REPLACE: {
-        if (!Utils::IsHexDigit(c)) { memory[index()] = c & 0xFF; mode = NORMAL; break; }
+      // case REPLACE: {
+      //   if (!Utils::IsHexDigit(c)) { memory[index()] = c & 0xFF; mode = NORMAL; break; }
 
-        memory[index()] = ((memory[index()] & 0x0F) * pages.x) | Utils::Hex2Int(c);
+      //   memory[index()] = ((memory[index()] & 0x0F) << 4) | Utils::Hex2Int(c);
+      //   // TODO: Fix some strange behavior with cmd 'r12'
 
-        std::get<0>(search.second).push_back(c);
-        if (std::get<0>(search.second).size() == std::get<1>(search.second)) mode = NORMAL;
-
-        break;
-      }
+      //   cmd.push_back(c);
+      //   if (cmd.size() - search.nStartAt == search.nSize) mode = NORMAL;
+      //   break;
+      // }
     }
   }
 

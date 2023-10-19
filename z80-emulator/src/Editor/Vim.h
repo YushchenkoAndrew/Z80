@@ -47,10 +47,10 @@ public:
   void Draw(PixelGameEngine* GameEngine, std::function<olc::vi2d(olc::vi2d pos)> lambda) {
     if (fBlink > 0.6f) return;
 
-    bool bSearch = search.first && std::get<0>(search.second).size() && (cmd.front() == '/' || cmd.front() == '?');
+    bool bSearch = search.bEnabled && cmd.size() - search.nStartAt > 0 && search.vPos != this->pos && (cmd.front() == '/' || cmd.front() == '?');
 
-    auto size = bSearch ? olc::vi2d(std::get<0>(search.second).size(), 1) : olc::vi2d(1, 1);
-    auto pos = lambda((bSearch ?  std::get<3>(search.second) : this->pos) + olc::vi2d(1, 1)) - olc::vi2d(1, 2);
+    auto size = bSearch ? olc::vi2d(cmd.size() - search.nStartAt, 1) : olc::vi2d(1, 1);
+    auto pos = lambda((bSearch ? search.vPos : this->pos) + olc::vi2d(1, 1)) - olc::vi2d(1, 2);
 
     switch (mode) {
       case NORMAL:  size *= olc::vi2d(8, 10); break;
@@ -161,7 +161,7 @@ public:
       lines.erase(lines.begin() + pos.y + diff.y);
 
     } else if (pos.x) {
-      if (diff.x < 0)  buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.first) }, false };
+      if (diff.x < 0)  buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.bEnabled) }, false };
       else buffer = { { lines[pos.y].substr(nLastX = pos.x, diff.x) }, false };
 
       lines[pos.y].erase(pos.x, buffer.first.front().size());
@@ -181,7 +181,7 @@ public:
       int32_t lineEndsAt = mode == ModeT::NORMAL;
       if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
     } else if (diff.x)  {
-      buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.first) }, false };
+      buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.bEnabled) }, false };
     }
   }
 
@@ -219,7 +219,7 @@ public:
   inline void Command(Int2Type<VimT::CMD_r>) {
     buffer = { { lines[pos.y].substr(nLastX = pos.x, 1) }, false };
 
-    auto c = std::get<0>(search.second).back();
+    auto c = cmd[search.nStartAt];
     lines[pos.y].replace(pos.x, 1, std::string(1, c == '\0' ? ' ': c));
   }
 
@@ -234,65 +234,66 @@ public:
   inline void Command(Int2Type<VimT::CMD_U>) { }
 
   inline void Command(Int2Type<VimT::CMD_SEMICOLON>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (!std::get<0>(search.second).size() > 1) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (cmd.size() - search.nStartAt > 1) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_f>());
+    if (search.bDirection) Command(Int2Type<VimT::CMD_f>());
     else Command(Int2Type<VimT::CMD_F>());
   }
 
   inline void Command(Int2Type<VimT::CMD_COMMA>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (!std::get<0>(search.second).size() > 1) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (cmd.size() - search.nStartAt > 1) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_F>());
+    if (search.bDirection) Command(Int2Type<VimT::CMD_F>());
     else Command(Int2Type<VimT::CMD_f>());
   }
 
   inline void Command(Int2Type<VimT::CMD_f>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (search.first) std::get<2>(search.second) = true;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (search.bEnabled) search.bDirection = true;
 
-    auto charAt = lines[pos.y].find(std::get<0>(search.second)[0], pos.x + 1);
+    auto charAt = lines[pos.y].find(cmd[search.nStartAt], pos.x + 1);
     if (charAt == std::string::npos) return;
     nLastX = pos.x = charAt;
   }
 
   inline void Command(Int2Type<VimT::CMD_F>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (search.first) std::get<2>(search.second) = false;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (search.bEnabled) search.bDirection = false;
 
-    auto charAt = lines[pos.y].rfind(std::get<0>(search.second)[0], std::max(pos.x - 1, 0));
+    auto charAt = lines[pos.y].rfind(cmd[search.nStartAt], std::max(pos.x - 1, 0));
     if (charAt == std::string::npos) return;
     nLastX = pos.x = charAt;
   }
 
   inline void Command(Int2Type<VimT::CMD_n>) {
-    if (!std::get<0>(search.second).size()) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_SLASH>());
+    if (search.bDirection) Command(Int2Type<VimT::CMD_SLASH>());
     else Command(Int2Type<VimT::CMD_QUESTION>());
 
-    nLastX = (pos = std::get<3>(search.second)).x;
+    nLastX = (pos = search.vPos).x;
   }
 
   inline void Command(Int2Type<VimT::CMD_N>) {
-    if (!std::get<0>(search.second).size()) return;
+    if (cmd.size() - search.nStartAt <= 0) return;
 
-    if (std::get<2>(search.second)) Command(Int2Type<VimT::CMD_QUESTION>());
+    if (search.bDirection) Command(Int2Type<VimT::CMD_QUESTION>());
     else Command(Int2Type<VimT::CMD_SLASH>());
 
-    nLastX = (pos = std::get<3>(search.second)).x;
+    nLastX = (pos = search.vPos).x;
   }
 
   inline void Command(Int2Type<VimT::CMD_SLASH>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (search.first) std::get<2>(search.second) = true;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (search.bEnabled) search.bDirection = true;
 
+    auto pos = search.vPrev;
     std::vector<olc::vi2d> foundAt = {};
 
     for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
-      auto charAt = lines[line].find(std::get<0>(search.second));
+      auto charAt = lines[line].find(search.sPhrase);
       if (charAt == std::string::npos) continue;
 
       if (line > pos.y || (line == pos.y && charAt > pos.x)) { 
@@ -300,18 +301,22 @@ public:
       } else foundAt.push_back(olc::vi2d(charAt, line));
     }
 
-    if (!foundAt.size()) return error("Pattern '" + std::get<0>(search.second) + "' not found.");
-    std::get<3>(search.second) = foundAt.front();
+    if (foundAt.size()) {
+      if (search.vPos != foundAt.front()) search.vPrev = search.vPos;
+
+      search.vPos = foundAt.front();
+    } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
   }
 
   inline void Command(Int2Type<VimT::CMD_QUESTION>) {
-    if (!std::get<0>(search.second).size()) return;
-    if (search.first) std::get<2>(search.second) = true;
+    if (cmd.size() - search.nStartAt <= 0) return;
+    if (search.bEnabled) search.bDirection = true;
 
+    auto pos = search.vPrev;
     std::vector<olc::vi2d> foundAt = {};
 
     for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
-      auto charAt = lines[line].find(std::get<0>(search.second));
+      auto charAt = lines[line].find(search.sPhrase);
       if (charAt == std::string::npos) continue;
 
       if (line < pos.y || (line == pos.y && charAt < pos.x)) { 
@@ -319,8 +324,18 @@ public:
       } else foundAt.push_back(olc::vi2d(charAt, line));
     }
 
-    if (!foundAt.size()) return error("Pattern '" + std::get<0>(search.second) + "' not found.");
-    std::get<3>(search.second) = foundAt.front();
+    if (foundAt.size()) {
+      if (search.vPos != foundAt.front()) search.vPrev = search.vPos;
+
+      search.vPos = foundAt.front();
+    } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
+  }
+
+  inline void Command(Int2Type<VimT::CMD_COLON>) { 
+    if (search.nSize <= 0) return;
+
+    std::cout << "Impl this cmd: " << search.sPhrase << std::endl;
+    // TODO: Impl this !!
   }
 
   inline void Command(Int2Type<VimT::CMD_w>) { 
@@ -465,13 +480,9 @@ public:
 
     err.clear(); 
 
-    if (search.first) {
-      // TODO: ADD ability to edit this string
-      std::get<0>(search.second).push_back(cmd.back());
-      // if (std::get<0>(search.second).size() == std::get<1>(search.second)) 
+    if (search.bEnabled) {
+      if (cmd.size() - search.nStartAt >= 0) search.sPhrase = cmd.substr(search.nStartAt);
       return reset(); 
-
-      return;
     }
 
     // TODO: Add ability to run execution commands aka ':wq'
@@ -506,12 +517,13 @@ public:
     if (peekPrev() == 'g' && match<1>({ 'p' })) { phrase(Int2Type<VimT::CMD_gp>(), false, true); return reset(); } 
 
 
-    if (match<26>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
+    if (match<27>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';', ':' })) {
       switch (peekPrev()) {
-        case 'g': search = { true, { "", 1, true, {} } }; return;
-        case 'r': search = { true, { "", 1, true, {} } }; break;
-        case 'f': case 'F': search = { true, { "", 1, true, {} } }; break;
-        case '/': case '?': search = { true, { "", -1, true, {} } }; break;
+        case 'g': search = Window::SearchT(true, 1, 1, true, pos); return;
+        case 'r': search = Window::SearchT(true, 1, 1, true, pos); break;
+        case 'f': case 'F': search = Window::SearchT(true, 1,  1, true, pos); break;
+        case '/': case '?': search = Window::SearchT(true, 1, -1, true, pos); break;
+        case ':': search = Window::SearchT(true, 1, -1, true, pos); break;
       }
 
       // (noun * number) + verb
@@ -564,8 +576,8 @@ public:
       else { std::thread t(lambda); t.detach(); }
     }
 
-    if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
-    cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.first = false; bSync = false;
+    if (search.bEnabled && cmd.size() - search.nStartAt != search.nSize) return;
+    cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.bEnabled = false; bSync = false;
   }
 
 
@@ -645,7 +657,7 @@ public:
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: reset(false); break;
+      case NORMAL: if (cmd.size()) cmd.pop_back(); reset(false); break;
 
       case REPLACE: 
         if (!replaced.size()) break;
@@ -679,12 +691,12 @@ public:
 
     switch (mode) {
       case NORMAL: 
-        if (search.first) {
-          std::get<1>(search.second) = std::get<0>(search.second).size();
-          nLastX = (pos = std::get<3>(search.second)).x;
+        if (search.bEnabled) {
+          search.nSize = cmd.size() - search.nStartAt;
+          nLastX = (pos = search.vPos).x;
         }
 
-        reset(search.first);
+        reset(search.bEnabled);
         break;
 
       case INSERT: {
@@ -706,7 +718,7 @@ public:
     bUpdated = true;
 
     switch (mode) {
-      case NORMAL: search.first = false; reset(false); break;
+      case NORMAL: search.bEnabled = false; reset(false); break;
       case REPLACE: replaced.clear();
       case INSERT: {
         mode = NORMAL;
@@ -742,7 +754,7 @@ public:
       case REPLACE: return "-- REPLACE --";
       case INSERT: return "-- INSERT --";
       case NORMAL: 
-        if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
+        if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?')) return cmd;
         if (err.size()) return err;
         return "-- NORMAL --";
     }
@@ -751,7 +763,7 @@ public:
   }
 
   inline std::string GetCmd() { 
-    if (search.first && (cmd.front() == '/' || cmd.front() == '?')) return "";
+    if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?')) return "";
     return cmd;
   }
 

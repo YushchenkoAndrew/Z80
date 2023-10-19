@@ -4,6 +4,19 @@
 
 namespace Window {
 
+struct SearchT {
+  SearchT(bool e, int32_t start, int32_t size, bool d, olc::vi2d p):
+    bEnabled(e), nStartAt(start), nSize(size), bDirection(d), vPos(p), vPrev(p), sPhrase("") {}
+
+  bool bEnabled;
+  bool bDirection;
+  int32_t nStartAt;
+  std::string sPhrase;
+  int32_t nSize;
+  olc::vi2d vPos;
+  olc::vi2d vPrev;
+};
+
 class Command {
 protected:
   inline void reset(bool exec = true) {
@@ -58,7 +71,7 @@ protected:
 
   std::string err;
   std::string cmd = "";
-  std::pair<bool, std::tuple<std::string, int32_t, bool, olc::vi2d>> search = { false, { "", 0, false, {} } }; // if first is true, then require one more "clock" to save after coming char
+  SearchT search = SearchT(false, 0, 0 , false, {}); // if first is true, then require one more "clock" to save after coming char
   
   // Variables defines animation duration
   float fStrokeRepeat = 0.f;
