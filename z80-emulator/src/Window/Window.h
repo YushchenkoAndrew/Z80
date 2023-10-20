@@ -11,6 +11,8 @@ public:
   virtual void Preprocess() {};
   virtual void Process(PixelGameEngine* GameEngine) = 0;
   virtual void Draw(PixelGameEngine* GameEngine) = 0;
+  virtual void Highlight(PixelGameEngine* GameEngine) {};
+  virtual void SelectHighlight(int32_t i) {};
 
   virtual void Lock() {};
   virtual void Unlock() {};

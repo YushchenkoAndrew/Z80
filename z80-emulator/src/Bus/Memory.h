@@ -29,7 +29,7 @@ public:
 
   void Disassemble();
 
-  void load(std::vector<uint8_t> code) {
+  void Load(std::vector<uint8_t> code) {
     for (auto& bank : memory) bank = 0x00;
 
     for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];

@@ -21,7 +21,7 @@ public:
     }
 
     std::ifstream f(path); std::stringstream buf;
-    buf<< f.rdbuf(); f.close();
+    if (f.is_open()) { buf<< f.rdbuf(); f.close(); }
 
     auto filename = std::filesystem::path(path).filename().string();
     tabs.push_back(std::tuple(path, filename, Interpreter::Lexer(true), Vim()));
@@ -31,17 +31,13 @@ public:
     return this;
   }
 
-  void Save() { 
+  inline void Save() { 
     Utils::Lock l(mutex);
-
-    for (auto& tab : tabs) {
-      std::ofstream f(PATH(tab)); f << VIM(tab).Text(); f.close();
-    }
+    for (auto& tab : tabs) { std::ofstream f(PATH(tab)); f << VIM(tab).Text(); f.close(); }
   }
 
-  void Save(bool) { 
+  inline void SaveFile() { 
     Utils::Lock l(mutex);
-
     std::ofstream f(PATH(tabs[nTab])); f << VIM(tabs[nTab]).Text(); f.close();
   }
 
@@ -105,6 +101,27 @@ public:
     if (!vim.bUpdated) return;
     lexer.scan(vim.Text()); vim.Load(lexer.tokens);
     // for (auto& err : lexer.errors) printf("LEXER: %s", err.c_str());
+  }
+
+  void SelectHighlight(int32_t i) { 
+    Utils::Lock l(mutex);
+    if (i <= tabs.size() && i >= 1) nTab = i - 1;
+  }
+
+  void Highlight(PixelGameEngine* GameEngine) {
+    Utils::Lock l(mutex);
+
+    auto pos = olc::vi2d(absolute.x, absolute.y + vOffset.y + vStep.y);
+    for (int32_t i = 0; i < tabs.size(); i++) {
+      auto filename = GetTabName(tabs[i], 1);
+      auto offset = olc::vi2d((filename.size() + 1) * vStep.x, 14);
+
+      pos.x += 2;
+      auto color = nTab == i ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
+      GameEngine->DrawString(pos, std::string(1, '0' + i + 1), *color, 3);
+
+      pos.x += offset.x;
+    }
   }
 
   void Draw(PixelGameEngine* GameEngine) {

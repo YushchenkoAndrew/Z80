@@ -37,7 +37,7 @@ public:
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
-    Compile();
+    Compile(luaConfig.GetTableValue<std::string>(nullptr, "sFile"));
 
     auto editor = std::make_shared<Editor::Editor>();
     for (auto f : interpreter.env.files()) editor->Open(f);
@@ -46,7 +46,7 @@ public:
 
     // auto rom = bus->W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
-    bus->W27C512->load(interpreter.env.memory);
+    bus->W27C512->Load(interpreter.env.memory);
 
     // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
@@ -288,32 +288,10 @@ public:
     std::cout << "CMD_EXEC_CALLBACK\n";
     #endif
 
-    auto editor = panels[nPanel].Editor();
-    if (editor == nullptr) { nCurr = 0; cmd = ""; return; }
-
     advance(); // Consume ':'
 
-    switch (advance()) {
-      case 'w': 
-        if (peek() == 'a') editor->Save();
-        else editor->Save(true);
-
-        Compile();
-
-        for (auto f : interpreter.env.files()) editor->Open(f);
-        editor->Open(interpreter.filepath);
-
-        Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>());
-        bus->W27C512->load(interpreter.env.memory);
-        Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>());
-        break;
-        
-    }
-    
-    nCurr = 0; cmd = "";
+    Cmd2Action(); nCurr = 0; cmd = "";
   }
-
-
 
   void Event(Int2Type<PROGRAM_EXIT>) override {
     #ifdef DEBUG_MODE 
@@ -323,6 +301,45 @@ public:
   }
 
 private:
+  inline void Cmd2Action() {
+    auto editor = panels[nPanel].Editor();
+    if (editor == nullptr) return;
+
+    switch (advance()) {
+      case 'w': 
+        if (match('a')) editor->Save();
+        else editor->SaveFile();
+
+        return Cmd2Action();
+
+      case 'e':
+        advance(); // Consume ' '
+        if (isAtEnd()) return;
+
+        editor->Open(cmd.substr(nCurr));
+        return;
+
+      case 'c': 
+        Compile(interpreter.filepath);
+        interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
+
+        for (auto f : interpreter.env.files()) editor->Open(f);
+        editor->Open(interpreter.filepath);
+        return Cmd2Action();
+
+      case 'm': 
+        Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>());
+        bus->W27C512->Load(interpreter.env.memory);
+        Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>());
+        return Cmd2Action();
+
+      case 'l': 
+        Compile(editor->File());
+        return Cmd2Action();
+    }
+  }
+
+
   inline RelativeAddr Addr2Token(uint32_t addr) {
     RelativeAddr next = std::pair(0, std::pair("", nullptr));
 
@@ -350,9 +367,10 @@ private:
   inline bool isAtEnd() { return nCurr >= cmd.size(); }
   inline const char advance() { return isAtEnd() ? '\0': cmd[nCurr++]; }
   inline const char peek() { return isAtEnd() ? '\0' : cmd[nCurr]; }
+  inline bool match(char c) { if (peek() == c) { advance(); return true; } return false; }
 
-  void Compile() {
-    if (bool err = interpreter.Load(luaConfig.GetTableValue<std::string>(nullptr, "sFile"))) {
+  void Compile(std::string src) {
+    if (bool err = interpreter.Load(src)) {
       #ifdef DEBUG_MODE 
       for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
       printf("\n");

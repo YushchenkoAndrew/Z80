@@ -113,7 +113,16 @@ public:
     if (EXIST(editor)   && SHOULD_DRAW(bFullScreen, editor))   PTR(editor)->Draw(GameEngine);
 
     if (mode == NORMAL) return;
-    if (cmd.back() == 'q') Draw(Int2Type<Editor::VimT::CMD_q>(), GameEngine);
+    if (cmd.back() == 'q' && !search.bEnabled) Draw(Int2Type<Editor::VimT::CMD_q>(), GameEngine);
+    if (cmd.back() == 'w' && !search.bEnabled) Highlight(GameEngine);
+  }
+
+  void Highlight(PixelGameEngine* GameEngine) {
+    if (EXIST(bus)      && SHOULD_DRAW(bFullScreen, bus))      PTR(bus)->Highlight(GameEngine);
+    if (EXIST(eeprom)   && SHOULD_DRAW(bFullScreen, eeprom))   PTR(eeprom)->Highlight(GameEngine);
+    if (EXIST(stack)    && SHOULD_DRAW(bFullScreen, stack))    PTR(stack)->Highlight(GameEngine);
+    if (EXIST(terminal) && SHOULD_DRAW(bFullScreen, terminal)) PTR(terminal)->Highlight(GameEngine);
+    if (EXIST(editor)   && SHOULD_DRAW(bFullScreen, editor))   PTR(editor)->Highlight(GameEngine);
   }
 
   void Lock() {
@@ -153,7 +162,7 @@ public:
   inline void Command(Int2Type<Editor::VimT::CMD_z>) {
     if (SELECTED(bus))      { bFullScreen = (ZOOMED(bus)      ^= true); PTR(bus)->Initialize(     bFullScreen ? std::pair(absolute, size) : DIMENSION(bus)); }
     if (SELECTED(eeprom))   { bFullScreen = (ZOOMED(eeprom)   ^= true); PTR(eeprom)->Initialize(  bFullScreen ? std::pair(absolute, size) : DIMENSION(eeprom)); }
-    if (SELECTED(stack))    { bFullScreen = (ZOOMED(stack)    ^= true);  PTR(stack)->Initialize(  bFullScreen ? std::pair(absolute, size) : DIMENSION(stack)); }
+    if (SELECTED(stack))    { bFullScreen = (ZOOMED(stack)    ^= true); PTR(stack)->Initialize(   bFullScreen ? std::pair(absolute, size) : DIMENSION(stack)); }
     if (SELECTED(terminal)) { bFullScreen = (ZOOMED(terminal) ^= true); PTR(terminal)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(terminal)); }
     if (SELECTED(editor))   { bFullScreen = (ZOOMED(editor)   ^= true); PTR(editor)->Initialize(  bFullScreen ? std::pair(absolute, size) : DIMENSION(editor)); }
   }
@@ -186,8 +195,17 @@ public:
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PROGRAM_EXIT>()); 
   }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_q>) {
+  inline void Command(Int2Type<Editor::VimT::CMD_w>) {
     int32_t digit = this->digit();
+    if (EXIST(bus))      PTR(bus)->SelectHighlight(digit);
+    if (EXIST(eeprom))   PTR(eeprom)->SelectHighlight(digit);
+    if (EXIST(stack))    PTR(stack)->SelectHighlight(digit);
+    if (EXIST(terminal)) PTR(terminal)->SelectHighlight(digit);
+    if (EXIST(editor))   PTR(editor)->SelectHighlight(digit);
+  }
+
+  inline void Command(Int2Type<Editor::VimT::CMD_q>) {
+    int32_t digit = peek() - '0';
     if (EXIST(bus))      SELECTED(bus)      = WINDOW(bus)      == digit;
     if (EXIST(eeprom))   SELECTED(eeprom)   = WINDOW(eeprom)   == digit;
     if (EXIST(stack))    SELECTED(stack)    = WINDOW(stack)    == digit;
@@ -223,6 +241,9 @@ public:
       return reset(false);
     } 
 
+    if (peekPrev() == 'q' && Utils::IsDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_q>()); return reset(); } 
+    if (peekPrev() == 'w' && peek() - '0' > 0) { phrase(Int2Type<Editor::VimT::CMD_w>()); return reset(); } 
+
     // noun
     if (match<1>({ ' ' })) { phrase(Int2Type<Editor::VimT::CMD_SPACE>()); return reset(); } 
     if (match<1>({ 'a' })) { phrase(Int2Type<Editor::VimT::CMD_a>()); return reset(); } 
@@ -236,11 +257,10 @@ public:
       return phrase(Int2Type<Editor::VimT::CMD_COLON>());
     }
 
-    if (peekPrev() == 'q' && Utils::IsDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_q>()); return reset(); } 
     if (Utils::IsDigit(peek())) { phrase(Int2Type<Editor::VimT::CMD_NUMBER>()); return reset(); } 
 
     // verb
-    if (match<1>({ 'q' })) return;
+    if (match<2>({ 'q', 'w' })) return;
 
     reset(false);
   }
