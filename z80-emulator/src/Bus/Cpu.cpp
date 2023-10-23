@@ -14,11 +14,13 @@ namespace Z80 {
     for (uint32_t i = 0, line = 0; i < 0xFFFF; line++, i++) {
       std::pair<std::string, int32_t> cmd;
       dasm.second[i] = line;
+      std::string unknown = "";
 
       switch (uint32_t instruction = bus->Read(i, true)) {
         case Z80::MISC_INSTR: {
           AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
           std::pair<MiscSTR, int32_t> res = foreach<MiscMInstructions, AnyType<-1, int32_t>>::Key2Value();
+          if (res.second == -1) unknown = sprintf("db 0xED, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
           cmd = std::pair(*res.first, res.second); break;
         }
@@ -26,6 +28,7 @@ namespace Z80 {
         case Z80::BIT_INSTR: {
           AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
           std::pair<BitSTR, int32_t> res = foreach<BitInstructions, AnyType<-1, int32_t>>::Key2Value();
+          if (res.second == -1) unknown = sprintf("db 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
           cmd = std::pair(*res.first, res.second); break;
         }
@@ -36,12 +39,14 @@ namespace Z80 {
           if (instruction == Z80::IxBitInstr) {
             AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
             std::pair<IxBitSTR, int32_t> res = foreach<IxBitInstructions, AnyType<-1, int32_t>>::Key2Value();
+            if (res.second == -1) unknown = sprintf("db 0xDD, 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
             cmd = std::pair(*res.first, res.second); break;
           } 
 
           AnyType<-1, int32_t>::GetValue() = instruction;
           std::pair<IxSTR, int32_t> res = foreach<IxInstructions, AnyType<-1, int32_t>>::Key2Value();
+          if (res.second == -1) unknown = sprintf("db 0xDD, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
           cmd = std::pair(*res.first, res.second); break;
         }
@@ -52,12 +57,14 @@ namespace Z80 {
           if (instruction == Z80::IyBitInstr) {
             AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
             std::pair<IyBitSTR, int32_t> res = foreach<IyBitInstructions, AnyType<-1, int32_t>>::Key2Value();
+            if (res.second == -1) unknown = sprintf("db 0xFD, 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
             cmd = std::pair(*res.first, res.second); break;
           } 
 
           AnyType<-1, int32_t>::GetValue() = instruction;
           std::pair<IySTR, int32_t> res = foreach<IyInstructions, AnyType<-1, int32_t>>::Key2Value();
+          if (res.second == -1) unknown = sprintf("db 0xFD, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
           cmd = std::pair(*res.first, res.second); break;
         }
@@ -65,10 +72,14 @@ namespace Z80 {
         default: {
           AnyType<-1, int32_t>::GetValue() = instruction;
           std::pair<InstrSTR, int32_t> res = foreach<Instructions, AnyType<-1, int32_t>>::Key2Value();
+          if (res.second == -1) unknown = sprintf("db 0x%02x", AnyType<-1, int32_t>::GetValue());
+
           cmd = std::pair(*res.first, res.second); break;
         }
       }
       
+
+      if (unknown.size()) { dasm.first += unknown + "\n"; continue; }
 
       std::string phrase = cmd.first;
       for (int32_t cnt = cmd.second & 0x0F, offset = 1; cnt != 1; offset++) {

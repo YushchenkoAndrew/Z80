@@ -40,14 +40,14 @@ private:
 public:
   enum ModeT { NORMAL, DEBUG, FREEZE };
 
-  CPU(Bus* b): bus(b) { Reset(); }
+  CPU(Bus* b, int32_t c = 1000): bus(b), clock(c) { Reset(); }
   ~CPU() {
     bExec = false; sync.second.notify_all();
 
     if (runtime != nullptr && runtime->joinable()) runtime->join();
   }
 
-  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; cycles = 0; IFF.first = IFF.second = false; }
+  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; cycles = 1; IFF.first = IFF.second = false; }
 
   void Preinitialize() { 
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
@@ -101,7 +101,7 @@ public:
 private:
   void Runtime() {
     while (bExec) {
-      if (cycles != 0) { cycles--; continue; }
+      if (cycles < 100 && --cycles != 0) continue;
 
       if (IFF.first && interrupt.second) {
         interrupt.second = false; IFF.first = IFF.second = false;
@@ -114,7 +114,7 @@ private:
 
       AnyType<-1, int32_t>::GetValue() = Read();
       foreach<Instructions, CPU>::Key2Process(this);
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      std::this_thread::sleep_for(std::chrono::microseconds(clock));
 
 
       if (mode == NORMAL) {
@@ -1367,7 +1367,8 @@ private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(24, 0);
 
-  uint32_t cycles = 0; // Show how many clock cycles are required to run specific command
+  int32_t clock;
+  uint32_t cycles = 1; // Show how many clock cycles are required to run specific command
   std::atomic<ModeT> mode = NORMAL;
   std::pair<bool, bool> IFF;
 

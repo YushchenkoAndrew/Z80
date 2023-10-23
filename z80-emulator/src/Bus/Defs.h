@@ -41,9 +41,6 @@ enum Instruction {
     RET_NC,  POP_DE,     JP_NC_NN,  OUT_n_A,  CALL_NC_NN, PUSH_DE, SUB_N,    RST_10h, RET_C,     EXX,         JP_C_NN,   IN_A_n,    CALL_C_NN,  IX_INSTR,   SBC_A_N,  RST_18h,
     RET_PO,  POP_HL,     JP_PO_NN,  EX_sp_HL, CALL_PO_NN, PUSH_HL, AND_N,    RST_20h, RET_PE,    JP_hl,       JP_PE_NN,  EX_DE_HL,  CALL_PE_NN, MISC_INSTR, XOR_N,    RST_28h,
     RET_P,   POP_AF,     JP_P_NN,   DI,       CALL_P_NN,  PUSH_AF, OR_N,     RST_30h, RET_M,     LD_SP_HL,    JP_M_NN,   EI,        CALL_M_NN,  IY_INSTR,   CP_N,     RST_38h,
-
-    // Additional instructions
-    IX_BIT_INSTR, IY_BIT_INSTR
 };
 
 /**
@@ -774,7 +771,7 @@ public:
     AnyType<Z80::RET_P,   Z80::InstrSTR>::GetValue() = "RET P";              AnyType<Z80::POP_AF,   Z80::InstrSTR>::GetValue() = "POP AF";
 
     
-    AnyType<Z80::LD_bc_A,  Z80::InstrSTR>::GetValue() = "LD (BC), A";        AnyType<Z80::INC_BC,   Z80::InstrSTR>::GetValue() = "INC_BC";
+    AnyType<Z80::LD_bc_A,  Z80::InstrSTR>::GetValue() = "LD (BC), A";        AnyType<Z80::INC_BC,   Z80::InstrSTR>::GetValue() = "INC BC";
     AnyType<Z80::LD_de_A,  Z80::InstrSTR>::GetValue() = "LD (DE), A";        AnyType<Z80::INC_DE,   Z80::InstrSTR>::GetValue() = "INC DE";
     AnyType<Z80::LD_nn_HL, Z80::InstrSTR>::GetValue() = "LD (0x%04x), HL";   AnyType<Z80::INC_HL,   Z80::InstrSTR>::GetValue() = "INC HL";
     AnyType<Z80::LD_nn_A,  Z80::InstrSTR>::GetValue() = "LD (0x%04x), A";    AnyType<Z80::INC_SP,   Z80::InstrSTR>::GetValue() = "INC SP";

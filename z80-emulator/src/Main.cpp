@@ -14,7 +14,7 @@ private:
   typedef std::pair<uint32_t, Interpreter::RealtiveToken> RelativeAddr;
 
 public:
-  App(LuaScript& config): luaConfig(config) {
+  App(LuaScript& config): luaConfig(config), bus(std::make_shared<Bus::Bus>(config)) {
     sAppName = "Z80 Emulator";
     AnyType<-1, PixelGameEngine*>::GetValue() = this;
   }
@@ -37,7 +37,7 @@ public:
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
-    Compile(luaConfig.GetTableValue<std::string>(nullptr, "sFile"));
+    Compile(luaConfig.GetTableValue<std::string>(nullptr, "src"));
 
     auto editor = std::make_shared<Editor::Editor>();
     for (auto f : interpreter.env.files()) editor->Open(f);
@@ -75,7 +75,7 @@ public:
         // std::tuple(terminal,     std::pair(olc::vi2d(zero.x,   window.y),            olc::vi2d(window.x,           size.y - window.y)))
       ),
       Panel(
-        std::tuple(bus,  std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())))
+        std::tuple(bus, std::pair(zero, olc::vi2d(ScreenWidth(), ScreenHeight())))
       )
     };
 
@@ -83,9 +83,7 @@ public:
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
 
     offload = std::make_unique<std::thread>([&]() {
-      // FIXME: Sometimes syncing requires just too much time
-      // FIXME: Think there is a problem with CPU::Disassembler
-      // bus->W27C512->Disassemble(); 
+      bus->W27C512->Disassemble(); 
       for (auto& p : panels) p.Preinitialize();
       
       bSyncing.first = false;
@@ -388,10 +386,10 @@ private:
   const olc::vi2d vOffset = olc::vi2d(0, 0);
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
-  int32_t nPanel = 0;
+  int32_t nPanel = 1;
   std::array<Panel, 2> panels;
   Interpreter::Interpreter interpreter;
-  std::shared_ptr<Bus::Bus> bus = std::make_shared<Bus::Bus>();
+  std::shared_ptr<Bus::Bus> bus;
 
   std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
   std::unique_ptr<std::thread> offload = nullptr;
@@ -412,9 +410,9 @@ int main() {
   // TODO: Create defs to load colors from lua
   // Defs::Load(&luaConfig);
 
-  const int32_t nScreenWidth = luaConfig.GetTableValue<int32_t>(nullptr, "nScreenWidth");
-  const int32_t nScreenHeight = luaConfig.GetTableValue<int32_t>(nullptr, "nScreenHeight");
-  const int32_t nPixel = luaConfig.GetTableValue<int32_t>(nullptr, "nPixel");
+  const int32_t nScreenWidth = luaConfig.GetTableValue<int32_t>(nullptr, "width");
+  const int32_t nScreenHeight = luaConfig.GetTableValue<int32_t>(nullptr, "height");
+  const int32_t nPixel = luaConfig.GetTableValue<int32_t>(nullptr, "pixel");
 
   App app(luaConfig);
   if (app.Construct(nScreenWidth, nScreenHeight, nPixel, nPixel)) app.Start();

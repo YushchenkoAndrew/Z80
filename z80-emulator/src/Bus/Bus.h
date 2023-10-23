@@ -17,7 +17,9 @@ public:
   typedef Memory<MemoryT::W27C512, W27C512_SIZE> W27C512_T;
   typedef Memory<MemoryT::IMS1423, IMS1423_SIZE> IMS1423_T;
 
-  Bus():
+  Bus(LuaScript& config):
+    luaConfig(config),
+
     led(std::make_shared<Led>(this)),
     switches(std::make_shared<Switch>(this)),
     hexDisplay(std::make_shared<HexDisplay>(this)),
@@ -26,7 +28,7 @@ public:
 
     ppi(std::make_shared<PPI>(this)),
 
-    Z80(std::make_shared<Z80::CPU>(this)),
+    Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),
     W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
     IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)) {}
 
@@ -41,17 +43,26 @@ public:
   }
 
   void Initialize(DimensionT dimensions) {
+    olc::vi2d zero = olc::vi2d(0, 0);
+    olc::vi2d offset = olc::vi2d(4, 8);
+    grid.clear();
 
     // TODO: Design and draw bus as PCB
-    led->Initialize(std::pair(olc::vi2d(10, 10), olc::vi2d(0, 0)));
-    switches->Initialize(std::pair(olc::vi2d(10, 25), olc::vi2d(0, 0)));
-    hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), olc::vi2d(0, 0)));
-    lcd->Initialize(std::pair(olc::vi2d(10, 150), olc::vi2d(0, 0)));
-    keyboard->Initialize(std::pair(olc::vi2d(300, 50), olc::vi2d(0, 0)));
+    led->Initialize(std::pair(olc::vi2d(10, 10), zero));
+    switches->Initialize(std::pair(olc::vi2d(10, 25), zero));
+    hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), zero));
+    lcd->Initialize(std::pair(olc::vi2d(10, 150), zero));
 
-    ppi->Initialize(std::pair(olc::vi2d(300, 20), olc::vi2d(0, 0)));
+    olc::vi2d window = olc::vi2d(dimensions.second.x * 8 / 10, dimensions.second.y);
+    Z80->Initialize(std::pair(olc::vi2d(window.x, zero.y) + offset, zero));
 
-    Z80->Initialize(std::pair(olc::vi2d(150, 20), olc::vi2d(0, 0)));
+    grid.push_back(std::pair(olc::vi2d(window.x, 140), olc::vi2d(dimensions.second.x - offset.x * 2, 140)));
+    keyboard->Initialize(std::pair(olc::vi2d(window.x, 140) + offset, zero));
+
+    grid.push_back(std::pair(olc::vi2d(window.x, 162), olc::vi2d(dimensions.second.x - offset.x * 2, 162)));
+    ppi->Initialize(std::pair(olc::vi2d(window.x, 162) + offset, zero));
+
+    grid.push_back(std::pair(olc::vi2d(window.x - offset.x * 2, offset.y), olc::vi2d(window.x - offset.x * 2, dimensions.second.y - offset.y)));
   }
 
   void Preprocess() {
@@ -80,6 +91,11 @@ public:
     ppi->Draw(GameEngine);
 
     Z80->Draw(GameEngine);
+
+    for (auto& line : grid) GameEngine->DrawLine(line.first, line.second, *AnyType<DARK_GREY, ColorT>::GetValue());
+
+    // TODO: Get data from lua
+    // GameEngine->FillRect({ 300, 20 }, { 20, 50 }, *AnyType<VERY_DARK_GREY, ColorT>::GetValue());
   }
 
   void Interrupt() { Z80->Interrupt(); }
@@ -171,6 +187,12 @@ public:
   // TODO: RAM HY62256A A14 = 0 A15 = 1 
   // TODO: RAM ims1423  A14 = 1 A15 = 0  (NOTE: Without A13)
   // TODO: ROM KM28C17-20 A14 = 1 A15 = 1
+
+
+private:
+  LuaScript& luaConfig;
+
+  std::list<std::pair<olc::vi2d, olc::vi2d>> grid;
 };
 
 #undef BIT

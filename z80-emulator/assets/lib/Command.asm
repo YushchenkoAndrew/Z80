@@ -598,9 +598,7 @@ _CMD_EXEC_ESC:
   LD (IX+FS_INODE_ALLOCATED+1), H; Set data zone 1 addr, high byte
 
 #CMD_WR_bg:
-  PUSH IX     ; Temp save created inode addr in stack
-  POP HL      ; Load inode addr into reg HL
-  LD (PTR_INPUT_FILE), HL; Save inode of file
+  LD (PTR_INPUT_FILE), IX; Save inode of file
   LD HL, #CMD_WR_input; Load input call function
   LD (PTR_INPUT_FUNC), HL; Save handler func in memory
   LD A, "|"   ; Set new state

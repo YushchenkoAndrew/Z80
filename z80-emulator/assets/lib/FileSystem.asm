@@ -129,6 +129,7 @@
   LD HL, #FILENAME_FIND_ITER; Load handler func for iter to call
   CALL #ITER_INODE; Iterate throgh inodes
 
+  ; TODO: Fix bug with incorrect inode ptr when file exists
   LD HL, (PTR_TEMP_WORD); Load inode addr into reg HL
   XOR A       ; Reset reg Acc
   OR H        ; Check if inode addr is empty

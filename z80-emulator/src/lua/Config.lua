@@ -1,30 +1,16 @@
 -- WIDTH = 260 * 2; HIGHT = 300; PIXELS = 2
 WIDTH = 700; HIGHT = 400; PIXELS = 2
 
-PanelEnum = {
-  editor = "editor",
-  memory = "memory",
-  lines  = "lines",
-  bus    = "bus",
-}
-
 Init = {
-  nScreenWidth = WIDTH,
-  nScreenHeight = HIGHT,
-  nPixel = PIXELS,
-  sFile = "assets/TestKeyboard/Test.asm",
+  width = WIDTH,
+  height = HIGHT,
+  pixel = PIXELS,
 
-  vPanels = {
-    {
-      { PanelEnum.editor, { 0, 0 }, { 1, 1 } },
-      { PanelEnum.memory, { 0, 0 }, { 1, 1 } },
-      { PanelEnum.lines,  { 0, 0 }, { 1, 1 } },
-    }
-  },
+  src = "assets/TestKeyboard/Test.asm",
+  clock = 1000, -- micro seconds
 
-  sColors = {
-    black = 0x0000,
-    gray = 0x000000,
+  -- TODO: Impl this
+  schematic = {
   }
 }
 
