@@ -14,14 +14,14 @@
 SETUP:
   LD SP, STACK      ; Set Memory Paging RAM
 
-  LD A, 0x80
-  OUT (0x23), A
+  ; LD A, 0x80
+  ; OUT (0x23), A
 
-  LD A, 0x00
-  OUT (0x21), A
+  ; LD A, 0x00
+  ; OUT (0x21), A
 
-  LD A, 0xF0
-  OUT (0x20), A
+  ; LD A, 0xF0
+  ; OUT (0x20), A
 
 
   JP MAIN

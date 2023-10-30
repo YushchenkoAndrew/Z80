@@ -1,7 +1,7 @@
 ;####################################################
 ;  PROGRAM NAME: - Test
 ;  DISCRIPTION:  - Test NEW version of Keyboard
-;  DATE: 14.02.21
+;  DATE: 30.10.23
 ;  AUTHOR: Andrew Yushchenko
 ;####################################################
 
@@ -49,17 +49,12 @@ SETUP:
   LD SP, STACK      ; Set Memory Paging RAM
   IM 1              ; Use interrupt Mode 1
 
-  ; ;; Set MODE 0;  A: OUTPUT; B: OUTPUT; C: OUTPUT
-  ; LD A, 0x80
-  ; OUT (0x23), A
-
-  ; ;; SET Port A (LCD) = 0
-  ; LD A, 0x00
-  ; OUT (0x20), A
-
-  ; ;; SET Port B (MMU) = 0
-  ; LD A, 0x00
-  ; OUT (0x21), A
+  LD A, 0x80  ; Set MODE 0;  A: OUTPUT; B: OUTPUT; C: OUTPUT
+  OUT (PPI_PORT_CTRL), A ; Send instruction to PPI
+  XOR A       ; Reset reg Acc
+  OUT (PPI_PORT_A), A ; Reset PPI reg A
+  OUT (PPI_PORT_B), A ; Reset PPI reg B, (MMU = 0)
+  OUT (PPI_PORT_C), A ; Reset PPI reg C
 
   ;; Preinitilize ptr values
   LD A, 0xF1

@@ -8,7 +8,9 @@ class Bus : public Window::Window, public Device {
 private:
   struct MUX { 
     enum MREQ { W27C512, IMS1423, HY62256A, KM28C17 };
-    enum IORQ { IN_OUT_PORT, HEX_PORT, PPI_PORT, UART_PORT, LCD_IO = 8 };
+    enum IORQ { IN_OUT_PORT, HEX_PORT, PPI_PORT, UART_PORT };
+    enum PPI_CS { CS0, CS1, CSA, CSW, CS3, CS4, CS5, CSB };
+    enum PPI_IO { LCD_PORT = 1 };
   };
 
   enum REQUEST { MREQ, IORQ };
@@ -113,10 +115,11 @@ public:
 
 private:
   inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16) {
-    auto addr = (addr16 & 0x3FFF) | ((ppi->Read(PPI::B, false) & 0x03) << 14);
+    auto addr = addr16 & 0x3FFF;
+    auto mmu = ppi->regB(Int2Type<PPI::REG2PORT>());
 
     switch((addr16 & 0xC000) >> 14) {
-      case MUX::MREQ::W27C512: return W27C512->Read(addr, true);
+      case MUX::MREQ::W27C512: return W27C512->Read(addr | ((mmu & 0x03) << 14), true);
       case MUX::MREQ::IMS1423: return IMS1423->Read(addr, true);
       case MUX::MREQ::HY62256A: // TODO:
       case MUX::MREQ::KM28C17: break;
@@ -126,7 +129,8 @@ private:
   }
 
   inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16, uint8_t data) {
-    auto addr = (addr16 & 0x3FFF) | ((ppi->Read(PPI::B, false) & 0x03) << 14);
+    auto addr = addr16 & 0x3FFF;
+    auto mmu = ppi->regB(Int2Type<PPI::REG2PORT>());
 
     switch((addr16 & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: return 0x00;
@@ -142,9 +146,9 @@ private:
     switch((addr & 0x00F0) >> 4) {
       case MUX::IORQ::IN_OUT_PORT:return switches->Read(addr & 0x00FF, true);
       case MUX::IORQ::HEX_PORT:   return 0x00;
+      case MUX::IORQ::PPI_PORT:   return ppi->Read(addr & 0x00FF, true);
       case 0x03: return keyboard->Read(addr, true);
       // FIXME: I dont exactly know how I impl hardware
-      // case MUX::IORQ::PPI_PORT:   return ppi->Read(addr, true);
       // case MUX::IORQ::UART_PORT:  break; 
     }
 
@@ -155,16 +159,20 @@ private:
     switch((addr & 0x00F0) >> 4) {
       case MUX::IORQ::IN_OUT_PORT: return led->Write(addr, data, true);
       case MUX::IORQ::HEX_PORT: return hexDisplay->Write(addr, data, true); 
-      case 0x02: return lcd->Write(addr, data, BIT(addr, 0));
-      // FIXME: I dont exactly know how I impl hardware
+      case MUX::IORQ::PPI_PORT: {
+        ppi->Write(addr, data, true);
+        uint8_t ctrl = ppi->regC(Int2Type<PPI::REG2PORT>());
+
+        switch ((ctrl >> 4) & 7) {
+          case MUX::PPI_IO::LCD_PORT:
+            if (BIT(ctrl, MUX::PPI_CS::CSW)) lcd->Read(addr, BIT(ctrl, MUX::PPI_CS::CSA));
+            else lcd->Write(addr, ppi->regA(Int2Type<PPI::REG2PORT>()), BIT(ctrl, MUX::PPI_CS::CSA));
+            break;
+        }
+
+        return data;
+      }
       // case MUX::IORQ::UART_PORT: break; 
-      // case MUX::IORQ::PPI_PORT: {
-      //   ppi->Write(addr, data, true);
-      //   switch(ppi->regC(Int2Type<PPI::OUTPUT>())) {
-      //     case 1: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), false);
-      //     case 3: return lcd->Write(addr, ppi->regA(Int2Type<PPI::OUTPUT>()), true);
-      //   }
-      // }
     }
 
     return 0x00;

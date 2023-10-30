@@ -12,14 +12,22 @@
 ;;   reg HL -- unaffected
 ;;
 #LCD_EXEC:
-  ; PUSH AF          ;; Save reg A in stack
-  ; LD A, 0          ;; Disable every IO device
-  ; OUT (PPI_PORT_C), A
-  ; POP AF           ;; Restore reg A
-  ;; TODO: Update to support PPI
-  OUT (0x20), A
-  ; LD A, LCD_IO_CMD ;; Enable output to LCD in CMD mode
-  ; OUT (PPI_PORT_C), A
+  PUSH AF    ; Save reg AF in stack
+  PUSH BC    ; Save reg BC in stack
+  LD B, A    ; Save reg A in reg B
+  IN A, (PPI_PORT_C) ; Get current state of PPI reg C
+  AND 0x03   ; Reset every flag in reg C exept of CS0 & CS1
+  LD C, A    ; Save new PPI state in reg C
+  OUT (PPI_PORT_C), A ; Send reg to PPI
+  LD A, B    ; Restore reg A
+  OUT (PPI_PORT_A), A ; Send to PPI reg A cmd to exec
+  LD A, C    ; Restore PPI new state
+  OR PPI_IO_LCD ; Enable output to LCD in CMD mode
+  OUT (PPI_PORT_C), A ; Send reg to PPI
+  LD A, C    ; Restore PPI new state
+  POP BC     ; Restore reg BC & create small delay in 10 cycles
+  OUT (PPI_PORT_C), A ; Disable LCD enable
+  POP AF     ; Restore reg A & flags
   RET
 
 
@@ -35,10 +43,22 @@
 ;;   reg HL -- unaffected
 ;;
 #LCD_WR:
-  ;; TODO: Update to support PPI
-  OUT (0x21), A
-  ; LD A, LCD_IO_CMD ;; Enable output to LCD in CMD mode
-  ; OUT (PPI_PORT_C), A
+  PUSH AF    ; Save reg AF in stack
+  PUSH BC    ; Save reg BC in stack
+  LD B, A    ; Save reg A in reg B
+  IN A, (PPI_PORT_C) ; Get current state of PPI reg C
+  AND 0x03   ; Reset every flag in reg C exept of CS0 & CS1
+  LD C, A    ; Save new PPI state in reg C
+  OUT (PPI_PORT_C), A ; Send reg to PPI
+  LD A, B    ; Restore reg A
+  OUT (PPI_PORT_A), A ; Send to PPI reg A cmd to exec
+  LD A, C    ; Restore PPI new state
+  OR PPI_IO_LCD | PPI_CSA ; Enable output to LCD in DATA mode
+  OUT (PPI_PORT_C), A ; Send reg to PPI
+  LD A, C    ; Restore PPI new state
+  POP BC     ; Restore reg BC & create small delay in 10 cycles
+  OUT (PPI_PORT_C), A ; Disable LCD enable
+  POP AF     ; Restore reg A & flags
   RET
 
 

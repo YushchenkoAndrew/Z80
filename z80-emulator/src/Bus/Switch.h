@@ -14,12 +14,12 @@ public:
   void Process(PixelGameEngine* GameEngine) {
     auto mouse = GameEngine->GetMousePos() - vOffset;
     if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + vStep.x * sizeof(uint8_t) * 8 && mouse.y < absolute.y + vStep.y) {
-      data = data ^ (0x80 >> ((mouse.x - absolute.x) / vStep.x));
+      data = data ^ (0x01 << ((mouse.x - absolute.x) / vStep.x));
     }
   }
 
   void Draw(PixelGameEngine* GameEngine) {
-    for (int32_t i = 0, data = this->data; i < sizeof(uint8_t) * 8; i++, data = data << 1) {
+    for (int32_t i = sizeof(uint8_t) * 7, data = this->data; i >= 0; i--, data = data << 1) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep + vOffset;
 
       if (data & 0x80) GameEngine->FillRect(pos + olc::vi2d(1, 1), olc::vi2d(8, 8), *AnyType<WHITE, ColorT>::GetValue());

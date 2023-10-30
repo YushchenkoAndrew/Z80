@@ -386,7 +386,7 @@ private:
   const olc::vi2d vOffset = olc::vi2d(0, 0);
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
-  int32_t nPanel = 1;
+  int32_t nPanel = 0;
   std::array<Panel, 2> panels;
   Interpreter::Interpreter interpreter;
   std::shared_ptr<Bus::Bus> bus;
