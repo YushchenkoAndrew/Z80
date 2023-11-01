@@ -1273,8 +1273,8 @@ private:
     if (!flag) return false;
 
     // NOTE: -2 its command offset & digit
-    if (SIGN(offset)) regPC() = (regPC() - 2 + (0xFF00 | offset)) & 0xFFFF;
-    else regPC() = (regPC() - 2 + offset) & 0xFFFF;
+    if (SIGN(offset)) regPC() = (regPC() + (0xFF00 | offset)) & 0xFFFF;
+    else regPC() = (regPC() + offset) & 0xFFFF;
     
     return true;
   }

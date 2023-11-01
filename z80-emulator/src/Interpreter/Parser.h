@@ -254,7 +254,7 @@ public:
   }
 
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_DJNZ>) {
-    return std::make_shared<StatementLambda>(StatementLambda(peekPrev(), shift(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1000 | (argv.back() & 0xFF)); }));
+    return std::make_shared<StatementLambda>(StatementLambda(peekPrev(), shift(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1000 | ((argv.back() - 2) & 0xFF)); }));
   }
 
   inline std::shared_ptr<Statement> Process(Int2Type<TokenT::CMD_IM>) {
@@ -584,16 +584,16 @@ public:
       return std::make_shared<StatementLambda>(StatementLambda(cmd, shift(2), [](std::vector<uint32_t> argv) {
         switch(argv.back()) {
           case (uint32_t)TokenT::REG_C:
-          case (uint32_t)TokenT::FLAG_C:  return (uint32_t)(0x3800 | (argv[1] & 0xFF));
-          case (uint32_t)TokenT::FLAG_NC: return (uint32_t)(0x3000 | (argv[1] & 0xFF));
-          case (uint32_t)TokenT::FLAG_NZ: return (uint32_t)(0x2000 | (argv[1] & 0xFF));
-          case (uint32_t)TokenT::FLAG_Z:  return (uint32_t)(0x2800 | (argv[1] & 0xFF));
+          case (uint32_t)TokenT::FLAG_C:  return (uint32_t)(0x3800 | ((argv[1] - 2) & 0xFF));
+          case (uint32_t)TokenT::FLAG_NC: return (uint32_t)(0x3000 | ((argv[1] - 2) & 0xFF));
+          case (uint32_t)TokenT::FLAG_NZ: return (uint32_t)(0x2000 | ((argv[1] - 2) & 0xFF));
+          case (uint32_t)TokenT::FLAG_Z:  return (uint32_t)(0x2800 | ((argv[1] - 2) & 0xFF));
         }
 
         return (uint32_t)0x00;
       }, { (uint32_t)flag->token }));
 
-    } else return std::make_shared<StatementLambda>(StatementLambda(cmd, shift(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1800 | (argv.back() & 0xFF)); }));
+    } else return std::make_shared<StatementLambda>(StatementLambda(cmd, shift(2), [](std::vector<uint32_t> argv) { return (uint32_t)(0x1800 | ((argv.back() - 2) & 0xFF)); }));
 
     return std::make_shared<Statement>();
   }
