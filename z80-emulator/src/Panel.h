@@ -168,6 +168,7 @@ public:
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
+    // if (EXIST(pop)      && SHOULD_DRAW(bFullScreen, bus))      PTR(bus)->Draw(GameEngine);
     // TODO: Add menu property
   }
 
@@ -382,6 +383,7 @@ private:
 
   WindowT<Bus::Bus> bus = { false, false, nullptr, {}, 0 };
   WindowT<Window::Terminal> terminal = { false, false, nullptr, {}, 0 };
+  WindowT<Window::Popup> popup = { false, false, nullptr, {}, 0 };
   WindowT<Editor::Editor> editor = { false, false, nullptr, {}, 0 };
 
   WindowT<Bus::Bus::W27C512_T> eeprom = { false, false, nullptr, {}, 0 };

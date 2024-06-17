@@ -3,7 +3,7 @@
 
 namespace Bus {
 
-#define BIT(word, pos) ((word >> pos) & 0x01)
+// #define BIT(word, pos) ((word >> pos) & 0x01)
 class Bus : public Window::Window, public Device {
 private:
   struct MUX { 
@@ -19,88 +19,19 @@ public:
   typedef Memory<MemoryT::W27C512, W27C512_SIZE> W27C512_T;
   typedef Memory<MemoryT::IMS1423, IMS1423_SIZE> IMS1423_T;
 
-  Bus(LuaScript& config):
-    luaConfig(config),
+  Bus(LuaScript& config);
 
-    led(std::make_shared<Led>(this)),
-    switches(std::make_shared<Switch>(this)),
-    hexDisplay(std::make_shared<HexDisplay>(this)),
-    lcd(std::make_shared<LCD>(this)),
-    keyboard(std::make_shared<Keyboard>(this)),
+  void Preinitialize();
+  void Initialize(DimensionT dimensions);
 
-    ppi(std::make_shared<PPI>(this)),
+  void Preprocess();
+  void Process(PixelGameEngine* GameEngine);
 
-    Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),
-    W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
-    IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)) {}
+  void Draw(PixelGameEngine* GameEngine);
 
-  void Preinitialize() {
-    led->Preinitialize(); switches->Preinitialize();
-    hexDisplay->Preinitialize(); lcd->Preinitialize();
-    keyboard->Preinitialize();
+  void Interrupt();
+  inline DisassembleT Disassemble();
 
-    ppi->Preinitialize();
-
-    Z80->Preinitialize(); W27C512->Preinitialize(); 
-  }
-
-  void Initialize(DimensionT dimensions) {
-    olc::vi2d zero = olc::vi2d(0, 0);
-    olc::vi2d offset = olc::vi2d(4, 8);
-    grid.clear();
-
-    // TODO: Design and draw bus as PCB
-    led->Initialize(std::pair(olc::vi2d(10, 10), zero));
-    switches->Initialize(std::pair(olc::vi2d(10, 25), zero));
-    hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), zero));
-    lcd->Initialize(std::pair(olc::vi2d(10, 150), zero));
-
-    olc::vi2d window = olc::vi2d(dimensions.second.x * 8 / 10, dimensions.second.y);
-    Z80->Initialize(std::pair(olc::vi2d(window.x, zero.y) + offset, zero));
-
-    grid.push_back(std::pair(olc::vi2d(window.x, 140), olc::vi2d(dimensions.second.x - offset.x * 2, 140)));
-    keyboard->Initialize(std::pair(olc::vi2d(window.x, 140) + offset, zero));
-
-    grid.push_back(std::pair(olc::vi2d(window.x, 162), olc::vi2d(dimensions.second.x - offset.x * 2, 162)));
-    ppi->Initialize(std::pair(olc::vi2d(window.x, 162) + offset, zero));
-
-    grid.push_back(std::pair(olc::vi2d(window.x - offset.x * 2, offset.y), olc::vi2d(window.x - offset.x * 2, dimensions.second.y - offset.y)));
-  }
-
-  void Preprocess() {
-    led->Preprocess(); switches->Preprocess();
-    hexDisplay->Preprocess(); lcd->Preprocess();
-    keyboard->Preprocess();
-
-    Z80->Preprocess();
-  }
-
-  void Process(PixelGameEngine* GameEngine) {
-    led->Process(GameEngine); switches->Process(GameEngine);
-    hexDisplay->Process(GameEngine); lcd->Process(GameEngine);
-    keyboard->Process(GameEngine);
-
-    ppi->Process(GameEngine);
-
-    Z80->Process(GameEngine);
-  }
-
-  void Draw(PixelGameEngine* GameEngine) {
-    led->Draw(GameEngine); switches->Draw(GameEngine);
-    hexDisplay->Draw(GameEngine); lcd->Draw(GameEngine);
-    keyboard->Draw(GameEngine);
-
-    ppi->Draw(GameEngine);
-
-    Z80->Draw(GameEngine);
-
-    for (auto& line : grid) GameEngine->DrawLine(line.first, line.second, *AnyType<DARK_GREY, ColorT>::GetValue());
-
-    // TODO: Get data from lua
-    // GameEngine->FillRect({ 300, 20 }, { 20, 50 }, *AnyType<VERY_DARK_GREY, ColorT>::GetValue());
-  }
-
-  void Interrupt() { Z80->Interrupt(); }
   uint8_t Read(uint32_t addr, bool mreq) {
     if (mreq) return mux(Int2Type<MREQ>(), addr);
     else return mux(Int2Type<IORQ>(), addr);
@@ -110,8 +41,6 @@ public:
     if (mreq) return mux(Int2Type<MREQ>(), addr, data);
     else return mux(Int2Type<IORQ>(), addr, data);
   }
-
-  inline DisassembleT Disassemble() { return Z80->Disassemble(); }
 
 private:
   inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16) {

@@ -6,7 +6,7 @@ LIB=-I./
 INCLUDE=include/*.cpp lib/*.cpp
 LUA_SOURCE=$(SOURCE)/lua
 
-DIRS=Interpreter Interpreter/Expression Bus
+DIRS=Interpreter Interpreter/Expression Interpreter/Statement Bus
 TARGET=$(SOURCE)/*.cpp $(foreach dir, $(DIRS), $(addprefix $(SOURCE)/, $(dir))/*.cpp)
 COMPILED_TARGET=lua54/emsc/lua54.o
 
@@ -24,12 +24,12 @@ LDFALGS_GCC=
 EM_PRELOAD=
 # EM_PRELOAD=--preload-file assets/
 CFLAGS_EM=-std=c++17 -O3 --preload-file assets/ --preload-file $(LUA_SOURCE)/
-LDFALGS_EM=-s ALLOW_MEMORY_GROWTH=1 -s MAX_WEBGL_VERSION=2 -s MIN_WEBGL_VERSION=2 -s USE_LIBPNG=1
+LDFALGS_EM=-s ALLOW_MEMORY_GROWTH=1 -s MAX_WEBGL_VERSION=2 -s MIN_WEBGL_VERSION=2 -s USE_LIBPNG=1 -s ASSERTIONS -s USE_PTHREADS -s PROXY_TO_PTHREAD -s PTHREAD_POOL_SIZE=5 -s SHARED_MEMORY
 
 all:
 	if [ ! -d "./web" ]; then mkdir $(OUTPUT_EM); fi
 	if [ ! -d "./build" ]; then mkdir $(OUTPUT_GCC); fi
-	$(GCC) $(TARGET) $(INCLUDE) $(LIB) $(CFLAGS_GCC) $(LUA_FLAG) -O3 $(EM_LDFALGS_GCC) -o $(OUTPUT_GCC)/$(OUT_NAME_GCC)
+	# $(GCC) $(TARGET) $(INCLUDE) $(LIB) $(CFLAGS_GCC) $(LUA_FLAG) -O3 $(EM_LDFALGS_GCC) -o $(OUTPUT_GCC)/$(OUT_NAME_GCC)
 	$(EM_CC) $(TARGET) $(COMPILED_TARGET) $(INCLUDE) $(LIB) $(CFLAGS_EM) $(LDFALGS_EM) -o $(OUTPUT_EM)/$(OUT_NAME_EM).js
 
 init:
