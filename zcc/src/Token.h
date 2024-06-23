@@ -14,13 +14,16 @@ public:
       AnyType<-1, int32_t>::GetValue() = token;
     }
 
+  static void header() { 
+    printf("LINE  COL  TOKEN   LEXEME     LITERAL\n");
+    printf("---- ----  ------  ---------- -------\n");
+  }
+
   void print() { 
-    // AnyType<-1, int32_t>::GetValue() = token;
-    // std::string type = *foreach<KeywordList, AnyType<-1, int32_t>>::Key2Value();
+    AnyType<-1, int32_t>::GetValue() = token;
+    std::string type = *foreach<TokenList, AnyType<-1, int32_t>>::Key2Value();
 
-
-    // if (!type.length()) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", token, lexeme.c_str(), literal.c_str(), line, col);
-    // else printf("{ type: '%s'; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", type.c_str(), lexeme.c_str(), literal.c_str(), line, col);
+    printf("%4d %4d  %-6s  %-10s %s\n", line, col, Utils::Uppercase(type).c_str(), lexeme.c_str(), literal.c_str());
   }
 
 public:

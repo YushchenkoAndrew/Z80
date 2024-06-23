@@ -26,16 +26,28 @@ private:
       advance();
     }
 
-    // TODO: Check if string is too long add error
-
     if (peek() != c) { addToken(TokenT::NONE); return error("Unclosed string.");  } 
-    
 
     advance(); // closing quote
     addToken(TokenT::STRING, src.substr(nStart + 1, nCurr - nStart - 2));
   }
 
   void number() {
+    auto gettype = [&](unsigned long& num) {
+      if (num >= 0) {
+        if (num <= UINT8_MAX)  return TokenT::UNSIGNED_CHAR;
+        if (num <= UINT16_MAX) return TokenT::UNSIGNED_SHORT;
+        if (num <= UINT32_MAX) return TokenT::UNSIGNED_INT;
+      }
+
+      if (num >= INT8_MIN  && num <= INT8_MAX)  return TokenT::CHAR;
+      if (num >= INT16_MIN && num <= INT16_MAX) return TokenT::SHORT;
+      if (num >= INT32_MIN && num <= INT32_MAX) return TokenT::INT;
+
+      error("Number is exceeded allowed range.");
+      return TokenT::NONE; 
+    };
+
     if (peekPrev() == '0' && match<6>({ 'X', 'x', 'O', 'o', 'B', 'b' })) {
       int32_t base = 10;
 
@@ -46,22 +58,30 @@ private:
       }
 
       const auto nStart = this->nStart + 2;
-      return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart), nullptr, base)));
+      auto num = std::stoul(src.substr(nStart, nCurr - nStart), nullptr, base);
+      return addToken(gettype(num), std::to_string(num));
     }
     
     while (Utils::IsDigit(peek())) advance();
-    return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, nCurr - nStart))));
+
+    auto num = std::stoul(src.substr(nStart, nCurr - nStart));
+    return addToken(gettype(num), std::to_string(num));
   }
 
   void identifier() {
     while (isAlphaNumeric(peek())) advance();
 
-    // TODO:
-    // AnyType<-1, std::string>::GetValue() = src.substr(nStart, nCurr - nStart);
-    // int32_t type = foreach<KeywordList, AnyType<-1, std::string>>::Value2Key();
+    AnyType<-1, std::string>::GetValue() = src.substr(nStart, nCurr - nStart);
+    int32_t type = foreach<KeywordList, AnyType<-1, std::string>>::Value2Key();
 
-    // if (type == -1) addToken(TokenT::IDENTIFIER);
-    // else addToken(static_cast<TokenT>(type));
+    if (type == -1) addToken(TokenT::IDENTIFIER);
+    else addToken(static_cast<TokenT>(type));
+  }
+
+  void assign(TokenT op) {
+    auto identifier = tokens.back();
+
+    addToken(TokenT::ASSIGN); tokens.push_back(identifier); addToken(op);
   }
 
   inline const char advance() { nCol++; return src[nCurr++]; }
@@ -97,10 +117,14 @@ private:
     errors.push_back("[Ln " + std::to_string(nLine) + " Col " + std::to_string(nCurr) + "] Error: " + message + "\n");
   }
 
+public:
+  void debug() {
+    Token::header();
+    for (auto& t : tokens) t->print();
+  }
 
 private:
   const std::string& src;
-  bool bFullTokenSupport;
 
   int32_t nStart = 0; // index of the src, which is pointing to first char in the lexeme
   int32_t nCurr = 0; // index of the src, which is pointing to the curr char

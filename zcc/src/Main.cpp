@@ -19,10 +19,18 @@ int main() {
   // filename = std::filesystem::path(path).filename();
 
   Zcc::Preprocessor p("assets/Main.c");
-  if (p.scan()) error("PREPROC", p.errors);
+  if (p.scan()) error(p.alias, p.errors);
+
+  #ifdef DEBUG_MODE
+  p.debug();
+  #endif
 
   Zcc::Lexer l(p.src);
-  if (l.scan()) error("LEXER", p.errors);
+  if (l.scan()) error("LEXER", l.errors);
+
+  #ifdef DEBUG_MODE
+  l.debug();
+  #endif
 
   // for (auto err : p.errors) printf("[ERROR]: %s", err.c_str());
 

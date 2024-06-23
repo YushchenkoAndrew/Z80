@@ -50,13 +50,15 @@ private:
     }
 
     if (peek() != c) return error("Unclosed string.");
+    if (nCurr - nStart - 2 > STRSIZE) return error("String exceeded allowed size of " + std::to_string(STRSIZE) + "." );
 
     advance(); // closing quote
     return createToken(TokenT::STRING, src.substr(nStart + 1, nCurr - nStart - 2));
   }
 
   std::unique_ptr<Token> comments() {
-    while (advance() != '\n' && !isAtEnd());
+    // while (advance() != '\n' && !isAtEnd());
+    while (advance() != '\n');
     src.replace(nStart, nCurr - nStart, "");
 
     nCurr = nStart;
@@ -130,7 +132,7 @@ public:
     while(advance() != '\n' && !isAtEnd());
 
     std::string literal = src.substr(this->nStart, nCurr - this->nStart - 1);
-    if (!literal.size()) return (void)error("Expected variable after #ifdef .");
+    if (!literal.size()) return (void)error("Expected variable after #ifdef.");
 
     scopes.push_back(std::pair(has(literal), nStart));
     src.replace(nStart, nCurr - nStart, ""); nCurr = nStart;
@@ -141,7 +143,7 @@ public:
     while(advance() != '\n' && !isAtEnd());
 
     std::string literal = src.substr(this->nStart, nCurr - this->nStart - 1);
-    if (!literal.size()) return (void)error("Expected variable after #ifdef .");
+    if (!literal.size()) return (void)error("Expected variable after #ifdef.");
 
     scopes.push_back(std::pair(!has(literal), nStart));
     src.replace(nStart, nCurr - nStart, ""); nCurr = nStart;
@@ -208,6 +210,14 @@ private:
     return createToken(TokenT::NONE);
   }
 
+public:
+  void debug() {
+    size_t curr = 0, prev = -1;
+    while ((curr = src.find("\n", prev + 1)) != std::string::npos) {
+      printf("[%s] %s", alias, src.substr(prev + 1, curr - prev).c_str());
+      prev = curr;
+    }
+  }
 
 private:
   std::string filedir;
@@ -223,6 +233,8 @@ private:
   std::unordered_map<std::string, std::string> vars;
 
 public:
+  const char* alias = "PROC";
+
   std::string src;
   std::vector<std::string> errors;
 };

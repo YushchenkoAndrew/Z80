@@ -26,6 +26,7 @@ namespace Utils {
   inline bool IsOctDigit(const char &c) { return c >= '0' && c <= '7'; }
   inline bool IsHexDigit(const char &c) { return IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
   inline bool IsAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
+  inline std::string Uppercase(std::string& src) { std::string dst; for (auto& c : src) dst += toupper(c); return dst; }
 
 
   inline uint8_t Hex2Int(const char c) { 
