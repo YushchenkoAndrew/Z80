@@ -9,10 +9,7 @@ namespace Zcc {
 class Token {
 public:
   Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line):
-    token(t), lexeme(le), literal(li), col(col), line(line) {
-
-      AnyType<-1, int32_t>::GetValue() = token;
-    }
+    token(t), lexeme(le), literal(li), col(col), line(line) {}
 
   static void header() { 
     printf("LINE  COL  TOKEN   LEXEME     LITERAL\n");

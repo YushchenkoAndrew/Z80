@@ -1,5 +1,6 @@
 #pragma once
-#include "Lexer/Lexer.h"
+// #include "Lexer/Lexer.h"
+#include "Expression/Var.h"
 // #include "Statement/StatementVariable.h"
 
 namespace Zcc {
@@ -30,9 +31,10 @@ namespace Zcc {
  *                  | ( '+' | '-' | '*' | '&' | '!' | '~' ) cast 
  *                  | postfix
  *                 )
- *  postfix     -> primary ( '[' expression ']'  | '(' arguments ')' | ('.' | '->') IDENTIFIER | '++' | '--' )*
+ *  postfix     -> primary ( '[' expression ']'  | '(' arguments? ')' | ('.' | '->') IDENTIFIER | '++' | '--' )*
+ *  arguments   -> expression ( ',' expression )* 
  *  primary     -> CHAR | SHORT | INT | UNSIGNED_CHAR | UNSIGNED_SHORT | UNSIGNED_INT 
- *                 | IDENTIFIER | STRING | '(' expression ')'
+ *                 | IDENTIFIER | '{' arguments? '}' | '(' expression ')'
  * 
  */
 class Parser {
@@ -43,7 +45,8 @@ public:
   bool scan() {
     reset();
     // if (lexer.scan(src)) { errors.insert(errors.end(), lexer.errors.begin(), lexer.errors.end()); return true; }
-    program();
+    // program();
+    expression();
     return errors.size();
   }
 
@@ -97,9 +100,9 @@ private:
     auto expr = logic_and();
 
     while (match<1>({ TokenT::OP_OR })) {
+      auto op = peekPrev();
       auto right = logic_and();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -109,9 +112,9 @@ private:
     auto expr = binary_or();
 
     while (match<1>({ TokenT::OP_AND })) {
+      auto op = peekPrev();
       auto right = binary_or();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -121,9 +124,9 @@ private:
     auto expr = binary_xor();
 
     while (match<1>({ TokenT::BIT_OR })) {
+      auto op = peekPrev();
       auto right = binary_xor();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -133,9 +136,9 @@ private:
     auto expr = binary_and();
 
     while (match<1>({ TokenT::BIT_XOR })) {
+      auto op = peekPrev();
       auto right = binary_and();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -145,9 +148,9 @@ private:
     auto expr = equality();
 
     while (match<1>({ TokenT::BIT_XOR })) {
+      auto op = peekPrev();
       auto right = equality();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -157,9 +160,9 @@ private:
     auto expr = comparison();
 
     if (match<2>({ TokenT::OP_EQUAL, TokenT::OP_NOT_EQUAL })) {
+      auto op = peekPrev();
       auto right = comparison();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -169,9 +172,9 @@ private:
     auto expr = shift();
 
     if (match<4>({ TokenT::OP_MORE, TokenT::OP_MORE_OR_EQUAL, TokenT::OP_LESS, TokenT::OP_LESS_OR_EQUAL })) {
+      auto op = peekPrev();
       auto right = shift();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -181,9 +184,9 @@ private:
     auto expr = term();
 
     if (match<2>({ TokenT::BIT_RIGHT_SHIFT, TokenT::BIT_LEFT_SHIFT })) {
+      auto op = peekPrev();
       auto right = term();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -193,21 +196,21 @@ private:
     auto expr = factor();
 
     while (match<2>({ TokenT::OP_PLUS, TokenT::OP_MINUS })) {
+      auto op = peekPrev();
       auto right = factor();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
   }
 
-  inline std::shared_ptr<Expression> term() {
+  inline std::shared_ptr<Expression> factor() {
     auto expr = cast();
 
     while (match<3>({ TokenT::OP_DIV, TokenT::STAR, TokenT::OP_MOD })) {
+      auto op = peekPrev();
       auto right = cast();
-      // TODO:
-      // expr = ....
+      expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
@@ -218,11 +221,7 @@ private:
 //  *                  | ( '+' | '-' | '*' | '&' | '!' | '~' ) cast 
 //  *                  | postfix
 //  *                 )
-//  *  postfix     -> primary ( '[' expression ']'  | '(' arguments ')' | ('.' | '->') IDENTIFIER | '++' | '--' )*
-//  *  primary     -> CHAR | SHORT | INT | UNSIGNED_CHAR | UNSIGNED_SHORT | UNSIGNED_INT 
-//  *                 | IDENTIFIER | STRING | '(' expression ')'
 //  * 
-//  *  type        -> 'void' | 'unsigned'? ( 'char' | 'short' | 'int')
 //  *  pointer     -> '*' pointer | '*'
 
   inline std::shared_ptr<Expression> cast() {
@@ -237,36 +236,77 @@ private:
     // return expr;
   }
 
-
-
   inline std::shared_ptr<Expression> unary() {
+    std::shared_ptr<Expression> expr = nullptr, right = std::make_shared<Expression>();
+
     while (match<3>({ TokenT::OP_INC, TokenT::OP_DEC, TokenT::W_SIZEOF })) {
-      // TODO:
-      // std::shared_ptr<Token> operation = peekPrev();
-      // return std::make_shared<ExpressionUnary>(operation, unary(size));
+      auto op = peekPrev();
+      expr = std::make_shared<Expr::Unary>(op, expr == nullptr ? right : expr);
     }
 
-    if (match<3>({ TokenT::OP_PLUS, TokenT::OP_MINUS, TokenT::STAR, TokenT::AMPERSAND, TokenT::OP_NOT, TokenT::BIT_NOT })) {
-      // TODO
-      cast();
-    } else postfix();
+    if (match<6>({ TokenT::OP_PLUS, TokenT::OP_MINUS, TokenT::STAR, TokenT::AMPERSAND, TokenT::OP_NOT, TokenT::BIT_NOT })) {
+      auto op = peekPrev();
+      *right = *cast();
+      expr = std::make_shared<Expr::Unary>(op, expr);
+    } else *right = *postfix();
+    
+    return expr;
   }
 
   inline std::shared_ptr<Expression> postfix() {
     auto expr = primary();
 
-    // TODO:
-    // if (match<1>({ TokenT::LEFT_SQUARE_BRACE })) {}
+    while (match<6>({ TokenT::LEFT_SQUARE_BRACE, TokenT::LEFT_BRACE, TokenT::OP_DOT, TokenT::OP_ARROW, TokenT::OP_INC, TokenT::OP_DEC })) {
+      auto op = peekPrev();
 
+      switch (op->token) {
+        case TokenT::OP_INC:
+        case TokenT::OP_DEC:
+          expr = std::make_shared<Expr::Suffix>(expr, op);
+          break;
+
+        case TokenT::OP_DOT:
+        case TokenT::OP_ARROW:
+          consume(TokenT::IDENTIFIER, "Expect property name after '.'.");
+          expr = std::make_shared<Expr::Get>(expr, op, peekPrev());
+          break;
+
+        case TokenT::LEFT_SQUARE_BRACE: {
+          auto right = expression();
+          consume(TokenT::RIGHT_SQUARE_BRACE, "Expect ']' after expression.");
+          auto op = std::make_shared<Token>(TokenT::NONE, "", "", 0, 0);
+          expr = std::make_shared<Expr::Get>(expr, op, right);
+          break;
+        }
+
+        case TokenT::LEFT_BRACE: {
+          auto args = arguments(TokenT::RIGHT_BRACE);
+          expr = std::make_shared<Expr::Invoke>(expr, args);
+          break;
+        }
+      }
+    }
+    
+    return expr;
   }
 
 
 
+//  *  type        -> 'void' | 'unsigned'? ( 'char' | 'short' | 'int')
   inline std::shared_ptr<Expression> type() {
+    switch (advance()->token) {
+      case TokenT::W_VOID:
+
+      case TokenT::W_UNSIGNED:
+
+    // TODO: ????????
+      case TokenT::W_CHAR:
+      case TokenT::W_SHORT:
+      case TokenT::W_INT:
+    }
 
     // make it lambda ??
     // inline std::shared_ptr<Expression> pointer() {
-    // TODO: ????????
     // while (match<1>({ TokenT::STAR })) {
     //   poin
     // }
@@ -275,12 +315,42 @@ private:
   }
 
   inline std::shared_ptr<Expression> primary() {
+    if (match<6>({ TokenT::CHAR, TokenT::SHORT, TokenT::INT, TokenT::UNSIGNED_CHAR, TokenT::UNSIGNED_SHORT, TokenT::INT })) {
+      return std::make_shared<Expr::Literal>(peekPrev());
+    }
+
+    if (match<1>({ TokenT::LEFT_CURLY_BRACE })) {
+      auto args = arguments(TokenT::RIGHT_CURLY_BRACE);
+      return std::make_shared<Expr::Array>(args);
+    }
+
+    if (match<1>({ TokenT::IDENTIFIER })) {
+      return std::make_shared<Expr::Var>(peekPrev());
+    }
+
+    if (match<1>({ TokenT::LEFT_BRACE })) {
+      auto expr = expression();
+      consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
+      return std::make_shared<Expr::Group>(expr);
+    }
+
+    error(peek(), "Unexpected expression.");
   }
 
 
+  inline std::vector<std::shared_ptr<Expression>> arguments(TokenT closer) {
+    std::vector<std::shared_ptr<Expression>> args{};
+    if (peek()->token != closer) {
+      do {
+        args.push_back(expression());
+      } while(match<1>({ TokenT::COMMA }));
+    }
+
+    consume(closer, "Expect closed brackets after expression.");
+    return args;
+  }
 
 
-  // inline std::shared_ptr<Statement> Process(Int2Type<TokenT::OP_ORG>) { return std::make_shared<StatementAddress>(peekPrev(), literal(2)); }
 
 private:
   inline std::shared_ptr<Token> peek() { return tokens[nCurr]; }

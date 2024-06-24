@@ -29,7 +29,14 @@ private:
     if (peek() != c) { addToken(TokenT::NONE); return error("Unclosed string.");  } 
 
     advance(); // closing quote
-    addToken(TokenT::STRING, src.substr(nStart + 1, nCurr - nStart - 2));
+    addToken(TokenT::LEFT_CURLY_BRACE);
+
+    for (int32_t i = 0; i < nCurr - nStart - 2; i++) {
+      if (i) addToken(TokenT::COMMA);
+      addToken(TokenT::UNSIGNED_CHAR, std::to_string(src[nStart + i + 1]));
+    }
+
+    addToken(TokenT::RIGHT_CURLY_BRACE);
   }
 
   void number() {
