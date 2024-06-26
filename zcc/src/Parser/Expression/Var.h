@@ -11,7 +11,7 @@ public:
   
   
   inline void accept(Visitor* visitor) override {
-    return visitor->visitExprVariable(this);
+    return visitor->visitExprVar(this);
   }
 
 public:

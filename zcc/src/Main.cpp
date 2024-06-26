@@ -1,7 +1,8 @@
 #include <stdio.h>
 
 #define DEBUG_MODE
-#include "Lexer/Lexer.h"
+// #include "Lexer/Lexer.h"
+#include "Parser/Parser.h"
 
 // Check Memory Leaking
 //#define MEM_TRACK
@@ -31,6 +32,9 @@ int main() {
   #ifdef DEBUG_MODE
   l.debug();
   #endif
+
+  Zcc::Parser pr(l.tokens);
+  if (pr.scan()) error("PARSER", pr.errors);
 
   // for (auto err : p.errors) printf("[ERROR]: %s", err.c_str());
 

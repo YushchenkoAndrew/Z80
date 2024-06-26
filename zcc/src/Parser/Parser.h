@@ -11,7 +11,7 @@ namespace Zcc {
  * Grammar:
  * 
  *  expression  -> assignment
- *  assignment  -> ( unary ( '.' | '->' ) )? IDENTIFIER '=' assignment | ternary
+ *  assignment  -> ternary ( '=' ternary )*
  *  ternary     -> logic_or '?' expression ':' expression | logic_or
  *  logic_or    -> logic_and ( '||' logic_and )*
  *  logic_and   -> binary_or ( '&&' binary_or )*
@@ -22,15 +22,12 @@ namespace Zcc {
  *  comparison  -> shift ( ('>' | '>=' | '<' | '<=') shift )?
  *  shift       -> term ( ('<<' | '>>') term )?
  *  term        -> factor ( ('-' | '+') factor )*
- *  factor      -> cast ( ('/' | '*' | '%') cast )*
+ *  factor      -> unary ( ('/' | '*' | '%') unary )*
  * 
- *  cast        -> '(' type ')' cast | unary
- *  type        -> 'void' | 'unsigned'? ( 'char' | 'short' | 'int') pointer? 
+ *  unary       -> ('++' | '--' | 'sizeof' )* ( '+' | '-' | '*' | '&' | '!' | '~' )? cast 
+ *  cast        -> '(' type ')' cast | postfix
+ *  type        -> ( 'void' | 'unsigned'? ( 'char' | 'short' | 'int') pointer? )
  *  pointer     -> '*' pointer | '*'
- *  unary       -> ('++' | '--' | 'sizeof' )* (
- *                  | ( '+' | '-' | '*' | '&' | '!' | '~' ) cast 
- *                  | postfix
- *                 )
  *  postfix     -> primary ( '[' expression ']'  | '(' arguments? ')' | ('.' | '->') IDENTIFIER | '++' | '--' )*
  *  arguments   -> expression ( ',' expression )* 
  *  primary     -> CHAR | SHORT | INT | UNSIGNED_CHAR | UNSIGNED_SHORT | UNSIGNED_INT 
@@ -69,28 +66,24 @@ private:
   }
 
   inline std::shared_ptr<Expression> assignment() {
-    // TODO:
-    // auto expr = unary(size);
+    auto expr = ternary();
 
-    // while (match<2>({ TokenT::LEFT_SHIFT, TokenT::RIGHT_SHIFT })) {
-    //   std::shared_ptr<Token> operation = peekPrev();
-    //   auto right = term(size);
-    //   expr = std::make_shared<ExpressionBinary>(expr, operation, right);
-    // }
+    while (match<1>({ TokenT::ASSIGN })) {
+      auto right = ternary();
+      expr = std::make_shared<Expr::Assign>(expr, right);
+    }
 
-    // return expr;
+    return expr;
   }
 
   inline std::shared_ptr<Expression> ternary() {
     auto expr = logic_or();
 
-    while (match<1>({ TokenT::QUESTION_MARK })) {
+    if (match<1>({ TokenT::QUESTION_MARK })) {
       auto left = expression();
       consume(TokenT::COLON, "Expect ':' after expression.");
-      auto left = expression();
-
-      // TODO:
-      // expr = ...
+      auto right = expression();
+      expr = std::make_shared<Expr::Ternary>(expr, left, right);
     }
 
     return expr;
@@ -205,39 +198,30 @@ private:
   }
 
   inline std::shared_ptr<Expression> factor() {
-    auto expr = cast();
+    auto expr = unary();
 
     while (match<3>({ TokenT::OP_DIV, TokenT::STAR, TokenT::OP_MOD })) {
       auto op = peekPrev();
-      auto right = cast();
+      auto right = unary();
       expr = std::make_shared<Expr::Binary>(expr, op, right);
     }
 
     return expr;
   }
 
-//  *  cast        -> '(' typename ')' cast | unary
-//  *  unary       -> ('++' | '--' | 'sizeof' )* (
-//  *                  | ( '+' | '-' | '*' | '&' | '!' | '~' ) cast 
-//  *                  | postfix
-//  *                 )
-//  * 
-//  *  pointer     -> '*' pointer | '*'
-
   inline std::shared_ptr<Expression> cast() {
-    if (!match<1>({ TokenT::LEFT_BRACE })) return unary();
+    int nStart = nCurr;
+    if (!match<1>({ TokenT::LEFT_BRACE })) return postfix();
 
-    // TODO:
-    type();
+    auto t = type();
+    if (t == nullptr) { nCurr = nStart; return postfix(); }
 
-    cast();
-
-
-    // return expr;
+    consume(TokenT::RIGHT_BRACE, "Expected ')' after typename.");
+    return std::make_shared<Expr::Cast>(t, cast());
   }
 
   inline std::shared_ptr<Expression> unary() {
-    std::shared_ptr<Expression> expr = nullptr, right = std::make_shared<Expression>();
+    std::shared_ptr<Expression> expr = nullptr, right = nullptr;
 
     while (match<3>({ TokenT::OP_INC, TokenT::OP_DEC, TokenT::W_SIZEOF })) {
       auto op = peekPrev();
@@ -246,9 +230,10 @@ private:
 
     if (match<6>({ TokenT::OP_PLUS, TokenT::OP_MINUS, TokenT::STAR, TokenT::AMPERSAND, TokenT::OP_NOT, TokenT::BIT_NOT })) {
       auto op = peekPrev();
-      *right = *cast();
+      auto temp = cast(); right.swap(temp);
+
       expr = std::make_shared<Expr::Unary>(op, expr);
-    } else *right = *postfix();
+    } else { auto temp = cast(); right.swap(temp); }
     
     return expr;
   }
@@ -267,8 +252,7 @@ private:
 
         case TokenT::OP_DOT:
         case TokenT::OP_ARROW:
-          consume(TokenT::IDENTIFIER, "Expect property name after '.'.");
-          expr = std::make_shared<Expr::Get>(expr, op, peekPrev());
+          expr = std::make_shared<Expr::Get>(expr, op, identifier());
           break;
 
         case TokenT::LEFT_SQUARE_BRACE: {
@@ -290,28 +274,49 @@ private:
     return expr;
   }
 
-
-
-//  *  type        -> 'void' | 'unsigned'? ( 'char' | 'short' | 'int')
   inline std::shared_ptr<Expression> type() {
-    switch (advance()->token) {
-      case TokenT::W_VOID:
+    auto encapsulate = [&](std::shared_ptr<Expression> expr) {
+      for (int i = 0; match<1>({ TokenT::STAR }); i++) {
+        expr = std::make_shared<Expr::Type>(peekPrev());
+        if (i < PTRDEPTH) continue;
 
-      case TokenT::W_UNSIGNED:
+        error(peekPrev(), "Pointer type definition exceeded allow depth.");
+        return (std::shared_ptr<Expression>)nullptr;
+      }
 
-    // TODO: ????????
+      return expr;
+    };
+
+    auto type = advance();
+    switch (type->token) {
+      case TokenT::W_VOID: 
+        return encapsulate(std::make_shared<Expr::Type>(convert(type, TokenT::VOID)));
+
+      case TokenT::W_UNSIGNED: {
+        switch (advance()->token) {
+          case TokenT::W_CHAR:
+            return encapsulate(std::make_shared<Expr::Type>(convert(type, TokenT::UNSIGNED_CHAR)));
+
+          case TokenT::W_SHORT:
+            return encapsulate(std::make_shared<Expr::Type>(convert(type, TokenT::UNSIGNED_SHORT)));
+
+          case TokenT::W_INT:
+            return encapsulate(std::make_shared<Expr::Type>(convert(type, TokenT::UNSIGNED_INT)));
+        }
+      }
+
       case TokenT::W_CHAR:
+        return encapsulate(std::make_shared<Expr::Type>(convert(type, TokenT::CHAR)));
+
       case TokenT::W_SHORT:
+        return encapsulate(std::make_shared<Expr::Type>(convert(type, TokenT::SHORT)));
+
       case TokenT::W_INT:
+        return encapsulate(std::make_shared<Expr::Type>(convert(type, TokenT::INT)));
     }
 
-    // make it lambda ??
-    // inline std::shared_ptr<Expression> pointer() {
-    // while (match<1>({ TokenT::STAR })) {
-    //   poin
-    // }
-  // }
-    // TODO:
+    // error(type, "Unsupported type.");
+    return nullptr;
   }
 
   inline std::shared_ptr<Expression> primary() {
@@ -324,9 +329,6 @@ private:
       return std::make_shared<Expr::Array>(args);
     }
 
-    if (match<1>({ TokenT::IDENTIFIER })) {
-      return std::make_shared<Expr::Var>(peekPrev());
-    }
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
       auto expr = expression();
@@ -334,7 +336,16 @@ private:
       return std::make_shared<Expr::Group>(expr);
     }
 
+    return identifier();
+  }
+
+  inline std::shared_ptr<Expression> identifier() {
+    if (match<1>({ TokenT::IDENTIFIER })) {
+      return std::make_shared<Expr::Var>(peekPrev());
+    }
+
     error(peek(), "Unexpected expression.");
+    return nullptr;
   }
 
 
@@ -357,6 +368,10 @@ private:
   inline std::shared_ptr<Token> peekPrev() { return tokens[nCurr - 1]; }
   inline bool isAtEnd() { return peek()->token == TokenT::CMD_EOF; }
   inline bool check(TokenT type) { return isAtEnd() ? false : peek()->token == type; }
+
+  inline std::shared_ptr<Token> convert(std::shared_ptr<Token> src, TokenT token) {
+    return std::make_shared<Token>(token, src->lexeme, src->literal, src->col, src->line);
+  }
 
   inline std::shared_ptr<Token> advance() {
     if (!isAtEnd()) nCurr++;

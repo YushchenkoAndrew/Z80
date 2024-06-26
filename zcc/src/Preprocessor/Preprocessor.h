@@ -53,7 +53,7 @@ private:
     if (nCurr - nStart - 2 > STRSIZE) return error("String exceeded allowed size of " + std::to_string(STRSIZE) + "." );
 
     advance(); // closing quote
-    return createToken(TokenT::STRING, src.substr(nStart + 1, nCurr - nStart - 2));
+    return createToken(TokenT::NONE, src.substr(nStart + 1, nCurr - nStart - 2));
   }
 
   std::unique_ptr<Token> comments() {

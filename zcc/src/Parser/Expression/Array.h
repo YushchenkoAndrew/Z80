@@ -11,7 +11,7 @@ public:
     args(args) {}
 
   void accept(Visitor* visitor) override {
-    return visitor->visitExprBinary(this);
+    return visitor->visitExprArray(this);
   }
 
 public:

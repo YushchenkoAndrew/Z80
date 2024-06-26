@@ -4,6 +4,7 @@
 namespace Zcc {
 
 #define STRSIZE 256
+#define PTRDEPTH 3
 
 class Token;
 // typedef std::pair<std::string, std::shared_ptr<Token>> RealtiveToken;
@@ -29,7 +30,7 @@ enum TokenT {
   // ASSIGN_BIT_OR, ASSIGN_BIT_AND, ASSIGN_BIT_XOR,
   
   // Literals
-  IDENTIFIER, STRING, CHAR, SHORT, INT, UNSIGNED_CHAR, UNSIGNED_SHORT, UNSIGNED_INT,
+  IDENTIFIER, VOID, CHAR, SHORT, INT, UNSIGNED_CHAR, UNSIGNED_SHORT, UNSIGNED_INT,
 
   // Keywords
   W_BREAK, W_CASE, W_CHAR, W_CONTINUE, W_DEFAULT, W_DO, W_GOTO,
@@ -113,7 +114,7 @@ typedef TypeList<
   AnyType<TokenT::ELLIPSIS,          TokenSTR>, TypeList<
   AnyType<TokenT::ASSIGN,            TokenSTR>, TypeList<
   AnyType<TokenT::IDENTIFIER,        TokenSTR>, TypeList<
-  AnyType<TokenT::STRING,            TokenSTR>, TypeList<
+  AnyType<TokenT::VOID,              TokenSTR>, TypeList<
   AnyType<TokenT::CHAR,              TokenSTR>, TypeList<
   AnyType<TokenT::SHORT,             TokenSTR>, TypeList<
   AnyType<TokenT::INT,               TokenSTR>, TypeList<
@@ -197,7 +198,7 @@ public:
     AnyType<TokenT::ELLIPSIS,  TokenSTR>::GetValue() = "ELLIPSIS";
     AnyType<TokenT::ASSIGN,    TokenSTR>::GetValue() = "ASSIGN";
     AnyType<TokenT::IDENTIFIER,TokenSTR>::GetValue() = "IDENT";
-    AnyType<TokenT::STRING,    TokenSTR>::GetValue() = "STRING";
+    AnyType<TokenT::VOID,      TokenSTR>::GetValue() = "VOID";
     AnyType<TokenT::CHAR,      TokenSTR>::GetValue() = "CHAR";
     AnyType<TokenT::SHORT,     TokenSTR>::GetValue() = "SHORT";
     AnyType<TokenT::INT,       TokenSTR>::GetValue() = "INT";

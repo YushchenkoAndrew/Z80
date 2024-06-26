@@ -1,5 +1,5 @@
 #pragma once
-#include "Suffix.h"
+#include "Type.h"
 
 namespace Zcc {
 namespace Expr {

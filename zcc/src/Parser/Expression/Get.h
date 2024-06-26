@@ -1,5 +1,5 @@
 #pragma once
-#include "Binary.h"
+#include "Cast.h"
 
 namespace Zcc {
 
@@ -11,7 +11,7 @@ public:
     left(left), operation(op), right(right) {}
 
   void accept(Visitor* visitor) override {
-    return visitor->visitExprBinary(this);
+    return visitor->visitExprGet(this);
   }
 
 public:
