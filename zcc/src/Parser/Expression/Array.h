@@ -10,7 +10,7 @@ public:
   Array(std::vector<std::shared_ptr<Expression>> args):
     args(args) {}
 
-  void accept(Visitor* visitor) override {
+  void* accept(Visitor* visitor) override {
     return visitor->visitExprArray(this);
   }
 

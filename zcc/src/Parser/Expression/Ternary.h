@@ -10,7 +10,7 @@ public:
     condition(condition), left(left), right() {}
   
   
-  void accept(Visitor* visitor) override {
+  void* accept(Visitor* visitor) override {
     return visitor->visitExprTernary(this);
   }
 

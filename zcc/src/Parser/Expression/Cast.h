@@ -10,7 +10,7 @@ public:
   Cast(std::shared_ptr<Expression> type, std::shared_ptr<Expression> expr):
     type(type), expr(expr) {}
 
-  void accept(Visitor* visitor) override {
+  void* accept(Visitor* visitor) override {
     return visitor->visitExprCast(this);
   }
 

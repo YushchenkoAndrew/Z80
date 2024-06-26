@@ -10,7 +10,7 @@ public:
     operation(op), right(right) {}
   
   
-  void accept(Visitor* visitor) override {
+  void* accept(Visitor* visitor) override {
     return visitor->visitExprUnary(this);
   }
 

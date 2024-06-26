@@ -1,6 +1,7 @@
 #pragma once
 // #include "Lexer/Lexer.h"
-#include "Expression/Var.h"
+// #include "Expression/Var.h"
+#include "Visitor/Disassemble.h"
 // #include "Statement/StatementVariable.h"
 
 namespace Zcc {
@@ -43,7 +44,7 @@ public:
     reset();
     // if (lexer.scan(src)) { errors.insert(errors.end(), lexer.errors.begin(), lexer.errors.end()); return true; }
     // program();
-    expression();
+    temp32 = expression();
     return errors.size();
   }
 
@@ -232,10 +233,10 @@ private:
       auto op = peekPrev();
       auto temp = cast(); right.swap(temp);
 
-      expr = std::make_shared<Expr::Unary>(op, expr);
+      expr = std::make_shared<Expr::Unary>(op, expr == nullptr ? right : expr);
     } else { auto temp = cast(); right.swap(temp); }
     
-    return expr;
+    return expr == nullptr ? right : expr;
   }
 
   inline std::shared_ptr<Expression> postfix() {
@@ -277,7 +278,8 @@ private:
   inline std::shared_ptr<Expression> type() {
     auto encapsulate = [&](std::shared_ptr<Expression> expr) {
       for (int i = 0; match<1>({ TokenT::STAR }); i++) {
-        expr = std::make_shared<Expr::Type>(peekPrev());
+        auto ptr = std::make_shared<Expr::Type>(peekPrev());
+        expr = std::make_shared<Expr::Cast>(expr, ptr);
         if (i < PTRDEPTH) continue;
 
         error(peekPrev(), "Pointer type definition exceeded allow depth.");
@@ -406,6 +408,7 @@ public:
   std::vector<std::shared_ptr<Token>>& tokens;
 
   // std::vector<std::shared_ptr<Statement>> stmt;
+  std::shared_ptr<Expression> temp32 = nullptr;
   std::vector<std::string> errors;
 
 private:

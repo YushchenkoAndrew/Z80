@@ -9,7 +9,7 @@ public:
   Literal(std::shared_ptr<Token> t): 
     token(t) {}
 
-  void accept(Visitor* visitor) override {
+  void* accept(Visitor* visitor) override {
     return visitor->visitExprLiteral(this);
   }
 

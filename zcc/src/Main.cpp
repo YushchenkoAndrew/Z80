@@ -34,7 +34,13 @@ int main() {
   #endif
 
   Zcc::Parser pr(l.tokens);
+  // auto expr = pr.expression();
   if (pr.scan()) error("PARSER", pr.errors);
+
+  Zcc::Disassemble d;
+
+  if (pr.temp32 == nullptr) printf("NULLPTR\n");
+  else d.scan(pr.temp32);
 
   // for (auto err : p.errors) printf("[ERROR]: %s", err.c_str());
 

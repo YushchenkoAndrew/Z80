@@ -3,6 +3,7 @@
 #include <memory>
 #include <future>
 #include <string>
+#include <string.h>
 #include <vector>
 #include <array>
 #include <unordered_map>
