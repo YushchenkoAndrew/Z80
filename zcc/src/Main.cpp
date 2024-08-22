@@ -1,16 +1,17 @@
 #include <stdio.h>
+#include "Repl/Repl.h"
 
-#define DEBUG_MODE
+// #define DEBUG_MODE
 // #include "Lexer/Lexer.h"
-#include "Parser/Parser.h"
+// #include "Parser/Parser.h"
 
 // Check Memory Leaking
 //#define MEM_TRACK
 //#include "include/MemTrack.h"
 
-void error(const std::string& prefix, std::vector<std::string>& errors) {
-  for (auto& msg : errors) printf("[%s] %s", prefix.c_str(), msg.c_str());
-}
+// void error(const std::string& prefix, std::vector<std::string>& errors) {
+//   for (auto& msg : errors) printf("[%s] %s", prefix.c_str(), msg.c_str());
+// }
 
 int main() {
   Zcc::Defs::Init(); // Initialize types
@@ -19,28 +20,23 @@ int main() {
   // filepath = std::filesystem::canonical(path);
   // filename = std::filesystem::path(path).filename();
 
-  Zcc::Preprocessor p("assets/Main.c");
-  if (p.scan()) error(p.alias, p.errors);
+  Zcc::repl();
 
-  #ifdef DEBUG_MODE
-  p.debug();
-  #endif
+  // Zcc::Lexer l(p.src);
+  // if (l.scan()) error("LEXER", l.errors);
 
-  Zcc::Lexer l(p.src);
-  if (l.scan()) error("LEXER", l.errors);
+  // #ifdef DEBUG_MODE
+  // l.debug();
+  // #endif
 
-  #ifdef DEBUG_MODE
-  l.debug();
-  #endif
+  // Zcc::Parser pr(l.tokens);
+  // // auto expr = pr.expression();
+  // if (pr.scan()) error("PARSER", pr.errors);
 
-  Zcc::Parser pr(l.tokens);
-  // auto expr = pr.expression();
-  if (pr.scan()) error("PARSER", pr.errors);
+  // Zcc::Disassemble d;
 
-  Zcc::Disassemble d;
-
-  if (pr.temp32 == nullptr) printf("NULLPTR\n");
-  else d.scan(pr.temp32);
+  // if (pr.temp32 == nullptr) printf("NULLPTR\n");
+  // else d.scan(pr.temp32);
 
   // for (auto err : p.errors) printf("[ERROR]: %s", err.c_str());
 

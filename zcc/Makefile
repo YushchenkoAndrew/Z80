@@ -7,7 +7,7 @@ LIB=-I./
 INCLUDE=
 LUA_SOURCE=$(SOURCE)/lua
 
-DIRS=Preprocessor Lexer
+DIRS=Lexer
 TARGET=$(SOURCE)/*.cpp $(foreach dir, $(DIRS), $(addprefix $(SOURCE)/, $(dir))/*.cpp)
 COMPILED_TARGET=lua54/emsc/lua54.o
 
