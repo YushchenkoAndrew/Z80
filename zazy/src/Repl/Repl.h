@@ -4,7 +4,7 @@
 
 namespace Zcc {
   void repl() {
-    std::cout << "Welcome to zcc repl [debug]\n> ";
+    std::cout << "Welcome to zazy C-like repl [debug]\n> ";
 
     for (std::string line; std::getline(std::cin, line); std::cout << "> ") {
       Lexer l(line);

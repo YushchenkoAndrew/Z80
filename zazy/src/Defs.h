@@ -199,8 +199,18 @@ public:
     AnyType<TokenT::STAR,      TokenSTR>::GetValue() = "STAR";
     AnyType<TokenT::SEMICOLON, TokenSTR>::GetValue() = "SEMI";
     AnyType<TokenT::COLON,     TokenSTR>::GetValue() = "COLON";
-    AnyType<TokenT::ASSIGN,    TokenSTR>::GetValue() = "ASSIGN";
     AnyType<TokenT::IDENTIFIER,TokenSTR>::GetValue() = "IDENT";
+
+    AnyType<TokenT::ASSIGN,        TokenSTR>::GetValue() = "ASSIGN";
+    AnyType<TokenT::ASSIGN_PLUS,   TokenSTR>::GetValue() = "ASPLUS";
+    AnyType<TokenT::ASSIGN_MINUS,  TokenSTR>::GetValue() = "ASMINUS";
+    AnyType<TokenT::ASSIGN_DIV,    TokenSTR>::GetValue() = "ASDIV";
+    AnyType<TokenT::ASSIGN_MOD,    TokenSTR>::GetValue() = "ASMOD";
+    AnyType<TokenT::ASSIGN_MUL,    TokenSTR>::GetValue() = "ASMUL";
+    AnyType<TokenT::ASSIGN_BIT_OR, TokenSTR>::GetValue() = "ASPIPE";
+    AnyType<TokenT::ASSIGN_BIT_AND,TokenSTR>::GetValue() = "ASAMPER";
+    AnyType<TokenT::ASSIGN_BIT_XOR,TokenSTR>::GetValue() = "ASCARET";
+
 
     AnyType<TokenT::OP_NOT_EQUAL,      TokenSTR>::GetValue() = "NOTEQ";
     AnyType<TokenT::OP_MORE_OR_EQUAL,  TokenSTR>::GetValue() = "GTEQ";
