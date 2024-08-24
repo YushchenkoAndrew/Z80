@@ -1,12 +1,12 @@
 #pragma once
 #include "Get.h"
 
-namespace Zcc {
+namespace Zazy {
 namespace Expr {
 
 class Group : public Expression {
 public:
-  Group(std::shared_ptr<Expression> expr):
+  Group(expr_t expr):
     expr(expr) {}
   
   
@@ -14,8 +14,10 @@ public:
     return visitor->visitExprGroup(this);
   }
 
+  void print() { ENCLOSE(expr->print();) }
+
 public:
-  std::shared_ptr<Expression> expr;
+  expr_t expr;
 };
 };
 };

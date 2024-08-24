@@ -1,7 +1,7 @@
 #pragma once
 #include "Defs.h"
 
-namespace Zcc {
+namespace Zazy {
 typedef std::shared_ptr<Token> token_t;
 
 class Token {

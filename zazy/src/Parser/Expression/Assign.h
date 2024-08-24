@@ -1,22 +1,24 @@
 #pragma once
 #include "Array.h"
 
-namespace Zcc {
+namespace Zazy {
 
 namespace Expr {
 
 class Assign : public Expression {
 public:
-  Assign(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right):
+  Assign(expr_t left, expr_t right):
     left(left), right(right) {}
 
   void* accept(Visitor* visitor) override {
     return visitor->visitExprAssign(this);
   }
 
+  void print() { ENCLOSE(left->print(); printf(" = "); right->print();) }
+
 public:
-  std::shared_ptr<Expression> left;
-  std::shared_ptr<Expression> right;
+  expr_t left;
+  expr_t right;
 };
 
 };

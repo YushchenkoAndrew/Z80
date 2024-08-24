@@ -3,9 +3,11 @@
 
 
 
-namespace Zcc {
+namespace Zazy {
 
 namespace Expr {
+  #define ENCLOSE(...) printf("("); __VA_ARGS__ printf(")");
+
   class Array;
   class Assign;
   class Binary;
@@ -16,13 +18,13 @@ namespace Expr {
   class Literal;
   class Suffix;
   class Ternary;
-  class Type;
   class Unary;
   class Var;
 };
 
-
 class Expression;
+
+typedef std::shared_ptr<Expression> expr_t;
 
 class Visitor {
 public:
@@ -36,7 +38,6 @@ public:
   virtual void* visitExprLiteral(Expr::Literal* expr) { return nullptr; }
   virtual void* visitExprSuffix(Expr::Suffix* expr) { return nullptr; }
   virtual void* visitExprTernary(Expr::Ternary* expr) { return nullptr; }
-  virtual void* visitExprType(Expr::Type* expr) { return nullptr; }
   virtual void* visitExprUnary(Expr::Unary* expr) { return nullptr; }
   virtual void* visitExprVar(Expr::Var* expr) { return nullptr; }
 
@@ -57,5 +58,8 @@ public:
   virtual void* accept(Visitor* visitor) {
     return visitor->visitExprUnknown(this);
   }
+  
+  virtual void print() {}
 };
+
 };

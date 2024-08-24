@@ -1,13 +1,12 @@
 #pragma once
 #include "Utils/Utils.h"
 
-namespace Zcc {
+namespace Zazy {
 
 #define STRSIZE 256
 #define PTRDEPTH 3
 
 class Token;
-// typedef std::pair<std::string, std::shared_ptr<Token>> RealtiveToken;
 
 /**
  * This code was hardly expired by the book {Creating Interpreters}

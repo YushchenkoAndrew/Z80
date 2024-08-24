@@ -1,20 +1,21 @@
 #pragma once
 #include "Invoke.h"
 
-namespace Zcc {
+namespace Zazy {
 namespace Expr {
 
 class Literal : public Expression {
 public:
-  Literal(std::shared_ptr<Token> t): 
-    token(t) {}
+  Literal(token_t t): token(t) {}
 
   void* accept(Visitor* visitor) override {
     return visitor->visitExprLiteral(this);
   }
 
+  void print() { printf("%s", token->lexeme.c_str()); }
+
 public:
-  std::shared_ptr<Token> token;
+  token_t token;
 };
 };
 };

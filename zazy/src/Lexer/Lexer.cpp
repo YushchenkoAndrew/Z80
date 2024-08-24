@@ -1,6 +1,6 @@
 #include "Lexer.h"
 
-namespace Zcc {
+namespace Zazy {
 token_t Lexer::next() {
   while (!isAtEnd()) {
     nStart = nCurr;

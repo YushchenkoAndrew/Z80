@@ -1,21 +1,22 @@
 #pragma once
 #include "Unary.h"
 
-namespace Zcc {
+namespace Zazy {
 namespace Expr {
 
 class Var : public Expression {
 public:
-  Var(std::shared_ptr<Token> t):
-    token(t) {}
+  Var(token_t t): token(t) {}
   
   
   void* accept(Visitor* visitor) override {
     return visitor->visitExprVar(this);
   }
 
+  void print() { printf("%s", token->lexeme.c_str()); }
+
 public:
-  std::shared_ptr<Token> token;
+  token_t token;
 };
 };
 };

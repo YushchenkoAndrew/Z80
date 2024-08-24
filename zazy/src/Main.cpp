@@ -14,26 +14,26 @@
 // }
 
 int main() {
-  Zcc::Defs::Init(); // Initialize types
+  Zazy::Defs::Init(); // Initialize types
 
   // filedir = std::filesystem::path(path).remove_filename();
   // filepath = std::filesystem::canonical(path);
   // filename = std::filesystem::path(path).filename();
 
-  Zcc::repl();
+  Zazy::Repl::exec();
 
-  // Zcc::Lexer l(p.src);
+  // Zazy::Lexer l(p.src);
   // if (l.scan()) error("LEXER", l.errors);
 
   // #ifdef DEBUG_MODE
   // l.debug();
   // #endif
 
-  // Zcc::Parser pr(l.tokens);
+  // Zazy::Parser pr(l.tokens);
   // // auto expr = pr.expression();
   // if (pr.scan()) error("PARSER", pr.errors);
 
-  // Zcc::Disassemble d;
+  // Zazy::Disassemble d;
 
   // if (pr.temp32 == nullptr) printf("NULLPTR\n");
   // else d.scan(pr.temp32);

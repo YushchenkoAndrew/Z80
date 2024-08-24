@@ -1,12 +1,12 @@
 #pragma once
-#include "Type.h"
+#include "Ternary.h"
 
-namespace Zcc {
+namespace Zazy {
 namespace Expr {
 
 class Unary : public Expression {
 public:
-  Unary(std::shared_ptr<Token> op, std::shared_ptr<Expression> right):
+  Unary(token_t op, expr_t right):
     operation(op), right(right) {}
   
   
@@ -14,9 +14,11 @@ public:
     return visitor->visitExprUnary(this);
   }
 
+  void print() { ENCLOSE(printf("%s", operation->lexeme.c_str()); right->print();) }
+
 public:
-  std::shared_ptr<Expression> right;
-  std::shared_ptr<Token> operation;
+  expr_t right;
+  token_t operation;
 };
 };
 };

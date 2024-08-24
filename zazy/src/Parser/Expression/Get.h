@@ -1,23 +1,25 @@
 #pragma once
 #include "Cast.h"
 
-namespace Zcc {
+namespace Zazy {
 
 namespace Expr {
 
 class Get : public Expression {
 public:
-  Get(std::shared_ptr<Expression> left, std::shared_ptr<Token> op, std::shared_ptr<Expression> right):
+  Get(expr_t left, token_t op, expr_t right):
     left(left), operation(op), right(right) {}
 
   void* accept(Visitor* visitor) override {
     return visitor->visitExprGet(this);
   }
 
+  void print() { ENCLOSE(left->print(); printf("."); right->print();) }
+
 public:
-  std::shared_ptr<Expression> left;
-  std::shared_ptr<Expression> right;
-  std::shared_ptr<Token> operation;
+  expr_t left;
+  expr_t right;
+  token_t operation;
 };
 
 };

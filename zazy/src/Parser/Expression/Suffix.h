@@ -1,12 +1,12 @@
 #pragma once
 #include "Literal.h"
 
-namespace Zcc {
+namespace Zazy {
 namespace Expr {
 
 class Suffix : public Expression {
 public:
-  Suffix(std::shared_ptr<Expression> left, std::shared_ptr<Token> op):
+  Suffix(expr_t left, token_t op):
     operation(op), left(left) {}
   
   
@@ -14,9 +14,11 @@ public:
     return visitor->visitExprSuffix(this);
   }
 
+  void print() { ENCLOSE(left->print(); printf("%s", operation->lexeme.c_str());) }
+
 public:
-  std::shared_ptr<Expression> left;
-  std::shared_ptr<Token> operation;
+  expr_t left;
+  token_t operation;
 };
 };
 };

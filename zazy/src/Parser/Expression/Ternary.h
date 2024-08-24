@@ -1,12 +1,12 @@
 #pragma once
 #include "Suffix.h"
 
-namespace Zcc {
+namespace Zazy {
 namespace Expr {
 
 class Ternary : public Expression {
 public:
-  Ternary(std::shared_ptr<Expression> condition, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right):
+  Ternary(expr_t condition, expr_t left, expr_t right):
     condition(condition), left(left), right() {}
   
   
@@ -14,11 +14,12 @@ public:
     return visitor->visitExprTernary(this);
   }
 
+  void print() { ENCLOSE(condition->print(); printf(" ? "); left->print(); printf(" : "); right->print();); }
+
 public:
-  std::shared_ptr<Expression> condition;
-  std::shared_ptr<Expression> left;
-  std::shared_ptr<Expression> right;
-  // std::shared_ptr<Token> operation;
+  expr_t condition;
+  expr_t left;
+  expr_t right;
 };
 };
 };

@@ -1,23 +1,25 @@
 #pragma once
 #include "Assign.h"
 
-namespace Zcc {
+namespace Zazy {
 
 namespace Expr {
 
 class Binary : public Expression {
 public:
-  Binary(std::shared_ptr<Expression> left, std::shared_ptr<Token> op, std::shared_ptr<Expression> right):
+  Binary(expr_t left, token_t op, expr_t right):
     left(left), operation(op), right(right) {}
 
   void* accept(Visitor* visitor) override {
     return visitor->visitExprBinary(this);
   }
 
+  void print() { ENCLOSE(left->print(); printf("%s", operation->lexeme.c_str()); right->print();) }
+
 public:
-  std::shared_ptr<Expression> left;
-  std::shared_ptr<Expression> right;
-  std::shared_ptr<Token> operation;
+  expr_t left;
+  expr_t right;
+  token_t operation;
 };
 
 };

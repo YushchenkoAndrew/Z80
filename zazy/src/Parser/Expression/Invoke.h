@@ -1,12 +1,12 @@
 #pragma once
 #include "Group.h"
 
-namespace Zcc {
+namespace Zazy {
 namespace Expr {
 
 class Invoke : public Expression {
 public:
-  Invoke(std::shared_ptr<Expression> left, std::vector<std::shared_ptr<Expression>> args):
+  Invoke(expr_t left, std::vector<expr_t> args):
     left(left), args(args) {}
   
   
@@ -14,9 +14,11 @@ public:
     return visitor->visitExprInvoke(this);
   }
 
+  // void print() { ENCLOSE(left->print(); printf("%s", type->lexeme.c_str()); ) }
+
 public:
-  std::shared_ptr<Expression> left;
-  std::vector<std::shared_ptr<Expression>> args;
+  expr_t left;
+  std::vector<expr_t> args;
 };
 };
 };

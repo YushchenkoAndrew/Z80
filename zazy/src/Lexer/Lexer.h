@@ -1,7 +1,7 @@
 #pragma once
 #include "src/Token.h"
 
-namespace Zcc {
+namespace Zazy {
 
 /**
  * This code was hardly expired by the book {Creating Interpreters}

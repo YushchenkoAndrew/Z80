@@ -1,22 +1,24 @@
 #pragma once
 #include "Binary.h"
 
-namespace Zcc {
+namespace Zazy {
 
 namespace Expr {
 
 class Cast : public Expression {
 public:
-  Cast(std::shared_ptr<Expression> type, std::shared_ptr<Expression> expr):
-    type(type), expr(expr) {}
+  Cast(token_t type, expr_t expr):
+    type(type), right(expr) {}
 
   void* accept(Visitor* visitor) override {
     return visitor->visitExprCast(this);
   }
 
+  void print() { ENCLOSE(printf("%s", type->lexeme.c_str()); right->print();) }
+
 public:
-  std::shared_ptr<Expression> type;
-  std::shared_ptr<Expression> expr;
+  token_t type;
+  expr_t right;
 };
 
 };
