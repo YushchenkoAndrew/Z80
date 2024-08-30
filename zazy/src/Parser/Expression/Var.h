@@ -9,7 +9,7 @@ public:
   Var(token_t t): token(t) {}
   
   
-  void* accept(Visitor* visitor) override {
+  obj_t accept(Visitor* visitor) override {
     return visitor->visitExprVar(this);
   }
 

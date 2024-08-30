@@ -33,12 +33,12 @@ enum TokenT {
   ASSIGN_BIT_OR, ASSIGN_BIT_AND, ASSIGN_BIT_XOR,
   
   // Literals
-  INVALID, IDENTIFIER, STRING, VOID, CHAR, SHORT, INT, AUTO,
+  INVALID, IDENTIFIER, STRING, VOID, CHAR, SHORT, INT,
 
   // Keywords
-  W_BREAK, W_CASE, W_CONTINUE, W_DEFAULT, W_DO, W_GOTO,
-  W_ELSE, W_ENUM, W_EXTERN, W_FOR, W_IF, W_RETURN, W_SIZEOF,
-  W_STATIC, W_STRUCT, W_SWTCH, W_WHILE, W_ARGC,
+  W_AUTO, W_BREAK, W_CASE, W_CHAR, W_CONTINUE, W_DEFAULT, W_DO, W_GOTO,
+  W_ELSE, W_ENUM, W_EXTERN, W_FOR, W_IF, W_INT, W_RETURN, W_SIZEOF,
+  W_SHORT, W_STATIC, W_STRUCT, W_SWTCH, W_VOID, W_WHILE, W_ARGC,
 
   // Functions
   // FUNC_ASM,
@@ -64,6 +64,7 @@ typedef TypeList<
 typedef TypeList<
   AnyType<TokenT::W_BREAK,   TokenSTR>, TypeList<
   AnyType<TokenT::W_CASE,    TokenSTR>, TypeList<
+  AnyType<TokenT::W_CHAR,    TokenSTR>, TypeList<
   AnyType<TokenT::W_CONTINUE,TokenSTR>, TypeList<
   AnyType<TokenT::W_DEFAULT, TokenSTR>, TypeList<
   AnyType<TokenT::W_DO,      TokenSTR>, TypeList<
@@ -73,18 +74,16 @@ typedef TypeList<
   AnyType<TokenT::W_EXTERN,  TokenSTR>, TypeList<
   AnyType<TokenT::W_FOR,     TokenSTR>, TypeList<
   AnyType<TokenT::W_IF,      TokenSTR>, TypeList<
+  AnyType<TokenT::W_INT,     TokenSTR>, TypeList<
   AnyType<TokenT::W_RETURN,  TokenSTR>, TypeList<
   AnyType<TokenT::W_SIZEOF,  TokenSTR>, TypeList<
+  AnyType<TokenT::W_SHORT,   TokenSTR>, TypeList<
   AnyType<TokenT::W_STATIC,  TokenSTR>, TypeList<
   AnyType<TokenT::W_STRUCT,  TokenSTR>, TypeList<
   AnyType<TokenT::W_SWTCH,   TokenSTR>, TypeList<
   AnyType<TokenT::W_WHILE,   TokenSTR>, TypeList<
-  AnyType<TokenT::W_ARGC,    TokenSTR>, TypeList<
-  AnyType<TokenT::CHAR,      TokenSTR>, TypeList<
-  AnyType<TokenT::INT,       TokenSTR>, TypeList<
-  AnyType<TokenT::SHORT,     TokenSTR>, TypeList<
-  AnyType<TokenT::VOID,      TokenSTR>, TypeList<
-  AnyType<TokenT::AUTO,      TokenSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::W_VOID,    TokenSTR>, TypeList<
+  AnyType<TokenT::W_ARGC,    TokenSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>
     KeywordList;
 
 
@@ -150,8 +149,10 @@ public:
 
 
     // AnyType<TokenT::FUNC_ASM,  TokenSTR>::GetValue() = "asm";
+    AnyType<TokenT::W_AUTO,    TokenSTR>::GetValue() = "auto";
     AnyType<TokenT::W_BREAK,   TokenSTR>::GetValue() = "break";
     AnyType<TokenT::W_CASE,    TokenSTR>::GetValue() = "case";
+    AnyType<TokenT::W_CHAR,    TokenSTR>::GetValue() = "char";
     AnyType<TokenT::W_CONTINUE,TokenSTR>::GetValue() = "continue";
     AnyType<TokenT::W_DEFAULT, TokenSTR>::GetValue() = "default";
     AnyType<TokenT::W_DO,      TokenSTR>::GetValue() = "do";
@@ -161,20 +162,17 @@ public:
     AnyType<TokenT::W_EXTERN,  TokenSTR>::GetValue() = "extern";
     AnyType<TokenT::W_FOR,     TokenSTR>::GetValue() = "for";
     AnyType<TokenT::W_IF,      TokenSTR>::GetValue() = "if";
+    AnyType<TokenT::W_INT,     TokenSTR>::GetValue() = "int";
     AnyType<TokenT::W_RETURN,  TokenSTR>::GetValue() = "return";
     AnyType<TokenT::W_SIZEOF,  TokenSTR>::GetValue() = "sizeof";
+    AnyType<TokenT::W_SHORT,   TokenSTR>::GetValue() = "short";
     AnyType<TokenT::W_STATIC,  TokenSTR>::GetValue() = "static";
     AnyType<TokenT::W_STRUCT,  TokenSTR>::GetValue() = "struct";
     AnyType<TokenT::W_SWTCH,   TokenSTR>::GetValue() = "switch";
+    AnyType<TokenT::W_VOID,    TokenSTR>::GetValue() = "void";
     AnyType<TokenT::W_WHILE,   TokenSTR>::GetValue() = "while";
     AnyType<TokenT::W_ARGC,    TokenSTR>::GetValue() = "__argc";
 
-    AnyType<TokenT::CHAR,      TokenSTR>::GetValue() = "char";
-    AnyType<TokenT::SHORT,     TokenSTR>::GetValue() = "short";
-    AnyType<TokenT::INT,       TokenSTR>::GetValue() = "int";
-    AnyType<TokenT::VOID,      TokenSTR>::GetValue() = "void";
-    AnyType<TokenT::AUTO,      TokenSTR>::GetValue() = "auto";
-    AnyType<TokenT::STRING,    TokenSTR>::GetValue() = "string";
 
     AnyType<TokenT::INVALID,   TokenSTR>::GetValue() = "INVALID";
     AnyType<TokenT::OP_PLUS,   TokenSTR>::GetValue() = "PLUS";

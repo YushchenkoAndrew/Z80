@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 // #include "src/Lexer/Lexer.h"
-#include "src/Parser/Parser.h"
+#include "src/Parser/Visitor/Evaluate.h"
 
 namespace Zazy {
 namespace Repl {
@@ -41,7 +41,11 @@ namespace Repl {
       Lexer l(line);
       Parser p(l);
 
-      p.expression()->print();
+      Evaluate eval(p);
+
+
+      // p.declaration()->print();
+      printf("%s", eval.next()->string().c_str());
       printf("\n");
 
       // Token::header();

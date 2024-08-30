@@ -10,7 +10,7 @@ public:
   Assign(expr_t left, expr_t right):
     left(left), right(right) {}
 
-  void* accept(Visitor* visitor) override {
+  obj_t accept(Visitor* visitor) override {
     return visitor->visitExprAssign(this);
   }
 

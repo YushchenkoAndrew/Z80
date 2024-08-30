@@ -10,7 +10,7 @@ public:
   Get(expr_t left, token_t op, expr_t right):
     left(left), operation(op), right(right) {}
 
-  void* accept(Visitor* visitor) override {
+  obj_t accept(Visitor* visitor) override {
     return visitor->visitExprGet(this);
   }
 

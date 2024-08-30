@@ -10,7 +10,7 @@ public:
     expr(expr) {}
   
   
-  void* accept(Visitor* visitor) override {
+  obj_t accept(Visitor* visitor) override {
     return visitor->visitExprGroup(this);
   }
 

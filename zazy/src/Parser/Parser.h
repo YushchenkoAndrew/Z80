@@ -1,7 +1,8 @@
 #pragma once
 // #include "Lexer/Lexer.h"
 // #include "Expression/Var.h"
-#include "Visitor/Disassemble.h"
+// #include "Visitor/Evaluate.h"
+#include "src/Parser/Statement/Return.h"
 // #include "Statement/StatementVariable.h"
 
 namespace Zazy {
@@ -10,6 +11,33 @@ namespace Zazy {
  * Check out this link for more info: http://www.craftinginterpreters.com/parsing-expressions.html#ambiguity-and-the-parsing-game
  *
  * Grammar:
+ * 
+ *  program       -> declaration* EOF
+ *  declaration   -> struct_decl | enum_decl | func_decl | var_decl | label_decl | statement 
+ * 
+ *  struct_decl   -> 'struct' IDENTIFIER TODO:
+ *  enum_decl     -> 'enum' IDENTIFIER '{' TODO:
+ *  func_decl     -> type IDENTIFIER '(' ')' block_stmt
+ *  var_decl      -> type IDENTIFIER ( '='  expression )? ';'?
+ *  label_stmt    -> IDENTIFIER ':'
+ * 
+ *  statement     -> if_stmt | switch_stmt | for_stmt | while_stmt | until_stmt |
+ *                  return_stmt | goto_stmt | break_stmt | continue_stmt | expr_stmt | block_stmt
+ * 
+ *  if_stmt       -> 'if' '(' expression ')' statement ( 'else' statement )?
+ *  switch_stmt   -> 'switch' '(' expression ')' '{' case_stmt* '}'
+ *  case_stmt     -> ('case' expression ':' | 'default' ':') statement
+ *  for_stmt      -> 'for' '(' ( var_decl | expr_stmt | ';' ) expression? ';' expression? ')' ( statement | ';' )
+ *  while_stmt    -> 'while' '(' expression ')' statement
+ *  until_stmt    -> 'do' block_stmt 'while' '(' expression ')' ';'?
+ * 
+ *  return_stmt   -> 'return' expression? ';'?
+ *  goto_stmt     -> 'goto' expression ';'?
+ *  break_stmt    -> 'break' ';'?
+ *  continue_stmt -> 'continue' ';'?
+ *  expr_stmt     -> expression ';'?
+ *  block_stmt    -> '{' declaration* '}'
+ * 
  * 
  *  expression  -> assignment
  *  assignment  -> ternary ( '=' ternary )*
@@ -28,6 +56,7 @@ namespace Zazy {
  *  prefix      -> ('++' | '--' | 'sizeof' ) prefix | unary
  *  unary       -> ( '+' | '-' | '*' | '&' | '!' | '~' ) unary | cast 
  *  cast        -> '(' ( 'void' | 'char' | 'short' | 'int' ) '*'? ')' cast | postfix
+ *  type        -> ( 'void' | 'char' | 'short' | 'int' ) '*'? | 'auto'
  *  postfix     -> primary ( '[' expression ']'  | '(' arguments? ')' | ('.' | '->') IDENTIFIER | '++' | '--' )*
  *  arguments   -> expression ( ',' expression )* 
  *  primary     -> CHAR | SHORT | INT | IDENTIFIER | '{' arguments? '}' | '(' expression ')'
@@ -50,23 +79,113 @@ public:
     return errors.size();
   }
 
-  // inline void reset() { nCurr = 0; /** stmt.clear(); */ errors.clear(); }
 
+  // inline stmt_t program() {
+  // }
 
-// public:
-//   template<int32_t T>
-//   std::shared_ptr<Statement> Process(Int2Type<T>) {
-//     error(peekPrev(), "Unknown operation");
-//     return std::make_shared<Statement>();
-//   }
-
-
-public:
-  inline expr_t expression() {
-    return assignment();
+  inline stmt_t declaration() {
+    return statement();
   }
 
 private:
+
+
+  inline stmt_t statement() {
+//  *  statement     -> if_stmt | switch_stmt | for_stmt | while_stmt | until_stmt |
+//  *                  return_stmt | goto_stmt | break_stmt | continue_stmt | expr_stmt | block
+
+    switch (peek->token) {
+      case TokenT::W_SWTCH:
+      case TokenT::W_WHILE: 
+      case TokenT::W_DO: 
+
+      case TokenT::W_GOTO: 
+      case TokenT::W_BREAK: 
+      case TokenT::W_CONTINUE: 
+        // TODO:
+        break;
+
+      case TokenT::W_FOR:
+        return for_stmt();
+
+      case TokenT::W_IF:
+        return if_stmt();
+
+      case TokenT::W_RETURN:
+        return return_stmt();
+
+      case TokenT::LEFT_CURLY_BRACE: 
+        return block_stmt();
+
+      default:
+        return expr_stmt();
+    }
+
+    return nullptr;
+  }
+
+  inline stmt_t for_stmt() {
+    consume(TokenT::W_FOR, "Expect 'for' before conditional stmt.");
+    consume(TokenT::LEFT_BRACE, "Expect '(' after 'for' word.");
+
+    stmt_t init = nullptr; // TODO:
+    match<1>({ TokenT::SEMICOLON });
+
+    expr_t condition = check(TokenT::SEMICOLON) ? nullptr : expression();
+    match<1>({ TokenT::SEMICOLON });
+
+    expr_t next = check(TokenT::RIGHT_BRACE) ? nullptr : expression();
+    consume(TokenT::RIGHT_BRACE, "Expect ')' after 'for' expression.");
+
+    stmt_t body = check(TokenT::SEMICOLON) ? nullptr : statement();
+    return std::make_shared<Stmt::For>(init, condition, next, body);
+  }
+
+  inline stmt_t if_stmt() {
+    consume(TokenT::W_IF, "Expect 'if' before conditional stmt.");
+    consume(TokenT::LEFT_BRACE, "Expect '(' after 'if' word.");
+
+    auto condition = expression();
+
+    consume(TokenT::RIGHT_BRACE, "Expect ')' after 'if' condition.");
+    auto then = statement();
+
+    stmt_t otherwise = match<1>({ TokenT::W_ELSE }) ? statement() : nullptr;
+
+    return std::make_shared<Stmt::If>(condition, then, otherwise);
+  }
+
+  inline stmt_t return_stmt() {
+    consume(TokenT::W_RETURN, "Expect 'return' stmt.");
+    if (match<1>({ TokenT::SEMICOLON })) return std::make_shared<Stmt::Return>(nullptr);
+
+    auto expr = expression();
+    match<1>({ TokenT::SEMICOLON });
+    return std::make_shared<Stmt::Return>(expr);
+  }
+
+  inline stmt_t block_stmt() {
+    consume(TokenT::LEFT_CURLY_BRACE, "Expect '{' before block.");
+
+    auto block = std::make_shared<Stmt::Block>((std::vector<stmt_t>){});
+    while (!isAtEnd() && !check(TokenT::RIGHT_CURLY_BRACE)) {
+      block->stmt.push_back(declaration());
+      match<1>({ TokenT::SEMICOLON });
+    }
+
+    consume(TokenT::RIGHT_CURLY_BRACE, "Expect '}' after block.");
+    return block;
+  }
+
+  inline stmt_t expr_stmt() {
+    auto expr = expression();
+    match<1>({ TokenT::SEMICOLON });
+    return std::make_shared<Stmt::Expr>(expr);
+  }
+
+  inline expr_t expression() {
+    return assignment();
+  }
 
   inline expr_t assignment() {
     auto expr = ternary();
@@ -234,10 +353,10 @@ private:
 
   inline expr_t cast() {
     if (peek->token == TokenT::LEFT_BRACE && (
-          peekNext->token == TokenT::VOID ||
-          peekNext->token == TokenT::CHAR || 
-          peekNext->token == TokenT::SHORT || 
-          peekNext->token == TokenT::INT
+          peekNext->token == TokenT::W_VOID ||
+          peekNext->token == TokenT::W_CHAR || 
+          peekNext->token == TokenT::W_SHORT || 
+          peekNext->token == TokenT::W_INT
         )
       ) {
       consume(TokenT::LEFT_BRACE, "Expect '(' before type.");
@@ -287,7 +406,7 @@ private:
   }
 
   inline expr_t primary() {
-    if (match<3>({ TokenT::CHAR, TokenT::SHORT, TokenT::INT })) {
+    if (match<4>({ TokenT::CHAR, TokenT::SHORT, TokenT::INT, TokenT::STRING })) {
       return std::make_shared<Expr::Literal>(peekPrev);
     }
 
@@ -299,6 +418,7 @@ private:
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
       auto expr = expression();
+
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       return std::make_shared<Expr::Group>(expr);
     }
@@ -318,7 +438,7 @@ private:
 
   inline std::vector<expr_t> arguments(TokenT closer) {
     std::vector<expr_t> args{};
-    if (peek->token != closer) {
+    if (!check(closer)) {
       do {
         args.push_back(expression());
       } while(match<1>({ TokenT::COMMA }));
@@ -377,9 +497,9 @@ private:
 
   // std::vector<std::shared_ptr<Statement>> stmt;
   // std::shared_ptr<Expression> temp32 = nullptr;
-  std::vector<std::string> errors;
 
-private:
+public:
+  std::vector<std::string> errors;
   // int32_t nCurr = 0; // index of the token, which is pointing to the curr token
 };
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Parser/Defs.h"
+#include "src/Parser/Object/Void.h"
 
 namespace Zazy {
 
@@ -10,7 +10,7 @@ public:
   Array(std::vector<expr_t> args):
     args(args) {}
 
-  void* accept(Visitor* visitor) override {
+  obj_t accept(Visitor* visitor) override {
     return visitor->visitExprArray(this);
   }
 

@@ -10,11 +10,22 @@ public:
     left(left), args(args) {}
   
   
-  void* accept(Visitor* visitor) override {
+  obj_t accept(Visitor* visitor) override {
     return visitor->visitExprInvoke(this);
   }
 
-  // void print() { ENCLOSE(left->print(); printf("%s", type->lexeme.c_str()); ) }
+  void print() { 
+    ENCLOSE(
+      left->print(); printf("("); 
+
+      for (uint32_t i = 0; i < args.size(); i++) { 
+        args[i]->print(); 
+        if (i + 1 != args.size()) printf(", "); 
+      }
+
+      printf(")");
+    )
+  }
 
 public:
   expr_t left;
