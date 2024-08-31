@@ -8,9 +8,8 @@ namespace Obj {
 class Char : public Object {
 public:
   Char(uint8_t value):
-    Object(value, 1) {}
+    Object(value, 1, Obj::TypeT::CHAR) {}
 
-  Obj::TypeT type() override { return Obj::TypeT::CHAR; }
   std::string string() { return std::to_string(value); }
 };
 

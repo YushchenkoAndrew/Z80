@@ -102,21 +102,15 @@ public:
 
 class Object {
 public:
-  Object(uint32_t value, uint8_t size):
-    value(value), size(size) {}
+  Object(uint32_t value, uint8_t size, Obj::TypeT type = Obj::TypeT::VOID):
+    value(value), size(size), type(type) {}
 
-  virtual Obj::TypeT type() { return Obj::TypeT::VOID; }
   virtual std::string string() { return ""; }
-
-  template<int32_t T>
-  bool match(std::array<Obj::TypeT, T> types) {
-    for (auto& t: types) if (t == type()) return true;
-    return false;
-  }
 
 public:
   uint8_t size;
   uint32_t value;
+  Obj::TypeT type;
 };
 
 class Expression {

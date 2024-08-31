@@ -20,7 +20,7 @@ int main() {
   // filepath = std::filesystem::canonical(path);
   // filename = std::filesystem::path(path).filename();
 
-  Zazy::Repl::exec();
+  Zazy::Repl().exec();
 
   // Zazy::Lexer l(p.src);
   // if (l.scan()) error("LEXER", l.errors);

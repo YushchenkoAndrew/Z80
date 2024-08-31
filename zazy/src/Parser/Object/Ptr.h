@@ -8,11 +8,9 @@ namespace Obj {
 class Ptr : public Object {
 public:
   Ptr(uint16_t value):
-    Object(value, 2) {}
+    Object(value, 2, Obj::TypeT::PTR) {}
 
-  Obj::TypeT type() override { return Obj::TypeT::PTR; }
-  std::string string() { return std::to_string(value); }
-
+  std::string string() { return std::string("<ptr>") + std::to_string(value); }
 };
 
 };

@@ -71,24 +71,25 @@ public:
 
   ~Parser() {}
 
-  bool next() {
+  stmt_t next() {
     // reset();
     // if (lexer.scan(src)) { errors.insert(errors.end(), lexer.errors.begin(), lexer.errors.end()); return true; }
     // program();
-    expression();
-    return errors.size();
+    // expression();
+    // return errors.size();
+    return declaration();
   }
 
 
   // inline stmt_t program() {
   // }
 
-  inline stmt_t declaration() {
-    return statement();
-  }
 
 private:
 
+  inline stmt_t declaration() {
+    return statement();
+  }
 
   inline stmt_t statement() {
 //  *  statement     -> if_stmt | switch_stmt | for_stmt | while_stmt | until_stmt |
@@ -431,8 +432,8 @@ private:
       return std::make_shared<Expr::Var>(peekPrev);
     }
 
-    error(peek, "Unexpected expression.");
-    return nullptr;
+    error(advance(), "Unexpected expression.");
+    return  std::make_shared<Expr::Literal>(invalid());
   }
 
 
@@ -449,9 +450,10 @@ private:
   }
 
 
+public:
+  inline bool isAtEnd() { return peek->token == TokenT::CMD_EOF; }
 
 private:
-  inline bool isAtEnd() { return peek->token == TokenT::CMD_EOF; }
   inline bool check(TokenT type) { return isAtEnd() ? false : peek->token == type; }
 
   inline std::shared_ptr<Token> advance() {
@@ -481,10 +483,14 @@ private:
     error(advance(), message);
   }
 
-  void error(std::shared_ptr<Token> token, std::string message) {
+  inline void error(std::shared_ptr<Token> token, std::string message) {
     std::stringstream ss;
     ss << "[Ln " << token->line << " Col " << token->col << "] Error at '" << token->lexeme << "': " << message << "\n";
     errors.push_back(ss.str());
+  }
+
+  inline token_t invalid() {
+    return std::make_shared<Token>(TokenT::INVALID, peekPrev->lexeme, peekPrev->literal, peekPrev->col, peekPrev->line);
   }
 
 

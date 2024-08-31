@@ -158,7 +158,7 @@ struct foreach<TypeList<TypeList<Int2Type<T>, Int2Type<U>>, NullType>, Y> {
 	}
 
 	static inline void Command(Y* ref) {
-		if (!AnyType<-1, int32_t>::Compare(Int2Type<U>())) return;
+		if (!AnyType<-1, int32_t>::Compare(Int2Type<U>())) return ref->Command(Int2Type<-1>());
 		ref->Command(Int2Type<T>());
 	}
 
