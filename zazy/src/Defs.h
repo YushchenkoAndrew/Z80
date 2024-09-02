@@ -62,6 +62,7 @@ typedef TypeList<
     CommandList;
 
 typedef TypeList<
+  AnyType<TokenT::W_AUTO,    TokenSTR>, TypeList<
   AnyType<TokenT::W_BREAK,   TokenSTR>, TypeList<
   AnyType<TokenT::W_CASE,    TokenSTR>, TypeList<
   AnyType<TokenT::W_CHAR,    TokenSTR>, TypeList<
@@ -83,7 +84,7 @@ typedef TypeList<
   AnyType<TokenT::W_SWTCH,   TokenSTR>, TypeList<
   AnyType<TokenT::W_WHILE,   TokenSTR>, TypeList<
   AnyType<TokenT::W_VOID,    TokenSTR>, TypeList<
-  AnyType<TokenT::W_ARGC,    TokenSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::W_ARGC,    TokenSTR>, NullType>>>>>>>>>>>>>>>>>>>>>>>
     KeywordList;
 
 

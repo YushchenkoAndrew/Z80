@@ -2,7 +2,7 @@
 // #include "Lexer/Lexer.h"
 // #include "Expression/Var.h"
 // #include "Visitor/Evaluate.h"
-#include "src/Parser/Statement/Return.h"
+#include "src/Parser/Declaration/Var.h"
 // #include "Statement/StatementVariable.h"
 
 namespace Zazy {
@@ -17,9 +17,9 @@ namespace Zazy {
  * 
  *  struct_decl   -> 'struct' IDENTIFIER TODO:
  *  enum_decl     -> 'enum' IDENTIFIER '{' TODO:
- *  func_decl     -> type IDENTIFIER '(' ')' block_stmt
+ *  func_decl     -> type IDENTIFIER '(' TODO: ')' ( block_stmt  | ';' )
  *  var_decl      -> type IDENTIFIER ( '='  expression )? ';'?
- *  label_stmt    -> IDENTIFIER ':'
+ *  label_decl    -> IDENTIFIER ':'
  * 
  *  statement     -> if_stmt | switch_stmt | for_stmt | while_stmt | until_stmt |
  *                  return_stmt | goto_stmt | break_stmt | continue_stmt | expr_stmt | block_stmt
@@ -88,7 +88,32 @@ public:
 private:
 
   inline stmt_t declaration() {
+    if (isType(peek)) {
+      auto type = advance();
+      if (peek->token == TokenT::STAR) type = advance();
+
+      consume(TokenT::IDENTIFIER, "Expect identifier for variable/function declaration.");
+
+      if (check(TokenT::LEFT_BRACE)) return func_decl(type);
+      return var_decl(type);
+    }
+
     return statement();
+  }
+
+  inline stmt_t func_decl(token_t type) {
+    auto name = peekPrev;
+    consume(TokenT::LEFT_BRACE, "Expect '(' after 'for' word.");
+    // TODO:
+
+    return nullptr;
+  }
+
+  inline stmt_t var_decl(token_t type) {
+    auto name = peekPrev;
+    auto expr = match<1>({ TokenT::ASSIGN }) ? expression() : nullptr;
+
+    return std::make_shared<Decl::Var>(type, name, expr);
   }
 
   inline stmt_t statement() {
@@ -353,13 +378,7 @@ private:
   }
 
   inline expr_t cast() {
-    if (peek->token == TokenT::LEFT_BRACE && (
-          peekNext->token == TokenT::W_VOID ||
-          peekNext->token == TokenT::W_CHAR || 
-          peekNext->token == TokenT::W_SHORT || 
-          peekNext->token == TokenT::W_INT
-        )
-      ) {
+    if (peek->token == TokenT::LEFT_BRACE && isType(peekNext)) {
       consume(TokenT::LEFT_BRACE, "Expect '(' before type.");
 
       auto type = advance();
@@ -447,6 +466,15 @@ private:
 
     consume(closer, "Expect closed brackets after expression.");
     return args;
+  }
+
+  inline bool isType(token_t& t) {
+    if (t == nullptr) return false;
+    return t->token == TokenT::W_VOID ||
+      t->token == TokenT::W_CHAR || 
+      t->token == TokenT::W_SHORT || 
+      t->token == TokenT::W_INT ||
+      t->token == TokenT::W_AUTO;
   }
 
 

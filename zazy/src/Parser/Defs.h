@@ -7,7 +7,7 @@ namespace Zazy {
 
 namespace Obj {
   enum TypeT {
-    VOID, CHAR, SHORT, INT, PTR
+    VOID, CHAR, SHORT, INT, PTR, RETURN, ERROR
   };
 
   class Char;
@@ -15,6 +15,8 @@ namespace Obj {
   class Int;
   class Void;
   class Ptr;
+  class Return;
+  class Error;
 };
 
 
@@ -64,6 +66,13 @@ namespace Stmt {
 
 };
 
+namespace Decl {
+  class Struct;
+  class Enum;
+  class Func;
+  class Var;
+};
+
 class Object;
 class Expression;
 class Statement;
@@ -74,6 +83,11 @@ typedef std::shared_ptr<Statement>  stmt_t;
 
 class Visitor {
 public:
+  virtual obj_t visitDeclStruct(Decl::Struct* decl) { return nullptr; }
+  virtual obj_t visitDeclEnum(Decl::Enum* decl) { return nullptr; }
+  virtual obj_t visitDeclFunc(Decl::Func* decl) { return nullptr; }
+  virtual obj_t visitDeclVar(Decl::Var* decl) { return nullptr; }
+
   virtual obj_t visitStmtBlock(Stmt::Block* stmt) { return nullptr; }
   virtual obj_t visitStmtExpr(Stmt::Expr* stmt) { return nullptr; }
   virtual obj_t visitStmtFor(Stmt::For* stmt) { return nullptr; }
@@ -130,5 +144,4 @@ public:
   
   virtual void print() {}
 };
-
 };

@@ -1,5 +1,5 @@
 #pragma once
-#include "Defs.h"
+#include "src/Defs.h"
 
 namespace Zazy {
 typedef std::shared_ptr<Token> token_t;

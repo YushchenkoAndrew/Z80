@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 // #include "src/Lexer/Lexer.h"
-#include "src/Parser/Visitor/Evaluate.h"
+#include "src/Ast/Evaluate.h"
 
 namespace Zazy {
 // namespace REPL {
@@ -38,6 +38,9 @@ private:
   }
 
 public:
+  Repl():
+    env(std::make_unique<Environment>(nullptr)) {}
+
   void exec() {
     for (Repl::hello(); std::getline(std::cin, line); std::cout << "> ") {
       AnyType<-1, int32_t>::GetValue() = line.size() > 1 && line[0] == '\\' ? line[1] : '\0';
@@ -51,12 +54,14 @@ public:
   inline void Command(Int2Type<T>) { printf("Unknown command."); }
 
   inline void Command(Int2Type<OP_EVAL>) {
-    Evaluate eval = Evaluate(Parser(Lexer(line)));
+    Evaluate eval = Evaluate(Parser(Lexer(line)), std::move(env));
     do {
       auto obj = eval.next();
       if (obj == nullptr) std::cout << "Something went completely wrong.";
       else printf("%s", obj->string().c_str());
     } while(!eval.isAtEnd());
+
+    env = eval.move();
   }
 
   inline void Command(Int2Type<CommandT::OP_HELP>) {
@@ -89,6 +94,7 @@ public:
   }
 
 private:
+  env_t env;
   std::string line;
 };
 

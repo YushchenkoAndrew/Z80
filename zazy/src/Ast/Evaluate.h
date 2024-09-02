@@ -1,6 +1,5 @@
 #pragma once
-#include "src/Parser/Parser.h"
-
+#include "Environment.h"
 
 namespace Zazy {
 
@@ -8,7 +7,10 @@ class Evaluate : public Visitor {
 public:
 
   Evaluate(Parser p):
-    parser(p) {}
+    parser(p), env(std::make_unique<Environment>(nullptr)) {}
+
+  Evaluate(Parser p, env_t env):
+    parser(p), env(std::move(env)) {}
 
   // void scan(std::shared_ptr<Expression> expr) {
   //   char* src = (char*)evaluate(expr);
@@ -24,18 +26,44 @@ public:
     return evaluate(ast);
   }
 
+  inline auto move() { return std::move(env); }
   inline bool isAtEnd() { return parser.isAtEnd(); }
   
 public:
 
-  // virtual obj_t visitStmtBlock(Stmt::Block* stmt) { return nullptr; }
+  // virtual obj_t visitDeclStruct(Decl::Struct* decl) { return nullptr; }
+  // virtual obj_t visitDeclEnum(Decl::Enum* decl) { return nullptr; }
+  // virtual obj_t visitDeclFunc(Decl::Func* decl) { return nullptr; }
+
+  obj_t visitDeclVar(Decl::Var* decl) override {
+    auto value = decl->value == nullptr ? null() : evaluate(decl->value);
+    if (isError(value)) return value;
+    if (env->has((std::string&)decl->name->lexeme)) return error(std::string("Can't redeclare variable '") + decl->name->lexeme.c_str() + "'.");
+
+    env->set(decl->name->lexeme, decl->type, cast(decl->type, value));
+    return null();
+  }
+
+  obj_t visitStmtBlock(Stmt::Block* stmt) override { 
+    obj_t result = null();
+    env = std::make_unique<Environment>(std::move(env));
+
+    for (auto& s : stmt->stmt) {
+      auto res = evaluate(s);
+      if (isReturn(res) || isError(res)) { result = res; break; }
+    }
+
+    env = env->move();
+    return result;
+  }
+
   obj_t visitStmtExpr(Stmt::Expr* stmt) override { 
     return evaluate(stmt->expr);
   }
 
   virtual obj_t visitStmtIf(Stmt::If* stmt) {
     auto condition = evaluate(stmt->condition);
-    if (condition == nullptr) return nullptr;
+    if (isError(condition)) return condition;
 
     if (condition->value) return evaluate(stmt->then);
     if (stmt->otherwise != nullptr) return evaluate(stmt->otherwise);
@@ -45,19 +73,30 @@ public:
 
   // virtual obj_t visitStmtFor(Stmt::For* stmt) { return nullptr; }
   // // virtual obj_t visitStmt(Stmt::If* stmt) { return nullptr; }
-  // virtual obj_t visitStmtReturn(Stmt::Return* stmt) { return nullptr; }
   // virtual obj_t visitStmtUntil(Stmt::Until* stmt) { return nullptr; }
   // virtual obj_t visitStmtWhile(Stmt::While* stmt) { return nullptr; }
 
+  obj_t visitStmtReturn(Stmt::Return* stmt) override {
+    return std::make_shared<Obj::Return>(stmt->expr == nullptr ? null() : evaluate(stmt->expr));
+  }
+
 
   // virtual obj_t visitExprArray(Expr::Array* expr) { return nullptr; }
-  // virtual obj_t visitExprAssign(Expr::Assign* expr) { return nullptr; }
+  obj_t visitExprAssign(Expr::Assign* expr) override {
+    // if (env->has((std::string&)expr->name->lexeme)) return error(std::string("Can't redeclare variable '") + decl->name->lexeme.c_str() + "'.");
+
+    // TODO: ????????????
+    // env->set(decl->name->lexeme, cast(decl->type, value));
+    return error("NNNNNNNNNNN");
+    // return nullptr;
+  }
 
   obj_t visitExprBinary(Expr::Binary* expr) override {
     auto left = evaluate(expr->left);
     auto right = evaluate(expr->right);
 
-    if (left == nullptr || right == nullptr) return nullptr;
+    if (isError(left)) return left;
+    if (isError(right)) return right;
 
     switch (expr->operation->token) {
       case TokenT::OP_PLUS:
@@ -115,7 +154,7 @@ public:
         return boolean(left->value || right->value);
     }
 
-    return nullptr;
+    return error("Unknown binary operation.");
   }
 
   obj_t visitExprLiteral(Expr::Literal* expr) override {
@@ -136,31 +175,19 @@ public:
         return std::make_shared<Obj::Void>();
     }
     
-    return nullptr;
+    return error("Unknown literal.");
   }
 
   obj_t visitExprCast(Expr::Cast* expr) override {
     auto right = evaluate(expr->right);
-    if (right == nullptr) return nullptr;
+    if (isError(right)) return right;
+    return cast(expr->type, right);
+  }
 
-    switch (expr->type->token) {
-      case TokenT::W_CHAR:
-        return std::make_shared<Obj::Char>((uint8_t)right->value);
-
-      case TokenT::W_SHORT:
-        return std::make_shared<Obj::Short>((uint16_t)right->value);
-
-      case TokenT::W_INT:
-        return std::make_shared<Obj::Int>((uint32_t)right->value);
-
-      case TokenT::STAR:
-        return std::make_shared<Obj::Ptr>((uint16_t)right->value);
-
-      case TokenT::W_VOID:
-        return std::make_shared<Obj::Void>();
-    }
-    
-    return nullptr;
+  obj_t visitExprVar(Expr::Var* expr) override {
+    auto value = env->get(expr->name->lexeme);
+    if (value != nullptr) return value;
+    return error("Unknown variable '" + expr->name->lexeme + "'.");
   }
 
   obj_t visitExprGroup(Expr::Group* expr) override { 
@@ -172,7 +199,6 @@ public:
   // virtual obj_t visitExprSuffix(Expr::Suffix* expr) { return nullptr; }
   // virtual obj_t visitExprTernary(Expr::Ternary* expr) { return nullptr; }
   // virtual obj_t visitExprUnary(Expr::Unary* expr) { return nullptr; }
-  // virtual obj_t visitExprVar(Expr::Var* expr) { return nullptr; }
 
 
 private:
@@ -214,12 +240,48 @@ private:
         return std::make_shared<Obj::Void>();
     }
 
-    return nullptr;
+    return error("Unknown number type.");
+  }
+
+  inline obj_t cast(token_t& type, obj_t& value) {
+    switch (type->token) {
+      case TokenT::W_CHAR:
+        return std::make_shared<Obj::Char>((uint8_t)value->value);
+
+      case TokenT::W_SHORT:
+        return std::make_shared<Obj::Short>((uint16_t)value->value);
+
+      case TokenT::W_INT:
+        return std::make_shared<Obj::Int>((uint32_t)value->value);
+
+      case TokenT::STAR:
+        return std::make_shared<Obj::Ptr>((uint16_t)value->value);
+
+      case TokenT::W_VOID:
+        return std::make_shared<Obj::Void>();
+
+      case TokenT::W_AUTO:
+        if (value->value >= 0 && value->value <= UINT8_MAX)  return std::make_shared<Obj::Char>((uint8_t)value->value);
+        if (value->value >= 0 && value->value <= UINT16_MAX) return std::make_shared<Obj::Short>((uint16_t)value->value);
+        if (value->value >= 0 && value->value <= UINT32_MAX) return std::make_shared<Obj::Int>((uint32_t)value->value);
+
+        return error("Number value outside of boundaries.");
+    }
+
+    return error("Unknown cast type.");
   }
 
 
+  inline obj_t error(std::string msg) {
+    return std::make_shared<Obj::Error>(msg);
+  }
+
+  inline bool isError(obj_t& obj) { return obj->type == Obj::ERROR; }
+  inline bool isReturn(obj_t& obj) { return obj->type == Obj::RETURN; }
 
 private:
+  env_t env;
+
   Parser parser;
 };
 };
