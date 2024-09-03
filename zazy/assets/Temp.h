@@ -4,5 +4,9 @@
 #define abc a + b / c
 
 void hello() {
-  printf("%d", abc);
+  // printf("%d", abc);
+
+  // char* t = malloc(455);
+
+  // auto qw = t;
 }

@@ -14,7 +14,7 @@ public:
     return visitor->visitStmtBlock(this);
   }
 
-  void print() { printf("{"); for (auto& s : stmt) s->print(); printf("}"); }
+  void print() { printf("{ "); for (auto& s : stmt) s->print(); printf(" }"); }
 
 public:
   std::vector<stmt_t> stmt;

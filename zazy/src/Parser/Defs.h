@@ -7,7 +7,7 @@ namespace Zazy {
 
 namespace Obj {
   enum TypeT {
-    VOID, CHAR, SHORT, INT, PTR, RETURN, ERROR
+    VOID, CHAR, SHORT, INT, PTR, FUNC, RETURN, ERROR
   };
 
   class Char;
@@ -15,6 +15,7 @@ namespace Obj {
   class Int;
   class Void;
   class Ptr;
+  class Func;
   class Return;
   class Error;
 };

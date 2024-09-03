@@ -7,13 +7,13 @@ namespace Obj {
 
 class Return : public Object {
 public:
-  Return(obj_t result):
-    result(result), Object(0, 0, Obj::TypeT::RETURN) {}
+  Return(obj_t obj):
+    obj(obj), Object(0, 0, Obj::TypeT::RETURN) {}
 
-  std::string string() { return std::string("<return>") + result->string(); }
+  std::string string() { return std::string("<return>") + obj->string(); }
 
 public:
-  obj_t result;
+  obj_t obj;
 };
 };
 };

@@ -1,5 +1,5 @@
 #pragma once
-#include "Error.h"
+#include "Func.h"
 
 namespace Zazy {
 

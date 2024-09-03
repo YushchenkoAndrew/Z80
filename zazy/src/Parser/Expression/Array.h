@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Parser/Object/Void.h"
+#include "src/Parser/Defs.h"
 
 namespace Zazy {
 

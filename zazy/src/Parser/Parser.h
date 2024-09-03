@@ -2,7 +2,7 @@
 // #include "Lexer/Lexer.h"
 // #include "Expression/Var.h"
 // #include "Visitor/Evaluate.h"
-#include "src/Parser/Declaration/Var.h"
+#include "src/Parser/Object/Void.h"
 // #include "Statement/StatementVariable.h"
 
 namespace Zazy {
@@ -17,9 +17,12 @@ namespace Zazy {
  * 
  *  struct_decl   -> 'struct' IDENTIFIER TODO:
  *  enum_decl     -> 'enum' IDENTIFIER '{' TODO:
- *  func_decl     -> type IDENTIFIER '(' TODO: ')' ( block_stmt  | ';' )
- *  var_decl      -> type IDENTIFIER ( '='  expression )? ';'?
+ *  func_decl     -> definitition '(' parameters? ')' ( block_stmt  | ';' )
+ *  var_decl      -> definitition ( '='  expression )? ';'?
  *  label_decl    -> IDENTIFIER ':'
+ * 
+ *  definitition  -> type IDENTIFIER
+ *  parameters    -> definitition ( ',' definitition )* 
  * 
  *  statement     -> if_stmt | switch_stmt | for_stmt | while_stmt | until_stmt |
  *                  return_stmt | goto_stmt | break_stmt | continue_stmt | expr_stmt | block_stmt
@@ -89,32 +92,38 @@ private:
 
   inline stmt_t declaration() {
     if (isType(peek)) {
-      auto type = advance();
-      if (peek->token == TokenT::STAR) type = advance();
-
-      consume(TokenT::IDENTIFIER, "Expect identifier for variable/function declaration.");
-
-      if (check(TokenT::LEFT_BRACE)) return func_decl(type);
-      return var_decl(type);
+      auto stmt = definitition();
+      return check(TokenT::LEFT_BRACE) ? func_decl(stmt) : var_decl(stmt);
     }
 
     return statement();
   }
 
-  inline stmt_t func_decl(token_t type) {
-    auto name = peekPrev;
-    consume(TokenT::LEFT_BRACE, "Expect '(' after 'for' word.");
-    // TODO:
+  inline std::shared_ptr<Decl::Var> definitition() {
+    auto type = advance();
+    if (peek->token == TokenT::STAR) type = advance();
 
-    return nullptr;
+    consume(TokenT::IDENTIFIER, "Expect identifier after type.");
+    return std::make_shared<Decl::Var>(type, peekPrev, nullptr);
   }
 
-  inline stmt_t var_decl(token_t type) {
-    auto name = peekPrev;
-    auto expr = match<1>({ TokenT::ASSIGN }) ? expression() : nullptr;
 
-    return std::make_shared<Decl::Var>(type, name, expr);
+  inline stmt_t func_decl(std::shared_ptr<Decl::Var> stmt) {
+    consume(TokenT::LEFT_BRACE, "Expect '(' after identifier.");
+
+    auto params = parameters(TokenT::RIGHT_BRACE);
+    auto body = match<1>({ TokenT::SEMICOLON }) ? nullptr : block_stmt();
+
+    return std::make_shared<Decl::Func>(stmt->type, stmt->name, params, body);
   }
+
+  inline stmt_t var_decl(std::shared_ptr<Decl::Var> stmt) {
+    if (match<1>({ TokenT::ASSIGN })) stmt->value = expression();
+
+    match<1>({ TokenT::SEMICOLON });
+    return stmt;
+  }
+
 
   inline stmt_t statement() {
 //  *  statement     -> if_stmt | switch_stmt | for_stmt | while_stmt | until_stmt |
@@ -154,16 +163,16 @@ private:
     consume(TokenT::W_FOR, "Expect 'for' before conditional stmt.");
     consume(TokenT::LEFT_BRACE, "Expect '(' after 'for' word.");
 
-    stmt_t init = nullptr; // TODO:
-    match<1>({ TokenT::SEMICOLON });
+    stmt_t init = check(TokenT::SEMICOLON) ? nullptr : isType(peek) ? var_decl(definitition()) : expr_stmt();
+    // consume(TokenT::SEMICOLON, "Expect ';' after 'for' init expression."); // NOTE: this is impl in var_decl
 
     expr_t condition = check(TokenT::SEMICOLON) ? nullptr : expression();
-    match<1>({ TokenT::SEMICOLON });
+    consume(TokenT::SEMICOLON, "Expect ';' after 'for' condition expression.");
 
     expr_t next = check(TokenT::RIGHT_BRACE) ? nullptr : expression();
     consume(TokenT::RIGHT_BRACE, "Expect ')' after 'for' expression.");
 
-    stmt_t body = check(TokenT::SEMICOLON) ? nullptr : statement();
+    stmt_t body = match<1>({ TokenT::SEMICOLON }) ? nullptr : statement();
     return std::make_shared<Stmt::For>(init, condition, next, body);
   }
 
@@ -466,6 +475,18 @@ private:
 
     consume(closer, "Expect closed brackets after expression.");
     return args;
+  }
+
+  inline std::vector<stmt_t> parameters(TokenT closer) {
+    std::vector<stmt_t> params{};
+    if (!check(closer)) {
+      do {
+        params.push_back(definitition());
+      } while(match<1>({ TokenT::COMMA }));
+    }
+
+    consume(closer, "Expect closed brackets after expression.");
+    return params;
   }
 
   inline bool isType(token_t& t) {
