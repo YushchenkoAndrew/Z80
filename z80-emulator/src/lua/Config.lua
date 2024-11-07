@@ -1,5 +1,5 @@
 -- WIDTH = 260 * 2; HIGHT = 300; PIXELS = 2
-WIDTH = 700; HIGHT = 400; PIXELS = 2
+WIDTH = 700; HIGHT = 412; PIXELS = 2
 
 Init = {
   width = WIDTH,
@@ -8,11 +8,10 @@ Init = {
 
   -- src = "assets/TestingLCD/Test.asm",
   src = "assets/TestKeyboard/Test.asm",
-  clock = 1000, -- micro seconds
+  clock = 1, -- micro seconds
 
   -- TODO: Impl this
-  schematic = {
-  }
+  schematic = {},
 }
 
 -- sMenuConfig: assets/Menu.json

@@ -107,6 +107,8 @@ private:
     return 0x00;
   }
 
+public:
+  inline std::string GetName() { return "bus"; }
 
 public:
   std::shared_ptr<Led> led;

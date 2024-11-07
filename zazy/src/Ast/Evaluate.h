@@ -44,7 +44,11 @@ public:
 public:
 
   // virtual obj_t visitDeclStruct(Decl::Struct* decl) { return nullptr; }
-  // virtual obj_t visitDeclEnum(Decl::Enum* decl) { return nullptr; }
+
+  obj_t visitDeclEnum(Decl::Enum* decl) override {
+    for (auto& stmt : decl->vars) evaluate(stmt);
+    return null();
+  }
 
   obj_t visitDeclFunc(Decl::Func* decl) override {
     auto func = env->get(decl->name->lexeme);
@@ -93,9 +97,29 @@ public:
     return null();
   }
 
+  obj_t visitStmtWhile(Stmt::While* stmt) override {
+    obj_t err = null(), body = null();
+    
+    while (true) {
+      obj_t condition = evaluate(stmt->condition); 
+      if (!condition->value) break;
+
+      body = stmt->body == nullptr ? null() : evaluate(stmt->body);
+      if (isReturn(body)) break;
+
+      err = isError(condition) ? condition : isError(body) ? body : err;
+      if (isError(err)) break;
+    }
+
+    if (isError(err)) return err;
+    return body;
+
+  }
+
   obj_t visitStmtFor(Stmt::For* stmt) override {
     obj_t err = null(), body = null();
 
+    // NOTE: Open additional block for var declaration in for init block
     env = std::make_unique<Environment>(std::move(env));
     if (stmt->init != nullptr) err = evaluate(stmt->init);
 
@@ -120,7 +144,6 @@ public:
 
   // // virtual obj_t visitStmt(Stmt::If* stmt) { return nullptr; }
   // virtual obj_t visitStmtUntil(Stmt::Until* stmt) { return nullptr; }
-  // virtual obj_t visitStmtWhile(Stmt::While* stmt) { return nullptr; }
 
   obj_t visitStmtReturn(Stmt::Return* stmt) override {
     return std::make_shared<Obj::Return>(stmt->expr == nullptr ? null() : evaluate(stmt->expr));

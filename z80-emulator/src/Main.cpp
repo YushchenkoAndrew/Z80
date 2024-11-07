@@ -11,7 +11,7 @@
 
 class App : public PixelGameEngine {
 private:
-  typedef std::pair<uint32_t, Interpreter::RealtiveToken> RelativeAddr;
+  typedef std::pair<uint32_t, Interpreter::RelativeToken> RelativeAddr;
 
 public:
   App(LuaScript& config): luaConfig(config), bus(std::make_shared<Bus::Bus>(config)) {
@@ -38,6 +38,7 @@ public:
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
     Compile(luaConfig.GetTableValue<std::string>(nullptr, "src"));
+    interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
 
     auto editor = std::make_shared<Editor::Editor>();
     for (auto f : interpreter.env.files()) editor->Open(f);
@@ -63,7 +64,7 @@ public:
 
     // auto offset = 210;
     olc::vi2d zero = olc::vi2d(0, 0);
-    olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y);
+    olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y);
     olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y);
 
     panels = {
@@ -79,7 +80,7 @@ public:
       )
     };
 
-    panels[nPanel].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
+    panels[nPanel].Initialize(std::pair(olc::vi2d(0, 0), size));
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
 
     offload = std::make_unique<std::thread>([&]() {
@@ -133,13 +134,13 @@ public:
     const bool bPressed = GetMouse(0).bPressed;
 
     const auto nWidth = ScreenWidth();
-    const auto nHeight = ScreenHeight();
+    const auto nHeight = ScreenHeight() - vOffset.y;
 
     if (bPressed && mouse.x > 0 && mouse.y > nHeight - vStep.y && mouse.x < nWidth && mouse.y < nHeight) {
       auto pos = mouse / vStep;
 
-      for (int32_t i = 1, acc = 0; i <= panels.size(); acc += (int32_t)GetPanelName(i++).size() + 1) {
-        if (pos.x > acc && pos.x < acc + (int32_t)GetPanelName(i).size() + 1) return Event(Int2Type<PANEL_SELECT_CALLBACK>(), i);
+      for (int32_t i = 0, x = 2, length = (int32_t)panels[i].GetName().size() + 2; i < panels.size(); length = (int32_t)panels[i].GetName().size() + (int32_t)std::log10(i++) + 2, x += length + 1) {
+        if (pos.x >= x && pos.x <= x + length + 1) return Event(Int2Type<PANEL_SELECT_CALLBACK>(), i + 1);
       }
     }
   }
@@ -148,22 +149,31 @@ public:
     const auto nWidth = ScreenWidth();
     const auto nHeight = ScreenHeight();
 
-    olc::vi2d pos = olc::vi2d(0, nHeight - vStep.y);
+    olc::vi2d pos = olc::vi2d(0, nHeight - vStep.y - vOffset.y);
     FillRect(pos - olc::vi2d(0, 2), olc::vi2d(nWidth, 10), *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+    DrawString(pos + olc::vi2d(0, vStep.y), keybindings, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+
+    auto color = panels[nPanel].IsActive() ? AnyType<Colors::DARK_YELLOW, ColorT>::GetValue() : AnyType<Colors::DARK_GREEN, ColorT>::GetValue();
+    FillRect(pos - olc::vi2d(0, 2), olc::vi2d(vStep.x * 2, vStep.y - 2), *color);
+    DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(nPanel + 1), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    pos.x += vStep.x * 2;
 
     const auto nCmd = cmd.size();
     for (int32_t i = 0; !nCmd && i < panels.size(); i++) {
-      auto str = GetPanelName(i + 1);
+      auto str = std::to_string(i + 1) + " " + panels[i].GetName();
       auto color = i == nPanel ? AnyType<Colors::GREY, ColorT>::GetValue() : AnyType<Colors::DARK_GREY, ColorT>::GetValue();
 
       DrawString(pos + olc::vi2d(vStep.x, 0), str, *color);
-      pos.x += str.size() * vStep.x + vStep.x;
+      pos.x += GetTextSize(str).x + vStep.x * 2;
     }
 
     if (nCmd) DrawString(pos + olc::vi2d(vStep.x, 0), cmd, *AnyType<Colors::GREY, ColorT>::GetValue());
 
     std::string name = GetMode() == NORMAL ? "NORMAL" : "DEBUG";
     pos.x = nWidth - ((int32_t)name.size() + 2) * vStep.x;
+    color = GetMode() == NORMAL ? AnyType<Colors::ORANGE, ColorT>::GetValue() : AnyType<Colors::CYAN, ColorT>::GetValue();
+
+    FillRect(pos - olc::vi2d(vStep.x / 2, 2), GetTextSize(name) + olc::vi2d(vStep.x, 2), *color);
     DrawString(pos, name, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
     if (!bSyncing.first) return;
@@ -270,7 +280,9 @@ public:
     #endif
 
     if (index - 1 < 0 || index - 1>= panels.size()) return;
-    panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight())));
+
+    auto size = panels[nPanel].GetSize();
+    panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), size));
   }
 
   void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string cmd) override {
@@ -318,6 +330,7 @@ private:
         return;
 
       case 'c': 
+        // TODO: Fix bug, for some reason is not compiled ???
         Compile(interpreter.filepath);
         interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
 
@@ -360,8 +373,6 @@ private:
     return next;
   }
 
-  inline std::string GetPanelName(int32_t i) { return std::to_string(i) + " panel"; }
-
   inline bool isAtEnd() { return nCurr >= cmd.size(); }
   inline const char advance() { return isAtEnd() ? '\0': cmd[nCurr++]; }
   inline const char peek() { return isAtEnd() ? '\0' : cmd[nCurr]; }
@@ -383,7 +394,7 @@ private:
   }
 
 private:
-  const olc::vi2d vOffset = olc::vi2d(0, 0);
+  const olc::vi2d vOffset = olc::vi2d(0, 12);
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
   int32_t nPanel = 0;
@@ -393,6 +404,7 @@ private:
 
   std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
   std::unique_ptr<std::thread> offload = nullptr;
+  std::string keybindings = "Ctrl-Space ?    List key bindings";
 
   int32_t nCurr = 0;
   std::string cmd = "";
@@ -406,6 +418,9 @@ int main() {
   LuaScript luaConfig;
   if (!luaConfig.Init("src/lua/Config.lua")) return 0;
   if (!luaConfig.GetTable("Init")) return 0;
+
+  if (!Panel::GetConfig().Init("src/lua/Bindings.lua")) return 0;
+  if (!Panel::GetConfig().GetTable("Bindings")) return 0;
 
   // TODO: Create defs to load colors from lua
   // Defs::Load(&luaConfig);

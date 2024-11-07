@@ -64,6 +64,31 @@
 
 ;;
 ;; Example:
+;;  LD A, 0x01 ; One cycle takes around 20ms
+;;  CALL #LCD_DELAY
+;;
+;; proc LCD_DELAY() -> void;
+;;   reg A  -- as defined
+;;   reg B  -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;
+#LCD_DELAY:
+  PUSH BC    ; Save reg BC in stack
+#LCD_DELAY_bg:
+  LD B, 0x0F ; Load higher counter byte value
+#LCD_DELAY_lp:
+  NOP        ; Make a small pause
+  DEC C      ; Decrement lower counter byte
+  JR NZ, #LCD_DELAY_lp-$
+  DJNZ #LCD_DELAY_lp-$
+  DEC A      ; Decriment amount of loops
+  JR NZ, #LCD_DELAY_bg-$
+  POP BC     ; Restore reg BC
+  RET 
+
+;;
+;; Example:
 ;;  CALL _LCD_INIT
 ;; 
 ;; func LCD_INIT() -> void;
@@ -74,11 +99,29 @@
 ;;
 _LCD_INIT:
   PUSH AF    ; Save reg A in stack
-  LD A, LCD_DEFAULT_MODE;; Load default LCD MODE value
-  CALL #LCD_EXEC
-  LD A, LCD_DEFAULT_DISPLAY ;; Load default LCD DISPLAY CMD
-  CALL #LCD_EXEC
-  CALL _LCD_CLEAR 
+  PUSH BC    ; Save reg BC in stack
+  LD A, 0x06 ; Load 3 cycles of delay, should be around 120ms
+  CALL #LCD_DELAY ; Wait before starting initization
+  LD B, 0x03 ; LCD hd44780 requires call of the FUNCTION CMD 3 times
+  LD C, LCD_WAIT ; Should be around 60ms
+_LCD_INIT_lp:
+  LD A, LCD_DEFAULT_FUNCTION ; Load default LCD FUNCTION CMD
+  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_FUNCTION
+  LD A, C    ; Load default delay amount
+  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
+  DJNZ _LCD_INIT_lp-$
+  LD A, LCD_DEFAULT_DISPLAY ; Load default LCD DISPLAY CMD
+  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_DISPLAY
+  LD A, C    ; Load default delay amount
+  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
+  CALL _LCD_CLEAR ; Clear the display
+  LD A, LCD_DEFAULT_MODE ; Load default LCD MODE CMD
+  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_MODE
+  LD A, C    ; Load default delay amount
+  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
+  LD A, LCD_DEFAULT_DISPLAY | LCD_DISPLAY_BLINK ; Enable blink
+  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_MODE
+  POP BC     ; Restore reg BC
   POP AF     ; Restore reg A & flags
   RET
 
@@ -100,6 +143,8 @@ _LCD_CLEAR:
   CALL #LCD_EXEC
   XOR A      ; Reset reg A
   LD (PTR_LCD_CURSOR), A; Reset cursor pos to x: 0 y: 0
+  LD A, LCD_WAIT ; Should be around 60ms
+  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
   POP AF     ; Restore reg A & flags
   RET
 
@@ -247,7 +292,9 @@ LCD_FUNCTION_FONT   EQU 0x04
 LCD_CGRAM           EQU 0x40
 LCD_DDRAM           EQU 0x80
 
+LCD_WAIT            EQU 0x03
 
 ;; Default init state
-LCD_DEFAULT_MODE    EQU LCD_MODE | LCD_MODE_INC | LCD_MODE_SHIFT
-LCD_DEFAULT_DISPLAY EQU LCD_DISPLAY | LCD_DISPLAY_CURSOR | LCD_DISPLAY_BLINK
+LCD_DEFAULT_MODE     EQU LCD_MODE | LCD_MODE_INC
+LCD_DEFAULT_DISPLAY  EQU LCD_DISPLAY | LCD_DISPLAY_LIGHT
+LCD_DEFAULT_FUNCTION EQU LCD_FUNCTION | LCD_FUNCTION_LENGTH | LCD_FUNCTION_LINES

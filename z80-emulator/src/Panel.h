@@ -43,7 +43,7 @@ public:
     if (EXIST(bus))      PTR(bus)->Preinitialize();
     if (EXIST(eeprom))   PTR(eeprom)->Preinitialize();
     if (EXIST(stack))    PTR(stack)->Preinitialize();
-    if (EXIST(terminal)) PTR(terminal)->Preinitialize();
+    if (EXIST(popup))    PTR(popup)->Preinitialize();
     if (EXIST(editor))   PTR(editor)->Preinitialize();
   }
 
@@ -53,7 +53,7 @@ public:
     if (EXIST(bus))      PTR(bus)->Initialize(DIMENSION(bus));
     if (EXIST(eeprom))   PTR(eeprom)->Initialize(DIMENSION(eeprom));
     if (EXIST(stack))    PTR(stack)->Initialize(DIMENSION(stack));
-    if (EXIST(terminal)) PTR(terminal)->Initialize(DIMENSION(terminal));
+    if (EXIST(popup))    PTR(popup)->Initialize(DIMENSION(popup));
     if (EXIST(editor))   PTR(editor)->Initialize(DIMENSION(editor));
   }
 
@@ -61,7 +61,7 @@ public:
     if (EXIST(bus))      PTR(bus)->Preprocess();
     if (EXIST(eeprom))   PTR(eeprom)->Preprocess();
     if (EXIST(stack))    PTR(stack)->Preprocess();
-    if (EXIST(terminal)) PTR(terminal)->Preprocess();
+    if (EXIST(popup))    PTR(popup)->Preprocess();
     if (EXIST(editor))   PTR(editor)->Preprocess();
   }
 
@@ -85,7 +85,7 @@ public:
       if (!bFullScreen && EXIST(bus))      SELECTED(bus)      = IS_INSIDE(bus, mouse);
       if (!bFullScreen && EXIST(eeprom))   SELECTED(eeprom)   = IS_INSIDE(eeprom, mouse);
       if (!bFullScreen && EXIST(stack))    SELECTED(stack)    = IS_INSIDE(stack, mouse);
-      if (!bFullScreen && EXIST(terminal)) SELECTED(terminal) = IS_INSIDE(terminal, mouse);
+      if (!bFullScreen && EXIST(popup))    SELECTED(popup)    = IS_INSIDE(popup, mouse);
       if (!bFullScreen && EXIST(editor))   SELECTED(editor)   = IS_INSIDE(editor, mouse);
     }
 
@@ -93,7 +93,7 @@ public:
     if (SELECTED(bus))      PTR(bus)->Process(GameEngine);
     if (SELECTED(eeprom))   PTR(eeprom)->Process(GameEngine);
     if (SELECTED(stack))    PTR(stack)->Process(GameEngine);
-    if (SELECTED(terminal)) PTR(terminal)->Process(GameEngine);
+    if (SELECTED(popup))    PTR(popup)->Process(GameEngine);
     if (SELECTED(editor))   PTR(editor)->Process(GameEngine);
   }
 
@@ -109,7 +109,7 @@ public:
     if (EXIST(bus)      && SHOULD_DRAW(bFullScreen, bus))      PTR(bus)->Draw(GameEngine);
     if (EXIST(eeprom)   && SHOULD_DRAW(bFullScreen, eeprom))   PTR(eeprom)->Draw(GameEngine);
     if (EXIST(stack)    && SHOULD_DRAW(bFullScreen, stack))    PTR(stack)->Draw(GameEngine);
-    if (EXIST(terminal) && SHOULD_DRAW(bFullScreen, terminal)) PTR(terminal)->Draw(GameEngine);
+    if (EXIST(popup)    && SHOULD_DRAW(bFullScreen, popup))    PTR(popup)->Draw(GameEngine);
     if (EXIST(editor)   && SHOULD_DRAW(bFullScreen, editor))   PTR(editor)->Draw(GameEngine);
 
     if (mode == NORMAL) return;
@@ -121,7 +121,7 @@ public:
     if (EXIST(bus)      && SHOULD_DRAW(bFullScreen, bus))      PTR(bus)->Highlight(GameEngine);
     if (EXIST(eeprom)   && SHOULD_DRAW(bFullScreen, eeprom))   PTR(eeprom)->Highlight(GameEngine);
     if (EXIST(stack)    && SHOULD_DRAW(bFullScreen, stack))    PTR(stack)->Highlight(GameEngine);
-    if (EXIST(terminal) && SHOULD_DRAW(bFullScreen, terminal)) PTR(terminal)->Highlight(GameEngine);
+    if (EXIST(popup)    && SHOULD_DRAW(bFullScreen, popup))    PTR(popup)->Highlight(GameEngine);
     if (EXIST(editor)   && SHOULD_DRAW(bFullScreen, editor))   PTR(editor)->Highlight(GameEngine);
   }
 
@@ -129,7 +129,7 @@ public:
     if (EXIST(bus))      PTR(bus)->Lock();
     if (EXIST(eeprom))   PTR(eeprom)->Lock();
     if (EXIST(stack))    PTR(stack)->Lock();
-    if (EXIST(terminal)) PTR(terminal)->Lock();
+    if (EXIST(popup))    PTR(popup)->Lock();
     if (EXIST(editor))   PTR(editor)->Lock();
   }
 
@@ -137,21 +137,21 @@ public:
     if (EXIST(bus))      PTR(bus)->Unlock();
     if (EXIST(eeprom))   PTR(eeprom)->Unlock();
     if (EXIST(stack))    PTR(stack)->Unlock();
-    if (EXIST(terminal)) PTR(terminal)->Unlock();
+    if (EXIST(popup))    PTR(popup)->Unlock();
     if (EXIST(editor))   PTR(editor)->Unlock();
   }
 
 private:
   void Draw(Int2Type<Editor::VimT::CMD_q>, PixelGameEngine* GameEngine) {
     auto index = [&](auto tuple) {
-      auto color = std::get<0>(tuple) ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
+      auto color = SELECTED(tuple) ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
       GameEngine->DrawString(POS(tuple), std::string(1, '0' + WINDOW(tuple)), *color, 4);
     };
 
     if (EXIST(bus))      index(bus);
     if (EXIST(eeprom))   index(eeprom);
     if (EXIST(stack))    index(stack);
-    if (EXIST(terminal)) index(terminal);
+    if (EXIST(popup)) index(popup);
     if (EXIST(editor))   index(editor);
   }
 
@@ -163,13 +163,33 @@ public:
     if (SELECTED(bus))      { bFullScreen = (ZOOMED(bus)      ^= true); PTR(bus)->Initialize(     bFullScreen ? std::pair(absolute, size) : DIMENSION(bus)); }
     if (SELECTED(eeprom))   { bFullScreen = (ZOOMED(eeprom)   ^= true); PTR(eeprom)->Initialize(  bFullScreen ? std::pair(absolute, size) : DIMENSION(eeprom)); }
     if (SELECTED(stack))    { bFullScreen = (ZOOMED(stack)    ^= true); PTR(stack)->Initialize(   bFullScreen ? std::pair(absolute, size) : DIMENSION(stack)); }
-    if (SELECTED(terminal)) { bFullScreen = (ZOOMED(terminal) ^= true); PTR(terminal)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(terminal)); }
+    if (SELECTED(popup))    { bFullScreen = (ZOOMED(popup)    ^= true); PTR(popup)->Initialize(   bFullScreen ? std::pair(absolute, size) : DIMENSION(popup)); }
     if (SELECTED(editor))   { bFullScreen = (ZOOMED(editor)   ^= true); PTR(editor)->Initialize(  bFullScreen ? std::pair(absolute, size) : DIMENSION(editor)); }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
-    // if (EXIST(pop)      && SHOULD_DRAW(bFullScreen, bus))      PTR(bus)->Draw(GameEngine);
-    // TODO: Add menu property
+    auto GetBindings = [](const char* key) {
+      Panel::GetConfig().GetTableValue<int32_t>(nullptr, key);
+      auto list = Panel::GetConfig().GetArray<std::string>(nullptr);
+      Panel::GetConfig().Pop();
+
+      return list;
+    };
+
+    std::vector<std::string> bindings;
+
+    if (SELECTED(bus))      bindings = GetBindings("bus");
+    if (SELECTED(eeprom))   bindings = GetBindings("memory");
+    if (SELECTED(stack))    bindings = GetBindings("memory");
+    if (SELECTED(popup))    bindings = GetBindings("popup");
+    if (SELECTED(editor))   bindings = GetBindings("editor");
+
+    auto panel = GetBindings("panel");
+    bindings.insert(bindings.end(), panel.begin(), panel.end());
+
+
+    // TODO: Impl POPUP logic HERE
+    for (auto& t : bindings) printf("%s\n", t.c_str());
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_SPACE>) {
@@ -201,7 +221,7 @@ public:
     if (EXIST(bus))      PTR(bus)->SelectHighlight(digit);
     if (EXIST(eeprom))   PTR(eeprom)->SelectHighlight(digit);
     if (EXIST(stack))    PTR(stack)->SelectHighlight(digit);
-    if (EXIST(terminal)) PTR(terminal)->SelectHighlight(digit);
+    if (EXIST(popup))    PTR(popup)->SelectHighlight(digit);
     if (EXIST(editor))   PTR(editor)->SelectHighlight(digit);
   }
 
@@ -210,7 +230,7 @@ public:
     if (EXIST(bus))      SELECTED(bus)      = WINDOW(bus)      == digit;
     if (EXIST(eeprom))   SELECTED(eeprom)   = WINDOW(eeprom)   == digit;
     if (EXIST(stack))    SELECTED(stack)    = WINDOW(stack)    == digit;
-    if (EXIST(terminal)) SELECTED(terminal) = WINDOW(terminal) == digit;
+    if (EXIST(popup))    SELECTED(popup)    = WINDOW(popup)    == digit;
     if (EXIST(editor))   SELECTED(editor)   = WINDOW(editor)   == digit;
   }
 
@@ -349,7 +369,7 @@ private:
 
 public:
   std::shared_ptr<Bus::Bus>& Bus() { return PTR(bus); }
-  std::shared_ptr<Window::Terminal>& Terminal() { return PTR(terminal); }
+  std::shared_ptr<Window::Popup>& Popup() { return PTR(popup); }
   std::shared_ptr<Editor::Editor>& Editor() { return PTR(editor); }
   std::shared_ptr<Bus::Bus::W27C512_T>& EEPROM() { return PTR(eeprom); }
   std::shared_ptr<Bus::Bus::IMS1423_T>& Stack() { return PTR(stack); }
@@ -370,8 +390,27 @@ private:
   inline void Init(Int2Type<Bus::IMS1423>, WindowInitT<Bus::Memory<Bus::IMS1423, T>> m) { stack = std::tuple_cat(std::make_tuple(nWindows == 1, false), m, std::make_tuple(++nWindows)); }
 
   inline void Init(WindowInitT<Bus::Bus> b) { bus = std::tuple_cat(std::make_tuple(nWindows == 1, false), b, std::make_tuple(++nWindows)); }
-  inline void Init(WindowInitT<Window::Terminal> l) { terminal = std::tuple_cat(std::make_tuple(nWindows == 1, false), l, std::make_tuple(++nWindows)); }
+  inline void Init(WindowInitT<Window::Popup> l) { popup = std::tuple_cat(std::make_tuple(nWindows == 1, false), l, std::make_tuple(++nWindows)); }
   inline void Init(WindowInitT<Editor::Editor> e) { editor = std::tuple_cat(std::make_tuple(nWindows == 1, false), e, std::make_tuple(++nWindows)); }
+
+public:
+  inline bool IsActive() { return mode == COMMAND; }
+  inline olc::vi2d GetSize() { return olc::vi2d(size.x, size.y); }
+
+  inline std::string GetName() { 
+    if (SELECTED(bus))      return PTR(bus)->GetName();
+    if (SELECTED(eeprom))   return PTR(eeprom)->GetName();
+    if (SELECTED(stack))    return PTR(stack)->GetName();
+    if (SELECTED(popup))    return PTR(popup)->GetName();
+    if (SELECTED(editor))   return PTR(editor)->GetName();
+
+    return "";
+  }
+
+  static LuaScript& GetConfig() {
+    static LuaScript config;
+		return config;
+  }
 
 private:
   ModeT mode = NORMAL;
@@ -382,7 +421,7 @@ private:
   olc::vi2d size = olc::vi2d(0, 0);
 
   WindowT<Bus::Bus> bus = { false, false, nullptr, {}, 0 };
-  WindowT<Window::Terminal> terminal = { false, false, nullptr, {}, 0 };
+  // WindowT<Window::popup> popup = { false, false, nullptr, {}, 0 };
   WindowT<Window::Popup> popup = { false, false, nullptr, {}, 0 };
   WindowT<Editor::Editor> editor = { false, false, nullptr, {}, 0 };
 

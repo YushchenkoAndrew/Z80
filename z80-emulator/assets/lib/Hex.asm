@@ -8,11 +8,20 @@
 ;;
 ;;
 ;; func HEX(byte*) -> void;
-;;    byte -- ptr to byte to display 
+;;    byte -- ptr to byte to display
 ;;
 _HEX:
   POP HL     ;; Get return ptr
   EX (SP), HL;; Restore return ptr & Get ptr to the value
+
+  LD B, 0x08 ;; Run reverse loop 8 times
+  LD A, (HL) ;; Get value to display in hex
+  LD C, A    ;; Copy the value to reg C
+_HEX_reverse:
+  RL C       ;; Store last bit into carry flag
+  RRA        ;; Put carry flag at the end of reg A, and store lower bit into carry flag
+  DJNZ _HEX_reverse-$
+  LD (HL), A ;; Save reversed byte in memory
   LD BC, 0x80;; Reset reg B & Set count & mask at the same time reg C
 
 _HEX_lp:

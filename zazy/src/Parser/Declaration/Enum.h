@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Parser/Statement/Return.h"
+#include "src/Parser/Statement/While.h"
 
 namespace Zazy {
 
@@ -7,22 +7,22 @@ namespace Decl {
 
 class Enum : public Statement {
 public:
-//   If(expr_t condition, stmt_t then, stmt_t otherwise):
-//     condition(condition), then(then), otherwise(otherwise) {}
+  Enum(std::vector<stmt_t> vars):
+    name(name), vars(vars) {}
 
-//   obj_t accept(Visitor* visitor) override {
-//     return visitor->visitStmtIf(this);
-//   }
+  obj_t accept(Visitor* visitor) override {
+    return visitor->visitDeclEnum(this);
+  }
 
-//   void print() { 
-//     printf("if ("); condition->print(); printf(") "); then->print(); 
-//     if (otherwise != nullptr) { printf(" else "); otherwise->print(); }
-//   }
+  void print() { 
+    printf("enum {"); 
+    for (int32_t i = 0; i < vars.size(); i++) { if (i) printf(", "); vars[i]->print(); }
+    printf(" }");
+  }
 
-// public:
-//   expr_t condition;
-//   stmt_t then;
-//   stmt_t otherwise;
+public:
+  token_t name;
+  std::vector<stmt_t> vars;
 };
 
 };

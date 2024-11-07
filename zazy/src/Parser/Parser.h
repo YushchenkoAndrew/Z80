@@ -16,7 +16,7 @@ namespace Zazy {
  *  declaration   -> struct_decl | enum_decl | func_decl | var_decl | label_decl | statement 
  * 
  *  struct_decl   -> 'struct' IDENTIFIER TODO:
- *  enum_decl     -> 'enum' IDENTIFIER '{' TODO:
+ *  enum_decl     -> 'enum' IDENTIFIER '{' IDENTIFIER ( '='  expression )?  ( ',' IDENTIFIER ( '='  expression )? )* '}' ';'?
  *  func_decl     -> definitition '(' parameters? ')' ( block_stmt  | ';' )
  *  var_decl      -> definitition ( '='  expression )? ';'?
  *  label_decl    -> IDENTIFIER ':'
@@ -84,19 +84,43 @@ public:
   }
 
 
-  // inline stmt_t program() {
-  // }
+//   inline stmt_t program() {
+
+// // declaration* EOF
+//   }
 
 
 private:
 
   inline stmt_t declaration() {
+    if (match<1>({ TokenT::W_ENUM })) return enum_decl();
+
     if (isType(peek)) {
       auto stmt = definitition();
       return check(TokenT::LEFT_BRACE) ? func_decl(stmt) : var_decl(stmt);
     }
 
     return statement();
+  }
+
+  inline stmt_t enum_decl() {
+    std::vector<stmt_t> vars{};
+    consume(TokenT::LEFT_CURLY_BRACE, "Expect '{' after identifier.");
+
+    if (!check(TokenT::RIGHT_CURLY_BRACE)) {
+      do {
+        auto name = peek;
+        consume(TokenT::IDENTIFIER, "Expect identifier in enum block.");
+
+        token_t type = std::make_shared<Token>(TokenT::W_AUTO, "", "", peek->col, peek->line);
+        vars.push_back(std::make_shared<Decl::Var>(type, name, match<1>({ TokenT::ASSIGN }) ? expression() : nullptr));
+      } while(match<1>({ TokenT::COMMA }));
+    }
+
+    consume(TokenT::RIGHT_CURLY_BRACE, "Expect '}' after block.");
+    match<1>({ TokenT::SEMICOLON });
+
+    return std::make_shared<Decl::Enum>(vars);
   }
 
   inline std::shared_ptr<Decl::Var> definitition() {
@@ -131,7 +155,6 @@ private:
 
     switch (peek->token) {
       case TokenT::W_SWTCH:
-      case TokenT::W_WHILE: 
       case TokenT::W_DO: 
 
       case TokenT::W_GOTO: 
@@ -139,6 +162,9 @@ private:
       case TokenT::W_CONTINUE: 
         // TODO:
         break;
+
+      case TokenT::W_WHILE: 
+        return while_stmt();
 
       case TokenT::W_FOR:
         return for_stmt();
@@ -157,6 +183,17 @@ private:
     }
 
     return nullptr;
+  }
+
+  inline stmt_t while_stmt() {
+    consume(TokenT::W_WHILE, "Expect 'while' before conditional stmt.");
+    consume(TokenT::LEFT_BRACE, "Expect '(' after 'while' word.");
+
+    auto condition = expression();
+    consume(TokenT::RIGHT_BRACE, "Expect ')' after 'while' expression.");
+
+    stmt_t body = match<1>({ TokenT::SEMICOLON }) ? nullptr : statement();
+    return std::make_shared<Stmt::While>(condition, body);
   }
 
   inline stmt_t for_stmt() {

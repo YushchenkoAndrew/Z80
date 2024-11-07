@@ -4,7 +4,7 @@
 namespace Interpreter {
 
 class Token;
-typedef std::pair<std::string, std::shared_ptr<Token>> RealtiveToken;
+typedef std::pair<std::string, std::shared_ptr<Token>> RelativeToken;
 
 /**
  * This code was hardly expired by the book {Creating Interpreters}

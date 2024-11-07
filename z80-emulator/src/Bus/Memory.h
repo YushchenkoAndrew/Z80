@@ -118,7 +118,7 @@ public:
 
     auto cmd = GetCmd();
     if (!cmd.size()) {
-      auto name = GetType();
+      auto name = GetName();
       pos.x += nWidth - ((int32_t)name.size() + 1) * vStep.second.x;
       GameEngine->DrawString(pos, name, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
     } else {
@@ -772,7 +772,7 @@ public:
     return cmd;
   }
 
-  inline std::string GetType() { 
+  inline std::string GetName() { 
     switch (type) {
       case MemoryT::W27C512: return "W27C512";
       case MemoryT::IMS1423: return "IMS1423";

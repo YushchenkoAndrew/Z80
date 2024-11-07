@@ -91,6 +91,10 @@ typedef TypeList<
 typedef TypeList<
   AnyType<TokenT::INVALID,           TokenSTR>, TypeList<
   AnyType<TokenT::STRING,            TokenSTR>, TypeList<
+  AnyType<TokenT::VOID,              TokenSTR>, TypeList<
+  AnyType<TokenT::CHAR,              TokenSTR>, TypeList<
+  AnyType<TokenT::SHORT,             TokenSTR>, TypeList<
+  AnyType<TokenT::INT,               TokenSTR>, TypeList<
   AnyType<TokenT::OP_PLUS,           TokenSTR>, TypeList<
   AnyType<TokenT::OP_MINUS,          TokenSTR>, TypeList<
   AnyType<TokenT::OP_MORE,           TokenSTR>, TypeList<
@@ -133,7 +137,7 @@ typedef TypeList<
   AnyType<TokenT::RIGHT_SQUARE_BRACE,TokenSTR>, TypeList<
   AnyType<TokenT::LEFT_CURLY_BRACE,  TokenSTR>, TypeList<
   AnyType<TokenT::RIGHT_CURLY_BRACE, TokenSTR>, TypeList<
-  AnyType<TokenT::QUESTION_MARK,     TokenSTR>, KeywordList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::QUESTION_MARK,     TokenSTR>, KeywordList>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     TokenList;
 
 
@@ -198,6 +202,11 @@ public:
     AnyType<TokenT::SEMICOLON, TokenSTR>::GetValue() = "SEMI";
     AnyType<TokenT::COLON,     TokenSTR>::GetValue() = "COLON";
     AnyType<TokenT::IDENTIFIER,TokenSTR>::GetValue() = "IDENT";
+    AnyType<TokenT::STRING,    TokenSTR>::GetValue() = "STRING";
+    AnyType<TokenT::VOID,      TokenSTR>::GetValue() = "VOID";
+    AnyType<TokenT::CHAR,      TokenSTR>::GetValue() = "CHAR";
+    AnyType<TokenT::SHORT,     TokenSTR>::GetValue() = "SHORT";
+    AnyType<TokenT::INT,       TokenSTR>::GetValue() = "INT";
 
     AnyType<TokenT::ASSIGN,        TokenSTR>::GetValue() = "ASSIGN";
     AnyType<TokenT::ASSIGN_PLUS,   TokenSTR>::GetValue() = "ASPLUS";

@@ -211,6 +211,7 @@ public:
     return filename.substr(0, nWidth);
   }
 
+  inline std::string GetName() { return "vim"; }
   inline std::string File() { Utils::Lock l(mutex); return PATH(tabs[nTab]); }
   inline void SelectLine(int32_t line) { Utils::Lock l(mutex); VIM(tabs[nTab]).SelectLine(line); }
 

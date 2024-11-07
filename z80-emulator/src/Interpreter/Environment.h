@@ -92,7 +92,7 @@ public:
   std::pair<bool, std::unordered_map<std::string, MemoryT>> vars; // first is shown if vars is locked or not
 
   // TODO: Change key to std::pair where first is line number and second is file path
-  std::map<uint32_t, RealtiveToken> tokens;
+  std::map<uint32_t, RelativeToken> tokens;
 };
 
 };

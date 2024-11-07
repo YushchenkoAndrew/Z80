@@ -6,7 +6,7 @@
 ;#################################
 
 
-  org 0x0000
+ORG 0x0000
   JP SETUP
 
 ORG 0x0010
@@ -83,4 +83,4 @@ MAIN:
 #include "../lib/Lcd.asm"
 
 MSG_HELLO:
-  db "Hello world !", 0
+  db "Hello world :)", 0
