@@ -1,5 +1,5 @@
 #pragma once
-#include "src/Window/Popup.h"
+#include "src/Window/Command.h"
 
 namespace Interpreter {
 

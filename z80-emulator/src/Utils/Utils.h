@@ -8,6 +8,19 @@ namespace Utils {
     return ss.str();
   }
 
+  inline std::string Int2Bin(int32_t num, int32_t size = 1) { 
+    std::string str = "";
+
+    for (int8_t j = size - 1; j >= 0; j--) {
+      for (int8_t i = 7; i >= 0; i--) {
+        str += !!(num & (1 << (i + j * 8))) + '0';
+        if (i + j && (i + j) % 4 == 0) str += ' ';
+      }
+    }
+
+    return str;
+  }
+
   inline bool IsDigit(const char &c) { return c >= '0' && c <= '9'; }
   inline bool IsBinDigit(const char &c) { return c == '0' || c == '1'; }
   inline bool IsOctDigit(const char &c) { return c >= '0' && c <= '7'; }

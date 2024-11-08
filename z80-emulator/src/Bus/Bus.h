@@ -8,7 +8,7 @@ class Bus : public Window::Window, public Device {
 private:
   struct MUX { 
     enum MREQ { W27C512, IMS1423, HY62256A, KM28C17 };
-    enum IORQ { IN_OUT_PORT, HEX_PORT, PPI_PORT, UART_PORT };
+    enum IORQ { IN_OUT_PORT, HEX_PORT, PPI_PORT, UART_PORT, _, INT_PORT };
     enum PPI_CS { CS0, CS1, CSA, CSW, CS3, CS4, CS5, CSB };
     enum PPI_IO { LCD_PORT = 1 };
   };
@@ -29,7 +29,6 @@ public:
 
   void Draw(PixelGameEngine* GameEngine);
 
-  void Interrupt();
   inline DisassembleT Disassemble();
 
   uint8_t Read(uint32_t addr, bool mreq) {
@@ -102,6 +101,8 @@ private:
         return data;
       }
       // case MUX::IORQ::UART_PORT: break; 
+
+      case MUX::IORQ::INT_PORT: return interrupt->Write(addr, data, true);
     }
 
     return 0x00;
@@ -118,6 +119,7 @@ public:
   std::shared_ptr<Keyboard> keyboard;
 
   std::shared_ptr<PPI> ppi;
+  std::shared_ptr<InterruptVector> interrupt;
 
   std::shared_ptr<Z80::CPU> Z80;
   std::shared_ptr<W27C512_T> W27C512;

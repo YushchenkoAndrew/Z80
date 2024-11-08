@@ -51,7 +51,7 @@ Bindings = {
     "h                      Go the prev memory bank",
   },
   editor = {
-    "HELLO WORLD",
+    "TODO: ",
   },
   popup = {},
 }

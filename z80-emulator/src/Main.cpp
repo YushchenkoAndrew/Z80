@@ -51,6 +51,7 @@ public:
 
     // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
+    auto popup = std::make_shared<Editor::Popup>();
 
     // std::ofstream f("Test.asm");
     // interpreter.env.save("out.bin");
@@ -72,8 +73,8 @@ public:
         // TODO: Load windows size from lua
         std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
         std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
-        std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4)))
-        // std::tuple(terminal,     std::pair(olc::vi2d(zero.x,   window.y),            olc::vi2d(window.x,           size.y - window.y)))
+        std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
+        std::tuple(popup,        std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(zero.x,            zero.y)))
       ),
       Panel(
         std::tuple(bus, std::pair(zero, olc::vi2d(ScreenWidth(), ScreenHeight())))
@@ -404,7 +405,7 @@ private:
 
   std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
   std::unique_ptr<std::thread> offload = nullptr;
-  std::string keybindings = "Ctrl-Space ?    List key bindings";
+  std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";
 
   int32_t nCurr = 0;
   std::string cmd = "";

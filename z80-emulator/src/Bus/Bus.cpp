@@ -20,7 +20,7 @@ namespace Bus {
   #undef TEMPLATE
   #undef CLASS
 
-  void Keyboard::Interrupt() { bus->Interrupt(); }
+  void Keyboard::Interrupt() { bus->interrupt->ResetFlag(InterruptVector::IRQ::KEYBOARD); }
 
   Bus::Bus(LuaScript& config):
     luaConfig(config),
@@ -32,19 +32,22 @@ namespace Bus {
     keyboard(std::make_shared<Keyboard>(this)),
 
     ppi(std::make_shared<PPI>(this)),
+    interrupt(std::make_shared<InterruptVector>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),
     W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
     IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)) {}
 
   void Bus::Preinitialize() {
-    led->Preinitialize(); switches->Preinitialize();
-    hexDisplay->Preinitialize(); lcd->Preinitialize();
-    keyboard->Preinitialize();
-
-    ppi->Preinitialize();
-
-    Z80->Preinitialize(); W27C512->Preinitialize(); 
+    led       ->Preinitialize();
+    switches  ->Preinitialize();
+    hexDisplay->Preinitialize();
+    lcd       ->Preinitialize();
+    keyboard  ->Preinitialize();
+    ppi       ->Preinitialize();
+    interrupt ->Preinitialize();
+    Z80       ->Preinitialize();
+    W27C512   ->Preinitialize(); 
   }
 
   void Bus::Initialize(DimensionT dimensions) {
@@ -62,40 +65,48 @@ namespace Bus {
     Z80->Initialize(std::pair(olc::vi2d(window.x, zero.y) + offset, zero));
 
     grid.push_back(std::pair(olc::vi2d(window.x, 140), olc::vi2d(dimensions.second.x - offset.x * 2, 140)));
-    keyboard->Initialize(std::pair(olc::vi2d(window.x, 140) + offset, zero));
+    interrupt->Initialize(std::pair(olc::vi2d(window.x, 140) + offset, zero));
 
-    grid.push_back(std::pair(olc::vi2d(window.x, 162), olc::vi2d(dimensions.second.x - offset.x * 2, 162)));
-    ppi->Initialize(std::pair(olc::vi2d(window.x, 162) + offset, zero));
+    grid.push_back(std::pair(olc::vi2d(window.x, 184), olc::vi2d(dimensions.second.x - offset.x * 2, 184)));
+    keyboard->Initialize(std::pair(olc::vi2d(window.x, 184) + offset, zero));
+
+    grid.push_back(std::pair(olc::vi2d(window.x, 206), olc::vi2d(dimensions.second.x - offset.x * 2, 206)));
+    ppi->Initialize(std::pair(olc::vi2d(window.x, 206) + offset, zero));
 
     grid.push_back(std::pair(olc::vi2d(window.x - offset.x * 2, offset.y), olc::vi2d(window.x - offset.x * 2, dimensions.second.y - offset.y)));
   }
 
   void Bus::Preprocess() {
-    led->Preprocess(); switches->Preprocess();
-    hexDisplay->Preprocess(); lcd->Preprocess();
-    keyboard->Preprocess();
-
-    Z80->Preprocess();
+    led       ->Preprocess();
+    switches  ->Preprocess();
+    hexDisplay->Preprocess();
+    lcd       ->Preprocess();
+    keyboard  ->Preprocess();
+    ppi       ->Preprocess();
+    interrupt ->Preprocess();
+    Z80       ->Preprocess();
   }
 
   void Bus::Process(PixelGameEngine* GameEngine) {
-    led->Process(GameEngine); switches->Process(GameEngine);
-    hexDisplay->Process(GameEngine); lcd->Process(GameEngine);
-    keyboard->Process(GameEngine);
-
-    ppi->Process(GameEngine);
-
-    Z80->Process(GameEngine);
+    led       ->Process(GameEngine);
+    switches  ->Process(GameEngine);
+    hexDisplay->Process(GameEngine);
+    lcd       ->Process(GameEngine);
+    keyboard  ->Process(GameEngine);
+    ppi       ->Process(GameEngine);
+    interrupt ->Process(GameEngine);
+    Z80       ->Process(GameEngine);
   }
 
   void Bus::Draw(PixelGameEngine* GameEngine) {
-    led->Draw(GameEngine); switches->Draw(GameEngine);
-    hexDisplay->Draw(GameEngine); lcd->Draw(GameEngine);
-    keyboard->Draw(GameEngine);
-
-    ppi->Draw(GameEngine);
-
-    Z80->Draw(GameEngine);
+    led       ->Draw(GameEngine);
+    switches  ->Draw(GameEngine);
+    hexDisplay->Draw(GameEngine);
+    lcd       ->Draw(GameEngine);
+    keyboard  ->Draw(GameEngine);
+    ppi       ->Draw(GameEngine);
+    interrupt ->Draw(GameEngine);
+    Z80       ->Draw(GameEngine);
 
     for (auto& line : grid) GameEngine->DrawLine(line.first, line.second, *AnyType<DARK_GREY, ColorT>::GetValue());
 
@@ -103,7 +114,7 @@ namespace Bus {
     // GameEngine->FillRect({ 300, 20 }, { 20, 50 }, *AnyType<VERY_DARK_GREY, ColorT>::GetValue());
   }
 
-  void Bus::Interrupt() { Z80->Interrupt(); }
+  void InterruptVector::Interrupt() { bus->Z80->Interrupt(); }
   inline DisassembleT Bus::Disassemble() { return Z80->Disassemble(); }
 
 

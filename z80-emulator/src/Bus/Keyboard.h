@@ -1,5 +1,5 @@
 #pragma once
-#include "Ppi.h"
+#include "InterruptVector.h"
 
 namespace Bus {
 class Keyboard : public Window::Window, public Device {
@@ -20,18 +20,32 @@ public:
   }
 
   void Process(PixelGameEngine* GameEngine) {
-    Utils::Lock l(mutex);
+    const auto mouse = GameEngine->GetMousePos();
+    const bool bPressed = GameEngine->GetMouse(0).bPressed;
 
-    foreach<KeyboardScanCodes, Keyboard>::Process(this);
+    olc::vi2d pos = absolute - olc::vi2d(1, 1);
+    olc::vi2d size = name.second + olc::vi2d(2, 2);
+
+    if (bPressed && mouse.x > pos.x && mouse.y > pos.y && mouse.x < pos.x + size.x && mouse.y < pos.y + size.y) {
+      bEnabled = bEnabled ^ true;
+    }
+
+    Utils::Lock l(mutex);
+    if (bEnabled) foreach<KeyboardScanCodes, Keyboard>::Process(this);
   }
 
   void Draw(PixelGameEngine* GameEngine) {
-    olc::vi2d pos = absolute; const auto name = "buf";
+    olc::vi2d pos = absolute;
 
-    const olc::vi2d vOffset = olc::vi2d(GameEngine->GetTextSize(name).x, 0) + vStep;
-    GameEngine->DrawString(pos, name, *AnyType<DARK_GREY, ColorT>::GetValue());
+    auto fg = bEnabled ? AnyType<DARK_GREY, ColorT>::GetValue() : AnyType<BLACK, ColorT>::GetValue();
+    auto bg = bEnabled ? AnyType<BLACK, ColorT>::GetValue()     : AnyType<DARK_GREY, ColorT>::GetValue();
+
+    GameEngine->FillRect(pos - olc::vi2d(1, 1), name.second + olc::vi2d(2, 2), *bg);
+    GameEngine->DrawString(pos, name.first, *fg);
 
     int32_t index = 0; Utils::Lock l(mutex);
+    const olc::vi2d vOffset = olc::vi2d(name.second.x, 0) + vStep;
+
     for (auto& val : buffer) {
       GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), *AnyType<GREY, ColorT>::GetValue());
 
@@ -46,11 +60,10 @@ private:
   void Runtime() {
     while (bExec) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      if (bHandled) {
-        Utils::Lock l(mutex);
+      if (!bEnabled || !bHandled) continue;
 
-        if (buffer.size()) { bHandled = false; Interrupt(); }
-      }
+      Utils::Lock l(mutex);
+      if (buffer.size()) { bHandled = false; Interrupt(); }
     }
   }
 
@@ -95,9 +108,11 @@ private:
   Bus* bus;
 
   std::atomic<bool> bExec = true;
+  std::atomic<bool> bEnabled = false;
   std::atomic<bool> bHandled = true;
 
   std::unique_ptr<std::thread> runtime = nullptr;
+  std::pair<const char*, olc::vi2d> name = std::pair("buf", olc::vi2d(8 * 3, 8));
 
   // Variables defines animation duration
   std::unordered_map<int32_t, float> fStrokeRepeat;

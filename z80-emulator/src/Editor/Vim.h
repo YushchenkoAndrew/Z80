@@ -61,6 +61,10 @@ public:
     GameEngine->FillRect(pos, size, *AnyType<GREY, ColorT>::GetValue());
   }
 
+  void Load(std::vector<std::string>& dst) {
+    lines.clear(); lines.insert(lines.end(), dst.begin(), dst.end());
+  }
+
   void Load(std::vector<std::shared_ptr<Interpreter::Token>>& dst) {
     std::string line = ""; lines.clear();
 
@@ -74,6 +78,7 @@ public:
     lines.push_back(line);
   }
 
+  inline std::vector<std::string>& GetLines() { return lines; }
   inline std::string Text() {
     std::string text = "";
 
@@ -723,7 +728,7 @@ public:
   }
 
   inline int32_t GetLineSize() { return lines.size(); }
-  inline int32_t GetLineSize(int32_t i) { return lines[i].size(); }
+  inline int32_t GetLineSize(int32_t i) { return lines.size() > i ? lines[i].size() : 0; }
 
   inline olc::vi2d GetPos() { return olc::vi2d(pos); }
   inline void MoveTo(olc::vi2d offset) {
