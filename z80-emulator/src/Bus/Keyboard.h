@@ -5,15 +5,6 @@ namespace Bus {
 class Keyboard : public Window::Window, public Device {
 public:
   Keyboard(Bus* b): bus(b) {}
-  ~Keyboard() {
-    bExec = false; 
-
-    if (runtime != nullptr && runtime->joinable()) runtime->join();
-  }
-
-  void Preinitialize() { 
-    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&Keyboard::Runtime, this));
-  }
 
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
@@ -30,8 +21,12 @@ public:
       bEnabled = bEnabled ^ true;
     }
 
+    if (!bEnabled) return;
+
     Utils::Lock l(mutex);
-    if (bEnabled) foreach<KeyboardScanCodes, Keyboard>::Process(this);
+    foreach<KeyboardScanCodes, Keyboard>::Process(this);
+
+    if (buffer.size()) Interrupt();
   }
 
   void Draw(PixelGameEngine* GameEngine) {
@@ -56,20 +51,9 @@ public:
 
   void Interrupt();
 
-private:
-  void Runtime() {
-    while (bExec) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      if (!bEnabled || !bHandled) continue;
-
-      Utils::Lock l(mutex);
-      if (buffer.size()) { bHandled = false; Interrupt(); }
-    }
-  }
-
 public:
   uint8_t Read(uint32_t addr, bool) {
-    Utils::Lock l(mutex); bHandled = true;
+    Utils::Lock l(mutex);
 
     uint8_t code = buffer.size() ? buffer.front() : '\0';
     if (buffer.size()) buffer.pop_front();
@@ -107,11 +91,7 @@ private:
 
   Bus* bus;
 
-  std::atomic<bool> bExec = true;
   std::atomic<bool> bEnabled = false;
-  std::atomic<bool> bHandled = true;
-
-  std::unique_ptr<std::thread> runtime = nullptr;
   std::pair<const char*, olc::vi2d> name = std::pair("buf", olc::vi2d(8 * 3, 8));
 
   // Variables defines animation duration

@@ -32,6 +32,7 @@ namespace Bus {
     keyboard(std::make_shared<Keyboard>(this)),
 
     ppi(std::make_shared<PPI>(this)),
+    rlt(std::make_shared<RLT>(this)),
     interrupt(std::make_shared<InterruptVector>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),
@@ -45,6 +46,7 @@ namespace Bus {
     lcd       ->Preinitialize();
     keyboard  ->Preinitialize();
     ppi       ->Preinitialize();
+    rlt       ->Preinitialize();
     interrupt ->Preinitialize();
     Z80       ->Preinitialize();
     W27C512   ->Preinitialize(); 
@@ -61,19 +63,18 @@ namespace Bus {
     hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), zero));
     lcd->Initialize(std::pair(olc::vi2d(10, 150), zero));
 
-    olc::vi2d window = olc::vi2d(dimensions.second.x * 8 / 10, dimensions.second.y);
-    Z80->Initialize(std::pair(olc::vi2d(window.x, zero.y) + offset, zero));
+    olc::vi2d pos = olc::vi2d(dimensions.second.x * 8 / 10, dimensions.second.y);
 
-    grid.push_back(std::pair(olc::vi2d(window.x, 140), olc::vi2d(dimensions.second.x - offset.x * 2, 140)));
-    interrupt->Initialize(std::pair(olc::vi2d(window.x, 140) + offset, zero));
+    auto Init = [&pos, &dimensions, &offset, &grid = grid](std::shared_ptr<Window> window, int32_t y) {
+      grid.push_back(std::pair(olc::vi2d(pos.x, y), olc::vi2d(dimensions.second.x - offset.x * 2, y)));
+      window->Initialize(std::pair(olc::vi2d(pos.x, y) + offset, olc::vi2d(0, 0)));
+    };
 
-    grid.push_back(std::pair(olc::vi2d(window.x, 184), olc::vi2d(dimensions.second.x - offset.x * 2, 184)));
-    keyboard->Initialize(std::pair(olc::vi2d(window.x, 184) + offset, zero));
+    Z80->Initialize(std::pair(olc::vi2d(pos.x, zero.y) + offset, zero));
 
-    grid.push_back(std::pair(olc::vi2d(window.x, 206), olc::vi2d(dimensions.second.x - offset.x * 2, 206)));
-    ppi->Initialize(std::pair(olc::vi2d(window.x, 206) + offset, zero));
+    Init(interrupt, 140); Init(keyboard, 184); Init(ppi, 206); Init(rlt, 228); 
 
-    grid.push_back(std::pair(olc::vi2d(window.x - offset.x * 2, offset.y), olc::vi2d(window.x - offset.x * 2, dimensions.second.y - offset.y)));
+    grid.push_back(std::pair(olc::vi2d(pos.x - offset.x * 2, offset.y), olc::vi2d(pos.x - offset.x * 2, dimensions.second.y - offset.y)));
   }
 
   void Bus::Preprocess() {
@@ -83,6 +84,7 @@ namespace Bus {
     lcd       ->Preprocess();
     keyboard  ->Preprocess();
     ppi       ->Preprocess();
+    rlt       ->Preprocess();
     interrupt ->Preprocess();
     Z80       ->Preprocess();
   }
@@ -94,6 +96,7 @@ namespace Bus {
     lcd       ->Process(GameEngine);
     keyboard  ->Process(GameEngine);
     ppi       ->Process(GameEngine);
+    rlt       ->Process(GameEngine);
     interrupt ->Process(GameEngine);
     Z80       ->Process(GameEngine);
   }
@@ -105,6 +108,7 @@ namespace Bus {
     lcd       ->Draw(GameEngine);
     keyboard  ->Draw(GameEngine);
     ppi       ->Draw(GameEngine);
+    rlt       ->Draw(GameEngine);
     interrupt ->Draw(GameEngine);
     Z80       ->Draw(GameEngine);
 

@@ -4,8 +4,6 @@
 namespace Bus {
 
 class InterruptVector : public Window::Window, public Device {
-  // enum ModeT { MODE0, MODE1, MODE2 };
-  // enum CtrlSign { INTR_B, IBF_B, STB_B, INTR_A, STB_A, IBF_A, ACK_A, OBF_A };
 
 public:
   enum IRQ { NONE1, NONE2, CT2, CT1, RLT, TxRDT, RxRDY, KEYBOARD };

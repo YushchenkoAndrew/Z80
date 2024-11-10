@@ -119,6 +119,7 @@ public:
   std::shared_ptr<Keyboard> keyboard;
 
   std::shared_ptr<PPI> ppi;
+  std::shared_ptr<RLT> rlt;
   std::shared_ptr<InterruptVector> interrupt;
 
   std::shared_ptr<Z80::CPU> Z80;
