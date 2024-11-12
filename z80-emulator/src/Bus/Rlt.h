@@ -7,34 +7,37 @@ namespace Bus {
 #define CT1(p)  std::get<1>(p)
 #define CT2(p)  std::get<2>(p)
 
+#define ENABLE_OUTPUT  0x01
+#define KEEP_OUTPUT    0x02
+
 class RLT : public Window::Window, public Device {
 
 typedef std::tuple<uint16_t, uint16_t, uint16_t> RegT;
 
 public:
-  RLT(Bus* b): bus(b) {}
+  RLT(Bus* b, int32_t c): bus(b), clock(std::pair(c, 1.0E9F / c)) {
+    olc::SOUND::InitialiseAudio();
+    olc::SOUND::SetUserSynthFunction([&](int nChannel, float fGlobalTime, float) { return Sound(fGlobalTime); });
+  }
+
+  ~RLT() {
+    bExec = false;
+
+    olc::SOUND::DestroyAudio();
+    if (runtime != nullptr && runtime->joinable()) runtime->join();
+  }
+
+  void Preinitialize() {
+    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&RLT::Runtime, this));
+  }
 
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 
-  void Process(PixelGameEngine* GameEngine) {
-    // const auto mouse = GameEngine->GetMousePos();
-    // const bool bPressed = GameEngine->GetMouse(0).bPressed;
-
-    // olc::vi2d pos = absolute - olc::vi2d(1, 1);
-    // olc::vi2d size = name.second + olc::vi2d(2, 2);
-
-    // if (bPressed && mouse.x > pos.x && mouse.y > pos.y && mouse.x < pos.x + size.x && mouse.y < pos.y + size.y) {
-    //   bEnabled = bEnabled ^ true;
-    // }
-
-    // if (!bEnabled) return;
-  }
+  void Process(PixelGameEngine* GameEngine) {}
 
   void Draw(PixelGameEngine* GameEngine) {
-    Utils::Lock l(mutex);
-
     olc::vi2d pos = absolute; olc::vi2d vNextLine = olc::vi2d(0, vStep.y);
 
     GameEngine->DrawString(pos, name.first, *AnyType<DARK_GREY, ColorT>::GetValue());
@@ -43,6 +46,9 @@ public:
     const olc::vi2d vOffset = olc::vi2d(name.second.x + vStep.x, 0);
 
     for (uint8_t i = 0; i < 3; i++) {
+      Utils::Lock l(mutex);
+
+      // TODO: Change how it display data
       GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(GetValue(counter, i)), *AnyType<GREY, ColorT>::GetValue());
       GameEngine->DrawString(pos + vOffset + vNextLine, Utils::Int2Hex(GetValue(control, i)), *AnyType<GREY, ColorT>::GetValue());
 
@@ -50,10 +56,52 @@ public:
     }
   }
 
-  void Interrupt();
+  void Interrupt(int32_t);
+
+  inline float Sound(float fGlobalTime) {
+    if (!GetValue(gate, 0)) return 0.0f;
+    float frequency = (float)clock.second / GetValue(counter, 0);
+
+    float output = sinf(2 * 3.14f * frequency * fGlobalTime);
+    return output > 0.0f ? 0.5 : -0.5;
+  }
+
+  void Runtime() {
+    while (bExec) {
+      std::this_thread::sleep_for(std::chrono::nanoseconds(clock.first));
+
+      // NOTE: Because run of this loop takes around 60ms, note generations (CT0) was moved to the func Sound 
+      for (uint8_t i = 1; i < 3; i++) {
+        Utils::Lock l(mutex);
+        uint16_t& value = GetValue(counter, i);
+        uint16_t& out = GetValue(output, i);
+        uint16_t enabled = GetValue(gate, i);
+
+        if (!enabled) continue;
+
+        if (out & ENABLE_OUTPUT) Interrupt(i);
+        if (!(out & KEEP_OUTPUT)) out = 0x00; 
+
+        if (value) { value = value - 1; continue; }
+
+        uint16_t ctl = GetValue(control, i);
+        uint16_t init = GetValue(initialize, i);
+
+        switch ((ctl & 0x0E) >> 1) {
+          case 0x00: break; // NOTE: There is not point to create MODE0 it will not be used at all 
+          case 0x01: break; // NOTE: There is not point to create MODE1 it will not be used at all 
+
+          case 0x02: case 0x04: case 0x05: value = init; out = ENABLE_OUTPUT; break;
+          case 0x03: value = init; out = ((out & ENABLE_OUTPUT) ^ ENABLE_OUTPUT) | KEEP_OUTPUT; break;
+        }
+      }
+    }
+  }
 
 public:
   uint8_t Read(uint32_t addr, bool) { 
+    Utils::Lock l(mutex);
+
     uint16_t& ctl = GetValue(control, addr);
     const uint16_t value = GetValue(counter, addr);
     
@@ -70,13 +118,24 @@ public:
   }
 
   uint8_t Write(uint32_t addr, uint8_t data, bool) {
-    switch (addr & 0xFF) {
-      // TODO: Make it possible to write into high/low byte
-      case 0x00: return CT0(counter) = data;
-      case 0x01: return CT1(counter) = data;
-      case 0x02: return CT2(counter) = data;
-      case 0x03: break;
-      default: return data;
+    Utils::Lock l(mutex);
+
+    if (addr & 0xFF != 0x03) {
+      uint16_t& ctl = GetValue(control, addr);
+      uint16_t& value = GetValue(counter, addr);
+
+      switch ((ctl & 0x0300) >> 8) {
+        case 0x02: ctl = (ctl & 0x00FF);
+        case 0x00: value = (value & 0xFF00) | data; break;
+        case 0x01: value = (value & 0x00FF) | (uint16_t)data << 8; break;
+      }
+
+      switch ((ctl & 0x0E) >> 1) {
+        case 0x02: case 0x03: case 0x05: GetValue(initialize, addr) = value;
+        default: GetValue(initialize, addr) = 0x00;
+      }
+
+      return data;
     }
 
     const uint8_t index = (data & 0xC0) >> 6;
@@ -115,6 +174,11 @@ private:
 
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
+  std::pair<int32_t, int32_t> clock; // nanoseconds, Hz
+
+  std::atomic<bool> bExec = true;
+  std::unique_ptr<std::thread> runtime = nullptr;
+
   Bus* bus;
 
   std::pair<const char*, olc::vi2d> name = std::pair("RLT", olc::vi2d(8 * 4, 8));
@@ -123,7 +187,18 @@ private:
   
   RegT copy;
   RegT counter;
+  RegT initialize;
 
   RegT control;
+
+  RegT gate = { 0x00, 0x00, 0x00 };
+  RegT output = { 0x01, 0x01, 0x01 };
 };
+
+#undef CT0
+#undef CT1
+#undef CT2
+
+#undef ENABLE_OUTPUT
+#undef KEEP_OUTPUT
 };

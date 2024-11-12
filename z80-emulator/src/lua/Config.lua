@@ -8,7 +8,7 @@ Init = {
 
   -- src = "assets/TestingLCD/Test.asm",
   src = "assets/TestKeyboard/Test.asm",
-  clock = 100, -- micro seconds
+  clock = 250, -- nano seconds = 4MHz
 
   -- TODO: Impl this
   schematic = {},

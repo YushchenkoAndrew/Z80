@@ -9,6 +9,12 @@
 //#include "include/MemTrack.h"
 
 
+float Test(int, float fGlobalTime, float) {
+	// std::function<float(int, float, float)> SOUND::funcUserSynth = nullptr;
+			// fMixerSample += funcUserSynth(nChannel, fGlobalTime, fTimeStep);
+  return 0.5 * sin(440.0 * 2 * 3.14 * fGlobalTime);
+}
+
 class App : public PixelGameEngine {
 private:
   typedef std::pair<uint32_t, Interpreter::RelativeToken> RelativeAddr;
@@ -90,6 +96,8 @@ public:
       
       bSyncing.first = false;
     });
+
+
 
     return true;
   }

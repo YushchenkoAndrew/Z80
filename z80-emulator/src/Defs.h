@@ -6,6 +6,7 @@
 #include "include/Typelist.h"
 #include "include/Foreach.h"
 #include "lib/olcPixelGameEngine.h"
+#include "lib/olcPGEX_Sound.h"
 #include "include/LuaScript.h"
 
 /**

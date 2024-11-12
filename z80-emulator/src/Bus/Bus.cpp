@@ -21,6 +21,7 @@ namespace Bus {
   #undef CLASS
 
   void Keyboard::Interrupt() { bus->interrupt->ResetFlag(InterruptVector::IRQ::KEYBOARD); }
+  void RLT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(InterruptVector::IRQ::CT1 + ct - 1); }
 
   Bus::Bus(LuaScript& config):
     luaConfig(config),
@@ -32,7 +33,7 @@ namespace Bus {
     keyboard(std::make_shared<Keyboard>(this)),
 
     ppi(std::make_shared<PPI>(this)),
-    rlt(std::make_shared<RLT>(this)),
+    rlt(std::make_shared<RLT>(this, config.GetTableValue<int32_t>(nullptr, "clock") * 8)),
     interrupt(std::make_shared<InterruptVector>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),

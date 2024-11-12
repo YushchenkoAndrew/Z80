@@ -11,6 +11,12 @@ Bindings = {
     "Ctrl-Space :           Prompt for a command",
     "Ctrl-Space q <digit>   Move to the window by number",
     "Ctrl-Space w <digit>   Move to the editor tab by number",
+    "Ctrl-Space :w          Save current file",
+    "Ctrl-Space :wa         Save all opened files",
+    "Ctrl-Space :e <path>   Manualy open file by path",
+    "Ctrl-Space :c          Compile source code and save is as .bin",
+    "Ctrl-Space :m          Load compiled source code to the W27C512",
+    "Ctrl-Space :l          Compile only current file",
   },
   memory = {
     "C                      Enter into CHARACTER mode",

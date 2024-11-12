@@ -114,7 +114,7 @@ private:
 
       AnyType<-1, int32_t>::GetValue() = Read();
       foreach<Instructions, CPU>::Key2Process(this);
-      std::this_thread::sleep_for(std::chrono::microseconds(clock));
+      std::this_thread::sleep_for(std::chrono::nanoseconds(clock));
 
 
       if (mode == NORMAL) {

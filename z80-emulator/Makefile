@@ -18,7 +18,7 @@ OUT_NAME_EM=index
 
 # LUA_FLAG=-llua54
 LUA_FLAG=-llua
-CFLAGS_GCC=-lX11 -lGL -lpthread -lpng -lstdc++fs -std=c++17
+CFLAGS_GCC=-lX11 -lGL -lpthread -lpng -lstdc++fs -lasound -std=c++17
 LDFALGS_GCC=
 
 EM_PRELOAD=
