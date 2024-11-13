@@ -44,7 +44,7 @@ public:
 private:
   inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16) {
     auto addr = addr16 & 0x3FFF;
-    auto mmu = ppi->regB(Int2Type<PPI::REG2PORT>());
+    auto mmu = KR580VV55->regB(Int2Type<PPI::REG2PORT>());
 
     switch((addr16 & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: return W27C512->Read(addr | ((mmu & 0x03) << 14), true);
@@ -58,7 +58,7 @@ private:
 
   inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16, uint8_t data) {
     auto addr = addr16 & 0x3FFF;
-    auto mmu = ppi->regB(Int2Type<PPI::REG2PORT>());
+    auto mmu = KR580VV55->regB(Int2Type<PPI::REG2PORT>());
 
     switch((addr16 & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: return 0x00;
@@ -74,7 +74,7 @@ private:
     switch((addr & 0x00F0) >> 4) {
       case MUX::IORQ::IN_OUT_PORT:return switches->Read(addr & 0x00FF, true);
       case MUX::IORQ::HEX_PORT:   return 0x00;
-      case MUX::IORQ::PPI_PORT:   return ppi->Read(addr & 0x00FF, true);
+      case MUX::IORQ::PPI_PORT:   return KR580VV55->Read(addr & 0x00FF, true);
       case 0x03: return keyboard->Read(addr, true);
       // FIXME: I dont exactly know how I impl hardware
       // case MUX::IORQ::UART_PORT:  break; 
@@ -88,13 +88,14 @@ private:
       case MUX::IORQ::IN_OUT_PORT: return led->Write(addr, data, true);
       case MUX::IORQ::HEX_PORT: return hexDisplay->Write(addr, data, true); 
       case MUX::IORQ::PPI_PORT: {
-        ppi->Write(addr, data, true);
-        uint8_t ctrl = ppi->regC(Int2Type<PPI::REG2PORT>());
+        KR580VV55->Write(addr, data, true);
+        uint8_t ctrl = KR580VV55->regC(Int2Type<PPI::REG2PORT>());
 
+        // TODO: 
         switch ((ctrl >> 4) & 7) {
           case MUX::PPI_IO::LCD_PORT:
             if (BIT(ctrl, MUX::PPI_CS::CSW)) lcd->Read(addr, BIT(ctrl, MUX::PPI_CS::CSA));
-            else lcd->Write(addr, ppi->regA(Int2Type<PPI::REG2PORT>()), BIT(ctrl, MUX::PPI_CS::CSA));
+            else lcd->Write(addr, KR580VV55->regA(Int2Type<PPI::REG2PORT>()), BIT(ctrl, MUX::PPI_CS::CSA));
             break;
         }
 
@@ -118,8 +119,8 @@ public:
   std::shared_ptr<LCD> lcd;
   std::shared_ptr<Keyboard> keyboard;
 
-  std::shared_ptr<PPI> ppi;
-  std::shared_ptr<RLT> rlt;
+  std::shared_ptr<PPI> KR580VV55; // PPI КР580ВВ55А
+  std::shared_ptr<PIT> KR580VI53; // Counter КР580ВИ53
   std::shared_ptr<InterruptVector> interrupt;
 
   std::shared_ptr<Z80::CPU> Z80;

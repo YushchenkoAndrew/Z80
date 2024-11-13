@@ -518,6 +518,14 @@ typedef TypeList<
   TypeList<AnyType<MiscInstruction::INDR,      MiscSTR>, Int2Type<0x01>>, TypeList<TypeList<AnyType<MiscInstruction::OTDR,     MiscSTR>, Int2Type<0x01>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     MiscMInstructions;
 
+class Lock {
+public:
+  Lock(PixelGameEngine* g): GameEngine(g) { GameEngine->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); }
+  ~Lock() { GameEngine->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); }
+
+private:
+  PixelGameEngine* GameEngine;
+};
 
 };
 

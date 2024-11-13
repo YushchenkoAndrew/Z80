@@ -10,17 +10,20 @@ namespace Bus {
 #define ENABLE_OUTPUT  0x01
 #define KEEP_OUTPUT    0x02
 
-class RLT : public Window::Window, public Device {
+/**
+ * @brief Programmable Interval Timer
+ */
+class PIT : public Window::Window, public Device {
 
 typedef std::tuple<uint16_t, uint16_t, uint16_t> RegT;
 
 public:
-  RLT(Bus* b, int32_t c): bus(b), clock(std::pair(c, 1.0E9F / c)) {
+  PIT(Bus* b, int32_t c): bus(b), clock(std::pair(c, 1.0E9F / c)) {
     olc::SOUND::InitialiseAudio();
     olc::SOUND::SetUserSynthFunction([&](int nChannel, float fGlobalTime, float) { return Sound(fGlobalTime); });
   }
 
-  ~RLT() {
+  ~PIT() {
     bExec = false;
 
     olc::SOUND::DestroyAudio();
@@ -28,7 +31,7 @@ public:
   }
 
   void Preinitialize() {
-    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&RLT::Runtime, this));
+    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&PIT::Runtime, this));
   }
 
   void Initialize(DimensionT dimensions) {
@@ -39,20 +42,31 @@ public:
 
   void Draw(PixelGameEngine* GameEngine) {
     olc::vi2d pos = absolute; olc::vi2d vNextLine = olc::vi2d(0, vStep.y);
+    GameEngine->DrawString(pos, "PIT", *AnyType<DARK_GREY, ColorT>::GetValue());
 
-    GameEngine->DrawString(pos, name.first, *AnyType<DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + vNextLine, "CTRL", *AnyType<DARK_GREY, ColorT>::GetValue());
+    auto freq = "[" + Utils::Int2Scientific(clock.second) + " Hz]";
+    olc::vi2d vOffset = olc::vi2d(vStep.x * 4, 0);
 
-    const olc::vi2d vOffset = olc::vi2d(name.second.x + vStep.x, 0);
+    GameEngine->FillRect(pos + vOffset - olc::vi2d(1, 1), GameEngine->GetTextSize(freq) + olc::vi2d(1, 1), *AnyType<DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos + vOffset, freq, *AnyType<BLACK, ColorT>::GetValue());
+
+    pos.y += vStep.y + vStep.y / 2;
 
     for (uint8_t i = 0; i < 3; i++) {
       Utils::Lock l(mutex);
 
-      // TODO: Change how it display data
-      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(GetValue(counter, i)), *AnyType<GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset + vNextLine, Utils::Int2Hex(GetValue(control, i)), *AnyType<GREY, ColorT>::GetValue());
+      uint16_t cs = GetValue(gate, i);
+      uint16_t out = GetValue(output, i);
+      uint16_t ctl = GetValue(control, i);
+      uint16_t value = GetValue(counter, i);
 
-      pos.x += vStep.x * 3;
+      GameEngine->DrawString(pos, "CT" + std::to_string(i), *AnyType<DARK_GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(value, 4), *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x, 0), Utils::Int2Hex(ctl), *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 4, 0), cs ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), out ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
+
+      pos.y += vStep.y;
     }
   }
 
@@ -180,8 +194,6 @@ private:
   std::unique_ptr<std::thread> runtime = nullptr;
 
   Bus* bus;
-
-  std::pair<const char*, olc::vi2d> name = std::pair("RLT", olc::vi2d(8 * 4, 8));
 
   std::mutex mutex;
   

@@ -21,6 +21,11 @@ namespace Utils {
     return str;
   }
 
+  inline std::string Int2Scientific(int32_t i, int32_t width = 2) { 
+    std::stringstream ss; ss << std::setprecision(0) << std::defaultfloat << (double)i;
+    return ss.str();
+  }
+
   inline bool IsDigit(const char &c) { return c >= '0' && c <= '9'; }
   inline bool IsBinDigit(const char &c) { return c == '0' || c == '1'; }
   inline bool IsOctDigit(const char &c) { return c >= '0' && c <= '7'; }

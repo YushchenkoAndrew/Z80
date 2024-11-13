@@ -21,7 +21,7 @@ namespace Bus {
   #undef CLASS
 
   void Keyboard::Interrupt() { bus->interrupt->ResetFlag(InterruptVector::IRQ::KEYBOARD); }
-  void RLT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(InterruptVector::IRQ::CT1 + ct - 1); }
+  void PIT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(InterruptVector::IRQ::CT1 + ct - 1); }
 
   Bus::Bus(LuaScript& config):
     luaConfig(config),
@@ -32,8 +32,8 @@ namespace Bus {
     lcd(std::make_shared<LCD>(this)),
     keyboard(std::make_shared<Keyboard>(this)),
 
-    ppi(std::make_shared<PPI>(this)),
-    rlt(std::make_shared<RLT>(this, config.GetTableValue<int32_t>(nullptr, "clock") * 8)),
+    KR580VV55(std::make_shared<PPI>(this)),
+    KR580VI53(std::make_shared<PIT>(this, config.GetTableValue<int32_t>(nullptr, "clock") * 8)),
     interrupt(std::make_shared<InterruptVector>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),
@@ -46,8 +46,8 @@ namespace Bus {
     hexDisplay->Preinitialize();
     lcd       ->Preinitialize();
     keyboard  ->Preinitialize();
-    ppi       ->Preinitialize();
-    rlt       ->Preinitialize();
+    KR580VV55 ->Preinitialize();
+    KR580VI53 ->Preinitialize();
     interrupt ->Preinitialize();
     Z80       ->Preinitialize();
     W27C512   ->Preinitialize(); 
@@ -73,7 +73,7 @@ namespace Bus {
 
     Z80->Initialize(std::pair(olc::vi2d(pos.x, zero.y) + offset, zero));
 
-    Init(interrupt, 140); Init(keyboard, 184); Init(ppi, 206); Init(rlt, 228); 
+    Init(interrupt, 140); Init(keyboard, 184); Init(KR580VV55, 206); Init(KR580VI53, 228); 
 
     grid.push_back(std::pair(olc::vi2d(pos.x - offset.x * 2, offset.y), olc::vi2d(pos.x - offset.x * 2, dimensions.second.y - offset.y)));
   }
@@ -84,8 +84,8 @@ namespace Bus {
     hexDisplay->Preprocess();
     lcd       ->Preprocess();
     keyboard  ->Preprocess();
-    ppi       ->Preprocess();
-    rlt       ->Preprocess();
+    KR580VV55 ->Preprocess();
+    KR580VI53 ->Preprocess();
     interrupt ->Preprocess();
     Z80       ->Preprocess();
   }
@@ -96,8 +96,8 @@ namespace Bus {
     hexDisplay->Process(GameEngine);
     lcd       ->Process(GameEngine);
     keyboard  ->Process(GameEngine);
-    ppi       ->Process(GameEngine);
-    rlt       ->Process(GameEngine);
+    KR580VV55 ->Process(GameEngine);
+    KR580VI53 ->Process(GameEngine);
     interrupt ->Process(GameEngine);
     Z80       ->Process(GameEngine);
   }
@@ -108,8 +108,8 @@ namespace Bus {
     hexDisplay->Draw(GameEngine);
     lcd       ->Draw(GameEngine);
     keyboard  ->Draw(GameEngine);
-    ppi       ->Draw(GameEngine);
-    rlt       ->Draw(GameEngine);
+    KR580VV55 ->Draw(GameEngine);
+    KR580VI53 ->Draw(GameEngine);
     interrupt ->Draw(GameEngine);
     Z80       ->Draw(GameEngine);
 

@@ -1336,6 +1336,7 @@ private:
   inline bool IsParity(uint8_t x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (~x) & 1; }
 
 public:
+  inline bool IsRunning() { return runtime != nullptr; }
   inline bool IsDebug() { return mode == DEBUG; }
   inline void Debug() { mode = DEBUG; }
   inline void Normal() { mode = NORMAL; sync.second.notify_all(); }

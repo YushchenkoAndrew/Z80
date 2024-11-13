@@ -206,6 +206,8 @@ public:
     std::cout << "ATTACH_DEBUG_MODE_CALLBACK\n";
     #endif
 
+    if (!bus->Z80->IsRunning()) return;
+
     bus->Z80->Debug();
     for (auto& p : panels) p.Lock();
   }
@@ -214,6 +216,8 @@ public:
     #ifdef DEBUG_MODE 
     std::cout << "DEBUG_RESET_CALLBACK\n";
     #endif
+
+    if (!bus->Z80->IsRunning()) return;
 
     bus->Z80->Addr(); // Wait until cpu will enter debug mode
     bus->Z80->Reset();
@@ -225,6 +229,7 @@ public:
     std::cout << "NEXT_DEBUG_STEP_CALLBACK\n";
     #endif
 
+    if (!bus->Z80->IsRunning()) return;
     if (!bus->Z80->IsDebug()) return;
     else bus->Z80->Step();
 
@@ -241,6 +246,8 @@ public:
     #ifdef DEBUG_MODE 
     std::cout << "DETACH_DEBUG_MODE_CALLBACK\n";
     #endif
+
+    if (!bus->Z80->IsRunning()) return;
 
     bus->Z80->Normal();
     for (auto& p : panels) p.Unlock();
@@ -329,7 +336,7 @@ private:
         if (match('a')) editor->Save();
         else editor->SaveFile();
 
-        return Cmd2Action();
+        return;
 
       case 'e':
         advance(); // Consume ' '
@@ -338,24 +345,31 @@ private:
         editor->Open(cmd.substr(nCurr));
         return;
 
-      case 'c': 
-        // TODO: Fix bug, for some reason is not compiled ???
+      case 'c': {
+        Bus::Z80::Lock l(this);
+
         Compile(interpreter.filepath);
         interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
 
         for (auto f : interpreter.env.files()) editor->Open(f);
         editor->Open(interpreter.filepath);
-        return Cmd2Action();
 
-      case 'm': 
-        Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>());
+        return;
+      }
+
+      case 'm': {
+        Bus::Z80::Lock l(this);
         bus->W27C512->Load(interpreter.env.memory);
-        Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>());
-        return Cmd2Action();
+        bus->W27C512->Disassemble(); 
 
-      case 'l': 
+        return;
+      }
+
+      case 'l':  {
+        Bus::Z80::Lock l(this);
         Compile(editor->File());
-        return Cmd2Action();
+        return;
+      }
     }
   }
 
