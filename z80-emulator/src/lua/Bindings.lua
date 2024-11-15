@@ -93,6 +93,8 @@ Bindings = {
     "k                      Move cursor up one line",
     "h                      Move cursor left",
     "l                      Move cursor right",
+    "g d                    Find the current line in W27C512 memory",
+    "g p                    Set/Reset break point at the current line",
   },
   popup = {},
 }

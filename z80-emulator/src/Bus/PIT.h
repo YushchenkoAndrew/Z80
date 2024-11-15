@@ -170,6 +170,11 @@ public:
     return data;
   }
 
+  void SetGate(uint8_t addr, uint16_t flag) {
+    if (!addr) GetValue(gate, 0) = flag;
+    else GetValue(gate, 2) = (GetValue(gate, 1) = flag);
+  }
+
 private:
   uint16_t& GetValue(RegT& reg, uint8_t addr) {
     switch (addr & 0xFF) {

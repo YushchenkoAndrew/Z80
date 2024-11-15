@@ -5,9 +5,9 @@ namespace Interpreter {
 
 class Interpreter : public Visitor {
 public:
-
-  Interpreter(uint32_t a = 0): parser(Parser()), env(a) {}
-  Interpreter(Parser p): parser(p) {}
+  Interpreter(uint32_t a, std::shared_ptr<VariableT> v): parser(Parser()), vars(nullptr), env(a) { env.vars = v; }
+  Interpreter(): parser(Parser()), env(0) { env.vars = vars; }
+  Interpreter(Parser p): parser(p), vars(), env(0) { env.vars = vars; }
 
   bool Load(std::string path) {
     filedir = std::filesystem::path(path).remove_filename();
@@ -29,21 +29,24 @@ public:
       return true;
     }
 
-    // Linker
-    env.reset(); env.unlock();
-    for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
-
-    if (env.unknown.size()) {
-      for (auto& var : env.unknown) {
-        error(nullptr, "Unknown variable '" + var + "'.");
-      }
-
+    if (vars == nullptr) {
+      env.reset();
+      for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
       return errors.size();
     }
 
-    // Interpreter
-    env.reset(); env.lock();
+    // NOTE: Main loop linker + final result
+    env.reset(); unlock(); 
     for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
+
+    // Interpreter
+    env.reset(); lock();
+    for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
+
+
+    for (auto& var : env.unknown) {
+      error(nullptr, "Unknown variable '" + var + "'.");
+    }
 
     return errors.size();
   }
@@ -205,8 +208,14 @@ public:
   }
 
   MemoryT visitExprVariable(ExpressionVariable* expr) override {
-    auto bytes = env.get(expr->token->lexeme, expr->size);
-    if (!expr->size || bytes.size() == expr->size) return bytes;
+    int32_t size = expr->length != nullptr ? std::stol(expr->length->literal) : expr->size;
+    if (!size && !env.has(expr->token->lexeme)) {
+      error(expr->token, "Variable byte size need to be explicitly defined.");
+      return {};
+    }
+
+    auto bytes = env.get(expr->token->lexeme, size);
+    if (!size || bytes.size() == size) return bytes;
 
     error(expr->token, "Variable byte size exceeded allowed size.");
     return {};
@@ -295,13 +304,14 @@ public:
       return MemoryT();
     }
 
-    Interpreter included = Interpreter(env.addr); included.Load(f);
+    Interpreter included = Interpreter(env.addr, env.vars); included.Load(f);
 
     errors.insert(errors.end(), included.errors.begin(), included.errors.end());
     if (included.errors.size()) return MemoryT();
 
+    // for (auto& v : included.env.vars.second) env.define(v.first, v.second);
+    for (auto& u : included.env.unknown) env.undefine(u);
     for (auto& t : included.env.tokens) env.tokens[t.first] = t.second;
-    for (auto& v : included.env.vars.second) env.define(v.first, v.second);
     included.env.memory.erase(included.env.memory.begin(), included.env.memory.begin() + env.addr);
 
     return included.env.memory;
@@ -311,6 +321,9 @@ private:
   inline MemoryT evaluate(Expression* expr) {
     return expr->accept(this);
   }
+
+  inline void lock() { if (vars) vars->first = true; }
+  inline void unlock() { if (vars) { vars->first = false; vars->second.clear(); } }
 
   inline MemoryT Int2Bytes(uint32_t val, int32_t size = 0) {
     if (val == 0x00) return MemoryT(size ? size : 1, 0x00);
@@ -343,6 +356,11 @@ private:
     return acc;
   }
 
+  void warn(std::shared_ptr<Token> token, std::string message) {
+    if (token == nullptr) printf("File '%s' [Ln 1] Warning: %s\n", filename.string().c_str(), message.c_str());
+    else printf("File '%s' [Ln %d Col %d] Warning at '%s': %s\n", filename.string().c_str(), token->line, token->col, token->lexeme.c_str(), message.c_str());
+  }
+
   void error(std::shared_ptr<Token> token, std::string message) {
     std::stringstream ss; ss << "File '" << filename.string() << "' ";
 
@@ -360,6 +378,7 @@ public:
   std::filesystem::path filepath;
   std::filesystem::path filename;
 
+  std::shared_ptr<VariableT> vars = std::make_shared<VariableT>(false, std::unordered_map<std::string, MemoryT>()); // first is shown if vars is locked or not
   std::vector<std::string> errors;
 };
 

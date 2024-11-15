@@ -24,7 +24,7 @@ namespace Interpreter {
  *  expression  -> argument  (',' argument)?
  *  argument    -> REGISTER | literal | "(" operation ")"
  *  operation   -> literal | REGISTER ('+' NUMBER)?
- *  literal     -> NUMBER | IDENTIFIER | STRING;
+ *  literal     -> NUMBER | IDENTIFIER ( '[' NUMBER ']' )? | STRING;
  */
 class Parser {
 public:
@@ -140,7 +140,17 @@ private:
     }
 
     if (match<1>({ TokenT::IDENTIFIER })) {
-      return std::make_shared<ExpressionVariable>(peekPrev(), size);
+      std::shared_ptr<Token> variable = peekPrev();
+      std::shared_ptr<Token> length = nullptr;
+
+      if (match<1>({ TokenT::LEFT_SQUARE_BRACE })) {
+        consume(TokenT::NUMBER, "Expect number of bytes that identifier will take.");
+        length = peekPrev();
+
+        consume(TokenT::RIGHT_SQUARE_BRACE, "Expect ']' after expression.");
+      }
+
+      return std::make_shared<ExpressionVariable>(variable, length, size);
     }
 
     error(advance(), "Unknown token.");

@@ -3,10 +3,11 @@
 
 namespace Bus {
 
-#define W27C512_SIZE  65536
-#define HY62256A_SIZE 32786
-#define IMS1423_SIZE  4096 * 2
-#define KM28C17_SIZE  2048
+#define W27C512_SIZE   65536
+#define HY62256A_SIZE  32786
+#define IMS1423_SIZE   4096 * 2
+#define MC146818_SIZE  64
+#define KM28C17_SIZE   2048
 
 #define LCD_SEGMENT_SIZE 5
 

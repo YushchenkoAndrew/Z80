@@ -4,6 +4,7 @@
 namespace Interpreter {
 
 typedef std::vector<uint8_t> MemoryT;
+typedef std::pair<bool, std::unordered_map<std::string, MemoryT>> VariableT;
 
 class Expression;
 class ExpressionLiteral;

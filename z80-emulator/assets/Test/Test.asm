@@ -1,6 +1,0 @@
-
-	ORG 0x0000
-SETUP:
-  IN A, (0x00)
-  OUT (0x00), A
-	JP SETUP

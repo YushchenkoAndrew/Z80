@@ -75,12 +75,12 @@ MAIN:
   ; JP MAIN
 
 
-#include "../lib/Hex.asm"
+#include "../../lib/Hex.asm"
 ; #include "../lib/Printf.asm"
 ; #include "../lib/Utils.asm"
 ; #include "../lib/Keyboard.asm"
 ; #include "../lib/Buffer.asm"
-#include "../lib/Lcd.asm"
+#include "../../lib/Lcd.asm"
 
 MSG_HELLO:
   db "Hello world :)", 0

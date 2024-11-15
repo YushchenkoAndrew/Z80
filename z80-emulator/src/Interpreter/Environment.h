@@ -5,30 +5,30 @@ namespace Interpreter {
 
 class Environment {
 public:
-  Environment(uint32_t a = 0): addr(a), startAt(a), vars(false, {}) {}
+  Environment(uint32_t a = 0): addr(a), startAt(a) {}
   inline void reset() { addr = startAt; unknown.clear(); memory.clear(); memory.resize(startAt, 0); }
 
   inline void define(std::string key, MemoryT val) { 
-    if (vars.first) return; // if vars is locked
-    unknown.remove(key); vars.second[key] = val;
+    if (vars->first) return; // if vars is locked
+    unknown.remove(key); vars->second[key] = val;
   }
 
   inline void undefine(std::string key) {
-    if (vars.first) return; // if vars is locked
+    // if (vars->first) return; // if vars is locked
     unknown.push_back(key); unknown.unique();
   }
 
-  inline bool has(std::string key) { return vars.second.find(key) != vars.second.end(); }
+  inline bool has(std::string key) { return vars->second.find(key) != vars->second.end(); }
   inline MemoryT get(std::string key, int32_t size) { 
     if (!key.compare("$")) return addr2Bytes();
 
     if (has(key)) {
-      int32_t diff = vars.second[key].size() - size;
-      if (diff >= 0) return vars.second[key];
+      int32_t diff = vars->second[key].size() - size;
+      if (diff >= 0) return vars->second[key];
 
       // NOTE: Resize variable if needed
       MemoryT res(std::abs(diff), 0x00);
-      res.insert(res.end(), vars.second[key].begin(), vars.second[key].end());
+      res.insert(res.end(), vars->second[key].begin(), vars->second[key].end());
       return res;
     }
 
@@ -70,8 +70,6 @@ public:
 
   inline void bind(std::string filepath, std::shared_ptr<Token> token) { tokens[addr] = std::pair(filepath, token); }
 
-  inline void unlock() { vars.first = false; vars.second.clear(); }
-  inline void lock() { vars.first = true; }
   inline std::list<std::string> files() {
     std::list<std::string> set;
     for (auto& t : tokens) set.push_back(t.second.first);
@@ -88,8 +86,8 @@ public:
   uint32_t addr = 0x0000;
   const uint32_t startAt;
 
+  std::shared_ptr<VariableT> vars; // first is shown if vars is locked or not
   std::list<std::string> unknown; // Contains unkown vars
-  std::pair<bool, std::unordered_map<std::string, MemoryT>> vars; // first is shown if vars is locked or not
 
   // TODO: Change key to std::pair where first is line number and second is file path
   std::map<uint32_t, RelativeToken> tokens;

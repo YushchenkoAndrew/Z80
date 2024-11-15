@@ -7,10 +7,11 @@ namespace Bus {
 class Bus : public Window::Window, public Device {
 private:
   struct MUX { 
-    enum MREQ { W27C512, IMS1423, HY62256A, KM28C17 };
-    enum IORQ { IN_OUT_PORT, HEX_PORT, PPI_PORT, UART_PORT, _, INT_PORT };
+    enum MREQ  { W27C512, STACK, HY62256A, KM28C17 };
+    enum STACK { IMS1423_1, IMS1423_2, MC146818 };
+    enum IORQ  { IN_OUT_PORT, HEX_PORT, PPI_PORT, UART_PORT, KEYBOARD_PORT, INT_PORT, _, _NONE, PIT_PORT  }; // TODO: Check why IORQ 6 is not used, 7 - was used in RLT but it was a bug so it was changed to STACK::MC146818
     enum PPI_CS { CS0, CS1, CSA, CSW, CS3, CS4, CS5, CSB };
-    enum PPI_IO { LCD_PORT = 1 };
+    enum PPI_IO { DISABLE, LCD_PORT, PWR_PORT };
   };
 
   enum REQUEST { MREQ, IORQ };
@@ -48,9 +49,15 @@ private:
 
     switch((addr16 & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: return W27C512->Read(addr | ((mmu & 0x03) << 14), true);
-      case MUX::MREQ::IMS1423: return IMS1423->Read(addr, true);
       case MUX::MREQ::HY62256A: // TODO:
       case MUX::MREQ::KM28C17: break;
+      case MUX::MREQ::STACK: {
+        switch((addr16 & 0x3000) >> 12) {
+          case MUX::STACK::IMS1423_1: 
+          case MUX::STACK::IMS1423_2: return IMS1423->Read(addr, true);
+          case MUX::STACK::MC146818: break; // TODO:
+        }
+      }
     }
 
     return 0x00;
@@ -62,9 +69,15 @@ private:
 
     switch((addr16 & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: return 0x00;
-      case MUX::MREQ::IMS1423: return IMS1423->Write(addr, data, true);
       case MUX::MREQ::HY62256A: // TODO:
       case MUX::MREQ::KM28C17: break;
+      case MUX::MREQ::STACK: {
+        switch((addr16 & 0x3000) >> 12) {
+          case MUX::STACK::IMS1423_1: 
+          case MUX::STACK::IMS1423_2: return IMS1423->Write(addr, data, true);
+          case MUX::STACK::MC146818: break; // TODO:
+        }
+      }
     }
 
     return 0x00;
@@ -72,12 +85,13 @@ private:
 
   inline uint8_t mux(Int2Type<IORQ>, uint32_t addr) {
     switch((addr & 0x00F0) >> 4) {
-      case MUX::IORQ::IN_OUT_PORT:return switches->Read(addr & 0x00FF, true);
-      case MUX::IORQ::HEX_PORT:   return 0x00;
-      case MUX::IORQ::PPI_PORT:   return KR580VV55->Read(addr & 0x00FF, true);
-      case 0x03: return keyboard->Read(addr, true);
-      // FIXME: I dont exactly know how I impl hardware
-      // case MUX::IORQ::UART_PORT:  break; 
+      case MUX::IORQ::IN_OUT_PORT:   return switches->Read(addr & 0x00FF, true);
+      case MUX::IORQ::HEX_PORT:      return 0x00;
+      case MUX::IORQ::PPI_PORT:      return KR580VV55->Read(addr & 0x00FF, true);
+      case MUX::IORQ::UART_PORT:     break; // TODO
+      case MUX::IORQ::KEYBOARD_PORT: return keyboard->Read(addr, true);
+      case MUX::IORQ::INT_PORT:      return interrupt->Read(addr, true);
+      case MUX::IORQ::PIT_PORT:      return KR580VI53->Read(addr, true);
     }
 
     return 0x00;
@@ -85,14 +99,20 @@ private:
 
   inline uint8_t mux(Int2Type<IORQ>, uint32_t addr, uint8_t data) {
     switch((addr & 0x00F0) >> 4) {
-      case MUX::IORQ::IN_OUT_PORT: return led->Write(addr, data, true);
-      case MUX::IORQ::HEX_PORT: return hexDisplay->Write(addr, data, true); 
+      case MUX::IORQ::IN_OUT_PORT:   return led->Write(addr, data, true);
+      case MUX::IORQ::HEX_PORT:      return hexDisplay->Write(addr, data, true); 
+      case MUX::IORQ::UART_PORT:     break; // TODO
+      case MUX::IORQ::KEYBOARD_PORT: return 0x00;
+      case MUX::IORQ::INT_PORT:      return interrupt->Write(addr, data, true);
+      case MUX::IORQ::PIT_PORT:      return KR580VI53->Write(addr, data, true);
       case MUX::IORQ::PPI_PORT: {
         KR580VV55->Write(addr, data, true);
         uint8_t ctrl = KR580VV55->regC(Int2Type<PPI::REG2PORT>());
 
-        // TODO: 
-        switch ((ctrl >> 4) & 7) {
+        KR580VI53->SetGate(0, BIT(ctrl, MUX::PPI_CS::CS0));
+        KR580VI53->SetGate(1, BIT(ctrl, MUX::PPI_CS::CS1));
+
+        switch ((ctrl >> MUX::PPI_CS::CS3) & 7) {
           case MUX::PPI_IO::LCD_PORT:
             if (BIT(ctrl, MUX::PPI_CS::CSW)) lcd->Read(addr, BIT(ctrl, MUX::PPI_CS::CSA));
             else lcd->Write(addr, KR580VV55->regA(Int2Type<PPI::REG2PORT>()), BIT(ctrl, MUX::PPI_CS::CSA));
@@ -101,9 +121,6 @@ private:
 
         return data;
       }
-      // case MUX::IORQ::UART_PORT: break; 
-
-      case MUX::IORQ::INT_PORT: return interrupt->Write(addr, data, true);
     }
 
     return 0x00;

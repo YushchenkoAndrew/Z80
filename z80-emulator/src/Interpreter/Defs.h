@@ -13,6 +13,7 @@ typedef std::pair<std::string, std::shared_ptr<Token>> RelativeToken;
 enum TokenT {
   // Single char tokens
   NONE, LEFT_BRACE,  RIGHT_BRACE, COMMA, COLON, PLUS, MINUS, CONCATENATE, 
+  LEFT_SQUARE_BRACE, RIGHT_SQUARE_BRACE,
   
   // Bit operation in assignment
   BIT_OR, BIT_AND, BIT_XOR, BIT_NOT, LEFT_SHIFT, RIGHT_SHIFT,
@@ -277,11 +278,14 @@ typedef TypeList<
   AnyType<TokenT::FLAG_PE,  TokenCOLOR>, TypeList<
   AnyType<TokenT::FLAG_PO,  TokenCOLOR>, TypeList<
   AnyType<TokenT::FLAG_Z,   TokenCOLOR>, TypeList<
+
+  AnyType<TokenT::LEFT_SQUARE_BRACE,  TokenCOLOR>, TypeList<
+  AnyType<TokenT::RIGHT_SQUARE_BRACE, TokenCOLOR>, TypeList<
   
   AnyType<TokenT::NUMBER,  TokenCOLOR>, TypeList<
   AnyType<TokenT::STRING,  TokenCOLOR>, TypeList<
   AnyType<TokenT::IDENTIFIER, TokenCOLOR>,TypeList<
-  AnyType<TokenT::OP_INCLUDE, TokenCOLOR>,NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  AnyType<TokenT::OP_INCLUDE, TokenCOLOR>,NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     TokenColorList;
 
 class Defs {
@@ -411,6 +415,8 @@ public:
     AnyType<TokenT::IDENTIFIER, TokenCOLOR>::GetValue() = AnyType<Colors::WHITE,  ColorT>::GetValue();
 
     // Additional operations
+    AnyType<TokenT::LEFT_SQUARE_BRACE,     TokenCOLOR>::GetValue() = AnyType<Colors::RED,    ColorT>::GetValue();
+    AnyType<TokenT::RIGHT_SQUARE_BRACE,    TokenCOLOR>::GetValue() = AnyType<Colors::RED,    ColorT>::GetValue();
   }
 
   static inline uint32_t Reg2Mask(TokenT reg) {

@@ -6,8 +6,8 @@ Init = {
   height = HIGHT,
   pixel = PIXELS,
 
-  -- src = "assets/TestingLCD/Test.asm",
-  src = "assets/TestKeyboard/Test.asm",
+  -- src = "assets/test/LCD/Test.asm",
+  src = "assets/src/DoS/Main.asm",
   clock = 250, -- nano seconds = 4MHz
 
   -- TODO: Impl this

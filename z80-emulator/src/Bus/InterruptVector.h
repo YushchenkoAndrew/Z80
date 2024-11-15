@@ -49,7 +49,7 @@ private:
   Bus* bus;
 
   uint8_t state   = 0xff;
-  uint8_t enabled = 0x80;
+  uint8_t enabled = 0x00;
 
   // std::array<uint8_t, 3> regs;
   // std::array<std::pair<ModeT, bool>, 4> options;

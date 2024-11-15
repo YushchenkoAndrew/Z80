@@ -5,48 +5,14 @@
 ;  AUTHOR: Andrew Yushchenko
 ;####################################################
 
-  ORG 0x0000
-  JP SETUP
-
-ORG 0x0008
-RST8:
-  ; TODO: Think about this
-  CALL _ACK_BUFFERS; Check and reset state of the buf
-  EI          ; Restore interrupts
-  RET
-  
-
-ORG 0x0010
-RST10:
-  CALL #LCD_OUT
-  RET
-
-
-ORG 0x0018
-RST18:       ;; aka PRINT
-  LD A, (HL) ;; Get curr char
-  OR A       ;; Check if line is ended (Set flag Z)
-  RET Z      ;; Return if str is ended 
-  INC HL     ;; Inc arg pointer
-  RST 0x10   ;; Output the char
-  JR RST18-$
-
-;; Interrupt handler
-ORG 0x0038
-  EXX         ; Save reg in alt regs
-  PUSH AF     ; Save Acc & flags
-  IN A, (0x30); Reset RS-Trigger (Reset Initerrupt)
-  CALL #SCAN_CODE_IM
-  POP AF      ; Restore AF reg
-  EXX         ; Restore reg from alt regs
-  ; EI          ; Restore interrupts
-  RET
+#include "../../lib/Init.asm"
 
   ; ###################################################
   ; ##################   SETUP    #####################
   ; ###################################################
+; ORG 0x0060
 SETUP:
-  LD SP, STACK      ; Set Memory Paging RAM
+  ; LD SP, STACK      ; Set Memory Paging RAM
   IM 1              ; Use interrupt Mode 1
 
   LD A, 0x80  ; Set MODE 0;  A: OUTPUT; B: OUTPUT; C: OUTPUT
@@ -122,6 +88,6 @@ MAIN:
 ; #include "../lib/Hex.asm"
 ; #include "../lib/Printf.asm"
 ; #include "../lib/Utils.asm"
-#include "../lib/Keyboard.asm"
-#include "../lib/Buffer.asm"
-#include "../lib/Lcd.asm"
+#include "../../lib/Keyboard.asm"
+#include "../../lib/Buffer.asm"
+#include "../../lib/Lcd.asm"

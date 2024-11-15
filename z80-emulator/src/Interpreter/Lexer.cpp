@@ -14,6 +14,8 @@ bool Lexer::scan(std::string text) {
       case ':': addToken(TokenT::COLON); break;
       case '(': addToken(TokenT::LEFT_BRACE); break;
       case ')': addToken(TokenT::RIGHT_BRACE); break;
+      case '[': addToken(TokenT::LEFT_SQUARE_BRACE); break;
+      case ']': addToken(TokenT::RIGHT_SQUARE_BRACE); break;
 
       case '+': addToken(TokenT::PLUS); break;
       case '-': addToken(TokenT::MINUS); break;
