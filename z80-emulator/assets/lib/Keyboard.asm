@@ -117,6 +117,7 @@ _SCAN_CODE_INIT_lp:
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 #SCAN_CODE_IM:
+  IN A, (KEYBOARD_PORT); Read keyboard scan code
   CP 0xE0     ; Check if key is an alternative key
   RET Z       ; If so then just exit
   PUSH HL     ; Save HL reg in stack
@@ -174,6 +175,11 @@ _SCAN_CODE_INIT_lp:
 #SCAN_CODE_IM_esc:
   LD A, C     ; Restore from scan code from reg C
   LD (PTR_PREV_SCAN_CODE), A ; Save curr key in prev ptr
+
+  LD A, EVENT_PRIO_IO; Set task priority as input/output one
+  LD HL, #ACK_BUFFERS; Load task to exec after scan code interrupt
+  CALL _EVENT_PUSH; Add buffer updates to task queue
+
   POP BC      ; Restore BC reg
   POP HL      ; Restore HL reg
   RET

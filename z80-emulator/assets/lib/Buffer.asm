@@ -2,14 +2,14 @@
 
 ;;
 ;; Example:
-;;  CALL _ACK_BUFFERS
+;;  CALL #ACK_BUFFERS
 ;;
-;; func _ACK_BUFFERS() -> void;
+;; proc #ACK_BUFFERS() -> void;
 ;;   reg A  -- as defined
 ;;   reg BC -- as defined
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
-_ACK_BUFFERS:
+#ACK_BUFFERS:
   LD HL, SCAN_KEY_BUF ; Load scan key buf offset ptr
   LD A, (HL)  ; Load scan key buf offset val
   AND 0x0F    ; Get only low bites
@@ -81,13 +81,19 @@ _ACK_BUFFERS:
 
 #WR_BUFFER_cmd:
   POP HL      ; Restore src string ptr in Stack
+  ; TODO: ??????????????????
   LD A, (HL)  ; Load char from the str ptr
-  CP END_OF_TXT ; Check if char was Ctrl+L
-  CALL Z, _CMD_EXEC_ESC
-  CP FORM_FEED ; Check if char was Ctrl+L
-  CALL Z, _CMD_EXEC
+  ; CP END_OF_TXT ; Check if char was Ctrl+L
+  ; CALL Z, _CMD_EXEC_ESC
+  ; CP FORM_FEED ; Check if char was Ctrl+L
+  ; CALL Z, _CMD_EXEC
   CP LINE_FEED ; Check if char was '\n'
-  CALL Z, _CMD_EXEC
+  ; CALL Z, _CMD_EXEC
+  JR NZ, #WR_BUFFER_end-$
+
+  LD A, EVENT_PRIO_MEDIUM; Set cmd exec as a medium priority task
+  LD HL, _CMD_EXEC; Load task to exec after scan code interrupt
+  CALL _EVENT_PUSH; Add buffer updates to task queue
 
 #WR_BUFFER_end:
   INC HL      ; Move src string ptr

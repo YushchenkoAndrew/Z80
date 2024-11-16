@@ -4,8 +4,9 @@
 ;  DATE: 30.10.23
 ;  AUTHOR: Andrew Yushchenko
 ;####################################################
-
 #include "../../lib/Init.asm"
+ALLOWED_INTERUPTS EQU IM_KEYBOARD
+
 
   ; ###################################################
   ; ##################   SETUP    #####################
@@ -13,23 +14,17 @@
 ; ORG 0x0060
 SETUP:
   ; LD SP, STACK      ; Set Memory Paging RAM
-  IM 1              ; Use interrupt Mode 1
 
-  LD A, 0x80  ; Set MODE 0;  A: OUTPUT; B: OUTPUT; C: OUTPUT
-  OUT (PPI_PORT_CTRL), A ; Send instruction to PPI
-  XOR A       ; Reset reg Acc
-  OUT (PPI_PORT_A), A ; Reset PPI reg A
-  OUT (PPI_PORT_B), A ; Reset PPI reg B, (MMU = 0)
-  OUT (PPI_PORT_C), A ; Reset PPI reg C
+  LD (PTR_PREV_SCAN_CODE), A
+  LD (PTR_TEXT_BUFF_BGN), A
+  LD (PTR_TEXT_BUFF_END), A
+  LD (TEXT_BUF_MAP), A
 
   ;; Preinitilize ptr values
   LD A, 0xF1
   LD (SCAN_KEY_BUF), A ; Set scan code buff offset
   XOR A
 
-  LD (PTR_PREV_SCAN_CODE), A
-  LD (PTR_TEXT_BUFF_BGN), A
-  LD (PTR_TEXT_BUFF_END), A
   ; CALL _SCAN_CODE_INIT
 
   LD BC, .SUPER_BLOCK_ED-.SUPER_BLOCK
@@ -56,8 +51,13 @@ SETUP:
   ; IN A, (0x00)
   ; OUT (0x50), A
 TEMP:
+  LD A, EVENT_PRIO_BG
+  LD HL, MAIN
+  CALL _EVENT_PUSH
   EI          ; Restore interrupts
-  JP MAIN
+  JP #EVENT_LOOP
+  ; JP MAIN
+
 
 
 
@@ -76,8 +76,13 @@ MAIN:
   ; CALL DELAY
   ; CALL _SCAN_CODE_HANDLE
 
-  RST 0x08
-  JP MAIN
+  ; RST 0x08
+  LD A, EVENT_PRIO_BG
+  LD HL, MAIN
+  CALL _EVENT_PUSH
+  RET
+
+  ; JP MAIN
   ; JP MAIN
 
 ;; TODO: Fix bug with double char when shift is pressed !!
@@ -88,6 +93,7 @@ MAIN:
 ; #include "../lib/Hex.asm"
 ; #include "../lib/Printf.asm"
 ; #include "../lib/Utils.asm"
+#include "../../lib/EventLoop.asm"
 #include "../../lib/Keyboard.asm"
 #include "../../lib/Buffer.asm"
 #include "../../lib/Lcd.asm"

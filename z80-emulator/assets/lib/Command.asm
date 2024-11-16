@@ -13,6 +13,7 @@
 #CMD_EXEC_BUF_CALC:
   LD HL, PTR_TEXT_BUFF_BGN; Get the start of the buf offset
   LD A, (PTR_TEXT_BUFF_END); Get the end of the buf offset
+  DEC A       ; FIXME: Bug that first char is ignored
   SUB (HL)    ; Get line size, end offset - start offset
   LD B, A     ; Set reg B as a counter
   LD A, (HL)  ; Get the value of start buf offset

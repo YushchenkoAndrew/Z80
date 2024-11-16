@@ -20,6 +20,14 @@ PPI_IO_LCD     EQU 0x10
 ; IO_LCD_EN      EQU 0x03
 ; IO_LCD_CMD     EQU 0x01
 
+IM_KEYBOARD   EQU 0x80
+IM_RxRDY      EQU 0x40
+IM_TxRDY      EQU 0x20
+IM_RLT        EQU 0x10
+IM_CT1        EQU 0x08
+IM_CT2        EQU 0x04
+IM_NONE1      EQU 0x02
+IM_NONE2      EQU 0x01
 
 
 ;; Static FUNC ptr
@@ -35,16 +43,17 @@ PTR_INPUT_FUNC     EQU PTR_ADDR + 9 ;; 2 bytes
 PTR_INPUT_FILE     EQU PTR_ADDR + 11;; 2 bytes
 
 ; Dynamic args
-PTR_FUNC_ARGS      EQU PTR_ADDR + 8
+; PTR_FUNC_ARGS      EQU PTR_ADDR + 8
 
 
 ;; Allocated memory
 SCAN_KEY_BUF       EQU 0x40F0  ;; F0h - FFh Keybuffer
 SCAN_KEY_MAP       EQU 0x4100  ;; 00h - FFh scan codes
 TEXT_BUF_MAP       EQU 0x4200  ;; 00h - FFh text buffer
-SUPER_BLOCK_MAP    EQU 0x4300  ;; 00h - 1Fh Super block map
-INODE_MAP          EQU 0x4320  ;; 20h - FFh Inode map
-DATA_ZONE_MAP      EQU 0x4400  ;; 00h - FFh Data zone map
+TASK_BUF_MAP       EQU 0x4300  ;; 00h - FFh text buffer
+SUPER_BLOCK_MAP    EQU 0x4400  ;; 00h - 1Fh Super block map
+INODE_MAP          EQU 0x4420  ;; 20h - FFh Inode map
+DATA_ZONE_MAP      EQU 0x4500  ;; 00h - FFh Data zone map
 
 
 #include "ASCII.asm"

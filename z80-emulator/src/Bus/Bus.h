@@ -89,7 +89,7 @@ private:
       case MUX::IORQ::HEX_PORT:      return 0x00;
       case MUX::IORQ::PPI_PORT:      return KR580VV55->Read(addr & 0x00FF, true);
       case MUX::IORQ::UART_PORT:     break; // TODO
-      case MUX::IORQ::KEYBOARD_PORT: return keyboard->Read(addr, true);
+      case MUX::IORQ::KEYBOARD_PORT: return interrupt->SetFlag(InterruptVector::IRQ::KEYBOARD), keyboard->Read(addr, true);
       case MUX::IORQ::INT_PORT:      return interrupt->Read(addr, true);
       case MUX::IORQ::PIT_PORT:      return KR580VI53->Read(addr, true);
     }
