@@ -49,15 +49,20 @@ public:
 
     GameEngine->FillRect(pos + vOffset - olc::vi2d(1, 1), GameEngine->GetTextSize(freq) + olc::vi2d(1, 1), *AnyType<DARK_GREY, ColorT>::GetValue());
     GameEngine->DrawString(pos + vOffset, freq, *AnyType<BLACK, ColorT>::GetValue());
+    pos.y += vStep.y;
 
-    pos.y += vStep.y + vStep.y / 2;
+    GameEngine->DrawString(pos + vOffset, "VAL", *AnyType<DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x, 0), "CL", *AnyType<DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 4, 0), "E", *AnyType<DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), "Y", *AnyType<DARK_GREY, ColorT>::GetValue());
+    pos.y += vStep.y;
 
     for (uint8_t i = 0; i < 3; i++) {
       Utils::Lock l(mutex);
 
-      uint16_t cs = GetValue(gate, i);
-      uint16_t out = GetValue(output, i);
-      uint16_t ctl = GetValue(control, i);
+      uint8_t cs = GetValue(gate, i);
+      uint8_t out = GetValue(output, i);
+      uint8_t ctl = GetValue(control, i);
       uint16_t value = GetValue(counter, i);
 
       GameEngine->DrawString(pos, "CT" + std::to_string(i), *AnyType<DARK_GREY, ColorT>::GetValue());
@@ -134,19 +139,20 @@ public:
   uint8_t Write(uint32_t addr, uint8_t data, bool) {
     Utils::Lock l(mutex);
 
-    if (addr & 0xFF != 0x03) {
-      uint16_t& ctl = GetValue(control, addr);
-      uint16_t& value = GetValue(counter, addr);
+    if ((addr & 0x0F) != 0x03) {
+      const uint8_t index = addr & 0x0F;
+      uint16_t& ctl = GetValue(control, index);
+      uint16_t& value = GetValue(counter, index);
 
       switch ((ctl & 0x0300) >> 8) {
-        case 0x02: ctl = (ctl & 0x00FF);
+        case 0x02: ctl = (ctl & 0x00FF) | (uint16_t)(0x0100);
         case 0x00: value = (value & 0xFF00) | data; break;
         case 0x01: value = (value & 0x00FF) | (uint16_t)data << 8; break;
       }
 
       switch ((ctl & 0x0E) >> 1) {
-        case 0x02: case 0x03: case 0x05: GetValue(initialize, addr) = value;
-        default: GetValue(initialize, addr) = 0x00;
+        case 0x02: case 0x03: case 0x05: GetValue(initialize, index) = value;
+        default: GetValue(initialize, index) = 0x00;
       }
 
       return data;
@@ -203,7 +209,7 @@ private:
   std::mutex mutex;
   
   RegT copy;
-  RegT counter;
+  RegT counter = { 0, 0, 0 };
   RegT initialize;
 
   RegT control;

@@ -58,6 +58,8 @@ MAIN:
   IN A, (0x00)
   OUT (0x00), A
 
+  RST 0x20
+
   ; LD HL, KEY_CODE
   ; LD A, (HL)
   ; CALL DISPLAY_BYTE

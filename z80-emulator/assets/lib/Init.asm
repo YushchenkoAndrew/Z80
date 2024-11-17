@@ -16,8 +16,9 @@ RST08:       ; Sets enable/disable word for Hardware devices
 
 ORG 0x0010
 RST10:
-  CALL #LCD_OUT
-  RET
+  JP #LCD_OUT
+
+;; NOTE: This 6 bytes can be used
 
 ORG 0x0018
 RST18:       ;; aka PRINT
@@ -29,8 +30,10 @@ RST18:       ;; aka PRINT
   JR RST18-$
 
 ORG 0x0020
-RST20:       ;; aka PRINT
-  RET
+RST20:       ;; aka SOUND
+  JP #SOUND_OUT
+
+;; NOTE: This 6 bytes can be used
 
 ;;
 ;; Interrupt handler
