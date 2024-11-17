@@ -48,17 +48,7 @@ SETUP:
   LD (PTR_INPUT_STATE), A
   RST 0x10    ; Output the char
 
-  ; IN A, (0x00)
-  ; OUT (0x50), A
-TEMP:
-  LD A, EVENT_PRIO_BG
-  LD HL, MAIN
-  CALL _EVENT_PUSH
-  EI          ; Restore interrupts
-  JP #EVENT_LOOP
-  ; JP MAIN
-
-
+  RET
 
 
   ; ###################################################
@@ -77,9 +67,9 @@ MAIN:
   ; CALL _SCAN_CODE_HANDLE
 
   ; RST 0x08
-  LD A, EVENT_PRIO_BG
-  LD HL, MAIN
-  CALL _EVENT_PUSH
+  ; LD A, EVENT_PRIO_BG
+  ; LD HL, MAIN
+  ; CALL _EVENT_PUSH
   RET
 
   ; JP MAIN
@@ -92,8 +82,10 @@ MAIN:
 
 ; #include "../lib/Hex.asm"
 ; #include "../lib/Printf.asm"
-; #include "../lib/Utils.asm"
 #include "../../lib/EventLoop.asm"
 #include "../../lib/Keyboard.asm"
 #include "../../lib/Buffer.asm"
 #include "../../lib/Lcd.asm"
+
+#include "../../lib/Timer.asm"
+#include "../../lib/Utils.asm"

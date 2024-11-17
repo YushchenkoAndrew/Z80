@@ -53,7 +53,7 @@
   LD A, B    ; Restore reg A
   OUT (PPI_PORT_A), A ; Send to PPI reg A cmd to exec
   LD A, C    ; Restore PPI new state
-  OR PPI_IO_LCD | PPI_CSA ; Enable output to LCD in DATA mode
+  OR PPI_IO_LCD | PPI_CS_CSA ; Enable output to LCD in DATA mode
   OUT (PPI_PORT_C), A ; Send reg to PPI
   LD A, C    ; Restore PPI new state
   POP BC     ; Restore reg BC & create small delay in 10 cycles

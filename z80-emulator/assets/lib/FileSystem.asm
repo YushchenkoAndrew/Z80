@@ -1,4 +1,4 @@
-#include "Utils.asm"
+; #include "Utils.asm"
 
 ;; NOTE: Inspired by this article
 ;; http://ohm.hgesser.de/sp-ss2012/Intro-MinixFS.pdf

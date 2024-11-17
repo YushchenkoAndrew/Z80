@@ -15,7 +15,6 @@ namespace Interpreter {
  *  func        -> IDENTIFIER ':'
  *  statement   -> COMMAND (expression)?  // NOTE: Grammar for each command will be hardcoded based on manual, this grammar is just a common example
  * 
- *  offset      -> '+' shift
  *  shift       -> term (('>>' | '<<') term)*
  *  term        -> bit (('+' | '-' | '..') bit)*
  *  bit         -> unary (('|' | '&' | '^') unary)*

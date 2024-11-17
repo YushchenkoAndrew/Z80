@@ -26,6 +26,7 @@
   LD C, A     ; Save amount of bytes in reg C 
 
   INC HL      ; Move queue ptr to the priority byte
+  LD A, (HL)  ; Load the priority byte of the func addr
   INC HL      ; Move queue ptr to the high addr
   LD D, (HL)  ; Load the high byte of the func addr
   INC HL      ; Move queue ptr to the low addr of func
@@ -39,6 +40,8 @@
 #EVENT_LOOP_exec:
   LD HL, #EVENT_LOOP_end; Load custom return addr
   EX (SP), HL ; Manually create CALL and load in reg HL func addr
+  CP EVENT_PRIO_IDLE; Check if current task is an idle
+  CALL Z, _EVENT_PUSH; If so then add it back to the task queue
   JP (HL)     ; Jump to the func execution
 
 #EVENT_LOOP_end:
@@ -107,6 +110,7 @@ _EVENT_PUSH_srl:
 
 _EVENT_PUSH_wr:
   POP HL      ; Restore func addr
+  PUSH HL     ; Temporary save func addr
   EX DE, HL   ; Move func addr  & task addr
   LD (HL), E  ; Save in queue to the low addr of func
   DEC HL      ; Move queue ptr to the high addr
@@ -114,6 +118,7 @@ _EVENT_PUSH_wr:
   DEC HL      ; Move queue ptr to the priority byte
   LD (HL), A  ; Save in queue to priority byte
 
+  POP HL      ; Restore func addr
   POP DE      ; Restore reg DE
   POP BC      ; Restore reg BC
   RET
@@ -125,5 +130,5 @@ EVENT_PRIO_TIMER         EQU 0x02
 EVENT_PRIO_HIGH          EQU 0x03
 EVENT_PRIO_MEDIUM        EQU 0x04
 EVENT_PRIO_LOW           EQU 0x05
-EVENT_PRIO_IDLE          EQU 0x06
-EVENT_PRIO_BG            EQU 0x07
+EVENT_PRIO_BG            EQU 0x06
+EVENT_PRIO_IDLE          EQU 0x07

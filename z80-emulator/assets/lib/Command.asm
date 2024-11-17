@@ -717,6 +717,7 @@ _CMD_EXEC_ESC:
   RET
 
 
+; TODO: Treat each command as different task
 .COMMANDS_VEC_ST:
   db "echo", 0, #CMD_ECHO
   db "clear", 0, #CMD_CLEAR

@@ -4,21 +4,20 @@ ORG 0x0000
   XOR A             ; Reset reg A
   OUT (INT_PORT), A ; Disable all interrupts
   LD SP, STACK      ; Set Memory Paging RAM
-  JR RST_INIT-$    ; Jump to the program SETUP
+  JR RST_INIT-$     ; Jump to the hardware SETUP
 
 ORG 0x0008
-RST8:
-  ; TODO: Think about this
-  ; CALL #ACK_BUFFERS; Check and reset state of the buf
-  ; EI          ; Restore interrupts
+RST08:       ; Sets enable/disable word for Hardware devices
+  IN A, (PPI_PORT_C) ; Get current state of PPI reg C
+  AND C      ; Apply mask that will clear flag 
+  XOR B      ; Apply mask that will set or reset flags
+  OUT (PPI_PORT_C), A ; Send updated reg to PPI
   RET
-  
 
 ORG 0x0010
 RST10:
   CALL #LCD_OUT
   RET
-
 
 ORG 0x0018
 RST18:       ;; aka PRINT
@@ -28,6 +27,10 @@ RST18:       ;; aka PRINT
   INC HL     ;; Inc arg pointer
   RST 0x10   ;; Output the char
   JR RST18-$
+
+ORG 0x0020
+RST20:       ;; aka PRINT
+  RET
 
 ;;
 ;; Interrupt handler
@@ -75,20 +78,19 @@ RST38_lp_end:
   POP BC      ; Restore reg BC
   POP AF      ; Restore reg AF
   EI          ; Restore interrupts
+RST38_end:
   RET
 
 ;;
 ;; Example:
-;;  JP #RST_SETUP; Initialize hardware to default settings
+;;  JP #RST_INIT; Initialize hardware to default settings
 ;;
-;; func RST_SETUP() -> void;
+;; func RST_INIT() -> void;
 ;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 RST_INIT:
-  IM 1        ; Use interrupt Mode 1
-
   LD A, 0x80  ; Set MODE 0;  A: OUTPUT; B: OUTPUT; C: OUTPUT
   OUT (PPI_PORT_CTRL), A ; Send instruction to PPI
 
@@ -100,18 +102,26 @@ RST_INIT:
   LD A, ALLOWED_INTERUPTS
   OUT (INT_PORT), A
 
-  JP SETUP
+  CALL SETUP  ; Jump to program setup
+
+  LD A, EVENT_PRIO_IDLE; Set cmd exec as an idle task
+  LD HL, MAIN; Load task to be an entrance point to the program
+  CALL _EVENT_PUSH; Add buffer updates to task queue
+
+  IM 1        ; Use interrupt Mode 1
+  EI          ; Enable interrupts
+  JP #EVENT_LOOP; Jump into task queue execution
 
 
 .IM_VEC_ST:
   db IM_KEYBOARD, #SCAN_CODE_IM[2]
-  db IM_RxRDY,    #CMD_CLEAR[2]
-  db IM_TxRDY,    #CMD_CLEAR[2]
-  db IM_RLT,      #CMD_CLEAR[2]
-  db IM_CT1,      #CMD_CLEAR[2]
-  db IM_CT2,      #CMD_CLEAR[2]
-  db IM_NONE1,    #CMD_CLEAR[2]
-  db IM_NONE2,    #CMD_CLEAR[2]
+  db IM_RxRDY,    #CMD_CLEAR[2] ;; FIXME
+  db IM_TxRDY,    #CMD_CLEAR[2] ;; FIXME
+  db IM_RLT,      #CMD_CLEAR[2] ;; FIXME
+  db IM_CT1,      #CMD_CLEAR[2] ;; FIXME
+  db IM_CT2,      #CMD_CLEAR[2] ;; FIXME
+  db IM_NONE1,    RST38_end[2]
+  db IM_NONE2,    RST38_end[2]
 .IM_VEC_ED:
 
 ;; Variables
