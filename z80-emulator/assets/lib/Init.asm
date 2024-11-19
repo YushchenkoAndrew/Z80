@@ -7,15 +7,15 @@ ORG 0x0000
   JR RST_INIT-$     ; Jump to the hardware SETUP
 
 ORG 0x0008
-RST08:       ; Sets enable/disable word for Hardware devices
-  IN A, (PPI_PORT_C) ; Get current state of PPI reg C
-  AND C      ; Apply mask that will clear flag 
-  XOR B      ; Apply mask that will set or reset flags
-  OUT (PPI_PORT_C), A ; Send updated reg to PPI
+RST08:       ;; Sets enable/disable word for Hardware devices
+  IN A, (PPI_PORT_C);; Get current state of PPI reg C
+  AND C      ;; Apply mask that will clear flag 
+  XOR B      ;; Apply mask that will set or reset flags
+  OUT (PPI_PORT_C), A;; Send updated reg to PPI
   RET
 
 ORG 0x0010
-RST10:
+RST10:       ;; aka SHOW CHAR
   JP #LCD_OUT
 
 ;; NOTE: This 6 bytes can be used
@@ -30,10 +30,13 @@ RST18:       ;; aka PRINT
   JR RST18-$
 
 ORG 0x0020
-RST20:       ;; aka SOUND
-  JP #SOUND_OUT
+RST20:       ;; aka LOAD WORD
+  LD A, (HL) ;; Load the high byte to Acc
+  INC HL     ;; Move ptr to the low byte
+  LD L, (HL) ;; Load the low byte to reg L
+  LD H, A    ;; Complete word in reg HL
+  RET
 
-;; NOTE: This 6 bytes can be used
 
 ;;
 ;; Interrupt handler
@@ -86,6 +89,27 @@ RST38_end:
 
 ;;
 ;; Example:
+;;  LD H, A     ; Reset reg H
+;;  LD L, ALLOWED_INTERUPTS; Hardcoded allowed interrupts
+;;  CALL #INTR_MASK_SET; Turn off interrupt programly
+;;
+;; proc INTR_MASK_SET() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+#INTR_MASK_SET:
+  PUSH AF    ; Save reg AF in stack
+  LD A, (PTR_INTR); Get current allowed interrupt byte
+  AND H      ; Apply mask that will clear flag 
+  XOR L      ; Apply mask that will set or reset flags
+  LD (PTR_INTR), A; Save updated allowed interrupts
+  OUT (INT_PORT), A; Send allowed intrrupts to interrupt vector
+  POP AF     ; Restore reg AF
+  RET
+
+;;
+;; Example:
 ;;  JP #RST_INIT; Initialize hardware to default settings
 ;;
 ;; func RST_INIT() -> void;
@@ -102,10 +126,24 @@ RST_INIT:
   OUT (PPI_PORT_B), A ; Reset PPI reg B, (MMU = 0)
   OUT (PPI_PORT_C), A ; Reset PPI reg C
 
-  LD A, ALLOWED_INTERUPTS
-  OUT (INT_PORT), A
+  LD H, A     ; Reset reg H
+  LD L, ALLOWED_INTERUPTS; Hardcoded allowed interrupts
+  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
 
-  CALL SETUP  ; Jump to program setup
+  LD (TASK_BUF_MAP), A; Reset task amount in queue
+
+  LD A, PIT_PITCH_6 | PIT_NOTE_E; Set note E in 6 pitch to Acc
+  CALL #SOUND_OUT; Produce the sound
+
+  LD A, 5     ; Hold the sound for 0.5 second
+  LD (PTR_CT1_CONF), A; Save counter value for CT1
+  LD HL, _SOUND_OFF
+  LD (PTR_CT1_CONF+1), HL; Save 
+
+  LD HL, PIT_FREQ_10Hz; Load ptr to the CT1 configuration
+  CALL #TIMER_CT1_CONF; Create a interrupt CT1 signal
+
+  ; TODO: Create timer sound off
 
   LD A, EVENT_PRIO_IDLE; Set cmd exec as an idle task
   LD HL, MAIN; Load task to be an entrance point to the program
@@ -113,16 +151,18 @@ RST_INIT:
 
   IM 1        ; Use interrupt Mode 1
   EI          ; Enable interrupts
+
+  CALL SETUP  ; Jump to program setup
   JP #EVENT_LOOP; Jump into task queue execution
 
 
 .IM_VEC_ST:
   db IM_KEYBOARD, #SCAN_CODE_IM[2]
-  db IM_RxRDY,    #CMD_CLEAR[2] ;; FIXME
-  db IM_TxRDY,    #CMD_CLEAR[2] ;; FIXME
-  db IM_RLT,      #CMD_CLEAR[2] ;; FIXME
-  db IM_CT1,      #CMD_CLEAR[2] ;; FIXME
-  db IM_CT2,      #CMD_CLEAR[2] ;; FIXME
+  db IM_RxRDY,    RST38_end[2] ;; FIXME
+  db IM_TxRDY,    RST38_end[2] ;; FIXME
+  db IM_RLT,      RST38_end[2] ;; FIXME
+  db IM_CT1,      #TIMER_CT1_EXEC[2]
+  db IM_CT2,      #TIMER_CT2_EXEC[2]
   db IM_NONE1,    RST38_end[2]
   db IM_NONE2,    RST38_end[2]
 .IM_VEC_ED:

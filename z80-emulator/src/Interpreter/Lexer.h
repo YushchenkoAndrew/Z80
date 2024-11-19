@@ -99,7 +99,7 @@ private:
   }
 
   inline bool isAtEnd() { return nCurr >= src.length(); }
-  inline bool isAlpha(const char &c) { return Utils::IsAlpha(c) || c == '.' || c == '\''; }
+  inline bool isAlpha(const char &c) { return Utils::IsAlpha(c) || c == '.' || c == '#' || c == '\''; }
   inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || Utils::IsDigit(c); }
 
 

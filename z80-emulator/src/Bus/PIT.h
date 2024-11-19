@@ -99,7 +99,7 @@ public:
         if (!enabled) continue;
 
         if (out & ENABLE_OUTPUT) Interrupt(i);
-        if (!(out & KEEP_OUTPUT)) out = 0x00; 
+        if (!(out & KEEP_OUTPUT)) out = !ENABLE_OUTPUT;
 
         if (value) { value = value - 1; continue; }
 

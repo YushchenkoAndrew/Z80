@@ -1,5 +1,23 @@
 #include "Defs.asm"
 
+;;
+;; Example:
+;;  JP _SOUND_OFF; Turn off sound
+;;
+;; fun _SOUND_OFF() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+_SOUND_OFF:
+  PUSH BC    ; Save reg BC in stack
+  PUSH AF    ; Save reg AF in stack
+  LD B, 0x00 ; Do not enable anything
+  LD C, ~PPI_CS_CS0; Turn off sound counter clock
+  RST 0x08   ; Disable sound output
+  POP AF     ; Restore reg AF
+  POP BC     ; Restore reg BC from stack
+  RET
 
 ;;
 ;; Sound Generator
@@ -43,10 +61,7 @@
   JR NC, #SOUND_OUT_bgn-$
   INC H      ; Make adjustments on carry bit
 #SOUND_OUT_bgn:
-  LD A, (HL) ; Get the high byte of the note
-  INC HL     ; Move ptr to the low byte of the note
-  LD L, (HL) ; Get the low byte of the note in reg L
-  LD H, A    ; Completelly load note to the reg HL
+  RST 0x20   ; Completelly load note to the reg HL
   LD A, B    ; Restore full info about note
   AND 0xF0   ; Get the note div part
   JR Z, #SOUND_OUT_end-$
@@ -70,6 +85,120 @@
   POP BC     ; Restore reg BC from stack
   RET
 
+
+;;
+;; Example:
+;;  CALL _TIMER_CT1_OFF; Turn off CT1 interrupt
+;;
+;; func TIMER_CT1_OFF() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+_TIMER_CT1_OFF:
+  PUSH HL    ; Save reg AF in stack
+  LD H, ~IM_CT1; Enable interrupt for CT1
+  JR #TIMER_CONF-$
+
+_TIMER_CT2_OFF:
+  PUSH HL    ; Save reg AF in stack
+  LD H, ~IM_CT2; Enable interrupt for CT2
+
+_TIMER_OFF:
+  LD L, 0    ; Restore interrupt mask to Acc
+  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
+  POP HL     ; Restore reg HL
+  RET
+
+;;
+;; Example:
+;;  LD HL, PIT_FREQ_10Hz; Set CT1 to freq 10Hz
+;;  CALL #TIMER_CT1_CONF; Create a interrupt CT1 signal
+;;
+;; proc TIMER_CT1_CONF() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+#TIMER_CT1_CONF:
+  PUSH BC    ; Save reg BC in stack
+  LD B, IM_CT1; Enable interrupt for CT1
+  LD C, PIT_CS_1 | PIT_RL_3 | PIT_MODE_2; Setup CT1 to create interrupt signal
+  JR #TIMER_CONF-$
+
+#TIMER_CT2_CONF:
+  PUSH BC    ; Save reg BC in stack
+  LD B, IM_CT2; Enable interrupt for CT2
+  LD C, PIT_CS_2 | PIT_RL_3 | PIT_MODE_2; Setup CT2 to create interrupt signal
+
+#TIMER_CONF:
+  PUSH AF    ; Temp interrupt enable mask in stack
+  LD A, C    ; Get counter configuration to Acc
+  OUT (PIT_PORT_CTL), A; Send conter configuration to PIT
+  AND 0xC0   ; Cut CT configuration to get only 0x80 & 0x40
+  RLCA       ; Shift Acc to the left and put high bit into first place
+  RLCA       ; Convert 0x80 & 0x40 to the 0x02 & 0x01
+  OR PIT_PORT_CT0; Create timer addr port depending for diff counter
+  LD C, A    ; Load timer addr to reg C
+  OUT (C), H ; Send counter high byte
+  OUT (C), L ; Send counter low byte
+  LD L, B    ; Save interrupt mask to reg H
+  LD C, ~PPI_CS_CS1; Turn off counter clock
+  LD B, PPI_CS_CS1; Turn on counter clock
+  RST 0x08   ; Enable counter output
+  LD A, L    ; Restore interrupt mask to Acc
+  CPL        ; Make inverted mask to re-enable CT interrupt
+  LD H, A    ; Re-enable interrupt for CT
+  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
+
+  POP AF     ; Restore reg AF from stack
+  POP BC     ; Restore reg BC from stack
+  RET
+
+;;
+;; Example:
+;;  LD HL, PTR_CT1_CONF; Load in reg HL ptr to the CT1 configuration 
+;;  LD (HL), 2 ; Load amount of times counter need to be decrimented
+;;  INC HL     ; Move ptr to the high byte of the word
+;;  LD (HL), 0 ; Load high byte of the func addr
+;;  INC HL     ; Move ptr to the high byte of the word
+;;  LD (HL), 0x38;Load low byte of the func addr
+;;  JP #TIMER_CT0_EXEC; Create a constant sqaure wave sound
+;;
+;; proc TIMER_CT1_EXEC() -> void;
+;; proc TIMER_CT2_EXEC() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+#TIMER_CT1_EXEC:
+  PUSH HL    ; Save reg HL in stack
+  LD HL, PTR_CT1_CONF; Load in reg HL ptr to the CT1 configuration
+  JR #TIMER_EXEC-$
+
+#TIMER_CT2_EXEC:
+  PUSH HL    ; Save reg HL in stack
+  LD HL, PTR_CT2_CONF; Load in reg HL ptr to the CT2 configuration
+
+#TIMER_EXEC:
+  IN A, (PIT_PORT_CT0); Read counter high byte, aka reset counter interrupt
+  IN A, (PIT_PORT_CT0); Read counter low byte, aka reset counter interrupt
+
+  LD A, (HL) ; Get counter value
+  OR A       ; Check if it reached zero
+  JR Z, #TIMER_EXEC_end-$; If so then simply ignore this interrupt
+  ;; TODO: Turn off interrupt !!!
+  DEC (HL)   ; Decriment counter
+  JR NZ, #TIMER_EXEC_end-$; If not zero then return
+  INC HL     ; Move ptr to the high byte of func addr
+  RST 0x20   ; Load the func addr to reg HL
+  LD A, EVENT_PRIO_TIMER; Set exec as timer priority
+  CALL _EVENT_PUSH; Add buffer updates to task queue
+
+#TIMER_EXEC_end:
+  POP HL     ; Restore reg HL from stack
+  RET
+
 PIT_MODE_0     EQU 0x00 ;; Interrupt on Terminal Count
 PIT_MODE_1     EQU 0x02 ;; Programmable One-Shot
 PIT_MODE_2     EQU 0x04 ;; Rate Generator
@@ -81,6 +210,38 @@ PIT_RL_0       EQU 0x00 ;; Save current counter state
 PIT_RL_1       EQU 0x10 ;; Read/Write high byte
 PIT_RL_2       EQU 0x20 ;; Read/Write low byte
 PIT_RL_3       EQU 0x30 ;; Read/Write low byte, high byte
+
+PIT_CS_0       EQU 0x00 ;; Counter 0
+PIT_CS_1       EQU 0x40 ;; Counter 1
+PIT_CS_2       EQU 0x80 ;; Counter 2
+
+PIT_FREQ_10Hz  EQU 0xC350
+
+PIT_NOTE_C     EQU 0x01
+PIT_NOTE_C#    EQU 0x02
+PIT_NOTE_D     EQU 0x03
+PIT_NOTE_D#    EQU 0x04
+PIT_NOTE_E     EQU 0x05
+PIT_NOTE_F     EQU 0x06
+PIT_NOTE_F#    EQU 0x07
+PIT_NOTE_G     EQU 0x08
+PIT_NOTE_G#    EQU 0x09
+PIT_NOTE_A     EQU 0x0A
+PIT_NOTE_A#    EQU 0x0B
+PIT_NOTE_B     EQU 0x0C
+
+PIT_PITCH_0    EQU 0x00 ; 16Hz - 30Hz - !!! Doesn't work with buzzer
+PIT_PITCH_1    EQU 0x10 ; 32Hz - 61Hz - !!! Doesn't work with buzzer
+PIT_PITCH_2    EQU 0x20 ; 65Hz - 123Hz - !!! Doesn't work with buzzer
+PIT_PITCH_3    EQU 0x30 ; 130HZ - 246Hz - !!! Doesn't work with buzzer
+PIT_PITCH_4    EQU 0x40 ; 261Hz - 493Hz - !!! Doesn't work with buzzer
+PIT_PITCH_5    EQU 0x50 ; 523Hz - 987Hz
+PIT_PITCH_6    EQU 0x60 ; 1046Hz - 1975Hz
+PIT_PITCH_7    EQU 0x70 ; 2093Hz - 3951Hz
+PIT_PITCH_8    EQU 0x80 ; 4186Hz - 7902Hz
+PIT_PITCH_9    EQU 0x90 ; 8372Hz - 15804Hz
+PIT_PITCH_A    EQU 0xA0 ; 16744Hz - 31608Hz - !!! Human hear limit
+PIT_PITCH_B    EQU 0xB0 ; 33488Hz - 63217Hz - !!! Human hear limit
 
 .NOTE_BLOCK:
   ;; ==============================================================================================

@@ -70,10 +70,7 @@ _CMD_EXEC_cmp_bgn:
   DEC B       ; Update counter of remaining chars
   EX DE, HL   ; Load cmd string ptr to reg HL
   INC HL      ; Move ptr to cmd high byte addr
-  LD A, (HL)  ; Get cmd high byte addr
-  INC HL      ; Move ptr to cmd low byte addr
-  LD L, (HL)  ; Get cmd low byte addr
-  LD H, A     ; Complete in reg HL cmd addr hanlder
+  RST 0x20    ;  Complete in reg HL cmd addr hanlder
   LD A, B     ; Save remained buf char counter
   POP BC      ; Restore commands coutner, now is usless
   LD BC, _CMD_EXEC_esc; Load custom return addr
