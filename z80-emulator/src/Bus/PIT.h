@@ -87,10 +87,11 @@ public:
 
   void Runtime() {
     while (bExec) {
-      std::this_thread::sleep_for(std::chrono::nanoseconds(clock.first));
+      // std::this_thread::sleep_for(std::chrono::nanoseconds(clock.first));
 
       // NOTE: Because run of this loop takes around 60ms, note generations (CT0) was moved to the func Sound 
-      for (uint8_t i = 1; i < 3; i++) {
+      // for (uint8_t i = 1; i < 3; i++) {
+        const uint8_t i = 1;
         Utils::Lock l(mutex);
         uint16_t& value = GetValue(counter, i);
         uint16_t& out = GetValue(output, i);
@@ -113,7 +114,7 @@ public:
           case 0x02: case 0x04: case 0x05: value = init; out = ENABLE_OUTPUT; break;
           case 0x03: value = init; out = ((out & ENABLE_OUTPUT) ^ ENABLE_OUTPUT) | KEEP_OUTPUT; break;
         }
-      }
+      // }
     }
   }
 
@@ -143,6 +144,7 @@ public:
       const uint8_t index = addr & 0x0F;
       uint16_t& ctl = GetValue(control, index);
       uint16_t& value = GetValue(counter, index);
+      uint16_t& init = GetValue(initialize, index);
 
       switch ((ctl & 0x0300) >> 8) {
         case 0x02: ctl = (ctl & 0x00FF) | (uint16_t)(0x0100);
@@ -151,8 +153,8 @@ public:
       }
 
       switch ((ctl & 0x0E) >> 1) {
-        case 0x02: case 0x03: case 0x05: GetValue(initialize, index) = value;
-        default: GetValue(initialize, index) = 0x00;
+        case 0x02: case 0x03: case 0x05: init = value; break;
+        default: init = 0x00; break;
       }
 
       return data;

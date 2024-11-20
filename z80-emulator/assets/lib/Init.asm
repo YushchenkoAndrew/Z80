@@ -31,10 +31,10 @@ RST18:       ;; aka PRINT
 
 ORG 0x0020
 RST20:       ;; aka LOAD WORD
-  LD A, (HL) ;; Load the high byte to Acc
-  INC HL     ;; Move ptr to the low byte
-  LD L, (HL) ;; Load the low byte to reg L
-  LD H, A    ;; Complete word in reg HL
+  LD A, (HL) ;; Load the low byte to Acc
+  INC HL     ;; Move ptr to the high byte
+  LD H, (HL) ;; Load the high byte to reg L
+  LD L, A    ;; Complete word in reg HL
   RET
 
 
@@ -62,14 +62,14 @@ RST38:
 RST38_lp:
   LD A, (HL)  ; Get the bit map of the interrupt
   AND C       ; Check if current interrupt has occured
-  INC HL      ; Move ptr of interrupt exec high byte addr
-  LD A, (HL)  ; Get interrupt exec high byte addr
   INC HL      ; Move ptr of interrupt exec low byte addr
+  LD A, (HL)  ; Get interrupt exec low byte addr
+  INC HL      ; Move ptr of interrupt exec high byte addr
   PUSH HL     ; Save ptr of interrupt exec in stack
-  LD L, (HL)  ; Get interrupt exec low byte addr
   JR Z, RST38_lp_end-$
 
-  LD H, A     ; Complete in reg HL interrupt exec addr
+  LD H, (HL)  ; Get interrupt exec high byte addr
+  LD L, A     ; Complete in reg HL interrupt exec addr
   PUSH HL     ; Temp save interrupt exec addr in stack
   LD HL, RST38_lp_end; Load custom return addr
   EX (SP), HL ; Manually create CALL and load in reg HL interrupt exec addr
@@ -143,8 +143,6 @@ RST_INIT:
   LD HL, PIT_FREQ_10Hz; Load ptr to the CT1 configuration
   CALL #TIMER_CT1_CONF; Create a interrupt CT1 signal
 
-  ; TODO: Create timer sound off
-
   LD A, EVENT_PRIO_IDLE; Set cmd exec as an idle task
   LD HL, MAIN; Load task to be an entrance point to the program
   CALL _EVENT_PUSH; Add buffer updates to task queue
@@ -157,14 +155,14 @@ RST_INIT:
 
 
 .IM_VEC_ST:
-  db IM_KEYBOARD, #SCAN_CODE_IM[2]
-  db IM_RxRDY,    RST38_end[2] ;; FIXME
-  db IM_TxRDY,    RST38_end[2] ;; FIXME
-  db IM_RLT,      RST38_end[2] ;; FIXME
-  db IM_CT1,      #TIMER_CT1_EXEC[2]
-  db IM_CT2,      #TIMER_CT2_EXEC[2]
-  db IM_NONE1,    RST38_end[2]
-  db IM_NONE2,    RST38_end[2]
+  db IM_KEYBOARD dw #SCAN_CODE_IM[2]
+  db IM_RxRDY    dw RST38_end[2] ;; FIXME
+  db IM_TxRDY    dw RST38_end[2] ;; FIXME
+  db IM_RLT      dw RST38_end[2] ;; FIXME
+  db IM_CT1      dw #TIMER_CT1_EXEC[2]
+  db IM_CT2      dw #TIMER_CT2_EXEC[2]
+  db IM_NONE1    dw RST38_end[2]
+  db IM_NONE2    dw RST38_end[2]
 .IM_VEC_ED:
 
 ;; Variables

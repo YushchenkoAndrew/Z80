@@ -91,7 +91,12 @@ private:
       case MUX::IORQ::UART_PORT:     break; // TODO
       case MUX::IORQ::KEYBOARD_PORT: return interrupt->SetFlag(InterruptVector::IRQ::KEYBOARD), keyboard->Read(addr, true);
       case MUX::IORQ::INT_PORT:      return interrupt->Read(addr, true);
-      case MUX::IORQ::PIT_PORT:      return KR580VI53->Read(addr, true);
+      case MUX::IORQ::PIT_PORT: {
+        interrupt->SetFlag(InterruptVector::IRQ::CT1);
+        interrupt->SetFlag(InterruptVector::IRQ::CT2);
+
+        return KR580VI53->Read(addr, true);
+      }
     }
 
     return 0x00;
@@ -104,7 +109,12 @@ private:
       case MUX::IORQ::UART_PORT:     break; // TODO
       case MUX::IORQ::KEYBOARD_PORT: return 0x00;
       case MUX::IORQ::INT_PORT:      return interrupt->Write(addr, data, true);
-      case MUX::IORQ::PIT_PORT:      return KR580VI53->Write(addr, data, true);
+      case MUX::IORQ::PIT_PORT: {
+        interrupt->SetFlag(InterruptVector::IRQ::CT1);
+        interrupt->SetFlag(InterruptVector::IRQ::CT2);
+
+        return KR580VI53->Write(addr, data, true);
+      }
       case MUX::IORQ::PPI_PORT: {
         KR580VV55->Write(addr, data, true);
         uint8_t ctrl = KR580VV55->regC(Int2Type<PPI::REG2PORT>());

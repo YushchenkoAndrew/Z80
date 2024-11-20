@@ -119,7 +119,7 @@ namespace Bus {
     // GameEngine->FillRect({ 300, 20 }, { 20, 50 }, *AnyType<VERY_DARK_GREY, ColorT>::GetValue());
   }
 
-  void InterruptVector::Interrupt() { bus->Z80->Interrupt(); }
+  void InterruptVector::Interrupt() { if ((uint8_t)(state ^ 0xff)) bus->Z80->Interrupt(); }
   inline DisassembleT Bus::Disassemble() { return Z80->Disassemble(); }
 
 

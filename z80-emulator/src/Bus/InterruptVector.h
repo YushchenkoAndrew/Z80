@@ -6,7 +6,9 @@ namespace Bus {
 class InterruptVector : public Window::Window, public Device {
 
 public:
-  enum IRQ { NONE1, NONE2, CT2, CT1, RLT, TxRDT, RxRDY, KEYBOARD };
+  struct IRQ {
+    enum { NONE1, NONE2, CT2, CT1, RLT, TxRDT, RxRDY, KEYBOARD };
+  };
 
   InterruptVector(Bus* b): bus(b) {}
 
@@ -14,9 +16,7 @@ public:
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 
-  void Process(PixelGameEngine* GameEngine) {
-    if (state ^ 0xff) Interrupt();
-  }
+  void Process(PixelGameEngine* GameEngine) {}
 
   void Draw(PixelGameEngine* GameEngine) {
     olc::vi2d pos = absolute;
@@ -36,8 +36,8 @@ public:
   uint8_t Write(uint32_t, uint8_t data, bool) { return enabled = data; }
 
 
-  inline void SetFlag(uint8_t flag) { state |= (uint8_t)(enabled & (1 << flag)); }
-  inline void ResetFlag(uint8_t flag) { state &= ~(uint8_t)(enabled & (1 << flag)); }
+  inline void SetFlag(uint8_t flag) { state |= (uint8_t)(1 << flag); Interrupt();  }
+  inline void ResetFlag(uint8_t flag) { state &= ~(uint8_t)(enabled & (1 << flag)); Interrupt(); }
 
 private:
   olc::vi2d size = olc::vi2d(0, 0);

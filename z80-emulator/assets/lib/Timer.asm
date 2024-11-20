@@ -74,9 +74,9 @@ _SOUND_OFF:
   
 #SOUND_OUT_end:
   LD A, L    ; Load the final value of note low byte 
-  OUT (PIT_PORT_CT0), A; Send counter high byte
-  LD A, H    ; Load the final value of note high byte
   OUT (PIT_PORT_CT0), A; Send counter low byte
+  LD A, H    ; Load the final value of note high byte
+  OUT (PIT_PORT_CT0), A; Send counter high byte
   POP BC     ; Restore PPI settings from stack
 
 #SOUND_OUT_esc:
@@ -120,6 +120,9 @@ _TIMER_OFF:
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
+#TIMER_PUSH:
+; TODO: Impl Timer push with FIFO architecture
+
 #TIMER_CT1_CONF:
   PUSH BC    ; Save reg BC in stack
   LD B, IM_CT1; Enable interrupt for CT1
@@ -140,8 +143,8 @@ _TIMER_OFF:
   RLCA       ; Convert 0x80 & 0x40 to the 0x02 & 0x01
   OR PIT_PORT_CT0; Create timer addr port depending for diff counter
   LD C, A    ; Load timer addr to reg C
-  OUT (C), H ; Send counter high byte
   OUT (C), L ; Send counter low byte
+  OUT (C), H ; Send counter high byte
   LD L, B    ; Save interrupt mask to reg H
   LD C, ~PPI_CS_CS1; Turn off counter clock
   LD B, PPI_CS_CS1; Turn on counter clock
@@ -174,28 +177,35 @@ _TIMER_OFF:
 #TIMER_CT1_EXEC:
   PUSH HL    ; Save reg HL in stack
   LD HL, PTR_CT1_CONF; Load in reg HL ptr to the CT1 configuration
+  LD A, ~IM_CT1; Disable interrupt for CT1
   JR #TIMER_EXEC-$
 
 #TIMER_CT2_EXEC:
   PUSH HL    ; Save reg HL in stack
   LD HL, PTR_CT2_CONF; Load in reg HL ptr to the CT2 configuration
+  LD A, ~IM_CT2; Disable interrupt for CT2
 
 #TIMER_EXEC:
-  IN A, (PIT_PORT_CT0); Read counter high byte, aka reset counter interrupt
-  IN A, (PIT_PORT_CT0); Read counter low byte, aka reset counter interrupt
-
+  PUSH AF    ; Temp save in stack mask to disable CT interrupt
   LD A, (HL) ; Get counter value
   OR A       ; Check if it reached zero
-  JR Z, #TIMER_EXEC_end-$; If so then simply ignore this interrupt
-  ;; TODO: Turn off interrupt !!!
+  JR Z, #TIMER_EXEC_off-$; If so then simply ignore this interrupt
   DEC (HL)   ; Decriment counter
   JR NZ, #TIMER_EXEC_end-$; If not zero then return
-  INC HL     ; Move ptr to the high byte of func addr
+  INC HL     ; Move ptr to the low byte of func addr
   RST 0x20   ; Load the func addr to reg HL
   LD A, EVENT_PRIO_TIMER; Set exec as timer priority
   CALL _EVENT_PUSH; Add buffer updates to task queue
 
+#TIMER_EXEC_off:
+  EX (SP), HL; Restore mask to disable CT interrupt, and put some dummy value into stack
+  LD L, 0    ; Do not re-enable anything
+  CALL #INTR_MASK_SET; Turn off interrupt programly
+
 #TIMER_EXEC_end:
+  IN A, (PIT_PORT_CT0); Read counter high byte, aka reset counter interrupt
+  IN A, (PIT_PORT_CT0); Read counter low byte, aka reset counter interrupt
+  POP AF     ; Restore reg DE from stack
   POP HL     ; Restore reg HL from stack
   RET
 
@@ -247,5 +257,5 @@ PIT_PITCH_B    EQU 0xB0 ; 33488Hz - 63217Hz - !!! Human hear limit
   ;; ==============================================================================================
   ;;   1        2      3        4      5       6        7      8        9       A       B      C
   ;;   C0      C#0     D0      D#0     E0      F0      F#0     G0      G#0     A0      A#0    B0
-  db 0x7771, 0X70BD, 0x6A6A, 0x6471, 0x5ECD, 0x597b, 0x5475, 0x4FB8, 0x4B3E, 0x4705, 0x4309, 0x3F46
+  dw 0x7771, 0X70BD, 0x6A6A, 0x6471, 0x5ECD, 0x597b, 0x5475, 0x4FB8, 0x4B3E, 0x4705, 0x4309, 0x3F46
 .NOTE_BLOCK_ED:

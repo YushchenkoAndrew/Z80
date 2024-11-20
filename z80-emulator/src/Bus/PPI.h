@@ -12,7 +12,7 @@ class PPI : public Window::Window, public Device {
   enum CtrlSign { INTR_B, IBF_B, STB_B, INTR_A, STB_A, IBF_A, ACK_A, OBF_A };
 
 public:
-  enum REG { A, B, C, CONTROL, CH = 2, CL = 3 };
+  struct REG { enum { A, B, C, CONTROL, CH = 2, CL = 3 }; };
   enum { DATA2REG, REG2DATA, PORT2REG, REG2PORT };
 
   PPI(Bus* b): bus(b) {}

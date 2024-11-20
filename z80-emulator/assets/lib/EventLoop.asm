@@ -16,6 +16,7 @@
   LD A, (HL)  ; Load amount of task in queue
   OR A        ; Check if there is no task in queue
   JR Z, #EVENT_LOOP-$; If nothing happend
+  DI          ; Disable interrupt when task is reading in queue
 
   XOR A       ; Reset Acc
   LD B, A     ; Reset reg B
@@ -27,10 +28,10 @@
 
   INC HL      ; Move queue ptr to the priority byte
   LD A, (HL)  ; Load the priority byte of the func addr
-  INC HL      ; Move queue ptr to the high addr
-  LD D, (HL)  ; Load the high byte of the func addr
-  INC HL      ; Move queue ptr to the low addr of func
+  INC HL      ; Move queue ptr to the low addr
   LD E, (HL)  ; Load the low byte of the func addr
+  INC HL      ; Move queue ptr to the high addr of func
+  LD D, (HL)  ; Load the high byte of the func addr
   PUSH DE     ; Temporary save func addr in stack
   INC HL      ; Move queue ptr to the next 
   LD DE, TASK_BUF_MAP+1; Load ptr to the start of the queue
@@ -38,6 +39,7 @@
   LDIR        ; Shift all tasks by one addr
 
 #EVENT_LOOP_exec:
+  EI          ; Restore interrupt after current task was successfully read
   LD HL, #EVENT_LOOP_end; Load custom return addr
   EX (SP), HL ; Manually create CALL and load in reg HL func addr
   CP EVENT_PRIO_IDLE; Check if current task is an idle
@@ -89,8 +91,8 @@ _EVENT_PUSH:
 
 _EVENT_PUSH_lp:
   CP (HL)     ; Check task priority with requested one
-  INC HL      ; Move queue ptr to the low addr
   INC HL      ; Move queue ptr to the high addr
+  INC HL      ; Move queue ptr to the low addr
   JR C, _EVENT_PUSH_srl-$ ;  Check if the requested priority > current task priority, then JUMP
   INC HL      ; Move queue ptr to the next priority byte
   DJNZ _EVENT_PUSH_lp-$
@@ -112,9 +114,9 @@ _EVENT_PUSH_wr:
   POP HL      ; Restore func addr
   PUSH HL     ; Temporary save func addr
   EX DE, HL   ; Move func addr  & task addr
-  LD (HL), E  ; Save in queue to the low addr of func
-  DEC HL      ; Move queue ptr to the high addr
   LD (HL), D  ; Save in queue to the high addr of func
+  DEC HL      ; Move queue ptr to the high addr
+  LD (HL), E  ; Save in queue to the low addr of func
   DEC HL      ; Move queue ptr to the priority byte
   LD (HL), A  ; Save in queue to priority byte
 

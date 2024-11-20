@@ -70,7 +70,7 @@ _CMD_EXEC_cmp_bgn:
   DEC B       ; Update counter of remaining chars
   EX DE, HL   ; Load cmd string ptr to reg HL
   INC HL      ; Move ptr to cmd high byte addr
-  RST 0x20    ;  Complete in reg HL cmd addr hanlder
+  RST 0x20    ; Complete in reg HL cmd addr hanlder
   LD A, B     ; Save remained buf char counter
   POP BC      ; Restore commands coutner, now is usless
   LD BC, _CMD_EXEC_esc; Load custom return addr
@@ -716,20 +716,20 @@ _CMD_EXEC_ESC:
 
 ; TODO: Treat each command as different task
 .COMMANDS_VEC_ST:
-  db "echo", 0, #CMD_ECHO
-  db "clear", 0, #CMD_CLEAR
-  db "mount", 0, #CMD_MOUNT
-  db "umount", 0, #CMD_UMOUNT
-  db "mkdir", 0, #CMD_MKDIR
-  db "touch", 0, #CMD_TOUCH
-  db "cat", 0, #CMD_CAT
-  db "wr", 0, #CMD_WR
-  db "ll", 0, #CMD_LL
-  db "ls", 0, #CMD_LS
-  db "mem", 0, #CMD_MEM
-  db "dev", 0, #CMD_DEV
-  db "help", 0, #CMD_HELP
-  db "history", 0, #CMD_HISTORY
+  db "echo",    0 dw #CMD_ECHO
+  db "clear",   0 dw #CMD_CLEAR
+  db "mount",   0 dw #CMD_MOUNT
+  db "umount",  0 dw #CMD_UMOUNT
+  db "mkdir",   0 dw #CMD_MKDIR
+  db "touch",   0 dw #CMD_TOUCH
+  db "cat",     0 dw #CMD_CAT
+  db "wr",      0 dw #CMD_WR
+  db "ll",      0 dw #CMD_LL
+  db "ls",      0 dw #CMD_LS
+  db "mem",     0 dw #CMD_MEM
+  db "dev",     0 dw #CMD_DEV
+  db "help",    0 dw #CMD_HELP
+  db "history", 0 dw #CMD_HISTORY
 
   db FORM_FEED, 0, #CMD_CLEAR
 .COMMANDS_VEC_ED:
