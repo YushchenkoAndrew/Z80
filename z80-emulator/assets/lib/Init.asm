@@ -126,22 +126,23 @@ RST_INIT:
   OUT (PPI_PORT_B), A ; Reset PPI reg B, (MMU = 0)
   OUT (PPI_PORT_C), A ; Reset PPI reg C
 
+  CALL _TIMER_INIT ; Initialize timer
+
   LD H, A     ; Reset reg H
   LD L, ALLOWED_INTERUPTS; Hardcoded allowed interrupts
   CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
 
   LD (TASK_BUF_MAP), A; Reset task amount in queue
+  LD (CT1_BUF_MAP), A ; Reset task amount in queue CT1
+  LD (CT2_BUF_MAP), A ; Reset task amount in queue CT2
 
   LD A, PIT_PITCH_6 | PIT_NOTE_E; Set note E in 6 pitch to Acc
   CALL #SOUND_OUT; Produce the sound
 
   LD A, 5     ; Hold the sound for 0.5 second
-  LD (PTR_CT1_CONF), A; Save counter value for CT1
-  LD HL, _SOUND_OFF
-  LD (PTR_CT1_CONF+1), HL; Save 
-
-  LD HL, PIT_FREQ_10Hz; Load ptr to the CT1 configuration
-  CALL #TIMER_CT1_CONF; Create a interrupt CT1 signal
+  LD DE, _SOUND_OFF; Function to run after exec
+  LD HL, PIT_FREQ_10Hz; Set CT1 to freq 10Hz
+  CALL #TIMER_PUSH; Add task to disable sound to timer queue
 
   LD A, EVENT_PRIO_IDLE; Set cmd exec as an idle task
   LD HL, MAIN; Load task to be an entrance point to the program

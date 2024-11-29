@@ -2,6 +2,55 @@
 
 ;;
 ;; Example:
+;;  JP _TIMER_INIT; Initialize timers
+;;
+;; fun _TIMER_INIT() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+_TIMER_INIT:
+  PUSH AF    ; Temp save reg AF in stack
+  LD A, PIT_RL_3 | PIT_MODE_3; Set up CT0 to create sqaure wave signal
+  OUT (PIT_PORT_CTL), A; Send reg to PIT
+
+  LD A, PIT_CS_1 | PIT_RL_3 | PIT_MODE_2; Setup CT1 to create interrupt signal
+  OUT (PIT_PORT_CTL), A; Send conter configuration to PIT
+
+  LD A, PIT_CS_2 | PIT_RL_3 | PIT_MODE_2; Setup CT2 to create interrupt signal
+  OUT (PIT_PORT_CTL), A; Send conter configuration to PIT
+  POP AF     ; Restore reg AF from stack
+  RET
+
+;;
+;; Example:
+;;  LD B, IM_CT1; Enable interrupt for CT1
+;;  LD C, PIT_PORT_CT1
+;;  LD DE, PIT_FREQ_10Hz; Set CT1 to freq 10Hz
+;;  CALL #TIMER_WR; Create a interrupt CT1 signal
+;;
+;; proc TIMER_WR() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- as defined
+;;   reg DE -- as defined
+;;   reg HL -- unaffected
+#TIMER_WR:
+  PUSH HL    ; Temp save reg HL in stack
+  OUT (C), E ; Send counter low byte
+  OUT (C), D ; Send counter high byte
+  LD L, B    ; Save interrupt mask to reg H
+  LD C, ~PPI_CS_CS1; Turn off counter clock
+  LD B, PPI_CS_CS1; Turn on counter clock
+  RST 0x08   ; Enable counter output
+  LD A, L    ; Restore interrupt mask to Acc
+  CPL        ; Make inverted mask to re-enable CT interrupt
+  LD H, A    ; Re-enable interrupt for CT
+  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
+  POP HL     ; Restore reg HL from stack
+  RET
+
+;;
+;; Example:
 ;;  JP _SOUND_OFF; Turn off sound
 ;;
 ;; fun _SOUND_OFF() -> void;
@@ -46,8 +95,6 @@ _SOUND_OFF:
   JR Z, #SOUND_OUT_esc-$
 
   LD B, PPI_CS_CS0; Enable sound counter clock
-  LD A, PIT_RL_3 | PIT_MODE_3; Set up CT0 to create sqaure wave signal
-  OUT (PIT_PORT_CTL), A; Send reg to PIT
   LD A, H    ; Restore info about the note
   PUSH BC    ; Save PPI settings in stack
 
@@ -98,7 +145,7 @@ _SOUND_OFF:
 _TIMER_CT1_OFF:
   PUSH HL    ; Save reg AF in stack
   LD H, ~IM_CT1; Enable interrupt for CT1
-  JR #TIMER_CONF-$
+  JR _TIMER_OFF-$
 
 _TIMER_CT2_OFF:
   PUSH HL    ; Save reg AF in stack
@@ -112,50 +159,56 @@ _TIMER_OFF:
 
 ;;
 ;; Example:
+;;  LD A, 5     ; Hold the sound for 0.5 second
+;;  LD DE, _SOUND_OFF; Function to run after exec
 ;;  LD HL, PIT_FREQ_10Hz; Set CT1 to freq 10Hz
-;;  CALL #TIMER_CT1_CONF; Create a interrupt CT1 signal
+;;  CALL #TIMER_PUSH; Create a interrupt CT1 signal
 ;;
-;; proc TIMER_CT1_CONF() -> void;
-;;   reg A  -- unaffected
+;; proc TIMER_PUSH() -> void;
+;;   reg A  -- as defined
 ;;   reg BC -- unaffected
-;;   reg DE -- unaffected
+;;   reg DE -- as defined
 ;;   reg HL -- as defined
 #TIMER_PUSH:
-; TODO: Impl Timer push with FIFO architecture
-
-#TIMER_CT1_CONF:
+  ; DI         ; Disable interrupt when task is pushing in queue
   PUSH BC    ; Save reg BC in stack
+  PUSH AF    ; Temporary save cycle amount
+  PUSH HL    ; Temporary save counter divider in stack
+
   LD B, IM_CT1; Enable interrupt for CT1
-  LD C, PIT_CS_1 | PIT_RL_3 | PIT_MODE_2; Setup CT1 to create interrupt signal
-  JR #TIMER_CONF-$
+  LD C, PIT_PORT_CT1; Setup CT1 to create interrupt signal
+  LD HL, CT1_BUF_MAP; Load ptr to the CT1 task buffer
 
-#TIMER_CT2_CONF:
-  PUSH BC    ; Save reg BC in stack
+  LD A, (CT2_BUF_MAP); Load the amount of CT2 tasks
+  ADD A, (HL); Get the sum of taks for CT1 & CT2 counter
+  AND 0x01   ; Check if the last bit is set
+  JR Z, #TIMER_PUSH_bgn-$
+
+  LD HL, CT2_BUF_MAP; Load ptr to the CT2 task buffer
   LD B, IM_CT2; Enable interrupt for CT2
-  LD C, PIT_CS_2 | PIT_RL_3 | PIT_MODE_2; Setup CT2 to create interrupt signal
+  LD C, PIT_PORT_CT2; Setup CT2 to create interrupt signal
 
-#TIMER_CONF:
-  PUSH AF    ; Temp interrupt enable mask in stack
-  LD A, C    ; Get counter configuration to Acc
-  OUT (PIT_PORT_CTL), A; Send conter configuration to PIT
-  AND 0xC0   ; Cut CT configuration to get only 0x80 & 0x40
-  RLCA       ; Shift Acc to the left and put high bit into first place
-  RLCA       ; Convert 0x80 & 0x40 to the 0x02 & 0x01
-  OR PIT_PORT_CT0; Create timer addr port depending for diff counter
-  LD C, A    ; Load timer addr to reg C
-  OUT (C), L ; Send counter low byte
-  OUT (C), H ; Send counter high byte
-  LD L, B    ; Save interrupt mask to reg H
-  LD C, ~PPI_CS_CS1; Turn off counter clock
-  LD B, PPI_CS_CS1; Turn on counter clock
-  RST 0x08   ; Enable counter output
-  LD A, L    ; Restore interrupt mask to Acc
-  CPL        ; Make inverted mask to re-enable CT interrupt
-  LD H, A    ; Re-enable interrupt for CT
-  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
-
-  POP AF     ; Restore reg AF from stack
+#TIMER_PUSH_bgn:
+  INC (HL)   ; Increment task amount for ct
+  LD A, (HL) ; Load amount of task in CT
+  ADD A, A   ; Multiply task amount by 2
+  ADD A, A   ; Multiply task amount by 4
+  ADD A, (HL); Multiply task amount by 5
+  LD L, A    ; Create in reg HL addr that points to current last task
+  LD (HL), D ; Load the high byte of the task func
+  DEC HL     ; Move task ptr to the low addr of the task func
+  LD (HL), E ; Load the low byte of the task func
+  POP DE     ; Restore counter divider from stack
+  DEC HL     ; Move task ptr to the high addr of the div
+  LD (HL), D ; Load the high byte of the counter div
+  DEC HL     ; Move task ptr to the low addr of the conter div
+  LD (HL), E ; Load the low byte of the counter div
+  DEC HL     ; Move task ptr to the value of how many time to repeat cycle
+  POP AF     ; Restore cycles amount 
+  LD (HL), A ; Load the cycles byte of the ct task 
+  CALL #TIMER_WR; Send timer config & enable interrupt
   POP BC     ; Restore reg BC from stack
+  ; EI         ; Restore interrupt after task was successfully written
   RET
 
 ;;
@@ -176,36 +229,73 @@ _TIMER_OFF:
 ;;   reg HL -- unaffected
 #TIMER_CT1_EXEC:
   PUSH HL    ; Save reg HL in stack
-  LD HL, PTR_CT1_CONF; Load in reg HL ptr to the CT1 configuration
-  LD A, ~IM_CT1; Disable interrupt for CT1
+  PUSH DE    ; Save reg DE in stack
+  PUSH BC    ; Save reg BC in stack
+  LD HL, CT1_BUF_MAP+1; Load in reg HL ptr to the CT1 task queue
+  LD B, IM_CT1; Disable interrupt for CT1
+  LD C, PIT_PORT_CT1; Setup CT1 to create interrupt signal
   JR #TIMER_EXEC-$
 
 #TIMER_CT2_EXEC:
   PUSH HL    ; Save reg HL in stack
-  LD HL, PTR_CT2_CONF; Load in reg HL ptr to the CT2 configuration
-  LD A, ~IM_CT2; Disable interrupt for CT2
+  PUSH DE    ; Save reg DE in stack
+  PUSH BC    ; Save reg BC in stack
+  LD HL, CT2_BUF_MAP+1; Load in reg HL ptr to the CT2 task queue
+  LD B, IM_CT2; Disable interrupt for CT2
+  LD C, PIT_PORT_CT2; Setup CT1 to create interrupt signal
 
 #TIMER_EXEC:
-  PUSH AF    ; Temp save in stack mask to disable CT interrupt
-  LD A, (HL) ; Get counter value
-  OR A       ; Check if it reached zero
-  JR Z, #TIMER_EXEC_off-$; If so then simply ignore this interrupt
   DEC (HL)   ; Decriment counter
   JR NZ, #TIMER_EXEC_end-$; If not zero then return
-  INC HL     ; Move ptr to the low byte of func addr
+  PUSH BC    ; Tempory save interrupt mask & ct port in stack
+  PUSH HL    ; Save task ptr in stack
+
+  INC HL     ; Move ptr to the low byte of the divider 
+  INC HL     ; Move ptr to the high byte of the divider 
+  INC HL     ; Move ptr to the low byte of addr func
   RST 0x20   ; Load the func addr to reg HL
   LD A, EVENT_PRIO_TIMER; Set exec as timer priority
-  CALL _EVENT_PUSH; Add buffer updates to task queue
+  CALL _EVENT_PUSH; Add func to task queue
+
+  POP HL     ; Restore task ptr from stack
+  PUSH HL    ; Save task ptr in stack
+  PUSH HL    ; Temp save task ptr in stack for copy
+  POP DE     ; Copy task ptr from stack for use in LDIR
+  DEC HL     ; Move ptr to the ct task amount
+  DEC (HL)   ; Remove first task from the list
+  JR Z, #TIMER_EXEC_off-$
+
+  LD A, (HL) ; Load amount of task in CT
+  ADD A, A   ; Multiply task amount by 2
+  ADD A, A   ; Multiply task amount by 4
+  ADD A, (HL); Multiply task amount by 5
+  LD C, A    ; Load amount of bytes that need to be shifted
+  LD B, 0    ; Reset reg BC
+  LD L, 6    ; Move task ptr to the next task in ct
+  LDIR       ; Shift qunue by one task
+
+  POP HL     ; Restore task ptr from stack
+  POP BC     ; Restore interrupt mask & ct port
+  INC HL     ; Move ptr to low byte of the divider
+  LD E, (HL) ; Load the low byte of the divider
+  INC HL     ; Move ptr to high byte of the divider
+  LD D, (HL) ; Load the high byte of the divider
+  CALL #TIMER_WR; Write divider info the the CT
+  JR #TIMER_EXEC_end-$
 
 #TIMER_EXEC_off:
-  EX (SP), HL; Restore mask to disable CT interrupt, and put some dummy value into stack
+  POP HL     ; Restore task ptr from stack, now is useless
+  POP AF     ; Restore interrupt mask in reg A
+  CPL        ; Make inverted mask to disable CT interrupt
+  LD H, A    ; Load inverted mask to disable CT to reg H
   LD L, 0    ; Do not re-enable anything
   CALL #INTR_MASK_SET; Turn off interrupt programly
 
 #TIMER_EXEC_end:
   IN A, (PIT_PORT_CT0); Read counter high byte, aka reset counter interrupt
   IN A, (PIT_PORT_CT0); Read counter low byte, aka reset counter interrupt
-  POP AF     ; Restore reg DE from stack
+  POP BC     ; Restore reg BC from stack
+  POP DE     ; Restore reg DE from stack
   POP HL     ; Restore reg HL from stack
   RET
 

@@ -50,8 +50,8 @@ PTR_TEMP_WORD      EQU PTR_INTR + 6  ;; 2 bytes ;; TODO: Make this word separate
 PTR_INPUT_STATE    EQU PTR_INTR + 8  ;; char '>' | '|'
 PTR_INPUT_FUNC     EQU PTR_INTR + 9  ;; 2 bytes
 PTR_INPUT_FILE     EQU PTR_INTR + 11 ;; 2 bytes
-PTR_CT1_CONF       EQU PTR_INTR + 14 ;; 3 bytes
-PTR_CT2_CONF       EQU PTR_INTR + 17 ;; 3 bytes
+; PTR_CT1_CONF       EQU PTR_INTR + 14 ;; 3 bytes
+; PTR_CT2_CONF       EQU PTR_INTR + 17 ;; 3 bytes
 
 ; Dynamic args
 ; PTR_FUNC_ARGS      EQU PTR_ADDR + 8
@@ -61,10 +61,12 @@ PTR_CT2_CONF       EQU PTR_INTR + 17 ;; 3 bytes
 SCAN_KEY_BUF       EQU 0x40F0  ;; F0h - FFh Keybuffer
 SCAN_KEY_MAP       EQU 0x4100  ;; 00h - FFh scan codes
 TEXT_BUF_MAP       EQU 0x4200  ;; 00h - FFh text buffer
-TASK_BUF_MAP       EQU 0x4300  ;; 00h - FFh text buffer
-SUPER_BLOCK_MAP    EQU 0x4400  ;; 00h - 1Fh Super block map
-INODE_MAP          EQU 0x4420  ;; 20h - FFh Inode map
-DATA_ZONE_MAP      EQU 0x4500  ;; 00h - FFh Data zone map
+TASK_BUF_MAP       EQU 0x4300  ;; 00h - FFh task buffer
+CT1_BUF_MAP        EQU 0x4400  ;; 00h - FFh CT1 task buffer
+CT2_BUF_MAP        EQU 0x4500  ;; 00h - FFh CT2 task buffer
+SUPER_BLOCK_MAP    EQU 0x4600  ;; 00h - 1Fh Super block map
+INODE_MAP          EQU 0x4620  ;; 20h - FFh Inode map
+DATA_ZONE_MAP      EQU 0x4700  ;; 00h - FFh Data zone map
 
 
 #include "ASCII.asm"

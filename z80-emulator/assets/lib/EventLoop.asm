@@ -62,6 +62,7 @@
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
 _EVENT_PUSH:
+  ; DI          ; Disable interrupt when task is writing in queue
   PUSH BC     ; Save reg BC in stack
   PUSH DE     ; Save reg BC in stack
   PUSH HL     ; Temp save task addr in stack
@@ -123,6 +124,7 @@ _EVENT_PUSH_wr:
   POP HL      ; Restore func addr
   POP DE      ; Restore reg DE
   POP BC      ; Restore reg BC
+  ; EI          ; Restore interrupt after task was successfully written
   RET
 
 
