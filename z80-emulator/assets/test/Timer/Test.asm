@@ -22,16 +22,15 @@ SETUP:
   ; ###################################################
 MAIN:
   IN A, (SWITCH_PORT)
-  OUT (LED_PORT), A
-	PUSH AF
+  ; OUT (LED_PORT), A
+	; PUSH AF
 
-  RST 0x20
+  ; RST 0x20
 
-  POP AF
+  ; POP AF
   LD HL, PTR_TEMP_WORD
   LD (HL), A
-  PUSH HL
-  CALL _HEX
+  CALL #HEX
 
 	RET
 

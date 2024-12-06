@@ -36,7 +36,7 @@ public:
   uint8_t Write(uint32_t, uint8_t data, bool) { return enabled = data; }
 
 
-  inline void SetFlag(uint8_t flag) { state |= (uint8_t)(1 << flag); Interrupt();  }
+  inline void SetFlag(uint8_t flag) { state |= (uint8_t)(1 << flag); }
   inline void ResetFlag(uint8_t flag) { state &= ~(uint8_t)(enabled & (1 << flag)); Interrupt(); }
 
 private:

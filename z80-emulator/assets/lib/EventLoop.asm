@@ -16,7 +16,7 @@
   LD A, (HL)  ; Load amount of task in queue
   OR A        ; Check if there is no task in queue
   JR Z, #EVENT_LOOP-$; If nothing happend
-  DI          ; Disable interrupt when task is reading in queue
+  CALL _INTR_LOCK; Lock interrupt from happening again
 
   XOR A       ; Reset Acc
   LD B, A     ; Reset reg B
@@ -39,7 +39,7 @@
   LDIR        ; Shift all tasks by one addr
 
 #EVENT_LOOP_exec:
-  EI          ; Restore interrupt after current task was successfully read
+  CALL _INTR_UNLOCK; Allow interrupt to happen
   LD HL, #EVENT_LOOP_end; Load custom return addr
   EX (SP), HL ; Manually create CALL and load in reg HL func addr
   CP EVENT_PRIO_IDLE; Check if current task is an idle
@@ -62,7 +62,7 @@
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
 _EVENT_PUSH:
-  ; DI          ; Disable interrupt when task is writing in queue
+  CALL _INTR_LOCK; Lock interrupt from happening again
   PUSH BC     ; Save reg BC in stack
   PUSH DE     ; Save reg BC in stack
   PUSH HL     ; Temp save task addr in stack
@@ -124,7 +124,7 @@ _EVENT_PUSH_wr:
   POP HL      ; Restore func addr
   POP DE      ; Restore reg DE
   POP BC      ; Restore reg BC
-  ; EI          ; Restore interrupt after task was successfully written
+  CALL _INTR_UNLOCK; Allow interrupt to happen
   RET
 
 

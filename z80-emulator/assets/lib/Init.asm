@@ -48,7 +48,7 @@ RST20:       ;; aka LOAD WORD
 ;;   reg HL -- unaffected
 ORG 0x0038
 RST38:
-  DI          ; Disable interrupt from triggering
+  CALL _INTR_LOCK; Lock interrupt from happening again
   PUSH AF     ; Save Acc & flags
   PUSH BC     ; Save reg BC
   PUSH HL     ; Save reg HL
@@ -58,6 +58,11 @@ RST38:
   CPL         ; Invert Acc for easier work
   LD C, A     ; Save interrupt vector in reg C
   LD B, IM_VEC_SIZE; Load amount of avaliable interrupt exec
+
+  ; FIXME: DEBUG purpose, fugure out why on physical board 0xC0 interrupt occurs !!!
+  OR A
+  JR Z, RST38_lp-$
+  OUT (LED_PORT), A
 
 RST38_lp:
   LD A, (HL)  ; Get the bit map of the interrupt
@@ -83,7 +88,7 @@ RST38_lp_end:
   POP HL      ; Restore reg HL 
   POP BC      ; Restore reg BC
   POP AF      ; Restore reg AF
-  EI          ; Restore interrupts
+  CALL _INTR_UNLOCK; Allow interrupt to happen
 RST38_end:
   RET
 
@@ -100,12 +105,47 @@ RST38_end:
 ;;   reg HL -- as defined
 #INTR_MASK_SET:
   PUSH AF    ; Save reg AF in stack
-  LD A, (PTR_INTR); Get current allowed interrupt byte
+  LD A, (PTR_INTR_WORD); Get current allowed interrupt byte
   AND H      ; Apply mask that will clear flag 
   XOR L      ; Apply mask that will set or reset flags
-  LD (PTR_INTR), A; Save updated allowed interrupts
+  LD (PTR_INTR_WORD), A; Save updated allowed interrupts
   OUT (INT_PORT), A; Send allowed intrrupts to interrupt vector
   POP AF     ; Restore reg AF
+  RET
+
+;; Example:
+;;  CALL _INTR_LOCK; Locks interrupt from executing
+;;
+;; fun _INTR_LOCK() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+_INTR_LOCK:
+  DI         ; Disable interrupt programly
+  PUSH HL    ; Save reg HL in stack
+  LD HL, PTR_INTR_LOCK; Load ptr to the interrupt lock
+  INC (HL)   ; Incr lock counter, aka shows how many times need to run unlock
+  POP HL     ; Restore reg HL
+  RET
+
+;; Example:
+;;  CALL _INTR_UNLOCK; Unlock interrupt, aka allow interrupt to happend again
+;;
+;; func INTR_MASK_SET() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+_INTR_UNLOCK:
+  PUSH HL    ; Save reg HL in stack
+  LD HL, PTR_INTR_LOCK; Load ptr to the interrupt lock
+  DEC (HL)   ; Decr lock counter, aka shows how many times need to run unlock
+  JR NZ, _INTR_UNLOCK_end-$
+  EI         ; Restore interrupt after counter reached zero
+
+_INTR_UNLOCK_end:
+  POP HL     ; Restore reg HL
   RET
 
 ;;
@@ -132,14 +172,19 @@ RST_INIT:
   LD L, ALLOWED_INTERUPTS; Hardcoded allowed interrupts
   CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
 
+  LD (PTR_INTR_WORD), A; Reset interrupt workd
+  LD (PTR_INTR_LOCK), A; Reset interrupt lock counter
   LD (TASK_BUF_MAP), A; Reset task amount in queue
   LD (CT1_BUF_MAP), A ; Reset task amount in queue CT1
   LD (CT2_BUF_MAP), A ; Reset task amount in queue CT2
 
+  IM 1        ; Use interrupt Mode 1
+  CALL _INTR_LOCK; Lock interrupt from happening again
+
   LD A, PIT_PITCH_6 | PIT_NOTE_E; Set note E in 6 pitch to Acc
   CALL #SOUND_OUT; Produce the sound
 
-  LD A, 5     ; Hold the sound for 0.5 second
+  LD A, 2      ; Hold the sound for 0.5 second
   LD DE, _SOUND_OFF; Function to run after exec
   LD HL, PIT_FREQ_10Hz; Set CT1 to freq 10Hz
   CALL #TIMER_PUSH; Add task to disable sound to timer queue
@@ -148,8 +193,7 @@ RST_INIT:
   LD HL, MAIN; Load task to be an entrance point to the program
   CALL _EVENT_PUSH; Add buffer updates to task queue
 
-  IM 1        ; Use interrupt Mode 1
-  EI          ; Enable interrupts
+  CALL _INTR_UNLOCK; Allow interrupt to happen
 
   CALL SETUP  ; Jump to program setup
   JP #EVENT_LOOP; Jump into task queue execution

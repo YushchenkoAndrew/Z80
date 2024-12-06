@@ -170,7 +170,7 @@ _TIMER_OFF:
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
 #TIMER_PUSH:
-  ; DI         ; Disable interrupt when task is pushing in queue
+  CALL _INTR_LOCK; Lock interrupt from happening again
   PUSH BC    ; Save reg BC in stack
   PUSH AF    ; Temporary save cycle amount
   PUSH HL    ; Temporary save counter divider in stack
@@ -184,9 +184,9 @@ _TIMER_OFF:
   AND 0x01   ; Check if the last bit is set
   JR Z, #TIMER_PUSH_bgn-$
 
-  LD HL, CT2_BUF_MAP; Load ptr to the CT2 task buffer
   LD B, IM_CT2; Enable interrupt for CT2
   LD C, PIT_PORT_CT2; Setup CT2 to create interrupt signal
+  LD HL, CT2_BUF_MAP; Load ptr to the CT2 task buffer
 
 #TIMER_PUSH_bgn:
   INC (HL)   ; Increment task amount for ct
@@ -206,9 +206,13 @@ _TIMER_OFF:
   DEC HL     ; Move task ptr to the value of how many time to repeat cycle
   POP AF     ; Restore cycles amount 
   LD (HL), A ; Load the cycles byte of the ct task 
-  CALL #TIMER_WR; Send timer config & enable interrupt
+  XOR A      ; Reset reg A
+  LD L, A    ; Create in reg HL addr that points to the start of CT task buffer, aka amount of task
+  LD A, (HL) ; Get amount of tasks in CT task buffer
+  DEC A      ; Check if there is only one task
+  CALL Z, #TIMER_WR; If so then, send timer config & enable interrupt
   POP BC     ; Restore reg BC from stack
-  ; EI         ; Restore interrupt after task was successfully written
+  CALL _INTR_UNLOCK; Allow interrupt to happen
   RET
 
 ;;

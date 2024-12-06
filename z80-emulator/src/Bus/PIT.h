@@ -86,35 +86,36 @@ public:
   }
 
   void Runtime() {
+  auto step = [&](const int32_t i) {
+      Utils::Lock l(mutex);
+      uint16_t& value = GetValue(counter, i);
+      uint16_t& out = GetValue(output, i);
+      uint16_t enabled = GetValue(gate, i);
+
+      if (!enabled) return;
+
+      if (out & ENABLE_OUTPUT) Interrupt(i);
+      if (!(out & KEEP_OUTPUT)) out = !ENABLE_OUTPUT;
+
+      if (value) { value = value - 1; return; }
+
+      uint16_t ctl = GetValue(control, i);
+      uint16_t init = GetValue(initialize, i);
+
+      switch ((ctl & 0x0E) >> 1) {
+        case 0x00: break; // NOTE: There is not point to create MODE0 it will not be used at all 
+        case 0x01: break; // NOTE: There is not point to create MODE1 it will not be used at all 
+
+        case 0x02: case 0x04: case 0x05: value = init; out = ENABLE_OUTPUT; break;
+        case 0x03: value = init; out = ((out & ENABLE_OUTPUT) ^ ENABLE_OUTPUT) | KEEP_OUTPUT; break;
+      }
+    };
+
     while (bExec) {
       // std::this_thread::sleep_for(std::chrono::nanoseconds(clock.first));
 
       // NOTE: Because run of this loop takes around 60ms, note generations (CT0) was moved to the func Sound 
-      // for (uint8_t i = 1; i < 3; i++) {
-        const uint8_t i = 1;
-        Utils::Lock l(mutex);
-        uint16_t& value = GetValue(counter, i);
-        uint16_t& out = GetValue(output, i);
-        uint16_t enabled = GetValue(gate, i);
-
-        if (!enabled) continue;
-
-        if (out & ENABLE_OUTPUT) Interrupt(i);
-        if (!(out & KEEP_OUTPUT)) out = !ENABLE_OUTPUT;
-
-        if (value) { value = value - 1; continue; }
-
-        uint16_t ctl = GetValue(control, i);
-        uint16_t init = GetValue(initialize, i);
-
-        switch ((ctl & 0x0E) >> 1) {
-          case 0x00: break; // NOTE: There is not point to create MODE0 it will not be used at all 
-          case 0x01: break; // NOTE: There is not point to create MODE1 it will not be used at all 
-
-          case 0x02: case 0x04: case 0x05: value = init; out = ENABLE_OUTPUT; break;
-          case 0x03: value = init; out = ((out & ENABLE_OUTPUT) ^ ENABLE_OUTPUT) | KEEP_OUTPUT; break;
-        }
-      // }
+      step(1); step(2);
     }
   }
 
