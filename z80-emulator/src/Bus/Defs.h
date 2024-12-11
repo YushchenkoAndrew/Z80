@@ -534,7 +534,7 @@ private:
 typedef std::pair<std::string, std::unordered_map<int32_t, int32_t>> DisassembleT;
 
 enum MemoryT {
-  W27C512, IMS1423
+  W27C512, IMS1423, MC146818
 };
 
 typedef TypeList<

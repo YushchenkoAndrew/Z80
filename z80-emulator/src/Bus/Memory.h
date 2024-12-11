@@ -863,21 +863,23 @@ private:
   bool locked = false;
 
   std::vector<uint8_t> buffer = { }; 
-  
+
 
   // Variables defines animation duration
   float fStrokeRepeat = 0.f;
 
+  int32_t LINES_SIZE = 0;
+  DisassembleT dasm;
+  Interpreter::Lexer lexer;
+  
+
+protected:
   olc::vi2d pos = olc::vi2d(0, 0);
   olc::vi2d cursor = olc::vi2d(0, 0);
 
   std::array<uint8_t, SizeT> memory;
-
   Bus* bus;
 
-  int32_t LINES_SIZE = 0;
-  DisassembleT dasm;
-  Interpreter::Lexer lexer;
 };
 
 };

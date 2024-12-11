@@ -55,7 +55,7 @@ private:
         switch((addr16 & 0x3000) >> 12) {
           case MUX::STACK::IMS1423_1: 
           case MUX::STACK::IMS1423_2: return IMS1423->Read(addr, true);
-          case MUX::STACK::MC146818: break; // TODO:
+          case MUX::STACK::MC146818:  return MC146818->Read(addr, true);
         }
       }
     }
@@ -75,7 +75,7 @@ private:
         switch((addr16 & 0x3000) >> 12) {
           case MUX::STACK::IMS1423_1: 
           case MUX::STACK::IMS1423_2: return IMS1423->Write(addr, data, true);
-          case MUX::STACK::MC146818: break; // TODO:
+          case MUX::STACK::MC146818:  return MC146818->Write(addr, data, true);
         }
       }
     }
@@ -148,6 +148,8 @@ public:
 
   std::shared_ptr<PPI> KR580VV55; // PPI КР580ВВ55А
   std::shared_ptr<PIT> KR580VI53; // Counter КР580ВИ53
+  std::shared_ptr<RTC> MC146818;
+
   std::shared_ptr<InterruptVector> interrupt;
 
   std::shared_ptr<Z80::CPU> Z80;

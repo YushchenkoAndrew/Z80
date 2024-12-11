@@ -34,6 +34,7 @@ namespace Bus {
 
     KR580VV55(std::make_shared<PPI>(this)),
     KR580VI53(std::make_shared<PIT>(this, config.GetTableValue<int32_t>(nullptr, "clock") * 8)),
+    MC146818(std::make_shared<RTC>(this)),
     interrupt(std::make_shared<InterruptVector>(this)),
 
     Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),
@@ -48,6 +49,7 @@ namespace Bus {
     keyboard  ->Preinitialize();
     KR580VV55 ->Preinitialize();
     KR580VI53 ->Preinitialize();
+    MC146818  ->Preinitialize();
     interrupt ->Preinitialize();
     Z80       ->Preinitialize();
     W27C512   ->Preinitialize(); 
@@ -65,15 +67,17 @@ namespace Bus {
     lcd->Initialize(std::pair(olc::vi2d(10, 150), zero));
 
     olc::vi2d pos = olc::vi2d(dimensions.second.x * 8 / 10, dimensions.second.y);
+    olc::vi2d size = dimensions.second - pos;
 
-    auto Init = [&pos, &dimensions, &offset, &grid = grid](std::shared_ptr<Window> window, int32_t y) {
+    auto Init = [&pos, &dimensions, &offset, &grid = grid](std::shared_ptr<Window> window, int32_t y, olc::vi2d size = olc::vi2d()) {
       grid.push_back(std::pair(olc::vi2d(pos.x, y), olc::vi2d(dimensions.second.x - offset.x * 2, y)));
-      window->Initialize(std::pair(olc::vi2d(pos.x, y) + offset, olc::vi2d(0, 0)));
+      window->Initialize(std::pair(olc::vi2d(pos.x, y) + offset, size));
     };
 
     Z80->Initialize(std::pair(olc::vi2d(pos.x, zero.y) + offset, zero));
 
     Init(interrupt, 140); Init(keyboard, 184); Init(KR580VV55, 206); Init(KR580VI53, 228); 
+    Init(MC146818, 294, olc::vi2d(size.x, 88)); 
 
     grid.push_back(std::pair(olc::vi2d(pos.x - offset.x * 2, offset.y), olc::vi2d(pos.x - offset.x * 2, dimensions.second.y - offset.y)));
   }
@@ -86,6 +90,7 @@ namespace Bus {
     keyboard  ->Preprocess();
     KR580VV55 ->Preprocess();
     KR580VI53 ->Preprocess();
+    MC146818  ->Preprocess();
     interrupt ->Preprocess();
     Z80       ->Preprocess();
   }
@@ -98,6 +103,7 @@ namespace Bus {
     keyboard  ->Process(GameEngine);
     KR580VV55 ->Process(GameEngine);
     KR580VI53 ->Process(GameEngine);
+    MC146818  ->Process(GameEngine);
     interrupt ->Process(GameEngine);
     Z80       ->Process(GameEngine);
   }
@@ -110,6 +116,7 @@ namespace Bus {
     keyboard  ->Draw(GameEngine);
     KR580VV55 ->Draw(GameEngine);
     KR580VI53 ->Draw(GameEngine);
+    MC146818  ->Draw(GameEngine);
     interrupt ->Draw(GameEngine);
     Z80       ->Draw(GameEngine);
 
