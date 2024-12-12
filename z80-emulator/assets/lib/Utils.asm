@@ -161,30 +161,6 @@
 
 ;;
 ;; Example:
-;;  LD A, 0x0F  ;; Load number
-;;  CALL #BIN_BCD
-;;
-;; proc BIN_BCD(...regs) -> reg A;
-;;   reg A  -- as defined
-;;   reg BC -- unaffected
-;;   reg DE -- unaffected
-;;   reg HL -- unaffected
-#BIN_BCD:
-  PUSH BC    ;; Save reg BC value in stack
-  LD B, 0x08 ;; Run loop 8 times
-  LD C, A    ;; Save reg A value in reg C
-  XOR A      ;; Reset reg A
-#BIN_BCD_lp:
-  SLA C      ;; Get C7 bit as carry flag
-  ADC A, A   ;; Each time multiply by 2
-  DAA        ;; Adjust Acc to dec
-  DJNZ #BIN_BCD_lp-$
-  POP BC     ;; Restore reg BC
-  RET
-
-
-;;
-;; Example:
 ;;  LD HL, number ;; string
 ;;  CALL #PRINT
 ;;

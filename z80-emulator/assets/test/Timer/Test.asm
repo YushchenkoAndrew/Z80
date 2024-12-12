@@ -27,13 +27,14 @@ MAIN:
 
   ; RST 0x20
 
-  ; POP AF
-  LD HL, PTR_TEMP_WORD
-  LD (HL), A
+  CALL #REVERSE
   CALL #HEX
 
 	RET
 
 #include "../../lib/EventLoop.asm"
 #include "../../lib/Timer.asm"
+#include "../../lib/RTC.asm"
 #include "../../lib/Hex.asm"
+
+#include "../../lib/utils/Adapter.asm"

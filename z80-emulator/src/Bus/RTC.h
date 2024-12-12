@@ -40,8 +40,6 @@ public:
   inline void IRQF() { memory[ADDR::REG::C] |= MASK(FLAG::REG_C::IRQF); }
 
   void Runtime() {
-    uint64_t time = 0;
-
     while (bExec) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
       const uint8_t regB = memory[ADDR::REG::B];
@@ -64,10 +62,10 @@ public:
         memory[ADDR::CLOCK::HOURS]   = ((time / 3600) % 10) | ((((time / 3600) % iHour) / 10) << 4);
       }
 
-      memory[ADDR::CALENDAR::DAY_OF_WEEK] = 1; // NOTE: Not sure that I need this in emulator
-      memory[ADDR::CALENDAR::DATE_OF_MONTH] = 1 + time / 3600 / 24;
-      memory[ADDR::CALENDAR::MONTH] = 1 + time / 3600 / 24 / 30;
-      memory[ADDR::CALENDAR::YEAR] = time / 3600 / 24 / 356;
+      memory[ADDR::CALENDAR::DAY_OF_WEEK] = (memory[ADDR::CALENDAR::DAY_OF_WEEK] + time / 3600 / 24) % 7;
+      memory[ADDR::CALENDAR::DATE_OF_MONTH] += time / 3600 / 24;
+      memory[ADDR::CALENDAR::MONTH] += time / 3600 / 24 / 30;
+      memory[ADDR::CALENDAR::YEAR] += time / 3600 / 24 / 356;
 
       memory[ADDR::REG::A] &= ~MASK(FLAG::REG_A::UIP);
 
@@ -90,9 +88,13 @@ public:
   }
 
   uint8_t Write(uint32_t addr, uint8_t data, bool) {
-    switch (addr) {
+    switch (addr & 0xFF) {
       case ADDR::REG::C: return Memory::Write(addr, data & 0xF0, false);
       case ADDR::REG::D: return Memory::Write(addr, data & 0x10, false);
+
+      case ADDR::CLOCK::SECONDS: time = (time / 60) * 60 + data; break;
+      case ADDR::CLOCK::MINUTES: time = (time / 3600) * 3600 + data * 60 + time % 60; break;
+      case ADDR::CLOCK::HOURS:   time = (time / 86400) * 86400 + data * 86400 + time % 3600; break;
     }
 
     return Memory::Write(addr, data, false);
@@ -102,6 +104,8 @@ public:
 private:
   std::atomic<bool> bExec = true;
   std::unique_ptr<std::thread> runtime = nullptr;
+
+  std::atomic<uint64_t> time = 0;
 };
 
 #undef MASK

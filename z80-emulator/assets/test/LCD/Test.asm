@@ -28,7 +28,7 @@ RST18:       ;; aka PRINT
   ; ##################   SETUP    #####################
   ; ###################################################
 SETUP:
-  LD SP, STACK      ; Set Memory Paging RAM
+  LD SP, STACK_ADDR ; Set Memory Paging RAM
   IM 1              ; Use interrupt Mode 1
 
   LD A, 0x80  ; Set MODE 0;  A: OUTPUT; B: OUTPUT; C: OUTPUT

@@ -3,7 +3,7 @@
 ORG 0x0000
   XOR A             ; Reset reg A
   OUT (INT_PORT), A ; Disable all interrupts
-  LD SP, STACK      ; Set Memory Paging RAM
+  LD SP, STACK_ADDR ; Set Memory Paging RAM
   JR RST_INIT-$     ; Jump to the hardware SETUP
 
 ORG 0x0008
@@ -58,11 +58,6 @@ RST38:
   CPL         ; Invert Acc for easier work
   LD C, A     ; Save interrupt vector in reg C
   LD B, IM_VEC_SIZE; Load amount of avaliable interrupt exec
-
-  ; FIXME: DEBUG purpose, fugure out why on physical board 0xC0 interrupt occurs !!!
-  OR A
-  JR Z, RST38_lp-$
-  OUT (LED_PORT), A
 
 RST38_lp:
   LD A, (HL)  ; Get the bit map of the interrupt
@@ -167,6 +162,7 @@ RST_INIT:
   OUT (PPI_PORT_C), A ; Reset PPI reg C
 
   CALL _TIMER_INIT ; Initialize timer
+  CALL _RTC_INIT   ; Initialize Real Time Clock
 
   LD H, A     ; Reset reg H
   LD L, ALLOWED_INTERUPTS; Hardcoded allowed interrupts

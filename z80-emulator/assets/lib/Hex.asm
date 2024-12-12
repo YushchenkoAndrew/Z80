@@ -1,35 +1,25 @@
-; #include "Utils.asm"
+#include "Defs.asm"
+
 ;;
 ;; Example:
-;;  LD HL, PTR_HEX_VAL
-;;  LD (HL), A
-;;  PUSH HL
-;;  CALL _HEX   ;; Display value in hex display
+;;  LD A, 0x24
+;;  CALL #HEX   ;; Display value in hex display
 ;;
-;;
-;; func HEX(byte*) -> void;
-;;    byte -- ptr to byte to display
-;;
-;; func #HEX() -> void;
-;;   reg A  -- unaffected
+;; func HEX() -> void;
+;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
-;;   reg HL -- as defined
+;;   reg HL -- unaffected
 #HEX:
-  ; POP HL     ;; Get return ptr
-  ; EX (SP), HL;; Restore return ptr & Get ptr to the value
-  PUSH BC
-  PUSH AF
+  PUSH HL    ;; Save reg HL in stack
+  PUSH BC    ;; Save reg BC in stack
+  PUSH AF    ;; Save reg AF in stack, for not modifing the original data
 
-  LD B, 0x08 ;; Run reverse loop 8 times
-  LD A, (HL) ;; Get value to display in hex
-  LD C, A    ;; Copy the value to reg C
-#HEX_reverse:
-  RL C       ;; Store last bit into carry flag
-  RRA        ;; Put carry flag at the end of reg A, and store lower bit into carry flag
-  DJNZ #HEX_reverse-$
-  LD (HL), A ;; Save reversed byte in memory
-  LD BC, 0x80;; Reset reg B & Set count & mask at the same time reg C
+  LD BC, 0x80 ;; Reset reg B & Set count & mask at the same time reg C
+  LD HL, PTR_HEX_BYTE ;; Load ptr to the memory where displayed byte is saved
+  LD (HL), A ;; Save in memory what is displayed on hex display
+  INC HL     ;; Move ptr to the modified byte, it will be used for hex calculation
+  LD (HL), A ;; Save in memory what is displayed on hex display, will be use for hex calculation
 
 #HEX_lp:
   PUSH HL    ;; Save in stack ptr to number
@@ -48,8 +38,9 @@
   SLA C      ;; Dec a loop counter
   JP C, #HEX_lp
 
-  POP AF
-  POP BC
+  POP AF     ; Restore reg AF from stack, aka the original value
+  POP BC     ; Restore reg BC from stack
+  POP HL     ; Restore reg HL from stack
   RET
 
 .HEX_DB:     ;; This array of values need for display HEX number
