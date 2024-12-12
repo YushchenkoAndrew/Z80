@@ -21,6 +21,7 @@ namespace Bus {
   #undef CLASS
 
   void Keyboard::Interrupt() { bus->interrupt->ResetFlag(InterruptVector::IRQ::KEYBOARD); }
+  void RTC::Interrupt() { IRQF(); bus->interrupt->ResetFlag(InterruptVector::IRQ::RTC); }
   void PIT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(InterruptVector::IRQ::CT1 + ct - 1); }
 
   Bus::Bus(LuaScript& config):

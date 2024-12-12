@@ -157,7 +157,6 @@ public:
   std::shared_ptr<IMS1423_T> IMS1423;
 
   // TODO: RAM HY62256A A14 = 0 A15 = 1 
-  // TODO: RAM ims1423  A14 = 1 A15 = 0  (NOTE: Without A13)
   // TODO: ROM KM28C17-20 A14 = 1 A15 = 1
 
 

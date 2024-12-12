@@ -7,7 +7,7 @@ class InterruptVector : public Window::Window, public Device {
 
 public:
   struct IRQ {
-    enum { NONE1, NONE2, CT2, CT1, RLT, TxRDT, RxRDY, KEYBOARD };
+    enum { NONE1, NONE2, CT2, CT1, RTC, TxRDT, RxRDY, KEYBOARD };
   };
 
   InterruptVector(Bus* b): bus(b) {}
