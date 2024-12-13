@@ -69,7 +69,7 @@ public:
       GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(value, 4), *AnyType<GREY, ColorT>::GetValue());
       GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x, 0), Utils::Int2Hex(ctl), *AnyType<GREY, ColorT>::GetValue());
       GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 4, 0), cs ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), out ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), !cs || out ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
 
       pos.y += vStep.y;
     }

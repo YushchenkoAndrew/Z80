@@ -31,7 +31,18 @@ MAIN:
   ; LD HL, PTR_TEMP_WORD
   ; LD (HL), A
   LD A, (RTC_SECONDS)
+  ; CALL #BIN_BCD
+
+  ; LD D, A
+  ; LD E, 10
+  ; LD hl, 5
+  ; CALL #MUL16x8
+  ; LD A, L
+
+  CALL #RTC_CURRENT_TIME
+  LD A, L
   CALL #BIN_BCD
+
 
   CALL #HEX
 
@@ -43,3 +54,4 @@ MAIN:
 #include "../../lib/Hex.asm"
 
 #include "../../lib/utils/Adapter.asm"
+#include "../../lib/utils/Math.asm"

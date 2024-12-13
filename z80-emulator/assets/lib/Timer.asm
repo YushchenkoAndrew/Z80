@@ -143,18 +143,37 @@ _SOUND_OFF:
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 _TIMER_CT1_OFF:
-  PUSH HL    ; Save reg AF in stack
-  LD H, ~IM_CT1; Enable interrupt for CT1
-  JR _TIMER_OFF-$
+  PUSH HL    ; Save reg HL in stack
+  LD H, ~IM_CT1; Disable interrupt for CT1
+  JR _TIMER_CT2_OFF_bgn-$
 
 _TIMER_CT2_OFF:
-  PUSH HL    ; Save reg AF in stack
-  LD H, ~IM_CT2; Enable interrupt for CT2
+  PUSH HL    ; Save reg HL in stack
+  LD H, ~IM_CT2; Disable interrupt for CT2
 
-_TIMER_OFF:
-  LD L, 0    ; Restore interrupt mask to Acc
-  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
+_TIMER_CT2_OFF_bgn:
+  CALL #TIMER_OFF
   POP HL     ; Restore reg HL
+  RET
+
+;;
+;; Example:
+;;  LD H, ~IM_CT2; Disable interrupt for CT2
+;;  CALL #TIMER_OFF; Turn off CT2 interrupt
+;;
+;; proc TIMER_OFF() -> void;
+;;   reg A  -- unaffected
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+#TIMER_OFF:
+  PUSH BC    ; Save reg BC in stack
+  LD B, 0    ; Do not re-enable counter clock
+  LD C, ~PPI_CS_CS1; Turn off counter clock
+  RST 0x08   ; Disable counter output
+  LD L, B    ; Restore interrupt mask to Acc
+  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
+  POP BC     ; Restore reg BC
   RET
 
 ;;
@@ -292,8 +311,7 @@ _TIMER_OFF:
   POP AF     ; Restore interrupt mask in reg A
   CPL        ; Make inverted mask to disable CT interrupt
   LD H, A    ; Load inverted mask to disable CT to reg H
-  LD L, 0    ; Do not re-enable anything
-  CALL #INTR_MASK_SET; Turn off interrupt programly
+  CALL #TIMER_OFF; Turn off interrupt programly 
 
 #TIMER_EXEC_end:
   IN A, (PIT_PORT_CT0); Read counter high byte, aka reset counter interrupt
