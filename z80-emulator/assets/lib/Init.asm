@@ -199,7 +199,7 @@ RST_INIT:
   db IM_KEYBOARD dw #SCAN_CODE_IM[2]
   db IM_RxRDY    dw RST38_end[2] ;; FIXME
   db IM_TxRDY    dw RST38_end[2] ;; FIXME
-  db IM_RLT      dw RST38_end[2] ;; FIXME
+  db IM_RTC      dw #RTC_ALARM_EXEC[2]
   db IM_CT1      dw #TIMER_CT1_EXEC[2]
   db IM_CT2      dw #TIMER_CT2_EXEC[2]
   db IM_NONE1    dw RST38_end[2]

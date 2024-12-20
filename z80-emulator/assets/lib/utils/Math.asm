@@ -63,7 +63,7 @@
 ;;  LD A, 60    ; Multiplier value
 ;;  CALL #MUL16x8 ; Will return result of 60 * 60 in reg HL = 3600 (aka product)
 ;;
-;; proc MUL16x8(...regs) -> reg HL;
+;; proc MUL16x8(...regs) -> reg A & reg HL;
 ;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
@@ -71,15 +71,16 @@
 #MUL16x8:
   PUSH BC    ; Save reg BC in stack
   PUSH DE    ; Save reg DE in stack
-  LD B, 8    ; Load amount of bites to shift
+  LD BC, 0x0800; Load amount of bites to shift
   LD DE, 0   ; Reset reg DE
   EX DE, HL  ; Move multiplicand value to reg DE
 
 #MUL16x8_lp:
   ADD HL, HL ; Shift reg HL to the left, aka HL << 1
-  RLCA       ; Load carry bit, aka first bite of reg HL in reg A
+  RLA        ; Load carry bit, aka first bite of reg HL in reg A
   JR NC, #MUL16x8_lp_end-$; Check if carry bite is not set, aka last bite of reg A
   ADD HL, DE ; Get the result of multiplication
+  ADC A, C   ; Add to Acc carry bit
 #MUL16x8_lp_end:
   DJNZ #MUL16x8_lp-$
   POP DE     ; Restore reg HL from stack

@@ -34,7 +34,7 @@ PPI_IO_LCD     EQU 0x10
 IM_KEYBOARD   EQU 0x80
 IM_RxRDY      EQU 0x40
 IM_TxRDY      EQU 0x20
-IM_RLT        EQU 0x10
+IM_RTC        EQU 0x10
 IM_CT1        EQU 0x08
 IM_CT2        EQU 0x04
 IM_NONE1      EQU 0x02

@@ -87,31 +87,31 @@ _RTC_INIT:
 ;; Example:
 ;;  CALL #RTC_CURRENT_TIME; Get RTC current time in seconds
 ;;
-;; proc #RTC_CURRENT_TIME() -> reg HL;
-;;   reg A  -- unaffected
+;; proc #RTC_CURRENT_TIME() -> reg A & reg HL (aka 24 bit);
+;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
 #RTC_CURRENT_TIME:
-  PUSH AF    ; Save reg AF in stack
   PUSH DE    ; Save reg DE in stack
-
-  LD A, (RTC_HOUR) ; Get current hours value
-  LD HL, 3600  ; Load amount of seconds in 1 hour
-  CALL #MUL16x8; Multiply current amount of hours by 60
-  EX DE, HL  ; Save result of multiplication in reg DE
-
-  LD A, (RTC_MINUTES) ; Get current minutes value
-  LD HL, 60  ; Load amount of seconds in 1 minute
-  CALL #MUL16x8; Multiply current amount of minutes by 60
-  ADD HL, DE ; Get total value of hours and minutes in seconds
 
   LD A, (RTC_SECONDS) ; Get current seconds value
   LD D, 0    ; Reset reg D
   LD E, A    ; Load into reg E current seconds value
-  ADD HL, DE ; Get current time in reg HL
 
-  POP AF     ; Restore reg AF from stack
+  LD A, (RTC_MINUTES) ; Get current minutes value
+  LD HL, 60  ; Load amount of seconds in 1 minute
+  CALL #MUL16x8; Multiply current amount of minutes by 60
+  ADD HL, DE ; Get total value of seconds and minutes in seconds
+  EX DE, HL  ; Save value of seconds and minutes in seconds to reg DE
+
+  LD A, (RTC_HOUR) ; Get current hours value
+  LD HL, 3600  ; Load amount of seconds in 1 hour
+  CALL #MUL16x8; Multiply current amount of hours by 60
+  ADD HL, DE ; Get current time in reg HL
+  LD E, 0    ; Reset reg E
+  ADC A, E   ; Add carry bit to reg A
+
   POP DE     ; Restore reg DE from stack
   RET
 
@@ -127,6 +127,7 @@ _RTC_INIT:
 ;;   reg HL -- as defined
 #RTC_SET_ALARM:
   PUSH BC    ; Save reg BC in stack
+  PUSH DE    ; Save reg DE in stack
 
   LD (RTC_REG_B), A ; Load initial settings byte to the RTC's reg B
   LD B, A    ; Load the original value of RTC's reg B
@@ -138,25 +139,56 @@ _RTC_INIT:
   LD (RTC_REG_B), A ; Load modified RTC's reg B, aka temporary stop update cycle
 
 #RTC_SET_ALARM_bgn:
-  ; TODO: Impl this
+  EX DE, HL  ; Load in reg DE offset in seconds
+  CALL #RTC_CURRENT_TIME ; Get current time in reg HL
+  ADD HL, DE ; Calc next alarm time in seconds
+  LD E, 0    ; Reset reg E
+  ADC A, E   ; Add carry bit to the reg A
+  PUSH AF    ; Save reg A from A:HL (24 bits) in stack
 
-  ; LD A, 60   ; Load divisior value, aka get amount of seconds
-  ; CALL #DIV16x8; Divide reg HL / 60 => reg A - seconds & reg HL - minutes
-  ; LD C, A   
-  ; LD (RTC_ALARM_SECONDS), A ; Set amo
+  LD A, 60   ; Load divisior value, aka get amount of seconds
+  CALL #DIV16x8; Divide reg HL / 60 => reg A - seconds & reg HL - minutes
+  LD (RTC_ALARM_SECONDS), A ; Set amount of seconds
 
-  ; LD A, 60   ; Load divisior value, aka get amount of minutes
-  ; CALL #DIV16x8; Divide reg HL / 60 => reg A - minutes & reg HL - hours
-  ; LD (RTC_ALARM_MINUTES), A ; Intialize  value
+  LD A, 60   ; Load divisior value, aka get amount of minutes
+  CALL #DIV16x8; Divide reg HL / 60 => reg A - minutes & reg HL - hours
+  LD (RTC_ALARM_MINUTES), A ; Set amount of minutes
 
-  ; LD A, L    ; Get amount of hours
-  ; LD (RTC_ALARM_MINUTES), A ; Intialize second value
+  POP AF     ; Restore reg A value from 24 bits of current time
+  OR A       ; Check if the reg is empty
+  LD A, L    ; Load remaning amount of hours in Acc
+  JR Z, #RTC_SET_ALARM_hour-$; If reg doesn't some value, it means then reg HL was not overflowed with hours
+  ADD A, 18  ; Adjust hours overflow, max hours from (2^16 - 1) is 18
 
+#RTC_SET_ALARM_hour:
+  LD D, A    ; Load amount hours to set next alarm
+  LD E, 24   ; Load divisior value, aka get amount of hours
+  CALL #DIV8 ; In reg A will return remainder of hours, aka reg D % 24 = reg A
+  LD (RTC_ALARM_HOUR), A ; Set amount of hours
 
+  POP DE     ; Restore reg DE from stack
   POP BC     ; Restore reg BC from stack
   RET
 
-; TODO: Impl proc #RTC_ALARM_PUSH 
+;;
+;; Example:
+;;  LD A, 5     ; Hold the sound for 0.5 second
+;;  LD DE, _SOUND_OFF; Function to run after exec
+;;  LD HL, 2    ; Set alarm offset to 2 seconds
+;;  CALL #RTC_ALARM_PUSH; Create a interrupt CT1 signal
+;;
+;; proc RTC_ALARM_PUSH() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- as defined
+;;   reg HL -- as defined
+#RTC_ALARM_PUSH:
+  ; TODO: Impl proc #RTC_ALARM_PUSH 
+  RET
+
+#RTC_ALARM_EXEC:
+  ; TODO: Write IRQ exec logic
+  RET
 
 RTC_SECONDS          EQU RTC_ADDR
 RTC_ALARM_SECONDS    EQU RTC_ADDR + 1
