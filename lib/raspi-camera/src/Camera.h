@@ -124,6 +124,7 @@ private:
 
 public:
   inline uint32_t FrameSize() { return config != nullptr ? config->at(0).stride * config->at(0).size.height : 0; }
+  inline libcamera::Size Size() { return config != nullptr ? config->at(0).size : libcamera::Size(); }
 
 private: 
   std::shared_ptr<libcamera::Camera> camera;
