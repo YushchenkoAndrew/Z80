@@ -1,5 +1,6 @@
 ; Variables name
 STACK_ADDR     EQU 0x5FFF
+RAM_ADDR       EQU 0x8000
 RTC_ADDR       EQU 0x6000
 
 LED_PORT       EQU 0x00
@@ -31,6 +32,9 @@ PPI_IO_LCD     EQU 0x10
 ; IO_LCD_EN      EQU 0x03
 ; IO_LCD_CMD     EQU 0x01
 
+;;
+;;    INTERRUPTS
+;;
 IM_KEYBOARD   EQU 0x80
 IM_RxRDY      EQU 0x40
 IM_TxRDY      EQU 0x20
@@ -42,18 +46,25 @@ IM_NONE2      EQU 0x01
 
 
 ;; Static FUNC ptr
-PTR_INTR_WORD      EQU 0x4000
-PTR_INTR_LOCK      EQU PTR_INTR_WORD + 1
-PTR_HEX_BYTE       EQU PTR_INTR_WORD + 2
-PTR_LCD_CURSOR     EQU PTR_INTR_WORD + 4
-PTR_PRINTF_RET     EQU PTR_INTR_WORD + 5
-PTR_PREV_SCAN_CODE EQU PTR_INTR_WORD + 6
-PTR_TEXT_BUFF_BGN  EQU PTR_INTR_WORD + 7
-PTR_TEXT_BUFF_END  EQU PTR_INTR_WORD + 8
-PTR_TEMP_WORD      EQU PTR_INTR_WORD + 9  ;; 2 bytes ;; TODO: Make this word separate for each file Command / FileSystem
-PTR_INPUT_STATE    EQU PTR_INTR_WORD + 11 ;; char '>' | '|'
-PTR_INPUT_FUNC     EQU PTR_INTR_WORD + 12 ;; 2 bytes
-PTR_INPUT_FILE     EQU PTR_INTR_WORD + 14 ;; 2 bytes
+PTR_INTR_BYTE      EQU 0x4000
+PTR_INTR_LOCK      EQU PTR_INTR_BYTE + 1
+; PTR_SYNC_BYTE      EQU PTR_INTR_BYTE + 2; FIXME: Use this byte for something else
+PTR_HEX_BYTE       EQU PTR_INTR_BYTE + 3
+PTR_LCD_CURSOR     EQU PTR_INTR_BYTE + 5
+PTR_PRINTF_RET     EQU PTR_INTR_BYTE + 6
+PTR_PREV_SCAN_CODE EQU PTR_INTR_BYTE + 7
+PTR_STDIN_BUF_BGN  EQU PTR_INTR_BYTE + 8
+PTR_STDIN_BUF_END  EQU PTR_INTR_BYTE + 9
+; PTR_STDIN_BUF_IDX  EQU PTR_INTR_BYTE + 10
+PTR_TEXT_BUFF_BGN  EQU PTR_INTR_BYTE + 11
+PTR_TEXT_BUFF_END  EQU PTR_INTR_BYTE + 12
+
+PTR_DIR_INODE      EQU PTR_INTR_BYTE + 13 ;; 2 bytes
+PTR_FILE_INODE     EQU PTR_INTR_BYTE + 15 ;; 2 bytes
+
+PTR_INPUT_STATE    EQU PTR_INTR_BYTE + 17 ;; char '>' | '|'
+PTR_INPUT_FUNC     EQU PTR_INTR_BYTE + 18 ;; 2 bytes
+PTR_INPUT_FILE     EQU PTR_INTR_BYTE + 20 ;; 2 bytes
 ; PTR_CT1_CONF       EQU PTR_INTR + 14 ;; 3 bytes
 ; PTR_CT2_CONF       EQU PTR_INTR + 17 ;; 3 bytes
 
@@ -63,14 +74,15 @@ PTR_INPUT_FILE     EQU PTR_INTR_WORD + 14 ;; 2 bytes
 
 ;; Allocated memory
 SCAN_KEY_BUF       EQU 0x40F0  ;; F0h - FFh Keybuffer
-SCAN_KEY_MAP       EQU 0x4100  ;; 00h - FFh scan codes
-TEXT_BUF_MAP       EQU 0x4200  ;; 00h - FFh text buffer
-TASK_BUF_MAP       EQU 0x4300  ;; 00h - FFh task buffer
-CT1_BUF_MAP        EQU 0x4400  ;; 00h - FFh CT1 task buffer
-CT2_BUF_MAP        EQU 0x4500  ;; 00h - FFh CT2 task buffer
-SUPER_BLOCK_MAP    EQU 0x4600  ;; 00h - 1Fh Super block map
-INODE_MAP          EQU 0x4620  ;; 20h - FFh Inode map
-DATA_ZONE_MAP      EQU 0x4700  ;; 00h - FFh Data zone map
+SCAN_KEY_STATE     EQU 0x4100  ;; 00h - FFh scan codes
+STDIN_BUF          EQU 0x4200  ;; 00h - FFh stdin buffer
+TEXT_BUF_MAP       EQU 0x4300  ;; 00h - FFh text buffer
+TASK_BUF           EQU 0x4400  ;; 00h - FFh task buffer
+CT1_BUF            EQU 0x4500  ;; 00h - FFh CT1 task buffer
+CT2_BUF            EQU 0x4600  ;; 00h - FFh CT2 task buffer
+SUPER_BLOCK_MAP    EQU 0x4700  ;; 00h - 1Fh Super block map
+INODE_MAP          EQU 0x4720  ;; 20h - FFh Inode map
+DATA_ZONE_MAP      EQU 0x4800  ;; 00h - FFh Data zone map
 
 
 #include "ASCII.asm"

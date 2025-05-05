@@ -16,13 +16,14 @@ namespace Bus {
 
   template class Memory<MemoryT::W27C512, W27C512_SIZE>;
   template class Memory<MemoryT::IMS1423, IMS1423_SIZE>;
+  template class Memory<MemoryT::HY62256A, HY62256A_SIZE>;
 
   #undef TEMPLATE
   #undef CLASS
 
   void Keyboard::Interrupt() { bus->interrupt->ResetFlag(InterruptVector::IRQ::KEYBOARD); }
   void RTC::Interrupt() { IRQF(); bus->interrupt->ResetFlag(InterruptVector::IRQ::RTC); }
-  void PIT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(InterruptVector::IRQ::CT1 + ct - 1); }
+  void PIT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(InterruptVector::IRQ::CT1 - ct + 1); }
 
   Bus::Bus(LuaScript& config):
     luaConfig(config),
@@ -40,7 +41,8 @@ namespace Bus {
 
     Z80(std::make_shared<Z80::CPU>(this, config.GetTableValue<int32_t>(nullptr, "clock"))),
     W27C512(std::make_shared<Memory<MemoryT::W27C512, W27C512_SIZE>>(this)),
-    IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)) {}
+    IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)),
+    HY62256A(std::make_shared<Memory<MemoryT::HY62256A, HY62256A_SIZE>>(this)) {}
 
   void Bus::Preinitialize() {
     led       ->Preinitialize();

@@ -19,6 +19,7 @@ private:
 public:
   typedef Memory<MemoryT::W27C512, W27C512_SIZE> W27C512_T;
   typedef Memory<MemoryT::IMS1423, IMS1423_SIZE> IMS1423_T;
+  typedef Memory<MemoryT::HY62256A, HY62256A_SIZE> HY62256A_T;
 
   Bus(LuaScript& config);
 
@@ -49,7 +50,7 @@ private:
 
     switch((addr16 & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: return W27C512->Read(addr | ((mmu & 0x03) << 14), true);
-      case MUX::MREQ::HY62256A: // TODO:
+      case MUX::MREQ::HY62256A: return HY62256A->Read(addr, true);
       case MUX::MREQ::KM28C17: break;
       case MUX::MREQ::STACK: {
         switch((addr16 & 0x3000) >> 12) {
@@ -69,7 +70,7 @@ private:
 
     switch((addr16 & 0xC000) >> 14) {
       case MUX::MREQ::W27C512: return 0x00;
-      case MUX::MREQ::HY62256A: // TODO:
+      case MUX::MREQ::HY62256A: return HY62256A->Write(addr, data, true);
       case MUX::MREQ::KM28C17: break;
       case MUX::MREQ::STACK: {
         switch((addr16 & 0x3000) >> 12) {
@@ -155,6 +156,7 @@ public:
   std::shared_ptr<Z80::CPU> Z80;
   std::shared_ptr<W27C512_T> W27C512;
   std::shared_ptr<IMS1423_T> IMS1423;
+  std::shared_ptr<HY62256A_T> HY62256A;
 
   // TODO: RAM HY62256A A14 = 0 A15 = 1 
   // TODO: ROM KM28C17-20 A14 = 1 A15 = 1

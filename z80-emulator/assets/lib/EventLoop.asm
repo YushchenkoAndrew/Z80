@@ -12,7 +12,7 @@
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
 #EVENT_LOOP:
-  LD HL, TASK_BUF_MAP; Load ptr to the queue start
+  LD HL, TASK_BUF ; Load ptr to the queue start
   LD A, (HL)  ; Load amount of task in queue
   OR A        ; Check if there is no task in queue
   JR Z, #EVENT_LOOP-$; If nothing happend
@@ -34,7 +34,7 @@
   LD D, (HL)  ; Load the high byte of the func addr
   PUSH DE     ; Temporary save func addr in stack
   INC HL      ; Move queue ptr to the next 
-  LD DE, TASK_BUF_MAP+1; Load ptr to the start of the queue
+  LD DE, TASK_BUF+1; Load ptr to the start of the queue
   JR Z, #EVENT_LOOP_exec-$; Current task is the last one, then jump to exec it
   LDIR        ; Shift all tasks by one addr
 
@@ -68,7 +68,7 @@ _EVENT_PUSH:
   PUSH HL     ; Temp save task addr in stack
   PUSH AF     ; Temp save task priority in stack
 
-  LD HL, TASK_BUF_MAP
+  LD HL, TASK_BUF
   PUSH HL     ; Temp save start of task queue addr in Stack
   POP DE      ; Load task queue addr into reg DE
   LD B, (HL)  ; Load amount of task in queue
@@ -88,7 +88,7 @@ _EVENT_PUSH:
   JR Z, _EVENT_PUSH_wr-$ ; Check if there are no task in queue, if so then just write without shift
 
   PUSH HL     ; Save in stack current last task position
-  LD HL, TASK_BUF_MAP+1 ; Load in reg HL ptr to the first task priority byte
+  LD HL, TASK_BUF+1 ; Load in reg HL ptr to the first task priority byte
 
 _EVENT_PUSH_lp:
   CP (HL)     ; Check task priority with requested one

@@ -7,6 +7,8 @@ FORM_FEED    EQU 0x0C ;; aka Ctrl+L
 CARRY_RET    EQU 0x0D ;; aka '\r'
 DOUBLE_QUOTE EQU 0x22 ;; aka '"'
 SINGLE_QUOTE EQU 0x27 ;; aka '\''
+SPACE        EQU 0x20 ;; aka ' '
+SLASH        EQU 0x2F ;; aka '/'
 
 ;; LCD ASCII
 ARROW_RIGHT  EQU 0x10 ;; Same like this ">" but filled

@@ -13,7 +13,7 @@ _SCAN_CODE_INIT:
   PUSH HL     ; Save HL reg in stack
   PUSH BC     ; Save BC reg in stack
   LD B, 0     ; Set cnt to the max val aka 256
-  LD HL, SCAN_KEY_MAP ;; Load scan code mapper area
+  LD HL, SCAN_KEY_STATE ;; Load scan code mapper area
 _SCAN_CODE_INIT_lp:
   LD (HL), 0  ; Set key state to NULL
   INC HL      ; Go to the next addr
@@ -127,7 +127,7 @@ _SCAN_CODE_INIT_lp:
   JR Z, #SCAN_CODE_IM_esc-$
 
   LD B, 0     ; Reset high byte reg
-  LD HL, SCAN_KEY_MAP ;; Load scan code mapper area
+  LD HL, SCAN_KEY_STATE ;; Load scan code mapper area
   ADD HL, BC  ; Calc offset of the key
   LD A, (HL)  ; Get prev state of key
   AND 0x03    ; Set flag Z if empty (state 000 = NULL)
@@ -144,22 +144,12 @@ _SCAN_CODE_INIT_lp:
   JR Z, #SCAN_CODE_st_rels-$
 
   PUSH HL     ; Save HL reg in stack
-  LD HL, SCAN_KEY_BUF ; Load buffer count addr, (aka offset)
-  LD L, (HL)  ; Load buf offset
   LD A, C     ; Restore scan code to reg A
   CALL #SCAN_CODE_ASCII
   OR A        ; Check if ASCII was found
   JR Z, #SCAN_CODE_cmp_buf_esc-$
-  LD (HL), A  ; Save scan code in buffer
-  LD HL, SCAN_KEY_BUF ; Load buffer count addr, (aka offset)
-  XOR A       ; Reset reg A
-  RRD         ; Load to reg A only low bit
-  INC A       ; Inc offset by one
-  AND 0x0F    ; Get low bits
-  JR NZ, #SCAN_CODE_cmp_buf_ed-$
-  INC A       ; Start offset from 1
-#SCAN_CODE_cmp_buf_ed:
-  RLD         ; Restore offset value, but incr it by one
+  RST 0x10    ; Display current ASCII
+  CALL _ACK_STDIN; Update STDIN buffer
 #SCAN_CODE_cmp_buf_esc:
   POP HL      ; Restore HL reg
   JR #SCAN_CODE_nxt_st-$
@@ -175,10 +165,6 @@ _SCAN_CODE_INIT_lp:
 #SCAN_CODE_IM_esc:
   LD A, C     ; Restore from scan code from reg C
   LD (PTR_PREV_SCAN_CODE), A ; Save curr key in prev ptr
-
-  LD A, EVENT_PRIO_IO; Set task priority as input/output one
-  LD HL, #ACK_BUFFERS; Load task to exec after scan code interrupt
-  CALL _EVENT_PUSH; Add buffer updates to task queue
 
   POP BC      ; Restore BC reg
   POP HL      ; Restore HL reg
@@ -210,6 +196,6 @@ _SCAN_CODE_INIT_lp:
 SCAN_CODE_ASCII_VEC_SIZE        EQU  .SCAN_CODE_ASCII_VEC_ED-.SCAN_CODE_ASCII_VEC_ST
 
 ;; Keys alias
-KEY_SHIFT          EQU SCAN_KEY_MAP + 0x12
-KEY_CTRL           EQU SCAN_KEY_MAP + 0x14
-KEY_CAPS_LOCK      EQU SCAN_KEY_MAP + 0x56
+KEY_SHIFT          EQU SCAN_KEY_STATE + 0x12
+KEY_CTRL           EQU SCAN_KEY_STATE + 0x14
+KEY_CAPS_LOCK      EQU SCAN_KEY_STATE + 0x56

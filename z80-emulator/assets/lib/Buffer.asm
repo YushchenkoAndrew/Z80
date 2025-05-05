@@ -9,25 +9,40 @@
 ;;   reg BC -- as defined
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
-#ACK_BUFFERS:
-  LD HL, SCAN_KEY_BUF ; Load scan key buf offset ptr
-  LD A, (HL)  ; Load scan key buf offset val
-  AND 0x0F    ; Get only low bites
-  DEC A       ; Check if offset is reseted, flag Z
-  RET Z       ; If nothing happend, then return
-  LD B, A     ; Load amount of char in reg B
+#ACK_BUFFER:
 
-  RRD         ; Load to reg A only low bit
-  LD A, 0x01  ; Reset offset value to 1
-  RLD         ; Reset offset value, aka start from 1
+  LD A, "t"
+  RST 0x10
+  ; LD HL, SCAN_KEY_BUF ; Load scan key buf offset ptr
+  ; LD A, (HL)  ; Load scan key buf offset val
+  ; AND 0x0F    ; Get only low bites
+  ; DEC A       ; Check if offset is reseted, flag Z
+  ; RET Z       ; If nothing happend, then return
+  ; LD B, A     ; Load amount of char in reg B
 
-  INC HL      ; Move buf ptr to the start of chars
-  LD DE, TEXT_BUF_MAP; Get ptr to allocated text arae
-  LD A, (PTR_TEXT_BUFF_END); Get buf-ptr offset
-  LD E, A     ; Move text ptr to empty char
+  ; RRD         ; Load to reg A only low bit
+  ; LD A, 0x01  ; Reset offset value to 1
+  ; RLD         ; Reset offset value, aka start from 1
+
+  ; INC HL      ; Move buf ptr to the start of chars
+  ; LD DE, TEXT_BUF_MAP; Get ptr to allocated text arae
+  ; LD A, (PTR_TEXT_BUFF_END); Get buf-ptr offset
+  ; LD E, A     ; Move text ptr to empty char
   
-  CALL #WR_BUFFER  ; Check char, save it in buffer & output it
+  ; CALL #WR_BUFFER  ; Check char, save it in buffer & output it
+
+
   RET
+
+;;
+;;  STDIN - abc\n
+;;  /   \
+;; LCD  FILE SYSTEM
+;;          |
+;;       STDOUT
+;;          | 
+;;         LCD
+;;
 
 
 ;;

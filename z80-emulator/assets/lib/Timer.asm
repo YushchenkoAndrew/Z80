@@ -196,16 +196,16 @@ _TIMER_CT2_OFF_bgn:
 
   LD B, IM_CT1; Enable interrupt for CT1
   LD C, PIT_PORT_CT1; Setup CT1 to create interrupt signal
-  LD HL, CT1_BUF_MAP; Load ptr to the CT1 task buffer
+  LD HL, CT1_BUF; Load ptr to the CT1 task buffer
 
-  LD A, (CT2_BUF_MAP); Load the amount of CT2 tasks
+  LD A, (CT2_BUF); Load the amount of CT2 tasks
   ADD A, (HL); Get the sum of taks for CT1 & CT2 counter
   AND 0x01   ; Check if the last bit is set
   JR Z, #TIMER_PUSH_bgn-$
 
   LD B, IM_CT2; Enable interrupt for CT2
   LD C, PIT_PORT_CT2; Setup CT2 to create interrupt signal
-  LD HL, CT2_BUF_MAP; Load ptr to the CT2 task buffer
+  LD HL, CT2_BUF; Load ptr to the CT2 task buffer
 
 #TIMER_PUSH_bgn:
   INC (HL)   ; Increment task amount for ct
@@ -254,7 +254,7 @@ _TIMER_CT2_OFF_bgn:
   PUSH HL    ; Save reg HL in stack
   PUSH DE    ; Save reg DE in stack
   PUSH BC    ; Save reg BC in stack
-  LD HL, CT1_BUF_MAP+1; Load in reg HL ptr to the CT1 task queue
+  LD HL, CT1_BUF+1; Load in reg HL ptr to the CT1 task queue
   LD B, IM_CT1; Disable interrupt for CT1
   LD C, PIT_PORT_CT1; Setup CT1 to create interrupt signal
   JR #TIMER_EXEC-$
@@ -263,7 +263,7 @@ _TIMER_CT2_OFF_bgn:
   PUSH HL    ; Save reg HL in stack
   PUSH DE    ; Save reg DE in stack
   PUSH BC    ; Save reg BC in stack
-  LD HL, CT2_BUF_MAP+1; Load in reg HL ptr to the CT2 task queue
+  LD HL, CT2_BUF+1; Load in reg HL ptr to the CT2 task queue
   LD B, IM_CT2; Disable interrupt for CT2
   LD C, PIT_PORT_CT2; Setup CT1 to create interrupt signal
 
@@ -338,6 +338,7 @@ PIT_CS_1       EQU 0x40 ;; Counter 1
 PIT_CS_2       EQU 0x80 ;; Counter 2
 
 PIT_FREQ_10Hz  EQU 0xC350
+PIT_FREQ_200Hz EQU 0x09C4
 
 PIT_NOTE_C     EQU 0x01
 PIT_NOTE_C#    EQU 0x02

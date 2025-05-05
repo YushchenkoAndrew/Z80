@@ -3,8 +3,151 @@
 ;; NOTE: Inspired by this article
 ;; http://ohm.hgesser.de/sp-ss2012/Intro-MinixFS.pdf
 
+
 ;;
 ;; Example:
+;;  LD B, 5   ; String length
+;;  LD DE, .STRING  ; Load ptr to the string in reg DE
+;;  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+;; 
+;; #TEMP:
+;;  RET
+;; 
+;; proc FIND_FILE() -> reg IX;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;   reg IX -- as defined
+;;
+#FIND_FILE:
+  PUSH AF     ; Save reg AF in stack
+  PUSH HL     ; Save reg HL in stack
+
+  PUSH DE     ; Temp save string pointer in reg HL
+  LD HL, (PTR_DIR_INODE); Get current dirrectory inode ptr
+  LD A, FS_SZ_INODE; Load inode size
+  CALL #MUL16x8; Calc inode address offset
+  PUSH HL     ; Temp save inode addr offset in stack
+  POP IX      ; Get inode addr offset in reg IX
+  LD DE, INODE_MAP; Load inode addr start
+  ADD IX, DE  ; Find current directory inode addr
+
+  LD A, FS_SZ_ZONE_BLK; Load zone size
+  LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
+  LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
+  CALL #DIV16x8; Calc index offset to the last zone
+  LD A, 2     ; Load size of the word, convert index to bytes offset
+  CALL #MUL16x8; Calc offset to the last zone
+  EX DE, HL   ; Load into reg DE offset
+
+  LD A, FS_SZ_DIR_ENTITY; Load dir entity size
+  LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
+  LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
+  CALL #DIV16x8; Calc amount of inodes in current directory
+
+  ADD IX, DE  ; Make the offset to the last zone
+  POP DE      ; Restore string pointer in reg DE
+  PUSH HL     ; Save amount of inodes in curr dir in stack
+
+#FIND_FILE_lp_zone:
+  LD L, (IX+FS_INODE_ZONE0); Set directory data from the last zone, low byte
+  LD H, (IX+FS_INODE_ZONE0+1); Set directory data from the last zone, high byte
+
+#FIND_FILE_nxt:
+  PUSH DE     ; Save ptr to the string in stack
+  PUSH HL     ; Save ptr to directory inode in stack
+  PUSH BC     ; Save reg BC in stack
+  INC HL      ; Move ptr to the byte before of file name start
+  INC HL      ; Move ptr to the start of the name
+
+#FIND_FILE_lp:
+  LD A, (DE)  ; Load filename char from text buf
+  CP (HL)     ; Check if chars are equal to inode
+  JR NZ, #FIND_FILE_lp_end-$
+  INC HL      ; Move buf ptr by one
+  INC DE      ; Move cmd ptr by one
+  DJNZ #FIND_FILE_lp-$
+  LD A, (HL)  ; Check if filename is ended
+  OR A        ; Check if this char is 0, aka end of the word
+  JR Z, #FIND_FILE_end-$; If buf counter is ended, aka buf word is less then cmd
+
+#FIND_FILE_lp_end:
+  POP BC      ; Restore string length in reg B
+  POP HL      ; Restore ptr to the dir inode
+  LD DE, FS_SZ_DIR_ENTITY; Load entity size 
+  ADD HL, DE  ; Calc the next entity blk
+  POP DE      ; Restore ptr to the string
+  EX (SP), HL ; Load the amount of inodes in curr dir
+  DEC HL      ; Calculate the remaining inodes
+  LD A, FS_SZ_ZONE_BLK-1; Load allocated size for zone
+  AND L       ; Check if zone is ended 
+  EX (SP), HL ; Get ptr to the dir inode
+  JR NZ, #FIND_FILE_nxt-$; If reminder is not empty, then get the another dir entity
+
+  DEC IX      ; Move inode pointer to the prev zone
+  DEC IX      ; Move inode pointer to the prev zone
+  LD A, FS_SZ_ZONE_BLK; Load allocated size for zone
+  POP HL      ; Get the amount of dir entity
+  CALL #DIV16x8; Check if there are any zones remaning
+  OR L        ; Check if the low byte of  is empty
+  OR H        ; Check if the high byte is empty
+  JR NZ, #FIND_FILE_lp_zone; If there are still additional zones, then check them
+
+  LD IX, 0    ; Reset reg HL
+  JR #FIND_FILE_esc-$
+
+#FIND_FILE_end:
+  POP BC      ; Restore string length in reg B
+  POP HL      ; Get ptr to the inode
+  LD E, (HL)  ; Load the low byte of the inode addr
+  INC HL      ; Move queue ptr to the high addr of func
+  LD D, (HL)  ; Load the high byte of the inode addr
+  EX DE, HL   ; Move inode index to the reg HL
+  LD A, FS_SZ_INODE; Load inode size
+  CALL #MUL16x8; Calc inode address offset
+  PUSH HL     ; Temp save inode addr offset in stack
+  POP IX      ; Get inode addr offset in reg IX
+  LD DE, INODE_MAP; Load inode addr start
+  XOR A       ; Reset Acc
+  OR L        ; Check if offset of inode is 0
+  OR H        ; Check if offset of inode is 0
+  JR Z, #FIND_FILE_archived-$; If it zero that means that it's deleted inode, so just skip it
+  ADD IX, DE  ; Find current directory inode addr
+#FIND_FILE_archived:
+  POP DE      ; Restore ptr to the string
+  POP HL      ; Restore amount of inodes in curr dir
+
+#FIND_FILE_esc:
+  POP HL      ; Restore reg HL
+  POP AF      ; Restore reg AF
+  RET
+
+;;
+;; Example:
+;;  LD IX, 5
+;;  CALL #HAS_INODE
+;; 
+;; proc HAS_INODE() -> reg F(Z);
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;   reg IX -- unaffected
+;;
+#HAS_INODE:
+  PUSH HL     ; Save reg HL in stack
+  PUSH IX     ; Temp save INODE ptr in stack
+  POP HL      ; Load INODE ptr to the reg HL
+  XOR A       ; Reset reg Acc
+  OR H        ; Check if inode addr is empty
+  OR L        ; Check if inode addr is empty
+  POP HL      ; Restore reg HL
+  RET
+
+;;
+;; Example:
+;;  LD DE, 0x2000 ; Reg DE can be used inside #TEMP func
 ;;  LD HL, #TEMP
 ;;  CALL #ITER_INODE
 ;; 
@@ -60,81 +203,6 @@
   POP DE      ; Restore reg DE
   RET
 
-;;
-;; Example:
-;;  LD HL, #TEMP
-;;  CALL #ITER_INODE
-;; 
-;; #TEMP:
-;;  RET
-;; 
-;; proc ITER_INODE() -> reg IX;
-;;   reg A  -- as defined
-;;   reg BC -- unaffected
-;;   reg DE -- unaffected
-;;   reg HL -- unaffected
-;;   reg IX -- as defined
-;;
-#FILENAME_FIND_ITER:
-  PUSH HL     ; Save reg HL in stack
-  PUSH DE     ; Save reg DE in stack
-  PUSH BC     ; Save reg BC in stack
-
-  LD L, (IX+FS_INODE_ZONE0); Set directory data zone0, low byte
-  LD H, (IX+FS_INODE_ZONE0+1); Set directory data zone0, high byte
-  INC HL      ; Move ptr to the byte before of file name start
-  INC HL      ; Move ptr to the start of the name
-
-#FILENAME_FIND_ITER_lp:
-  LD A, (DE)  ; Load filename char from text buf
-  CP (HL)     ; Check if chars are equal to inode
-  JR NZ, #FILENAME_FIND_ITER_end-$
-  INC HL      ; Move buf ptr by one
-  INC DE      ; Move cmd ptr by one
-  DJNZ #FILENAME_FIND_ITER_lp-$
-  LD A, (HL)  ; Check if filename is ended
-  OR A        ; Check if this char is 0, aka end of the word
-  JR NZ, #FILENAME_FIND_ITER_end-$; If buf counter is ended, aka buf word is less then cmd
-
-  PUSH IX     ; Temp save reg IX in stack
-  POP HL      ; Load reg IX into reg HL
-  LD A, L     ; Load into reg A low byte of the inode
-  LD (PTR_TEMP_WORD),   A; Reset low byte of the word
-  LD A, H     ; Load into reg A high byte of the inode
-  LD (PTR_TEMP_WORD+1), A; Reset high byte of the word
-
-#FILENAME_FIND_ITER_end:
-  POP BC      ; Restore reg BC
-  POP DE      ; Restore reg DE
-  POP HL      ; Restore reg HL
-  RET
-
-;;
-;; Example:
-;;  LD B, 5
-;;  CALL #IS_FILENAME_EXIST
-;; 
-;; proc IS_FILENAME_EXIST() -> reg HL & reg F(Z);
-;;   reg A  -- as defined
-;;   reg BC -- unaffected
-;;   reg DE -- unaffected
-;;   reg HL -- unaffected
-;;   reg IX -- as defined
-;;
-#IS_FILENAME_EXIST:
-  XOR A       ; Reset reg Acc
-  LD (PTR_TEMP_WORD),   A; Reset low byte of the word
-  LD (PTR_TEMP_WORD+1), A; Reset high byte of the word
-
-  LD HL, #FILENAME_FIND_ITER; Load handler func for iter to call
-  CALL #ITER_INODE; Iterate throgh inodes
-
-  ; TODO: Fix bug with incorrect inode ptr when file exists
-  LD HL, (PTR_TEMP_WORD); Load inode addr into reg HL
-  XOR A       ; Reset reg Acc
-  OR H        ; Check if inode addr is empty
-  OR L        ; Check if inode addr is empty
-  RET
 
 ;;
 ;; Example:
@@ -346,6 +414,150 @@
 ;;   reg HL -- as defined
 ;;   reg IX -- as defined
 ;;
+_FS_EXEC:
+  ; LD HL, PTR_SYNC_BYTE; Load ptr to the sync byte
+  ; LD A, ~SYNC_ACK; Set sync ack mask byte to Acc
+  ; AND (HL)   ; Reset SYNC ACK bit
+  ; LD (HL), A ; Save new SYNC byte in memory
+
+  ; TODO: 
+  ; LD B, 8
+  ; LD DE, .FILE_TEST
+  ; CALL #FIND_FILE
+
+  LD HL, PTR_STDIN_BUF_BGN; Load ptr to the start offset of STDIN
+  LD A, (PTR_STDIN_BUF_END); Load the position of the last byte in stdin
+  LD DE, STDIN_BUF; Load ptr to the start of stdin buffer
+  LD E, (HL) ; Load current index of STDIN & make offset for reg DE
+
+  SUB E      ; Calc the diff of position end - index
+  PUSH DE    ; Save in stack start of string
+  LD B, A    ; Load diff between end & index to the reg C
+  LD C, 0    ; Reset reg C, use it as a string length
+
+_FS_EXEC_lp:
+  LD A, (DE) ; Load current ASCII char
+  INC E      ; Increment ptr to the next ASCII char
+  LD (HL), E ; Update the start of STDIN ptr
+  CP SPACE   ; Check if char is ' '
+  JR Z, _FS_EXEC_lp_esc-$
+  CP LINE_FEED ; Check if char is '\n'
+  JR Z, _FS_EXEC_lp_esc-$
+  INC C      ; Increment filename string length
+  DJNZ _FS_EXEC_lp-$
+
+_FS_EXEC_lp_esc:
+  LD B, C    ; Load file name string size
+  POP DE     ; Restore the start of the string
+
+  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+  ; CALL #HAS_INODE; Check if the file was founded
+
+  ; TODO: if not found show error ????????
+  ; RET Z
+
+  LD A, FS_SZ_ZONE_BLK; Load zone size
+  LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
+  LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
+  CALL #DIV16x8; Calc index offset to the last zone
+  LD B, L     ; Load the last zone index
+  INC B       ; Add 1 to the index zone, for adjusting with DJNZ
+
+  LD DE, RAM_ADDR
+  PUSH DE
+
+_FS_EXEC_load:
+  LD L, (IX+FS_INODE_ZONE0); Set directory data from the last zone, low byte
+  LD H, (IX+FS_INODE_ZONE0+1); Set directory data from the last zone, high byte
+
+  PUSH BC
+  LD BC, 5
+
+
+  LDIR        ; Copy program to the MEMORY
+  INC IX      ; Move inode pointer to the next zone
+  INC IX      ; Move inode pointer to the next zone
+
+  POP BC
+  DJNZ _FS_EXEC_load-$
+
+  POP HL
+  JP (HL)
+  
+  ; LD HL, .MSG_FILE_NOT_FOUND; Load ptr to the string
+  ; JP Z, #STR_PRINT; If file is not found then display an error
+
+  ; LD HL, .MSG_OK; Load ptr to the string
+  ; JP #STR_PRINT; If file is not found then display an error
+
+
+
+;   CALL #STR_STRIP; Strip the STDIN string
+;   XOR A      ; Reset Acc
+;   OR B       ; Check if reg B reached the end
+  
+;   ; TODO: Think how to do this !!!
+;   ; JP Z, #MSG_FILE_NOT_FOUND; If for some reason it reached the end, display an error
+;   PUSH DE    ; Save ptr to the STDIN in stack
+
+; ;;  LD B, 5   ; String length
+; ;;  LD DE, .STRING  ; Load ptr to the string in reg DE
+; ;;  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+
+; _FS_EXEC_lp:
+;   LD A, (DE) ; Load current ASCII char
+;   INC E      ; Increment ptr to the next ASCII char
+;   CP LINE_FEED; Check if char is '\n'
+;   JR Z, _FS_EXEC_lp_esc-$; Exec cmd if STDIN reached LINE_FEED
+;   CP SPACE    ; Check if char is ' '
+;   JR Z, _FS_EXEC_lp_esc-$; Exec cmd if STDIN reached ' ' and treat everything after as args
+
+;   DJNZ _FS_EXEC_lp-$
+;   RET         ; End filesystem exec proc if '/n' is not found in STDIN
+
+
+; _FS_EXEC_lp_esc:
+;   LD A, E    ; Load to Acc the end of the STDIN cmd
+;   LD (HL), E ; Update the start offset to reach cmd end
+
+;   POP DE     ; Restore ptr to the STDIN start
+;   SUB E      ; Calc string length
+;   LD B, A    ; Move string length into reg B
+;   DEC B      ; Remove from string size '\n'
+;   RET Z      ; If string length is 0, then skip file searching
+
+;   CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+;   CALL #HAS_INODE; Check if the file was founded
+  
+;   LD HL, .MSG_FILE_NOT_FOUND; Load ptr to the string
+;   JP Z, #STR_PRINT; If file is not found then display an error
+
+;;  LD B, 5   ; String length
+;;  LD DE, .STRING  ; Load ptr to the string in reg DE
+;;  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+
+
+#TTTTTTTTTTTTTTT:
+  LD HL, .MSG_FILE_NOT_FOUND
+  RST 0x18    ; Print string
+  RET
+
+;;
+;; Example:
+;;  LD BC, 5
+;;  LD DE, mount_name
+;;  CALL #PRINT_INODE
+;; 
+;; PRINT_INODE:
+;;   db "mount"
+;; 
+;; proc PRINT_INODE() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- as defined
+;;   reg IX -- as defined
+;;
 #PRINT_INODE:
   LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
   AND FS_MODE_MASK; Get only file type
@@ -370,7 +582,7 @@
   RST 0x10
 
   LD BC, 0x0200; Display only first 2 bytes & reset reg C
-  LD HL, PTR_TEMP_WORD      ; Load ptr to the temp val
+  LD HL, 0      ; Load ptr to the temp val
   PUSH IX     ; Temp save ptr to the curr inode
 
 #PRINT_INODE_size_lp:
@@ -482,15 +694,19 @@ FS_MOUNT_EN       EQU 0x01
 
 ; Sizes
 FS_SZ_INODE            EQU 0x20
+FS_SZ_DIR_ENTITY       EQU 0x20
+FS_SZ_ZONE_BLK         EQU 0x80
+
+; FIXME: Delete this
 FS_SZ_FILENAME_BLK     EQU 0x20
-FS_SZ_DATA_BLK         EQU 0x200
 
 ;; Inodes
-FILENAME_SCAN_KEY_BUF     EQU DATA_ZONE_MAP ;; Map SCAN_KEY_BUF
-FILENAME_TEXT_BUF_MAP     EQU DATA_ZONE_MAP +  FS_SZ_FILENAME_BLK;; Map TEXT_BUF_MAP
+; FILENAME_SCAN_KEY_BUF     EQU DATA_ZONE_MAP ;; Map SCAN_KEY_BUF
+; FILENAME_TEXT_BUF_MAP     EQU DATA_ZONE_MAP +  FS_SZ_FILENAME_BLK;; Map TEXT_BUF_MAP
 
 ;; FS MODE
 FS_FILE_TYPE      EQU FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W
+FS_DIR_TYPE       EQU FS_MODE_DIR  | FS_MODE_USR_R | FS_MODE_USR_W
 
 .SUPER_BLOCK:
   ;;  INDOES  ZONES   IMAP BLOCKS   ZMAP BLOCKS   DATA ZONE START   ZONE SIZE   MAX FILE SIZE
@@ -502,26 +718,42 @@ FS_FILE_TYPE      EQU FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W
 
 .INODE_BLOCK:
   ;; ====================================================================
-  ;;   MODE           UID     SIZE    ALLOCATED   CREATED   UPDATED  GID|LINKS     ZONE0
-  dw  FS_FILE_TYPE,   0x00,  0x002F,   0x0020,      0x00,    0x00,     0x00,    FILENAME_SCAN_KEY_BUF
+  ;;   MODE           UID         SIZE                 ALLOCATED       CREATED   UPDATED  GID|LINKS     ZONE0
+  dw  FS_DIR_TYPE,    0x00,  FS_SZ_DIR_ENTITY + FS_SZ_DIR_ENTITY + FS_SZ_DIR_ENTITY,  FS_SZ_ZONE_BLK,     0x00,    0x00,     0x00,    DATA_ZONE_MAP
   
-  ;;     ZONE1       ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
-  dw  SCAN_KEY_BUF,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
+  ;;   ZONE1  ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
+  dw   0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
 
   ;; ====================================================================
-  ;;   MODE           UID     SIZE    ALLOCATED   CREATED  UPDATED   GID|LINKS     ZONE0
-  dw  FS_FILE_TYPE,   0x00,  0x011F,   0x0020,     0x00,     0x00,     0x00,    FILENAME_TEXT_BUF_MAP
+  ;;   MODE           UID     SIZE         ALLOCATED   CREATED   UPDATED  GID|LINKS     ZONE0
+  dw  FS_FILE_TYPE,   0x00,  0x002F,    FS_SZ_ZONE_BLK,      0x00,    0x00,     0x00,    SCAN_KEY_BUF
   
-  ;;     ZONE1       ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
-  dw  TEXT_BUF_MAP,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
+  ;;  ZONE1  ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
+  dw  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
+
+  ;; ====================================================================
+  ;;   MODE           UID     SIZE       ALLOCATED   CREATED  UPDATED   GID|LINKS     ZONE0
+  dw  FS_FILE_TYPE,   0x00,  0x011F,   FS_SZ_ZONE_BLK,     0x00,     0x00,     0x00,    TEXT_BUF_MAP
+  
+  ;;  ZONE1  ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
+  dw  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
+  ;; ====================================================================
+  ;;   MODE           UID     SIZE       ALLOCATED   CREATED  UPDATED   GID|LINKS     ZONE0
+  dw  FS_FILE_TYPE,   0x00,  0x0005,   FS_SZ_ZONE_BLK,     0x00,     0x00,     0x00,    #TTTTTTTTTTTTTTT
+  
+  ;;  ZONE1  ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
+  dw  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
 .INODE_BLOCK_ED:
 
 .FILENAME_BLOCK:
   ;; ====================================================================
-  dw  0x00 ;; FILENAME_SCAN_KEY_BUF
-  db "scan-key", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0xFF
+  dw  1;; FILENAME_SCAN_KEY_BUF
+  db "scan-key",  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0xFF
   ;; ====================================================================
-  dw  0x01 ;; FILENAME_TEXT_BUF_MAP
-  db "text-buf", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF
+  dw  2;; FILENAME_TEXT_BUF_MAP
+  db "text-buf",  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0xFF
+  ;; ====================================================================
+  dw  3;; FILENAME_TEXT_BUF_MAP
+  db "test",  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0xFF
   ;; ====================================================================
 .FILENAME_BLOCK_ED:

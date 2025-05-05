@@ -6,9 +6,9 @@ Init = {
   height = HIGHT,
   pixel = PIXELS,
 
-  -- src = "assets/src/DoS/Main.asm",
+  src = "assets/src/DoS/Main.asm",
   -- src = "assets/test/Timer/Test.asm",
-  src = "assets/test/RTC/Test.asm",
+  -- src = "assets/test/RTC/Test.asm",
   -- src = "assets/test/LCD/Test.asm",
   clock = 250, -- nano seconds = 4MHz
 

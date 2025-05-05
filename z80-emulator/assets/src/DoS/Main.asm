@@ -15,6 +15,7 @@ ALLOWED_INTERUPTS EQU IM_KEYBOARD
 SETUP:
   ; LD SP, STACK      ; Set Memory Paging RAM
 
+  XOR A
   LD (PTR_PREV_SCAN_CODE), A
   LD (PTR_TEXT_BUFF_BGN), A
   LD (PTR_TEXT_BUFF_END), A
@@ -27,6 +28,7 @@ SETUP:
 
   ; CALL _SCAN_CODE_INIT
 
+  ;; TODO: Move this to EEPROM
   LD BC, .SUPER_BLOCK_ED-.SUPER_BLOCK
   LD HL, .SUPER_BLOCK
   LD DE, SUPER_BLOCK_MAP
@@ -48,6 +50,9 @@ SETUP:
   LD (PTR_INPUT_STATE), A
   RST 0x10    ; Output the char
 
+
+#RTC_ALARM_EXEC:
+_RTC_INIT:
   RET
 
 
@@ -86,8 +91,12 @@ MAIN:
 ; #include "../lib/Printf.asm"
 #include "../../lib/EventLoop.asm"
 #include "../../lib/Keyboard.asm"
-#include "../../lib/Buffer.asm"
+; #include "../../lib/Buffer.asm"
 #include "../../lib/Lcd.asm"
 
 #include "../../lib/Timer.asm"
 #include "../../lib/Utils.asm"
+#include "../../lib/FileSystem.asm"
+#include "../../lib/utils/Math.asm"
+#include "../../lib/utils/String.asm"
+#include "../../lib/utils/Message.asm"

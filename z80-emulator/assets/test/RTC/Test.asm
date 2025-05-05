@@ -39,8 +39,9 @@ MAIN:
   ; CALL #MUL16x8
   ; LD A, L
 
-  CALL #RTC_CURRENT_TIME
-  LD A, L
+  ; CALL #RTC_CURRENT_TIME
+  ; LD A, L
+  LD A, (RTC_SECONDS) ; Intialize second value
   CALL #BIN_BCD
 
 
