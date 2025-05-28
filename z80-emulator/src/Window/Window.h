@@ -14,7 +14,9 @@ public:
   virtual void Highlight(PixelGameEngine* GameEngine) {};
   virtual void SelectHighlight(int32_t i) {};
 
+  virtual std::string GetId() { return ""; };
   virtual std::string GetName() { return ""; };
+  virtual std::string GetBindings() { return ""; };
 
   virtual void Lock() {};
   virtual void Unlock() {};

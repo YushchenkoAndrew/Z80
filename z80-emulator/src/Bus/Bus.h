@@ -138,7 +138,9 @@ private:
   }
 
 public:
+  inline std::string GetId() { return typeid(this).name(); }
   inline std::string GetName() { return "bus"; }
+  inline std::string GetBindings() { return "bus"; }
 
 public:
   std::shared_ptr<Led> led;

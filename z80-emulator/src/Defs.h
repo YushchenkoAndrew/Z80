@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <future>
+#include <typeinfo>
 #include "include/Typelist.h"
 #include "include/Foreach.h"
 #include "lib/olcPixelGameEngine.h"

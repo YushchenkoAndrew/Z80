@@ -82,6 +82,10 @@ public:
     }
   }
 
+  inline std::string GetId() { return typeid(this).name(); }
+  inline std::string GetName() { return "popup"; }
+  inline std::string GetBindings() { return "popup"; }
+
 private:
   olc::vi2d size = olc::vi2d(0, 0);
   olc::vi2d absolute = olc::vi2d(0, 0);

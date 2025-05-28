@@ -40,29 +40,16 @@ public:
 
 
   void Preinitialize() {
-    if (EXIST(bus))      PTR(bus)->Preinitialize();
-    if (EXIST(eeprom))   PTR(eeprom)->Preinitialize();
-    if (EXIST(stack))    PTR(stack)->Preinitialize();
-    if (EXIST(editor))   PTR(editor)->Preinitialize();
-    if (EXIST(popup))    PTR(popup)->Preinitialize();
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Preinitialize();
   }
 
   void Initialize(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second; bFullScreen = false;
-
-    if (EXIST(bus))      PTR(bus)->Initialize(DIMENSION(bus));
-    if (EXIST(eeprom))   PTR(eeprom)->Initialize(DIMENSION(eeprom));
-    if (EXIST(stack))    PTR(stack)->Initialize(DIMENSION(stack));
-    if (EXIST(editor))   PTR(editor)->Initialize(DIMENSION(editor));
-    if (EXIST(popup))    PTR(popup)->Initialize(DIMENSION(popup));
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize(DIMENSION(w));
   }
 
   void Preprocess() {
-    if (EXIST(bus))      PTR(bus)->Preprocess();
-    if (EXIST(eeprom))   PTR(eeprom)->Preprocess();
-    if (EXIST(stack))    PTR(stack)->Preprocess();
-    if (EXIST(editor))   PTR(editor)->Preprocess();
-    if (EXIST(popup))    PTR(popup)->Preprocess();
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Preprocess();
   }
 
   void Process(PixelGameEngine* GameEngine) {
@@ -82,19 +69,10 @@ public:
       auto mouse = GameEngine->GetMousePos();
       if (mouse.y - size.y > 0) return;
 
-      if (!bFullScreen && EXIST(bus))      SELECTED(bus)      = IS_INSIDE(bus, mouse);
-      if (!bFullScreen && EXIST(eeprom))   SELECTED(eeprom)   = IS_INSIDE(eeprom, mouse);
-      if (!bFullScreen && EXIST(stack))    SELECTED(stack)    = IS_INSIDE(stack, mouse);
-      if (!bFullScreen && EXIST(editor))   SELECTED(editor)   = IS_INSIDE(editor, mouse);
-      if (!bFullScreen && EXIST(popup))    SELECTED(popup)    = IS_INSIDE(popup, mouse);
+      for (auto& w : windows) if (!bFullScreen && EXIST(w)) SELECTED(w) = IS_INSIDE(w, mouse);
     }
 
-
-    if (SELECTED(bus))      PTR(bus)->Process(GameEngine);
-    if (SELECTED(eeprom))   PTR(eeprom)->Process(GameEngine);
-    if (SELECTED(stack))    PTR(stack)->Process(GameEngine);
-    if (SELECTED(editor))   PTR(editor)->Process(GameEngine);
-    if (SELECTED(popup))    PTR(popup)->Process(GameEngine);
+    for (auto& w : windows) if (SELECTED(w)) PTR(w)->Process(GameEngine);
   }
 
   void Draw(PixelGameEngine* GameEngine) {
@@ -106,11 +84,7 @@ public:
 
     // for(auto& future : vFuture) future.wait();
 
-    if (EXIST(bus)      && SHOULD_DRAW(bFullScreen, bus))      PTR(bus)->Draw(GameEngine);
-    if (EXIST(eeprom)   && SHOULD_DRAW(bFullScreen, eeprom))   PTR(eeprom)->Draw(GameEngine);
-    if (EXIST(stack)    && SHOULD_DRAW(bFullScreen, stack))    PTR(stack)->Draw(GameEngine);
-    if (EXIST(editor)   && SHOULD_DRAW(bFullScreen, editor))   PTR(editor)->Draw(GameEngine);
-    if (EXIST(popup)    && SHOULD_DRAW(bFullScreen, popup))    PTR(popup)->Draw(GameEngine);
+    for (auto& w : windows) if (EXIST(w) && SHOULD_DRAW(bFullScreen, w)) PTR(w)->Draw(GameEngine);
 
     if (mode == NORMAL) return;
     if (cmd.back() == 'q' && !search.bEnabled) Draw(Int2Type<Editor::VimT::CMD_q>(), GameEngine);
@@ -118,27 +92,15 @@ public:
   }
 
   void Highlight(PixelGameEngine* GameEngine) {
-    if (EXIST(bus)      && SHOULD_DRAW(bFullScreen, bus))      PTR(bus)->Highlight(GameEngine);
-    if (EXIST(eeprom)   && SHOULD_DRAW(bFullScreen, eeprom))   PTR(eeprom)->Highlight(GameEngine);
-    if (EXIST(stack)    && SHOULD_DRAW(bFullScreen, stack))    PTR(stack)->Highlight(GameEngine);
-    if (EXIST(editor)   && SHOULD_DRAW(bFullScreen, editor))   PTR(editor)->Highlight(GameEngine);
-    if (EXIST(popup)    && SHOULD_DRAW(bFullScreen, popup))    PTR(popup)->Highlight(GameEngine);
+    for (auto& w : windows) if (EXIST(w) && SHOULD_DRAW(bFullScreen, w)) PTR(w)->Highlight(GameEngine);
   }
 
   void Lock() {
-    if (EXIST(bus))      PTR(bus)->Lock();
-    if (EXIST(eeprom))   PTR(eeprom)->Lock();
-    if (EXIST(stack))    PTR(stack)->Lock();
-    if (EXIST(editor))   PTR(editor)->Lock();
-    if (EXIST(popup))    PTR(popup)->Lock();
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Lock();
   }
 
   void Unlock() {
-    if (EXIST(bus))      PTR(bus)->Unlock();
-    if (EXIST(eeprom))   PTR(eeprom)->Unlock();
-    if (EXIST(stack))    PTR(stack)->Unlock();
-    if (EXIST(editor))   PTR(editor)->Unlock();
-    if (EXIST(popup))    PTR(popup)->Unlock();
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Unlock();
   }
 
 private:
@@ -148,11 +110,7 @@ private:
       GameEngine->DrawString(POS(tuple), std::string(1, '0' + WINDOW(tuple)), *color, 4);
     };
 
-    if (EXIST(bus))      index(bus);
-    if (EXIST(eeprom))   index(eeprom);
-    if (EXIST(stack))    index(stack);
-    if (EXIST(editor))   index(editor);
-    if (EXIST(popup))    index(popup);
+    for (auto& w : windows) if (EXIST(w)) index(w);
   }
 
 public:
@@ -160,25 +118,23 @@ public:
   inline void Command(Int2Type<T>) {}
 
   inline void Command(Int2Type<Editor::VimT::CMD_z>) {
-    if (SELECTED(bus))      { bFullScreen = (ZOOMED(bus)      ^= true); PTR(bus)->Initialize(     bFullScreen ? std::pair(absolute, size) : DIMENSION(bus)); }
-    if (SELECTED(eeprom))   { bFullScreen = (ZOOMED(eeprom)   ^= true); PTR(eeprom)->Initialize(  bFullScreen ? std::pair(absolute, size) : DIMENSION(eeprom)); }
-    if (SELECTED(stack))    { bFullScreen = (ZOOMED(stack)    ^= true); PTR(stack)->Initialize(   bFullScreen ? std::pair(absolute, size) : DIMENSION(stack)); }
-    if (SELECTED(editor))   { bFullScreen = (ZOOMED(editor)   ^= true); PTR(editor)->Initialize(  bFullScreen ? std::pair(absolute, size) : DIMENSION(editor)); }
-    if (SELECTED(popup))    { bFullScreen = (ZOOMED(popup)    ^= true); PTR(popup)->Initialize(   bFullScreen ? std::pair(absolute, size) : DIMENSION(popup)); }
+    for (auto& w : windows) if (SELECTED(w)) { bFullScreen = (ZOOMED(w) ^= true); PTR(w)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(w)); }
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
-    if (!(EXIST(popup))) return;
+    auto popup = Find(Type2Type<Editor::Popup>());
+    auto& window = Window(Type2Type<Editor::Popup>());
+    if (!(EXIST(window))) return;
 
     int32_t selected = 0;
     std::vector<std::string> bindings;
 
-    if (SELECTED(popup)) {
-      PTR(popup)->Load(bindings);
+    if (SELECTED(window)) {
+      popup->Load(bindings);
       Command(Int2Type<Editor::VimT::CMD_z>());
 
-      SELECTED(popup) = false;
-      cmd.push_back(PTR(popup)->window + '0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
+      SELECTED(window) = false;
+      cmd.push_back(popup->window + '0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
       return;
     }
 
@@ -190,19 +146,14 @@ public:
       return list;
     };
 
-    if (SELECTED(bus))      { bindings = GetBindings("bus");    selected = WINDOW(bus); }
-    if (SELECTED(eeprom))   { bindings = GetBindings("memory"); selected = WINDOW(eeprom); }
-    if (SELECTED(stack))    { bindings = GetBindings("memory"); selected = WINDOW(stack); }
-    if (SELECTED(editor))   { bindings = GetBindings("editor"); selected = WINDOW(editor); }
-    if (SELECTED(popup))    { bindings = GetBindings("popup");  selected = WINDOW(popup); }
-
+    for (auto& w : windows) if (SELECTED(w)) { bindings = GetBindings(PTR(w)->GetBindings().c_str()); selected = WINDOW(w); }
     cmd.push_back('0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
 
     auto panel = GetBindings("panel");
     bindings.insert(bindings.end(), panel.begin(), panel.end());
 
 
-    PTR(popup)->Load(bindings); PTR(popup)->window = selected; SELECTED(popup) = true;
+    popup->Load(bindings); popup->window = selected; SELECTED(window) = true;
     Command(Int2Type<Editor::VimT::CMD_z>());
 
     // TODO: Impl POPUP logic HERE
@@ -235,20 +186,12 @@ public:
 
   inline void Command(Int2Type<Editor::VimT::CMD_w>) {
     int32_t digit = this->digit();
-    if (EXIST(bus))      PTR(bus)->SelectHighlight(digit);
-    if (EXIST(eeprom))   PTR(eeprom)->SelectHighlight(digit);
-    if (EXIST(stack))    PTR(stack)->SelectHighlight(digit);
-    if (EXIST(popup))    PTR(popup)->SelectHighlight(digit);
-    if (EXIST(editor))   PTR(editor)->SelectHighlight(digit);
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->SelectHighlight(digit);
   }
 
   inline void Command(Int2Type<Editor::VimT::CMD_q>) {
     int32_t digit = peek() - '0';
-    if (EXIST(bus))      SELECTED(bus)      = WINDOW(bus)      == digit;
-    if (EXIST(eeprom))   SELECTED(eeprom)   = WINDOW(eeprom)   == digit;
-    if (EXIST(stack))    SELECTED(stack)    = WINDOW(stack)    == digit;
-    if (EXIST(editor))   SELECTED(editor)   = WINDOW(editor)   == digit;
-    if (EXIST(popup))    SELECTED(popup)    = WINDOW(popup)    == digit;
+    for (auto& w : windows) if (EXIST(w)) SELECTED(w) = WINDOW(w) == digit;
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
@@ -384,12 +327,18 @@ private:
     bUpdated = true; mode = NORMAL; reset(false);
   }
 
+  template<class T>
+  WindowT<Window::Window>& Window(Type2Type<T> type) {
+    std::string id = typeid(T*).name();
+    for (auto& w : windows) if (EXIST(w) && PTR(w)->GetId() == id) return w;
+
+    static WindowT<Window::Window> empty = std::tuple_cat(std::make_tuple(false, false, nullptr, std::pair(olc::vi2d(), olc::vi2d()), 0));
+    return empty;
+  }
+
 public:
-  std::shared_ptr<Bus::Bus>& Bus() { return PTR(bus); }
-  std::shared_ptr<Editor::Popup>& Popup() { return PTR(popup); }
-  std::shared_ptr<Editor::Editor>& Editor() { return PTR(editor); }
-  std::shared_ptr<Bus::Bus::W27C512_T>& EEPROM() { return PTR(eeprom); }
-  std::shared_ptr<Bus::Bus::IMS1423_T>& Stack() { return PTR(stack); }
+  template<class T>
+  std::shared_ptr<T> Find(Type2Type<T> type) { return std::dynamic_pointer_cast<T>(PTR(Window(type))); }
 
 private:
   template<typename T, typename... Args>
@@ -397,30 +346,15 @@ private:
 
   inline void Init() {}
   
-  template<int32_t T, int32_t U>
-  inline void Init(WindowInitT<Bus::Memory<T, U>> m) { Init(Int2Type<T>(), m); }
-  
-  template<int32_t T>
-  inline void Init(Int2Type<Bus::W27C512>, WindowInitT<Bus::Memory<Bus::W27C512, T>> m) { eeprom = std::tuple_cat(std::make_tuple(nWindows == 1, false), m, std::make_tuple(++nWindows)); }
-
-  template<int32_t T>
-  inline void Init(Int2Type<Bus::IMS1423>, WindowInitT<Bus::Memory<Bus::IMS1423, T>> m) { stack = std::tuple_cat(std::make_tuple(nWindows == 1, false), m, std::make_tuple(++nWindows)); }
-
-  inline void Init(WindowInitT<Bus::Bus> b) { bus = std::tuple_cat(std::make_tuple(nWindows == 1, false), b, std::make_tuple(++nWindows)); }
-  inline void Init(WindowInitT<Editor::Popup> l) { popup = std::tuple_cat(std::make_tuple(nWindows == 1, false), l, std::make_tuple(++nWindows)); }
-  inline void Init(WindowInitT<Editor::Editor> e) { editor = std::tuple_cat(std::make_tuple(nWindows == 1, false), e, std::make_tuple(++nWindows)); }
+  template<class T>
+  inline void Init(WindowInitT<T> b) { windows.push_back(std::tuple_cat(std::make_tuple(nWindows == 1, false), b, std::make_tuple(++nWindows))); }
 
 public:
   inline bool IsActive() { return mode == COMMAND; }
   inline olc::vi2d GetSize() { return olc::vi2d(size.x, size.y); }
 
   inline std::string GetName() { 
-    if (SELECTED(bus))      return PTR(bus)->GetName();
-    if (SELECTED(eeprom))   return PTR(eeprom)->GetName();
-    if (SELECTED(stack))    return PTR(stack)->GetName();
-    if (SELECTED(editor))   return PTR(editor)->GetName();
-    if (SELECTED(popup))    return PTR(popup)->GetName();
-
+    for (auto& w : windows) if (SELECTED(w)) return PTR(w)->GetName();
     return "";
   }
 
@@ -437,13 +371,7 @@ private:
   olc::vi2d absolute = olc::vi2d(0, 0);
   olc::vi2d size = olc::vi2d(0, 0);
 
-  WindowT<Bus::Bus> bus = { false, false, nullptr, {}, 0 };
-  // WindowT<Window::popup> popup = { false, false, nullptr, {}, 0 };
-  WindowT<Editor::Popup> popup = { false, false, nullptr, {}, 0 };
-  WindowT<Editor::Editor> editor = { false, false, nullptr, {}, 0 };
-
-  WindowT<Bus::Bus::W27C512_T> eeprom = { false, false, nullptr, {}, 0 };
-  WindowT<Bus::Bus::IMS1423_T> stack = { false, false, nullptr, {}, 0 };
+  std::list<WindowT<Window::Window>> windows;
 };
 
 

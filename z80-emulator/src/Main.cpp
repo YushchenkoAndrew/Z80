@@ -83,7 +83,8 @@ public:
         std::tuple(popup,        std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(zero.x,            zero.y)))
       ),
       Panel(
-        std::tuple(bus, std::pair(zero, olc::vi2d(ScreenWidth(), ScreenHeight())))
+        std::tuple(bus,           std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
+        std::tuple(bus->HY62256A, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, window.y)))
       )
     };
 
@@ -237,9 +238,13 @@ public:
     if (next.second.second == nullptr) return;
 
     Panel& p = panels[nPanel];
-    if (p.Editor() != nullptr) p.Editor()->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
-    if (p.EEPROM() != nullptr) p.EEPROM()->Move2Addr(next.first);
-    if (p.Stack() != nullptr)  p.Stack()->Move2Addr(bus->Z80->Stack());
+    auto editor = p.Find(Type2Type<Editor::Editor>());
+    auto eeprom = p.Find(Type2Type<Bus::Bus::W27C512_T>());
+    auto stack =  p.Find(Type2Type<Bus::Bus::IMS1423_T>());
+
+    if (editor != nullptr) editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
+    if (eeprom != nullptr) eeprom->Move2Addr(next.first);
+    if (stack  != nullptr) stack->Move2Addr(bus->Z80->Stack());
   }
 
   void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override {
@@ -258,11 +263,13 @@ public:
     std::cout << "EDITOR_SELECT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    if (panels[nPanel].Editor() == nullptr) return;
+    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
+    auto eeprom = panels[nPanel].Find(Type2Type<Bus::Bus::W27C512_T>());
+    if (editor == nullptr || eeprom == nullptr) return;
 
-    const RelativeAddr next = Pos2Token(cursor, panels[nPanel].Editor()->File());
-    if (next.second.second == nullptr || panels[nPanel].EEPROM() == nullptr) return;
-    panels[nPanel].EEPROM()->Move2Addr(next.first);
+    const RelativeAddr next = Pos2Token(cursor, editor->File());
+    if (next.second.second == nullptr || eeprom == nullptr) return;
+    eeprom->Move2Addr(next.first);
   }
 
   void Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>, olc::vi2d cursor) override {
@@ -270,14 +277,15 @@ public:
     std::cout << "EDITOR_SELECT_LINE_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    if (panels[nPanel].Editor() == nullptr) return;
+    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
+    if (editor == nullptr) return;
 
-    const RelativeAddr next = Pos2Token(cursor, panels[nPanel].Editor()->File());
+    const RelativeAddr next = Pos2Token(cursor, editor->File());
     if (next.second.second == nullptr) return;
     std::cout << next.second.second->line << std::endl;
 
     bus->Z80->SetBreakpoint((uint16_t)next.first);
-    panels[nPanel].Editor()->SelectLine((int32_t)next.second.second->line - 1);
+    editor->SelectLine((int32_t)next.second.second->line - 1);
   }
 
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
@@ -285,9 +293,12 @@ public:
     std::cout << "MEMORY_SELECT_CALLBACK [Addr " <<  std::setfill('0') << std::setw(5) << std::hex << std::uppercase << index << "]\n";
     #endif
 
+    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
+    if (editor == nullptr) return;
+
     const RelativeAddr next = Addr2Token(index);
-    if (next.second.second == nullptr || panels[nPanel].Editor() == nullptr) return;
-    panels[nPanel].Editor()->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
+    if (next.second.second == nullptr || editor == nullptr) return;
+    editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
   }
 
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
@@ -328,7 +339,7 @@ public:
 
 private:
   inline void Cmd2Action() {
-    auto editor = panels[nPanel].Editor();
+    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
     if (editor == nullptr) return;
 
     switch (advance()) {

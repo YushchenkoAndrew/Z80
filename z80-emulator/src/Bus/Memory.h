@@ -776,9 +776,13 @@ public:
     switch (type) {
       case MemoryT::W27C512: return "W27C512";
       case MemoryT::IMS1423: return "IMS1423";
+      case MemoryT::HY62256A: return "HY62256A";
     }
     return "";
   }
+
+  inline std::string GetId() { return typeid(this).name(); }
+  inline std::string GetBindings() { return "memory"; }
 
 private:
   inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {

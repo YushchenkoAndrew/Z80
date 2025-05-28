@@ -145,6 +145,57 @@
   POP HL      ; Restore reg HL
   RET
 
+
+;;
+;; Example:
+;;  LD IX, 5
+;;  CALL #EXEC_FILE
+;; 
+;; proc EXEC_FILE() -> void;
+;;   reg A  -- as defined
+;;   reg BC -- unaffected
+;;   reg DE -- unaffected
+;;   reg HL -- unaffected
+;;   reg IX -- unaffected
+;;
+#EXEC_FILE:
+  LD A, FS_SZ_ZONE_BLK; Load zone size
+  LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
+  LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
+  CALL #DIV16x8; Calc index offset to the last zone
+  LD H, A     ; Load the remainder to the reg H
+
+  LD DE, RAM_ADDR; FIXME: the dynamic stuf here
+  PUSH DE     ; Save start of the program in stack
+
+#EXEC_FILE_lp:
+  XOR A       ; Reset reg A
+  OR L        ; Check if index is located at the last zone
+  JR NZ, #EXEC_FILE_lp_step-$
+  LD B, A     ; Reset reg B
+  LD C, H     ; Load the remainder to the reg BC
+  JR #EXEC_FILE_lp_bgn-$
+
+#EXEC_FILE_lp_step:
+  LD BC, FS_SZ_ZONE_BLK; Load the whole zone size
+
+#EXEC_FILE_lp_bgn:
+  PUSH HL     ; Save the remainder & left amount of zone in stack
+  LD L, (IX+FS_INODE_ZONE0); Set directory data from the last zone, low byte
+  LD H, (IX+FS_INODE_ZONE0+1); Set directory data from the last zone, high byte
+  LDIR        ; Copy program to the MEMORY
+  INC IX      ; Move inode pointer to the next zone
+  INC IX      ; Move inode pointer to the next zone
+
+  POP HL      ; Restore remainder & left amount of zones
+  DEC L       ; Decriment the remainging zones to copy
+  LD A, 0xFF  ; Load the 0xFF in Acc
+  XOR L       ; Check if left amount of zones reached 0
+  JR NZ, #EXEC_FILE_lp-$
+
+  POP HL      ; Restore the start of the program from stack
+  JP (HL)     ; Start exec of the program
+
 ;;
 ;; Example:
 ;;  LD DE, 0x2000 ; Reg DE can be used inside #TEMP func
@@ -451,41 +502,11 @@ _FS_EXEC_lp_esc:
   POP DE     ; Restore the start of the string
 
   CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
-  ; CALL #HAS_INODE; Check if the file was founded
+  CALL #HAS_INODE; Check if the file was founded
+  JP NZ, #EXEC_FILE; Exec file if it was found
 
-  ; TODO: if not found show error ????????
-  ; RET Z
-
-  LD A, FS_SZ_ZONE_BLK; Load zone size
-  LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
-  LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
-  CALL #DIV16x8; Calc index offset to the last zone
-  LD B, L     ; Load the last zone index
-  INC B       ; Add 1 to the index zone, for adjusting with DJNZ
-
-  LD DE, RAM_ADDR
-  PUSH DE
-
-_FS_EXEC_load:
-  LD L, (IX+FS_INODE_ZONE0); Set directory data from the last zone, low byte
-  LD H, (IX+FS_INODE_ZONE0+1); Set directory data from the last zone, high byte
-
-  PUSH BC
-  LD BC, 5
-
-
-  LDIR        ; Copy program to the MEMORY
-  INC IX      ; Move inode pointer to the next zone
-  INC IX      ; Move inode pointer to the next zone
-
-  POP BC
-  DJNZ _FS_EXEC_load-$
-
-  POP HL
-  JP (HL)
-  
-  ; LD HL, .MSG_FILE_NOT_FOUND; Load ptr to the string
-  ; JP Z, #STR_PRINT; If file is not found then display an error
+  LD HL, .MSG_FILE_NOT_FOUND; Load ptr to the string
+  JP #STR_PRINT; If file is not found then display an error
 
   ; LD HL, .MSG_OK; Load ptr to the string
   ; JP #STR_PRINT; If file is not found then display an error

@@ -35,3 +35,10 @@
   INC HL     ;; Inc arg pointer
   RST 0x10   ;; Output the char
   JR #STR_PRINT-$
+
+  ; LD A, (HL) ;; Get curr char
+  ; OR A       ;; Check if line is ended (Set flag Z)
+  ; RET Z      ;; Return if str is ended 
+  ; INC HL     ;; Inc arg pointer
+  ; RST 0x10   ;; Output the char
+  ; JR RST18-$
