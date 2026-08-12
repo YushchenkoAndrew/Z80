@@ -525,11 +525,13 @@ public:
 
 private:
   void Process(Int2Type<REPLACE>, PixelGameEngine* GameEngine) {
-    foreach<KeyEvent, Memory>::Process(this);
+    // FIXME: ....
+    // foreach<KeyEvent, Memory>::Process(this);
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    foreach<KeyEvent, Memory>::Process(this);
+    // FIXME: .....
+    // foreach<KeyEvent, Memory>::Process(this);
 
     if (!bUpdated) return;
     else bUpdated = false;
@@ -601,12 +603,12 @@ private:
   }
 
   inline void phrase(const char c) {
-    AnyType<-1, int32_t>::GetValue() = c;
-    bSync = bSync || foreach<SyncMemoryCommands, AnyType<-1, int32_t>>::Has();
+    // AnyType<-1, int32_t>::GetValue() = c;
+    // bSync = bSync || foreach<SyncMemoryCommands, AnyType<-1, int32_t>>::Has();
     
-    auto operation = lambda;
-    if (locked && foreach<LockedMemoryCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
-    else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<MemoryCommands, Memory>::Command(this); };
+    // auto operation = lambda;
+    // if (locked && foreach<LockedMemoryCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
+    // else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<MemoryCommands, Memory>::Command(this); };
   }
 
   template<int32_t T>

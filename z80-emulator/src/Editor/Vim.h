@@ -463,11 +463,13 @@ public:
   }
 
   void Process(Int2Type<INSERT>, PixelGameEngine* GameEngine) {
-    foreach<KeyEvent, Vim>::Process(this);
+    // FIXME: ....
+    // foreach<KeyEvent, Vim>::Process(this);
   }
 
   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    foreach<KeyEvent, Vim>::Process(this);
+    // FIXME: ....
+    // foreach<KeyEvent, Vim>::Process(this);
 
     if (!bUpdated) return;
     else bUpdated = false;
@@ -545,12 +547,12 @@ public:
   }
 
   inline void phrase(const char c) {
-    AnyType<-1, int32_t>::GetValue() = c;
-    bSync = bSync || foreach<SyncVimCommands, AnyType<-1, int32_t>>::Has();
+    // AnyType<-1, int32_t>::GetValue() = c;
+    // bSync = bSync || foreach<SyncVimCommands, AnyType<-1, int32_t>>::Has();
 
-    auto operation = lambda;
-    if (locked && foreach<LockedVimCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
-    else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, Vim>::Command(this); };
+    // auto operation = lambda;
+    // if (locked && foreach<LockedVimCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
+    // else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, Vim>::Command(this); };
   }
 
   template<int32_t T>

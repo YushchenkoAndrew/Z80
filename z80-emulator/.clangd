@@ -1,0 +1,3 @@
+Diagnostics:
+  UnusedIncludes: Strict
+  Suppress: ["UnusedIncludes"] # You can target specific files or suppress all

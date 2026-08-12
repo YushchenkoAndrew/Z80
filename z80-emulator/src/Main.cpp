@@ -1,5 +1,13 @@
+#include "include/Typelist.h"
+#include "src/Defs.h"
+#include "src/Window/Command.h"
+#include <cstdint>
+#include <cstdio>
+#include <functional>
+#include <list>
 #include <stdio.h>
 #include <fstream>
+#include <vector>
 
 #define DEBUG_MODE
 #include "Panel.h"
@@ -74,19 +82,21 @@ public:
     olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y);
     olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y);
 
+    auto panel = Panel();
+    panel.Push(std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))));
+    panel.Push(std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))));
+    panel.Push(std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))));
+    panel.Push(std::tuple(popup,        std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(zero.x,            zero.y))));
+
     panels = {
-      Panel(
-        // TODO: Load windows size from lua
-        std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
-        std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
-        std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
-        std::tuple(popup,        std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(zero.x,            zero.y)))
-      ),
+      panel,
       Panel(
         std::tuple(bus,           std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
         std::tuple(bus->HY62256A, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, window.y)))
       )
     };
+
+    this->vKeyEventListeners.push_back(&panels[0]);
 
     panels[nPanel].Initialize(std::pair(olc::vi2d(0, 0), size));
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
@@ -103,9 +113,70 @@ public:
     return true;
   }
 
+  template<int32_t T, int32_t U, int32_t V>
+  void Process(TypeList<Int2Type<T>, TypeList<Int2Type<U>, Int2Type<V>>> event) {
+    olc::HWButton btn = this->GetKey((olc::Key)T);
+    if (!btn.bPressed) return;
+
+    // NOTE: think about how to manage press or holding
+
+    if (!vKeyEventListeners.size()) return;
+    if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
+
+    this->vKeyCombination.push_back((olc::Key)T);
+
+    for (const auto listener : vKeyEventListeners) {
+      auto [exist, exec] = listener->Executable(this->vKeyCombination);
+
+      if (exec != nullptr) fnStrokeAction = exec(listener);
+      if (!exist || exec != nullptr) { this->vKeyCombination.clear(); return; }
+    }
+  }
+
   bool OnUserUpdate(float fElapsedTime) override {
 	  Clear(*AnyType<Colors::BLACK, ColorT>::GetValue());
     AnyType<-1, float>::GetValue() = fElapsedTime;
+
+    foreach<KeyEvent, void>::Process(this);
+
+    // go though available commands and execute them
+
+    // olc::Key::CTRL, olc::Key::SPACE, olc::KEY::z
+
+    // for (uint8_t i = olc::Key::A; i < olc::Key::ENUM_END; i++) {
+    //   olc::HWButton btn =  this->GetKey(static_cast<olc::Key>(i));
+
+    //   if (!btn.bPressed) continue;
+
+    // }
+
+    // if (this->command.size()) {
+
+    //   // Int2Type<olc::Key::E>, Int2Type<'e'>
+
+    // }
+
+    // for(auto& t : this->command) {
+    //   printf("KEY - %d", t);
+    // }
+
+
+      // if (btn.bReleased) { fStrokeRepeat = .0f; bReleased = true; }
+      // if (btn.bHeld) {
+      //   fStrokeRepeat += AnyType<-1, float>::GetValue();
+      //   if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
+      // }
+
+      // if (GameEngine->GetKey(olc::Key::CTRL).bHeld) cmd += "^";
+
+  //   const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
+  //   const char c = toUpper ? upper : lower;
+
+  //   bUpdated = true; cmd += std::string(1, c); 
+
+
+      // bool bPressed = btn.bPressed;
+      // bool bReleased = btn.bReleased;
 
     panels[nPanel].Preprocess();
     panels[nPanel].Process(this); 
@@ -163,13 +234,17 @@ public:
     FillRect(pos - olc::vi2d(0, 2), olc::vi2d(nWidth, 10), *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
     DrawString(pos + olc::vi2d(0, vStep.y), keybindings, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
+    const auto& cmd = Command();
+    DrawString(pos + olc::vi2d(nWidth - ((int32_t)cmd.size() + 2) * vStep.x, vStep.y), cmd, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+
     auto color = panels[nPanel].IsActive() ? AnyType<Colors::DARK_YELLOW, ColorT>::GetValue() : AnyType<Colors::DARK_GREEN, ColorT>::GetValue();
     FillRect(pos - olc::vi2d(0, 2), olc::vi2d(vStep.x * 2, vStep.y - 2), *color);
     DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(nPanel + 1), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
     pos.x += vStep.x * 2;
 
-    const auto nCmd = cmd.size();
-    for (int32_t i = 0; !nCmd && i < panels.size(); i++) {
+    // const auto nCmd = cmd.size();
+    // for (int32_t i = 0; !nCmd && i < panels.size(); i++) {
+    for (int32_t i = 0; i < panels.size(); i++) {
       auto str = std::to_string(i + 1) + " " + panels[i].GetName();
       auto color = i == nPanel ? AnyType<Colors::GREY, ColorT>::GetValue() : AnyType<Colors::DARK_GREY, ColorT>::GetValue();
 
@@ -177,7 +252,7 @@ public:
       pos.x += GetTextSize(str).x + vStep.x * 2;
     }
 
-    if (nCmd) DrawString(pos + olc::vi2d(vStep.x, 0), cmd, *AnyType<Colors::GREY, ColorT>::GetValue());
+    // if (nCmd) DrawString(pos + olc::vi2d(vStep.x, 0), cmd, *AnyType<Colors::GREY, ColorT>::GetValue());
 
     std::string name = GetMode() == NORMAL ? "NORMAL" : "DEBUG";
     pos.x = nWidth - ((int32_t)name.size() + 2) * vStep.x;
@@ -187,7 +262,7 @@ public:
     DrawString(pos, name, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
 
     if (!bSyncing.first) return;
-    pos.x -= ((int32_t)bSyncing.second.size() + 2) * vStep.x;
+    pos.x -= ((int32_t)bSyncing.second.size() + 2) * vStep.x; pos.y += vStep.y;
     DrawString(pos, bSyncing.second, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
   }
 
@@ -306,7 +381,7 @@ public:
     std::cout << "PANEL_SELECT_CALLBACK " << index << "\n" ;
     #endif
 
-    if (index - 1 < 0 || index - 1>= panels.size()) return;
+    if (index - 1 < 0 || index - 1 >= panels.size()) return;
 
     auto size = panels[nPanel].GetSize();
     panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), size));
@@ -314,7 +389,7 @@ public:
 
   void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string cmd) override {
     #ifdef DEBUG_MODE 
-    std::cout << "CMD_UPDATE_CALLBACK " << cmd << std::endl;
+    std::cout << "CMD_UPDATE_CALLBACK '" << cmd << "'" << std::endl;
     #endif
 
     nCurr = 0; this->cmd = cmd;
@@ -427,6 +502,18 @@ private:
     }
   }
 
+  std::string Command() {
+    std::string result = "";
+    for (size_t i = 0; i < vKeyCombination.size(); i++, result += "+") {
+      result += Window::Command::GetKeycode(vKeyCombination[i]);
+    }
+
+    return result;
+  }
+
+private:
+  Panel& GetPanel() { return this->panels[nPanel]; }
+
 private:
   const olc::vi2d vOffset = olc::vi2d(0, 12);
   const olc::vi2d vStep = olc::vi2d(8, 12);
@@ -438,12 +525,17 @@ private:
 
   std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
   std::unique_ptr<std::thread> offload = nullptr;
-  std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";
 
   int32_t nCurr = 0;
   std::string cmd = "";
   std::atomic<bool> bExec = true;
   LuaScript& luaConfig;
+
+  std::vector<olc::Key> vKeyCombination;
+  std::list<Window::Command*> vKeyEventListeners;
+  std::function<void(olc::Key)> fnStrokeAction = nullptr;
+
+  static inline const std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";
 };
 
 int main() {

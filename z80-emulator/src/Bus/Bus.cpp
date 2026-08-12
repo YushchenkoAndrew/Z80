@@ -69,7 +69,7 @@ namespace Bus {
     hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), zero));
     lcd->Initialize(std::pair(olc::vi2d(10, 150), zero));
 
-    olc::vi2d pos = olc::vi2d(dimensions.second.x * 8 / 10, dimensions.second.y);
+    olc::vi2d pos = olc::vi2d(dimensions.second.x * 7 / 10, dimensions.second.y);
     olc::vi2d size = dimensions.second - pos;
 
     auto Init = [&pos, &dimensions, &offset, &grid = grid](std::shared_ptr<Window> window, int32_t y, olc::vi2d size = olc::vi2d()) {

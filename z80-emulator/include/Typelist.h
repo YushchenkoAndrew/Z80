@@ -1,21 +1,27 @@
 #pragma once
+#include <functional>
 #include <string>
 #include <array>
+#include <typeindex>
+
+
+struct DefaultType { virtual ~DefaultType() = default; };
+struct NullType : public DefaultType {};
 
 template<typename T>
-struct Type2Type {
+struct Type2Type : public DefaultType {
 	typedef T Type;
 	inline Type2Type() {}
 };
 
 template<int v>
-struct Int2Type {
+struct Int2Type : public DefaultType {
 	enum { value = v };
 	inline Int2Type() {}
 };
 
 template<class T, class U>
-struct TypeList {
+struct TypeList : public DefaultType {
 	typedef T Head;
 	typedef U Tail;
 	inline TypeList() {}
@@ -32,6 +38,7 @@ struct TypeList<T, std::string> {
   std::string& operator* () { return val; }
 };
 
+
 template<class T, class U, int Y>
 struct TypeList<TypeList<T, Int2Type<Y>>, std::array<U, +Y>> {
 	typedef std::array<U, +Y> ArrT;
@@ -45,6 +52,40 @@ struct TypeList<TypeList<T, Int2Type<Y>>, std::array<U, +Y>> {
 };
 
 
+
+template <typename... Args>
+struct ListT;
+template <>
+struct ListT<> {
+    using type = NullType;
+};
+
+// Recursive case processing one item at a time
+template <typename First, typename... Rest>
+struct ListT<First, Rest...> {
+private:
+    template <typename T>
+    struct Item { using type = T; };
+
+    template <int V>
+    struct Item<Int2Type<V>> { using type = Int2Type<V>; };
+
+public:
+    using type = TypeList<
+        typename Item<First>::type, 
+        typename ListT<Rest...>::type
+    >;
+};
+
+template <typename T>
+struct UnwrapList { using type = T; };
+
+// Assuming ListT defines an internal alias named 'type'
+template <typename... Args>
+struct UnwrapList<ListT<Args...>> { using type = typename ListT<Args...>::type; };
+
+
+
 template<int32_t T, class U>
 struct AnyType {
 
@@ -54,6 +95,15 @@ struct AnyType {
 		return value;
 	}
 };
+
+struct Any2Type {
+    void* ptr;
+    std::type_index typeId;
+
+    template <typename T>
+    Any2Type(T instance): typeId(typeid(T)), ptr(const_cast<T*>(&instance)) {}
+};
+
 
 template<int32_t T>
 struct AnyType<T, int32_t> {
@@ -118,8 +168,6 @@ struct AnyType<T, std::string> {
 };
 
 
-struct NullType {};
-
 template<int32_t T, class U>
 struct AnyListType {
 	static inline U& Get() __attribute__((always_inline)) {
@@ -175,3 +223,20 @@ struct AnyListType {
 // 		return AnyType<T, U>::GetValue();
 // 	}
 // }
+
+template<typename T>
+struct Recursive {
+    std::function<Recursive<T>(T)> internal_fn;
+
+    Recursive operator()(T arg) const {
+        if (internal_fn) return internal_fn(arg);
+        return { nullptr };
+    }
+
+    template <typename F>
+    Recursive(F&& f) : internal_fn(std::forward<F>(f)) {}
+    Recursive(std::nullptr_t) : internal_fn(nullptr) {}
+
+    bool operator==(std::nullptr_t) const { return internal_fn == nullptr; }
+    bool operator!=(std::nullptr_t) const { return internal_fn != nullptr; }
+};

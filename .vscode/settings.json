@@ -1,6 +1,8 @@
 {
   "deepscan.enable": true,
   "color-highlight.enable": false,
+  "[cpp]": { "editor.formatOnSave": false },
+  "[c]": { "editor.formatOnSave": false },
   "files.associations": {
     "iostream": "cpp",
     "fstream": "cpp",

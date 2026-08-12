@@ -24,7 +24,7 @@ public:
     if (!bEnabled) return;
 
     Utils::Lock l(mutex);
-    foreach<KeyboardScanCodes, Keyboard>::Process(this);
+    foreach<KeyboardScanCodes, void>::Process(this);
 
     if (buffer.size()) Interrupt();
   }

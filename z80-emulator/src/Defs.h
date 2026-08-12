@@ -119,85 +119,118 @@ typedef TypeList<
     ColorList;
 
 typedef TypeList<
-  TypeList<Int2Type<olc::Key::Q>, Int2Type<'q'>>, TypeList<
-  TypeList<Int2Type<olc::Key::W>, Int2Type<'w'>>, TypeList<
-  TypeList<Int2Type<olc::Key::E>, Int2Type<'e'>>, TypeList<
-  TypeList<Int2Type<olc::Key::R>, Int2Type<'r'>>, TypeList<
-  TypeList<Int2Type<olc::Key::T>, Int2Type<'t'>>, TypeList<
-  TypeList<Int2Type<olc::Key::Y>, Int2Type<'y'>>, TypeList<
-  TypeList<Int2Type<olc::Key::U>, Int2Type<'u'>>, TypeList<
-  TypeList<Int2Type<olc::Key::I>, Int2Type<'i'>>, TypeList<
-  TypeList<Int2Type<olc::Key::O>, Int2Type<'o'>>, TypeList<
-  TypeList<Int2Type<olc::Key::P>, Int2Type<'p'>>, TypeList<
-  TypeList<Int2Type<olc::Key::A>, Int2Type<'a'>>, TypeList<
-  TypeList<Int2Type<olc::Key::S>, Int2Type<'s'>>, TypeList<
-  TypeList<Int2Type<olc::Key::D>, Int2Type<'d'>>, TypeList<
-  TypeList<Int2Type<olc::Key::F>, Int2Type<'f'>>, TypeList<
-  TypeList<Int2Type<olc::Key::G>, Int2Type<'g'>>, TypeList<
-  TypeList<Int2Type<olc::Key::H>, Int2Type<'h'>>, TypeList<
-  TypeList<Int2Type<olc::Key::J>, Int2Type<'j'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K>, Int2Type<'k'>>, TypeList<
-  TypeList<Int2Type<olc::Key::L>, Int2Type<'l'>>, TypeList<
-  TypeList<Int2Type<olc::Key::Z>, Int2Type<'z'>>, TypeList<
-  TypeList<Int2Type<olc::Key::X>, Int2Type<'x'>>, TypeList<
-  TypeList<Int2Type<olc::Key::C>, Int2Type<'c'>>, TypeList<
-  TypeList<Int2Type<olc::Key::V>, Int2Type<'v'>>, TypeList<
-  TypeList<Int2Type<olc::Key::B>, Int2Type<'b'>>, TypeList<
-  TypeList<Int2Type<olc::Key::N>, Int2Type<'n'>>, TypeList<
-  TypeList<Int2Type<olc::Key::M>, Int2Type<'m'>>, TypeList<
+  TypeList<Int2Type<olc::Key::SPACE>,TypeList<Int2Type<' '>,  Int2Type<' '>>>, TypeList<
+  TypeList<Int2Type<olc::Key::TAB>,  TypeList<Int2Type<'\t'>, Int2Type<'\t'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::SHIFT>,TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::CTRL>, TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::INS>,  TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::DEL>,  TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::HOME>, TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::END>,  TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::PGUP>, TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::PGDN>, TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::K0>, Int2Type<'0'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K1>, Int2Type<'1'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K2>, Int2Type<'2'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K3>, Int2Type<'3'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K4>, Int2Type<'4'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K5>, Int2Type<'5'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K6>, Int2Type<'6'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K7>, Int2Type<'7'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K8>, Int2Type<'8'>>, TypeList<
-  TypeList<Int2Type<olc::Key::K9>, Int2Type<'9'>>, TypeList<
+  TypeList<Int2Type<olc::Key::BACK>,  TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::ESCAPE>,TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::RETURN>,TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::ENTER>, TypeList<Int2Type<'\n'>, Int2Type<'\n'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::PAUSE>, TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::SCROLL>,TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::NP0>, Int2Type<'0'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP1>, Int2Type<'1'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP2>, Int2Type<'2'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP3>, Int2Type<'3'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP4>, Int2Type<'4'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP5>, Int2Type<'5'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP6>, Int2Type<'6'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP7>, Int2Type<'7'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP8>, Int2Type<'8'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP9>, Int2Type<'9'>>, TypeList<
+  TypeList<Int2Type<olc::Key::A>, TypeList<Int2Type<'a'>, Int2Type<'A'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::B>, TypeList<Int2Type<'b'>, Int2Type<'B'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::C>, TypeList<Int2Type<'c'>, Int2Type<'C'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::D>, TypeList<Int2Type<'d'>, Int2Type<'D'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::E>, TypeList<Int2Type<'e'>, Int2Type<'E'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::F>, TypeList<Int2Type<'f'>, Int2Type<'F'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::G>, TypeList<Int2Type<'g'>, Int2Type<'G'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::H>, TypeList<Int2Type<'h'>, Int2Type<'H'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::I>, TypeList<Int2Type<'i'>, Int2Type<'I'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::J>, TypeList<Int2Type<'j'>, Int2Type<'J'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K>, TypeList<Int2Type<'k'>, Int2Type<'K'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::L>, TypeList<Int2Type<'l'>, Int2Type<'L'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::M>, TypeList<Int2Type<'m'>, Int2Type<'M'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::N>, TypeList<Int2Type<'n'>, Int2Type<'N'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::O>, TypeList<Int2Type<'o'>, Int2Type<'O'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::P>, TypeList<Int2Type<'p'>, Int2Type<'P'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::Q>, TypeList<Int2Type<'q'>, Int2Type<'Q'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::R>, TypeList<Int2Type<'r'>, Int2Type<'R'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::S>, TypeList<Int2Type<'s'>, Int2Type<'S'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::T>, TypeList<Int2Type<'t'>, Int2Type<'T'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::U>, TypeList<Int2Type<'u'>, Int2Type<'U'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::V>, TypeList<Int2Type<'v'>, Int2Type<'V'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::W>, TypeList<Int2Type<'w'>, Int2Type<'W'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::X>, TypeList<Int2Type<'x'>, Int2Type<'X'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::Y>, TypeList<Int2Type<'y'>, Int2Type<'Y'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::Z>, TypeList<Int2Type<'z'>, Int2Type<'Z'>>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::TAB>, Int2Type<'\t'>>, TypeList<
-  TypeList<Int2Type<olc::Key::BACK>, Int2Type<'\0'>>, TypeList<
-  TypeList<Int2Type<olc::Key::DEL>, Int2Type<'\0'>>, TypeList<
-  TypeList<Int2Type<olc::Key::SPACE>, Int2Type<' '>>, TypeList<
-  TypeList<Int2Type<olc::Key::ENTER>, Int2Type<'\n'>>, TypeList<
-  TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<'\0'>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::UP>, Int2Type<'\0'>>, TypeList<
-  TypeList<Int2Type<olc::Key::DOWN>, Int2Type<'\0'>>, TypeList<
-  TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<'\0'>>, TypeList<
-  TypeList<Int2Type<olc::Key::LEFT>, Int2Type<'\0'>>, TypeList<
+  TypeList<Int2Type<olc::Key::K0>, TypeList<Int2Type<'0'>, Int2Type<')'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K1>, TypeList<Int2Type<'1'>, Int2Type<'!'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K2>, TypeList<Int2Type<'2'>, Int2Type<'@'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K3>, TypeList<Int2Type<'3'>, Int2Type<'#'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K4>, TypeList<Int2Type<'4'>, Int2Type<'$'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K5>, TypeList<Int2Type<'5'>, Int2Type<'%'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K6>, TypeList<Int2Type<'6'>, Int2Type<'^'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K7>, TypeList<Int2Type<'7'>, Int2Type<'&'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K8>, TypeList<Int2Type<'8'>, Int2Type<'*'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::K9>, TypeList<Int2Type<'9'>, Int2Type<'('>>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<';'>>, TypeList<
-  TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<'/'>>, TypeList<
-  TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<'`'>>, TypeList<
-  TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<'['>>, TypeList<
-  TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<'\\'>>, TypeList<
-  TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<']'>>, TypeList<
-  TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<'\''>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP0>, TypeList<Int2Type<'0'>, Int2Type<'0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP1>, TypeList<Int2Type<'1'>, Int2Type<'1'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP2>, TypeList<Int2Type<'2'>, Int2Type<'2'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP3>, TypeList<Int2Type<'3'>, Int2Type<'3'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP4>, TypeList<Int2Type<'4'>, Int2Type<'4'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP5>, TypeList<Int2Type<'5'>, Int2Type<'5'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP6>, TypeList<Int2Type<'6'>, Int2Type<'6'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP7>, TypeList<Int2Type<'7'>, Int2Type<'7'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP8>, TypeList<Int2Type<'8'>, Int2Type<'8'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP9>, TypeList<Int2Type<'9'>, Int2Type<'9'>>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::NP_DIV>, Int2Type<'/'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP_MUL>, Int2Type<'*'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP_ADD>, Int2Type<'+'>>, TypeList<
-  TypeList<Int2Type<olc::Key::NP_SUB>, Int2Type<'-'>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_1>, TypeList<Int2Type<';'>, Int2Type<':'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_2>, TypeList<Int2Type<'/'>, Int2Type<'?'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_3>, TypeList<Int2Type<'`'>, Int2Type<'~'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_4>, TypeList<Int2Type<'['>, Int2Type<'{'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_5>, TypeList<Int2Type<'\\'>,Int2Type<'|'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_6>, TypeList<Int2Type<']'>, Int2Type<'}'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_7>, TypeList<Int2Type<'\''>,Int2Type<'"'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::OEM_8>, TypeList<Int2Type<'\0'>,Int2Type<'\0'>>>, TypeList<
 
-  TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<'='>>, TypeList<
-  TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<'.'>>, TypeList<
-  TypeList<Int2Type<olc::Key::COMMA>, Int2Type<','>>, TypeList<
-  TypeList<Int2Type<olc::Key::MINUS>, Int2Type<'-'>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  TypeList<Int2Type<olc::Key::UP>,   TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::DOWN>, TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::RIGHT>,TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::LEFT>, TypeList<Int2Type<'\0'>, Int2Type<'\0'>>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::NP_MUL>, TypeList<Int2Type<'*'>, Int2Type<'*'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP_DIV>, TypeList<Int2Type<'/'>, Int2Type<'/'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP_ADD>, TypeList<Int2Type<'+'>, Int2Type<'+'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::NP_SUB>, TypeList<Int2Type<'-'>, Int2Type<'-'>>>, TypeList<
+
+  TypeList<Int2Type<olc::Key::EQUALS>,TypeList<Int2Type<'='>, Int2Type<'+'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::COMMA>, TypeList<Int2Type<','>, Int2Type<'<'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::PERIOD>,TypeList<Int2Type<'.'>, Int2Type<'>'>>>, TypeList<
+  TypeList<Int2Type<olc::Key::MINUS>, TypeList<Int2Type<'-'>, Int2Type<'_'>>>, NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    KeyEvent; 
+
+typedef ListT<
+  Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::TAB>,  Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::INS>,  Int2Type<olc::Key::DEL>,  Int2Type<olc::Key::HOME>, Int2Type<olc::Key::END>,  Int2Type<olc::Key::PGUP>, Int2Type<olc::Key::PGDN>, Int2Type<olc::Key::BACK>,  Int2Type<olc::Key::ESCAPE>, Int2Type<olc::Key::RETURN>, Int2Type<olc::Key::ENTER>, Int2Type<olc::Key::PAUSE>, Int2Type<olc::Key::SCROLL>,
+
+  Int2Type<olc::Key::A>, Int2Type<olc::Key::B>, Int2Type<olc::Key::C>, Int2Type<olc::Key::D>, Int2Type<olc::Key::E>, Int2Type<olc::Key::F>, Int2Type<olc::Key::G>, Int2Type<olc::Key::H>, Int2Type<olc::Key::I>, Int2Type<olc::Key::J>, Int2Type<olc::Key::K>, Int2Type<olc::Key::L>, Int2Type<olc::Key::M>, Int2Type<olc::Key::N>, Int2Type<olc::Key::O>, Int2Type<olc::Key::P>, Int2Type<olc::Key::Q>, Int2Type<olc::Key::R>, Int2Type<olc::Key::S>, Int2Type<olc::Key::T>, Int2Type<olc::Key::U>, Int2Type<olc::Key::V>, Int2Type<olc::Key::W>, Int2Type<olc::Key::X>, Int2Type<olc::Key::Y>, Int2Type<olc::Key::Z>, 
+
+  Int2Type<olc::Key::K0>,    Int2Type<olc::Key::K1>,    Int2Type<olc::Key::K2>,    Int2Type<olc::Key::K3>,    Int2Type<olc::Key::K4>,    Int2Type<olc::Key::K5>,    Int2Type<olc::Key::K6>,    Int2Type<olc::Key::K7>,  Int2Type<olc::Key::K8>,  Int2Type<olc::Key::K9>, 
+  Int2Type<olc::Key::NP0>,   Int2Type<olc::Key::NP1>,   Int2Type<olc::Key::NP2>,   Int2Type<olc::Key::NP3>,   Int2Type<olc::Key::NP4>,   Int2Type<olc::Key::NP5>,   Int2Type<olc::Key::NP6>,   Int2Type<olc::Key::NP7>, Int2Type<olc::Key::NP8>, Int2Type<olc::Key::NP9>, 
+  Int2Type<olc::Key::OEM_1>, Int2Type<olc::Key::OEM_2>, Int2Type<olc::Key::OEM_3>, Int2Type<olc::Key::OEM_4>, Int2Type<olc::Key::OEM_5>, Int2Type<olc::Key::OEM_6>, Int2Type<olc::Key::OEM_7>, Int2Type<olc::Key::OEM_8>,
+
+  Int2Type<olc::Key::UP>,     Int2Type<olc::Key::DOWN>,   Int2Type<olc::Key::RIGHT>,  Int2Type<olc::Key::LEFT>, 
+  Int2Type<olc::Key::NP_MUL>, Int2Type<olc::Key::NP_DIV>, Int2Type<olc::Key::NP_ADD>, Int2Type<olc::Key::NP_SUB>, 
+  Int2Type<olc::Key::EQUALS>, Int2Type<olc::Key::COMMA>,  Int2Type<olc::Key::PERIOD>, Int2Type<olc::Key::MINUS>
+>::type KeyEventT; 
+
+
+typedef ListT<
+  TypeList<Int2Type<0>, ListT<Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>>>
+>::type TestT;
+
 
 class Defs {
 
