@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <functional>
-#include <list>
 #include <stdio.h>
 #include <fstream>
+#include <unordered_set>
 #include <vector>
 
 #define DEBUG_MODE
@@ -96,14 +96,12 @@ public:
       )
     };
 
-    this->vKeyEventListeners.push_back(&panels[0]);
-
-    panels[nPanel].Initialize(std::pair(olc::vi2d(0, 0), size));
+    this->GetPanel().Select(std::pair(olc::vi2d(0, 0), size));
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
 
     offload = std::make_unique<std::thread>([&]() {
       bus->W27C512->Disassemble(); 
-      for (auto& p : panels) p.Preinitialize();
+      for (auto& p : panels) p.Initialize();
       
       bSyncing.first = false;
     });
@@ -129,8 +127,10 @@ public:
       auto [exist, exec] = listener->Executable(this->vKeyCombination);
 
       if (exec != nullptr) fnStrokeAction = exec(listener);
-      if (!exist || exec != nullptr) { this->vKeyCombination.clear(); return; }
+      if (exist && exec == nullptr) return;
     }
+
+    this->vKeyCombination.clear();
   }
 
   bool OnUserUpdate(float fElapsedTime) override {
@@ -376,6 +376,22 @@ public:
     editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
   }
 
+  void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "KEYBOARD_EVENT_SUBSCRIBE\n";
+    #endif
+
+    this->vKeyEventListeners.insert(static_cast<Window::Command*>(ptr));
+  }
+
+  void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,  void* ptr) override {
+    #ifdef DEBUG_MODE 
+    std::cout << "KEYBOARD_EVENT_UNSUBSCRIBE\n";
+    #endif
+
+    this->vKeyEventListeners.erase(static_cast<Window::Command*>(ptr));
+  }
+
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
     #ifdef DEBUG_MODE 
     std::cout << "PANEL_SELECT_CALLBACK " << index << "\n" ;
@@ -384,7 +400,7 @@ public:
     if (index - 1 < 0 || index - 1 >= panels.size()) return;
 
     auto size = panels[nPanel].GetSize();
-    panels[nPanel = index - 1].Initialize(std::pair(olc::vi2d(0, 0), size));
+    panels[nPanel = index - 1].Select(std::pair(olc::vi2d(0, 0), size));
   }
 
   void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string cmd) override {
@@ -532,7 +548,7 @@ private:
   LuaScript& luaConfig;
 
   std::vector<olc::Key> vKeyCombination;
-  std::list<Window::Command*> vKeyEventListeners;
+  std::unordered_set<Window::Command*> vKeyEventListeners;
   std::function<void(olc::Key)> fnStrokeAction = nullptr;
 
   static inline const std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";

@@ -39,12 +39,12 @@ public:
   inline uint8_t Write(uint32_t addr, uint8_t data, bool) { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
   // TODO: Load disassembler here
-  void Preinitialize() { 
+  void Initialize() { 
     if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
   }
 
   // TODO: Maybe add ability to set local state with initialization
-  void Initialize(DimensionT dimensions) {
+  void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset.first;
 
     const int32_t prev = index();

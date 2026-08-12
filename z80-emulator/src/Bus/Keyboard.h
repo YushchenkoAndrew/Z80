@@ -6,7 +6,7 @@ class Keyboard : public Window::Window, public Device {
 public:
   Keyboard(Bus* b): bus(b) {}
 
-  void Initialize(DimensionT dimensions) {
+  void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 

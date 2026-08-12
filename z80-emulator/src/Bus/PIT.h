@@ -30,11 +30,11 @@ public:
     if (runtime != nullptr && runtime->joinable()) runtime->join();
   }
 
-  void Preinitialize() {
+  void Initialize() {
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&PIT::Runtime, this));
   }
 
-  void Initialize(DimensionT dimensions) {
+  void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 

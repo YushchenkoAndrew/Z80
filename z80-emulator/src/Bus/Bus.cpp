@@ -44,40 +44,40 @@ namespace Bus {
     IMS1423(std::make_shared<Memory<MemoryT::IMS1423, IMS1423_SIZE>>(this)),
     HY62256A(std::make_shared<Memory<MemoryT::HY62256A, HY62256A_SIZE>>(this)) {}
 
-  void Bus::Preinitialize() {
-    led       ->Preinitialize();
-    switches  ->Preinitialize();
-    hexDisplay->Preinitialize();
-    lcd       ->Preinitialize();
-    keyboard  ->Preinitialize();
-    KR580VV55 ->Preinitialize();
-    KR580VI53 ->Preinitialize();
+  void Bus::Initialize() {
+    led       ->Initialize();
+    switches  ->Initialize();
+    hexDisplay->Initialize();
+    lcd       ->Initialize();
+    keyboard  ->Initialize();
+    KR580VV55 ->Initialize();
+    KR580VI53 ->Initialize();
     MC146818  ->Preinitialize();
-    interrupt ->Preinitialize();
-    Z80       ->Preinitialize();
-    W27C512   ->Preinitialize(); 
+    interrupt ->Initialize();
+    Z80       ->Initialize();
+    W27C512   ->Initialize(); 
   }
 
-  void Bus::Initialize(DimensionT dimensions) {
+  void Bus::Select(DimensionT dimensions) {
     olc::vi2d zero = olc::vi2d(0, 0);
     olc::vi2d offset = olc::vi2d(4, 8);
     grid.clear();
 
     // TODO: Design and draw bus as PCB
-    led->Initialize(std::pair(olc::vi2d(10, 10), zero));
-    switches->Initialize(std::pair(olc::vi2d(10, 25), zero));
-    hexDisplay->Initialize(std::pair(olc::vi2d(10, 40), zero));
-    lcd->Initialize(std::pair(olc::vi2d(10, 150), zero));
+    led->Select(std::pair(olc::vi2d(10, 10), zero));
+    switches->Select(std::pair(olc::vi2d(10, 25), zero));
+    hexDisplay->Select(std::pair(olc::vi2d(10, 40), zero));
+    lcd->Select(std::pair(olc::vi2d(10, 150), zero));
 
     olc::vi2d pos = olc::vi2d(dimensions.second.x * 7 / 10, dimensions.second.y);
     olc::vi2d size = dimensions.second - pos;
 
     auto Init = [&pos, &dimensions, &offset, &grid = grid](std::shared_ptr<Window> window, int32_t y, olc::vi2d size = olc::vi2d()) {
       grid.push_back(std::pair(olc::vi2d(pos.x, y), olc::vi2d(dimensions.second.x - offset.x * 2, y)));
-      window->Initialize(std::pair(olc::vi2d(pos.x, y) + offset, size));
+      window->Select(std::pair(olc::vi2d(pos.x, y) + offset, size));
     };
 
-    Z80->Initialize(std::pair(olc::vi2d(pos.x, zero.y) + offset, zero));
+    Z80->Select(std::pair(olc::vi2d(pos.x, zero.y) + offset, zero));
 
     Init(interrupt, 140); Init(keyboard, 184); Init(KR580VV55, 206); Init(KR580VI53, 228); 
     Init(MC146818, 294, olc::vi2d(size.x, 88)); 

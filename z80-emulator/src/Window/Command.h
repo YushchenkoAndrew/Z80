@@ -1,5 +1,6 @@
 #pragma once
-#include "Stroke.h"
+#include "Window.h"
+#include "include/Typelist.h"
 #include "src/Defs.h"
 #include <functional>
 #include <string>
@@ -25,7 +26,9 @@ struct SearchT {
 
 class Command {
 public:
-  std::pair<bool, StrokeAction> Executable(const std::vector<olc::Key>& keys) {
+  void Select() { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>(), this); }
+
+  std::pair<bool, StrokeCallback> Executable(const std::vector<olc::Key>& keys) {
     auto node = &GetCommands();
 
     for (auto& key : keys) {
@@ -39,6 +42,7 @@ public:
   }
 
   std::vector<std::string> Combinations(const StrokeT<>* node) {
+    if (node == nullptr) return {};
     std::vector<std::string> keys;
 
     for (const auto& [key, child] : node->children) {

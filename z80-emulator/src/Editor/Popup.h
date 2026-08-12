@@ -7,7 +7,7 @@ class Popup : public Window::Window {
 public:
 
   // inline void Preinitialize() { Lock(); }
-  inline void Initialize(DimensionT dimensions) {
+  inline void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
   }
 

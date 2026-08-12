@@ -13,7 +13,7 @@ class LCD : public Window::Window, public Device {
 public:
   LCD(Bus* b): bus(b) { Instruction(Int2Type<CLEAR>(), 0); }
 
-  void Initialize(DimensionT dimensions) {
+  void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 

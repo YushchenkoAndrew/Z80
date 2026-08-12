@@ -1,5 +1,6 @@
 #pragma once
 #include "Defs.h"
+#include "src/Defs.h"
 
 namespace Editor {
 
@@ -99,20 +100,22 @@ public:
   inline void Command(Int2Type<VimT::CMD_A>) { Command(Int2Type<VimT::CMD_i>()); nLastX = pos.x = lines[pos.y].size(); }
 
 
-  inline void Command(Int2Type<VimT::CMD_0>)         { nLastX = pos.x = 0; }
-  inline void Command(Int2Type<VimT::CMD_gg>)        { nLastX = pos.x = pos.y = 0; }
+  Window::StrokeAction Process(Int2Type<olc::Key::K0>) { nLastX = pos.x = 0; return nullptr; }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::G>) { nLastX = pos.x = pos.y = 0; return nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>) { nLastX = pos.x = startAt(); pos.y = lines.size() - 1; return nullptr; }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::D>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_CALLBACK>(), pos); return nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::P>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>(), pos); }
+
   inline void Command(Int2Type<VimT::CMD_CARET>)     { nLastX = pos.x = startAt(); }
   inline void Command(Int2Type<VimT::CMD_UNDERLINE>) { nLastX = pos.x = startAt(); }
-  inline void Command(Int2Type<VimT::CMD_G>)         { nLastX = pos.x = startAt(); pos.y = lines.size() - 1; }
   inline void Command(Int2Type<VimT::CMD_DOLLAR>)    { nLastX = pos.x = std::max((int32_t)lines[pos.y].size() - 1, 0); }
 
   inline void Command(Int2Type<VimT::CMD_yy>) { printf("YES\n"); buffer = { { lines[pos.y] }, true }; }
 
   inline void Command(Int2Type<VimT::CMD_C>)  { Command(Int2Type<VimT::CMD_D>()); Command(Int2Type<VimT::CMD_A>()); }
   inline void Command(Int2Type<VimT::CMD_cc>) { Command(Int2Type<VimT::CMD_dd>()); Command(Int2Type<VimT::CMD_I>()); }
-
-  inline void Command(Int2Type<VimT::CMD_gd>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_CALLBACK>(), pos); }
-  inline void Command(Int2Type<VimT::CMD_gp>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>(), pos); }
 
   inline void Command(Int2Type<VimT::CMD_o>) { 
     Command(Int2Type<VimT::CMD_I>());
@@ -231,7 +234,7 @@ public:
   inline void Command(Int2Type<VimT::CMD_SQUIGGLE>) { 
     const char c = lines[pos.y][pos.x];
     lines[pos.y].replace(pos.x, 1, std::string(1, islower(c) ? toupper(c) : tolower(c)));
-    Command(Int2Type<VimT::CMD_l>()); nLastX = pos.x;
+    Process(Int2Type<olc::Key::L>()); nLastX = pos.x;
   }
 
   // TODO: Impl undo/redo !!
@@ -421,15 +424,16 @@ public:
   }
 
   inline void Command(Int2Type<VimT::CMD_CTRL_u>) {
-    for (int32_t i = 0; i < 20; i++) Command(Int2Type<VimT::CMD_k>());
+    for (int32_t i = 0; i < 20; i++) Process(Int2Type<olc::Key::K>());
   }
   
   inline void Command(Int2Type<VimT::CMD_CTRL_d>) {
-    for (int32_t i = 0; i < 20; i++) Command(Int2Type<VimT::CMD_j>());
+    for (int32_t i = 0; i < 20; i++) Process(Int2Type<olc::Key::J>());
   }
 
-  inline void Command(Int2Type<VimT::CMD_j>) {
-    if (pos.y + 1 >= lines.size()) return;
+  Window::StrokeAction Process(Int2Type<olc::Key::J>) {
+  // inline void Command(Int2Type<VimT::CMD_j>) {
+    if (pos.y + 1 >= lines.size()) return nullptr;
 
     pos.x = nLastX; nLastX = (pos += olc::vi2d(0, 1)).x;
     int32_t lineEndsAt = mode == ModeT::NORMAL;
@@ -437,10 +441,13 @@ public:
     if (!lines[pos.y].size()) pos.x = 0;
     else if (pos.x > lines[pos.y].size() - lineEndsAt) pos.x = lines[pos.y].size() - lineEndsAt;
     fBlink = 0.f;
+    
+    return nullptr;
   }
 
-  inline void Command(Int2Type<VimT::CMD_k>) {
-    if (pos.y <= 0) return;
+  Window::StrokeAction Process(Int2Type<olc::Key::K>) {
+  // inline void Command(Int2Type<VimT::CMD_k>) {
+    if (pos.y <= 0) return nullptr;
 
     pos.x = nLastX; nLastX = (pos += olc::vi2d(0, -1)).x;
     int32_t lineEndsAt = mode == ModeT::NORMAL;
@@ -448,18 +455,26 @@ public:
     if (!lines[pos.y].size()) pos.x = 0;
     else if (pos.x > lines[pos.y].size() - lineEndsAt) pos.x = lines[pos.y].size() - lineEndsAt;
     fBlink = 0.f;
+
+    return nullptr;
   }
 
-  inline void Command(Int2Type<VimT::CMD_l>) {
+  Window::StrokeAction Process(Int2Type<olc::Key::L>) {
+  // inline void Command(Int2Type<VimT::CMD_l>) {
     int32_t lineEndsAt = mode == ModeT::NORMAL;
 
-    if (pos.x + lineEndsAt >= lines[pos.y].size()) return;
+    if (pos.x + lineEndsAt >= lines[pos.y].size()) return nullptr;
     nLastX = (pos += olc::vi2d(1, 0)).x; fBlink = 0.f;
+
+    return nullptr;
   }
 
-  inline void Command(Int2Type<VimT::CMD_h>) {
-    if (pos.x <= 0) return;
+  Window::StrokeAction Process(Int2Type<olc::Key::H>) {
+  // inline void Command(Int2Type<VimT::CMD_h>) {
+    if (pos.x <= 0) return nullptr;
     nLastX = (pos += olc::vi2d(-1, 0)).x; fBlink = 0.f;
+
+    return nullptr;
   }
 
   void Process(Int2Type<INSERT>, PixelGameEngine* GameEngine) {
@@ -586,148 +601,148 @@ public:
     BasicStrokeHandler(static_cast<olc::Key>(+T), c, toupper(c));
   }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_2, '/',  '?'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_4, '[',  '{'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_5, '\\', '|'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_6, ']',  '}'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_7, '\'', '"'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_2, '/',  '?'); }
+  // // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_4, '[',  '{'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_5, '\\', '|'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_6, ']',  '}'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_7, '\'', '"'); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K1, '1', '!'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K2, '2', '@'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K3>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K3, '3', '#'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K4, '4', '$'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K5, '5', '%'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K6, '6', '^'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K7, '7', '&'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K8>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K8, '8', '*'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K9>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K9, '9', '('); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K0>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K0, '0', ')'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K1, '1', '!'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K2, '2', '@'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K3>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K3, '3', '#'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K4, '4', '$'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K5, '5', '%'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K6, '6', '^'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K7, '7', '&'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K8>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K8, '8', '*'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K9>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K9, '9', '('); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K0>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K0, '0', ')'); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::EQUALS, '=', '+'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::PERIOD, '.', '>'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::COMMA>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::COMMA,  ',', '<'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::MINUS>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::MINUS,  '-', '_'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::EQUALS, '=', '+'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::PERIOD, '.', '>'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::COMMA>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::COMMA,  ',', '<'); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::MINUS>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::MINUS,  '-', '_'); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::UP>,    Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::UP).bPressed) Command(Int2Type<VimT::CMD_k>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DOWN>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::DOWN).bPressed) Command(Int2Type<VimT::CMD_j>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::LEFT>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::LEFT).bPressed) Command(Int2Type<VimT::CMD_h>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::RIGHT).bPressed) Command(Int2Type<VimT::CMD_l>()); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::UP>,    Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::UP).bPressed) Command(Int2Type<VimT::CMD_k>()); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DOWN>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::DOWN).bPressed) Command(Int2Type<VimT::CMD_j>()); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::LEFT>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::LEFT).bPressed) Command(Int2Type<VimT::CMD_h>()); }
+  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::RIGHT).bPressed) Command(Int2Type<VimT::CMD_l>()); }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::TAB>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::TAB).bPressed) return;
+  // template<int32_t U>
+  // void Process(TypeList<Int2Type<olc::Key::TAB>, Int2Type<U>>) {
+  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+  //   if (!GameEngine->GetKey(olc::Key::TAB).bPressed) return;
 
-    bUpdated = true;
+  //   bUpdated = true;
 
-    switch (mode) {
-      case NORMAL: break;
-      case INSERT: lines[pos.y].insert(pos.x, "  "); nLastX = pos.x += 2; break;
-    }
-  }
+  //   switch (mode) {
+  //     case NORMAL: break;
+  //     case INSERT: lines[pos.y].insert(pos.x, "  "); nLastX = pos.x += 2; break;
+  //   }
+  // }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::DEL>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::DEL).bPressed) return;
+  // template<int32_t U>
+  // void Process(TypeList<Int2Type<olc::Key::DEL>, Int2Type<U>>) {
+  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+  //   if (!GameEngine->GetKey(olc::Key::DEL).bPressed) return;
 
-    bUpdated = true;
+  //   bUpdated = true;
 
-    switch (mode) {
-      case NORMAL: reset(false); break;
+  //   switch (mode) {
+  //     case NORMAL: reset(false); break;
 
-      case INSERT: 
-        if (pos.x < lines[pos.y].size()) lines[pos.y].erase(pos.x, 1);
-        else {
-          lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + 1].begin(), lines[pos.y + 1].end());
-          lines.erase(lines.begin() + pos.y + 1);
-        }
-        break;
-    }
-  }
+  //     case INSERT: 
+  //       if (pos.x < lines[pos.y].size()) lines[pos.y].erase(pos.x, 1);
+  //       else {
+  //         lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + 1].begin(), lines[pos.y + 1].end());
+  //         lines.erase(lines.begin() + pos.y + 1);
+  //       }
+  //       break;
+  //   }
+  // }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::BACK).bPressed) return;
+  // template<int32_t U>
+  // void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>) {
+  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+  //   if (!GameEngine->GetKey(olc::Key::BACK).bPressed) return;
 
-    bUpdated = true;
+  //   bUpdated = true;
 
-    switch (mode) {
-      case NORMAL: if (cmd.size()) cmd.pop_back(); reset(false); break;
+  //   switch (mode) {
+  //     case NORMAL: if (cmd.size()) cmd.pop_back(); reset(false); break;
 
-      case REPLACE: 
-        if (!replaced.size()) break;
+  //     case REPLACE: 
+  //       if (!replaced.size()) break;
 
-        lines[pos.y].replace(--pos.x, 1, std::string(1, replaced.back()));
-        replaced.pop_back();
-        break;
+  //       lines[pos.y].replace(--pos.x, 1, std::string(1, replaced.back()));
+  //       replaced.pop_back();
+  //       break;
 
-      case INSERT: 
-        if (pos.x) lines[pos.y].erase(nLastX = --pos.x, 1);
-        else {
-          if (!pos.y) return;
-          int32_t lineEndsAt = mode == ModeT::NORMAL;
-          pos.y--; nLastX = pos.x = lines[pos.y].size() - lineEndsAt;
+  //     case INSERT: 
+  //       if (pos.x) lines[pos.y].erase(nLastX = --pos.x, 1);
+  //       else {
+  //         if (!pos.y) return;
+  //         int32_t lineEndsAt = mode == ModeT::NORMAL;
+  //         pos.y--; nLastX = pos.x = lines[pos.y].size() - lineEndsAt;
 
-          if (pos.y + 1 < lines.size()) {
-            lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + 1].begin(), lines[pos.y + 1].end());
-            lines.erase(lines.begin() + pos.y + 1);
-          }
-        }
-        break;
-    }
-  }
+  //         if (pos.y + 1 < lines.size()) {
+  //           lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + 1].begin(), lines[pos.y + 1].end());
+  //           lines.erase(lines.begin() + pos.y + 1);
+  //         }
+  //       }
+  //       break;
+  //   }
+  // }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::ENTER).bPressed) return;
+  // template<int32_t U>
+  // void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>) {
+  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+  //   if (!GameEngine->GetKey(olc::Key::ENTER).bPressed) return;
 
-    bUpdated = true;
+  //   bUpdated = true;
 
-    switch (mode) {
-      case NORMAL: 
-        if (search.bEnabled) {
-          search.nSize = cmd.size() - search.nStartAt;
-          nLastX = (pos = search.vPos).x;
-        }
+  //   switch (mode) {
+  //     case NORMAL: 
+  //       if (search.bEnabled) {
+  //         search.nSize = cmd.size() - search.nStartAt;
+  //         nLastX = (pos = search.vPos).x;
+  //       }
 
-        reset(search.bEnabled);
-        break;
+  //       reset(search.bEnabled);
+  //       break;
 
-      case INSERT: {
-        std::string copy = lines[pos.y].substr(pos.x, lines[pos.y].size() - pos.x);
-        lines[pos.y].erase(pos.x, copy.size());
+  //     case INSERT: {
+  //       std::string copy = lines[pos.y].substr(pos.x, lines[pos.y].size() - pos.x);
+  //       lines[pos.y].erase(pos.x, copy.size());
 
-        nLastX = pos.x = startAt();
-        lines.insert(lines.begin() + ++pos.y, std::string(pos.x, ' ') + copy);
-        break;
-      }
-    }
-  }
+  //       nLastX = pos.x = startAt();
+  //       lines.insert(lines.begin() + ++pos.y, std::string(pos.x, ' ') + copy);
+  //       break;
+  //     }
+  //   }
+  // }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::ESCAPE).bPressed) return;
+  // template<int32_t U>
+  // void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) {
+  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+  //   if (!GameEngine->GetKey(olc::Key::ESCAPE).bPressed) return;
 
-    bUpdated = true;
+  //   bUpdated = true;
 
-    switch (mode) {
-      case NORMAL: search.bEnabled = false; reset(false); break;
-      case REPLACE: replaced.clear();
-      case INSERT: {
-        mode = NORMAL;
+  //   switch (mode) {
+  //     case NORMAL: search.bEnabled = false; reset(false); break;
+  //     case REPLACE: replaced.clear();
+  //     case INSERT: {
+  //       mode = NORMAL;
 
-        auto len = lines[pos.y].size();
-        nLastX = pos.x = std::min(pos.x, len ? (int32_t)len - 1 : 0);
-        break;
-      }
-    }
-  }
+  //       auto len = lines[pos.y].size();
+  //       nLastX = pos.x = std::min(pos.x, len ? (int32_t)len - 1 : 0);
+  //       break;
+  //     }
+  //   }
+  // }
 
   inline int32_t GetLineSize() { return lines.size(); }
   inline int32_t GetLineSize(int32_t i) { return lines.size() > i ? lines[i].size() : 0; }
@@ -737,14 +752,14 @@ public:
     auto prev = pos;
 
     for (int32_t i = 0; i < std::abs(offset.y); i++) {
-      if (offset.y > 0) Command(Int2Type<VimT::CMD_j>());
-      else Command(Int2Type<VimT::CMD_k>());
+      if (offset.y > 0) Process(Int2Type<olc::Key::J>());
+      else Process(Int2Type<olc::Key::K>());
     }
 
     auto curr = pos - prev;
     for (int32_t i = 0; i < std::abs(offset.x - curr.x); i++) {
-      if (offset.x - curr.x > 0) Command(Int2Type<VimT::CMD_l>());
-      else Command(Int2Type<VimT::CMD_h>());
+      if (offset.x - curr.x > 0) Process(Int2Type<olc::Key::L>());
+      else Process(Int2Type<olc::Key::H>());
     }
   }
 
@@ -826,6 +841,9 @@ private:
   }
 
 
+public:
+  const Window::StrokeT<>& GetCommands() const override { return Vim::commands; }
+
 private:
   ModeT mode = NORMAL;
   bool locked = false;
@@ -846,5 +864,42 @@ private:
 
   std::vector<std::string> lines;
   std::list<int32_t> lSeleted;
+
+  static const Window::StrokeT<> commands;
 };
+
+inline const Window::StrokeT<> Vim::commands = Window::StrokeT<>::Init({
+  { Int2Type<olc::Key::K0>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::G>(), {
+    { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  }},
+  { Int2Type<olc::Key::SHIFT>(), {
+    { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  }}
+  //   { Int2Type<olc::Key::SPACE>(), {
+  //     { Int2Type<olc::Key::K1>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::K2>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::K3>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::K4>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::K5>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+
+  //     { Int2Type<olc::Key::A>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::C>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::D>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::Q>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     { Int2Type<olc::Key::Z>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+
+  //     { Int2Type<olc::Key::SHIFT>(), {
+  //       { Int2Type<olc::Key::K7>(),    [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //       { Int2Type<olc::Key::OEM_2>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+  //     }},
+  //   }}
+  // }}
+});
 };

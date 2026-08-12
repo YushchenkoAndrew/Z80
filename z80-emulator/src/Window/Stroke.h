@@ -1,9 +1,8 @@
 #pragma once
-#include "Window.h"
+#include "src/Utils/Utils.h"
 #include "include/Typelist.h"
 #include "src/Defs.h"
 #include <cstdint>
-#include <cstdio>
 #include <functional>
 
 
@@ -143,7 +142,8 @@ namespace Window {
 //   std::unordered_map<olc::Key, StrokeT<>> children; 
 // };
 
-typedef std::function<std::function<void(olc::Key)>(void*)> StrokeAction;
+typedef std::function<void(olc::Key)> StrokeAction;
+typedef std::function<StrokeAction(void*)> StrokeCallback;
 
 template <olc::Key... CompiledKeys>
 struct StrokeT {
@@ -206,7 +206,7 @@ struct StrokeT {
 
   olc::Key key;
   // std::function<void()> func = nullptr;
-  StrokeAction func = nullptr;
+  StrokeCallback func = nullptr;
   std::unordered_map<olc::Key, StrokeT<>> children; 
 };
 

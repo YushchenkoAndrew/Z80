@@ -7,7 +7,7 @@ class Led : public Window::Window, public Device {
 public:
   Led(Bus* b): bus(b) {}
 
-  void Initialize(DimensionT dimensions) {
+  void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 

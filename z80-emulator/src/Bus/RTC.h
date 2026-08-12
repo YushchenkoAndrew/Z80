@@ -31,7 +31,7 @@ public:
   }
 
   void Preinitialize() {
-    Memory::Preinitialize();
+    Memory::Initialize();
 
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&RTC::Runtime, this));
   }

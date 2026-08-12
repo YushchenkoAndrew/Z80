@@ -23,8 +23,8 @@ public:
 
   Bus(LuaScript& config);
 
-  void Preinitialize();
-  void Initialize(DimensionT dimensions);
+  void Initialize();
+  void Select(DimensionT dimensions);
 
   void Preprocess();
   void Process(PixelGameEngine* GameEngine);

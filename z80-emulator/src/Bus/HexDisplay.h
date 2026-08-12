@@ -9,7 +9,7 @@ class HexDisplay : public Window::Window, public Device {
 public:
   HexDisplay(Bus* b): bus(b) {}
 
-  void Initialize(DimensionT dimensions) {
+  void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;
   }
 

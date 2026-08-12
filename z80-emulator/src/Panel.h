@@ -36,13 +36,15 @@ public:
   Panel(Args ...args) { Push(args...); }
 
 
-  void Preinitialize() {
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Preinitialize();
+  void Initialize() {
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize();
   }
 
-  void Initialize(DimensionT dimensions) {
+  void Select(DimensionT dimensions) {
+    Window::Command::Select();
+
     this->absolute = dimensions.first; this->size = dimensions.second; bFullScreen = false;
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize(DIMENSION(w));
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Select(DIMENSION(w));
   }
 
   void Preprocess() {
@@ -112,21 +114,21 @@ public:
   // template<int32_t T>
   // inline void Command(Int2Type<T>) {}
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>) { 
-    for (auto& w : windows) if (SELECTED(w)) { bFullScreen = (ZOOMED(w) ^= true); PTR(w)->Initialize(bFullScreen ? std::pair(absolute, size) : DIMENSION(w)); }
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>) { 
+    for (auto& w : windows) if (SELECTED(w)) { bFullScreen = (ZOOMED(w) ^= true); PTR(w)->Select(bFullScreen ? std::pair(absolute, size) : DIMENSION(w)); }
     return nullptr;
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_2>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_2>) { 
     auto popup = Find(Type2Type<Editor::Popup>());
     auto& window = Window(Type2Type<Editor::Popup>());
     if (!(EXIST(window))) return nullptr;
 
     int32_t selected = 0;
-    std::vector<std::string> bindings;
+    std::vector<std::string> commands = this->Combinations(&GetCommands());
 
     if (SELECTED(window)) {
-      popup->Load(bindings);
+      popup->Load(commands);
       Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
 
       SELECTED(window) = false;
@@ -144,14 +146,20 @@ public:
     // };
 
     // for (auto& w : windows) if (SELECTED(w)) { bindings = GetBindings(PTR(w)->GetBindings().c_str()); selected = WINDOW(w); }
-    for (auto& w : windows) if (SELECTED(w)) { bindings = this->Combinations(&GetCommands()); selected = WINDOW(w); }
+    for (auto& w : windows) {
+      if (!SELECTED(w)) continue;
+      auto combinations = this->Combinations(&PTR(w)->GetCommands());
+      commands.insert(commands.end(), combinations.begin(), combinations.end());
+
+      selected = WINDOW(w);
+    }
     // cmd.push_back('0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
 
     // auto panel = GetBindings("panel");
     // bindings.insert(bindings.end(), panel.begin(), panel.end());
 
 
-    popup->Load(bindings); popup->window = selected; SELECTED(window) = true;
+    popup->Load(commands); popup->window = selected; SELECTED(window) = true;
     Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
 
     // TODO: Impl POPUP logic HERE
@@ -168,24 +176,24 @@ public:
   //   AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<CMD_EXEC_CALLBACK>());
   // }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::A>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::A>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); 
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::C>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::C>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); 
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::D>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::D>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); 
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K7>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K7>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PROGRAM_EXIT>()); 
     return nullptr;
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Q>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Q>) { 
     bDrawWindowIndex = true;
 
     return [&](olc::Key k) {
@@ -194,27 +202,27 @@ public:
     };
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K1>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K1>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 1); 
     return nullptr;
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K2>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K2>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 2); 
     return nullptr;
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K3>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K3>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 3); 
     return nullptr;
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K4>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K4>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 4); 
     return nullptr;
   }
 
-  std::function<void(olc::Key)> Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K5>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K5>) { 
     AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 5); 
     return nullptr;
   }

@@ -1,6 +1,7 @@
 #pragma once
 #include "Vim.h"
 
+
 namespace Editor {
 #define PATH(e)     std::get<0>(e)
 #define FILENAME(e) std::get<1>(e)
@@ -40,11 +41,15 @@ public:
     Utils::Lock l(mutex);
     std::ofstream f(PATH(tabs[nTab])); f << VIM(tabs[nTab]).Text(); f.close();
   }
+  
 
-  inline void Initialize(DimensionT dimensions) {
+  inline void Select(DimensionT dimensions) {
+    VIM(tabs[nTab]).Select();
+
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
   }
 
+  const ::Window::StrokeT<>& GetCommands() const override { return VIM(tabs[nTab]).GetCommands(); }
     
   void Lock() { Utils::Lock l(mutex); for (auto& tab : tabs) VIM(tab).Lock(); }
   void Unlock() { Utils::Lock l(mutex); for (auto& tab : tabs) VIM(tab).Unlock(); }
