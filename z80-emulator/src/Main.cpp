@@ -114,9 +114,11 @@ public:
   template<int32_t T, int32_t U, int32_t V>
   void Process(TypeList<Int2Type<T>, TypeList<Int2Type<U>, Int2Type<V>>> event) {
     olc::HWButton btn = this->GetKey((olc::Key)T);
-    if (!btn.bPressed) return;
+    const bool bIncludes = std::find(vKeyCombination.begin(), vKeyCombination.end(), (olc::Key)T) != vKeyCombination.end();
 
-    // NOTE: think about how to manage press or holding
+    if (btn.bPressed) fStrokeRepeat = .0f; // NOTE: Improve release functionality
+    if (btn.bHeld && !bIncludes) fStrokeRepeat += GetElapsedTime();
+    if (!btn.bPressed && !(btn.bHeld && !bIncludes && fStrokeRepeat >= .3f ? (fStrokeRepeat -= .04f, true) : false)) return;
 
     if (!vKeyEventListeners.size()) return;
     if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
@@ -546,6 +548,8 @@ private:
   std::string cmd = "";
   std::atomic<bool> bExec = true;
   LuaScript& luaConfig;
+
+  float fStrokeRepeat = .0f;
 
   std::vector<olc::Key> vKeyCombination;
   std::unordered_set<Window::Command*> vKeyEventListeners;

@@ -31,6 +31,13 @@ namespace Utils {
   inline bool IsOctDigit(const char &c) { return c >= '0' && c <= '7'; }
   inline bool IsHexDigit(const char &c) { return IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
   inline bool IsAlpha(const char &c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
+  inline bool IsAlphaDigit(const char &c) { return IsDigit(c) || IsAlpha(c); }
+
+  inline char Classify(const char &c) {
+    if (std::isspace(c))          return 0; // Whitespace
+    if (IsAlpha(c) || IsDigit(c)) return 1; // Word characters
+    return 2;  // Punctuation/Special
+  };
 
 
   inline uint8_t Hex2Int(const char c) { 
