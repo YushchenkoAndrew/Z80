@@ -4,6 +4,7 @@
 #include "src/Defs.h"
 #include "src/Utils/Utils.h"
 #include <cstdint>
+#include <string>
 
 namespace Editor {
 
@@ -41,11 +42,11 @@ public:
 
     bUpdated = false; bReleased = false;
 
-    switch (mode) {
-      case NORMAL:  return Process(Int2Type<NORMAL>(), GameEngine);
-      case INSERT:  return Process(Int2Type<INSERT>(), GameEngine);
-      case REPLACE: return Process(Int2Type<INSERT>(), GameEngine);
-    }
+    // switch (mode) {
+    //   case NORMAL:  return Process(Int2Type<NORMAL>(), GameEngine);
+    //   case INSERT:  return Process(Int2Type<INSERT>(), GameEngine);
+    //   case REPLACE: return Process(Int2Type<INSERT>(), GameEngine);
+    // }
   }
 
   void Draw(PixelGameEngine* GameEngine, std::function<olc::vi2d(olc::vi2d pos)> lambda) {
@@ -85,46 +86,55 @@ public:
   inline std::vector<std::string>& GetLines() { return lines; }
   inline std::string Text() {
     std::string text = "";
-
-    for (int32_t i = 0; i < lines.size(); i++) {
-      text += (i ? "\n" : "") + lines[i];
-    }
-
+    for (auto& ln : lines) text += ln + "\n";
     return text;
   }
 
   template<int32_t T>
   inline void Command(Int2Type<T>) {}
 
+  Window::StrokeAction Process(Int2Type<olc::Key::I>) { return mode = INSERT, nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::A>) { return mode = INSERT, pos.x++, nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::I>) { mode = INSERT; return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::A>) { mode = INSERT; pos.x++; return nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>) { return mode = NORMAL, nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::K0>)     { return pos.x = 0, nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>) { mode = NORMAL; return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::K0>)     { pos.x = 0; return nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::R>) { return mode = REPLACE, nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::I>) { return mode = INSERT, pos.x = startAt(), nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::A>) { return mode = INSERT, pos.x = endAt(),   nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::R>) { mode = REPLACE; return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::I>) { mode = INSERT; pos.x = startAt(); return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::A>) { mode = INSERT; pos.x = endAt(); return nullptr; }
-
-  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::G>) { pos.x = pos.y = 0; return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>) { pos.x = startAt(); pos.y = lines.size() - 1; return nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::G>) { return pos.x = pos.y = 0, nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>) { return pos.x = startAt(), pos.y = lines.size() - 1, nullptr; }
 
   Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::D>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_CALLBACK>(), pos); return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::P>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>(), pos); }
+  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::P>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>(), pos); return nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K6>)    { pos.x = startAt(); return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K4>)    { pos.x = endAt();   return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::MINUS>) { pos.x = startAt(); return nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K6>)    { return pos.x = startAt(), nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K4>)    { return pos.x = endAt(),   nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::MINUS>) { return pos.x = startAt(), nullptr; }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::U>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::K>()); return nullptr; }
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::D>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::J>()); return nullptr; }
 
-  // ????
-  // inline void Command(Int2Type<VimT::CMD_yy>) { printf("YES\n"); buffer = { { lines[pos.y] }, true }; }
+  Window::StrokeAction Process(Int2Type<olc::Key::Y>, Int2Type<olc::Key::Y>) { return buffer = { "\n" + line() }, nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::Y>) {
+    auto length = line().size() - pos.x;
 
-  // inline void Command(Int2Type<VimT::CMD_C>)  { Command(Int2Type<VimT::CMD_D>()); Command(Int2Type<VimT::CMD_A>()); }
-  // inline void Command(Int2Type<VimT::CMD_cc>) { Command(Int2Type<VimT::CMD_dd>()); Command(Int2Type<VimT::CMD_I>()); }
+    if (!length) return buffer.clear(), nullptr;
+    return buffer = { line().substr(pos.x, length) }, nullptr;
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::C>) {
+    Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::D>());
+    Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::A>());
+    return nullptr;
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::C>) {
+    Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
+    Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::I>());
+    return nullptr;
+  };
 
   Window::StrokeAction Process(Int2Type<olc::Key::O>) { 
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::I>());
@@ -140,10 +150,9 @@ public:
 
   Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::D>) { 
     auto length = line().size() - pos.x;
-    if (!length) return nullptr;
+    if (!length) return buffer.clear(), nullptr;
 
-    // TODO: Think about copy buffer
-    // buffer = { { lines[pos.y].substr(pos.x, len) }, false };
+    Process(Int2Type<olc::Key::Y>(), Int2Type<olc::Key::Y>());
     line().erase(pos.x, line().size()); pos.x = endAt();
     return nullptr;
   }
@@ -151,224 +160,199 @@ public:
   Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::D>) { 
     if (!lines.size()) return nullptr;
 
-    // buffer = { { lines[pos.y] }, true };
+    Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::Y>());
     lines.erase(lines.begin() + pos.y); pos.x = startAt();
     return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::J>) {
-    Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
-    Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
+    // TODO: 
+    // Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
+    // Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
     return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::K>) {
-    Process(Int2Type<olc::Key::K>());
-    Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
-    Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
+    // TODO: 
+    // Process(Int2Type<olc::Key::K>());
+    // Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
+    // Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::L>) { line().erase(pos.x, 1); return nullptr; }
+  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::L>) {
+    Process(Int2Type<olc::Key::X>());
+    return nullptr;
+  }
   Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::H>) { 
-    if (pos.x - 1 >= 0) line().erase(pos.x - 1, 1);
+    Process(Int2Type<olc::Key::H>());
+    Process(Int2Type<olc::Key::X>());
     return nullptr;
   }
 
-  // inline void Command(Int2Type<VimT::CMD_d>) {
-  //   auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
-  //   if (diff.y && (diff.x == 0 || nLastX != pos.x)) { 
-  //     buffer = { {}, true };
-  //     for (int32_t i = 0; i <= std::abs(diff.y); i++, pos.y -= diff.y < 0) {
-  //       if (diff.y > 0) buffer.first.push_back(lines[pos.y]);
-  //       else buffer.first.insert(buffer.first.begin(), lines[pos.y]);
-  //       lines.erase(lines.begin() + pos.y);
-  //     }
+  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::W>) { 
+    const auto copy = pos;
+    Process(Int2Type<olc::Key::W>());
 
-  //     pos.y += diff.y < 0;
-  //     int32_t lineEndsAt = mode == ModeT::NORMAL;
-  //     if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
-  //   } else if (diff.x && diff.y < 0)  {
-  //     buffer = { { lines[pos.y + diff.y].substr(pos.x + diff.x, lines[pos.y + diff.y].size() - pos.x - diff.x) }, false };
-  //     lines[pos.y + diff.y].erase(pos.x + diff.x, buffer.first.front().size());
+    const auto length = pos.y == copy.y ? pos.x - copy.x : lines[copy.y].size() - copy.x;
 
-  //   } else if (diff.x && diff.y > 0) {
-  //     buffer = { { lines[pos.y + diff.y].substr(0, pos.x + diff.x) }, false };
-  //     lines[pos.y + diff.y].erase(0, buffer.first.front().size());
+    pos = copy; 
 
-  //     lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + diff.y].begin(), lines[pos.y + diff.y].end());
-  //     lines.erase(lines.begin() + pos.y + diff.y);
+    if (!length) buffer.clear();
+    else { buffer = { line().substr(pos.x, length) }; line().erase(copy.x, length); }
 
-  //   } else if (pos.x) {
-  //     if (diff.x < 0)  buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.bEnabled) }, false };
-  //     else buffer = { { lines[pos.y].substr(nLastX = pos.x, diff.x) }, false };
+    return nullptr;
+  }
 
-  //     lines[pos.y].erase(pos.x, buffer.first.front().size());
-  //   } 
+  Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::W>) { 
+    Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::W>());
+    Process(Int2Type<olc::Key::I>());
+    return nullptr;
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::P>) { 
+    int32_t index = 0;
+    for (auto& ln : buffer) {
+      if (!index++ && ln.size() && ln.at(0) == '\n') lines.insert(lines.begin() + ++pos.y, ln.substr(1));
+      else line().insert(++pos.x, ln);
+    }
+
+    return nullptr;
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::P>) { 
+    if (!buffer.size()) return nullptr;
+
+    const auto& ln = buffer.front();
+    if (ln.size() && ln.at(0) == '\n') Process(Int2Type<olc::Key::K>());
+    else Process(Int2Type<olc::Key::H>());
+
+    Process(Int2Type<olc::Key::P>());
+    return nullptr;
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::X>) { 
+    buffer = { { symbol() } };
+    line().erase(pos.x, 1);
+
+    pos.x = std::min(pos.x, (int)line().size());
+    return nullptr;
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::R>) { 
+    return [this](olc::Key k) {
+      line().replace(pos.x, 1, GetKeycode(k)); // FIXME: Think about how to impl shift+ascii ?????
+    };
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_3>) { 
+    const char& c = symbol();
+    line().replace(pos.x, 1, std::string(1, islower(c) ? toupper(c) : tolower(c)));
+    Process(Int2Type<olc::Key::L>());
+    return nullptr;
+  }
+
+  // // TODO: Impl undo/redo !!
+  // inline void Command(Int2Type<VimT::CMD_u>) { }
+  // inline void Command(Int2Type<VimT::CMD_U>) { }
+
+  // inline void Command(Int2Type<VimT::CMD_SEMICOLON>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (cmd.size() - search.nStartAt > 1) return;
+
+  //   if (search.bDirection) Command(Int2Type<VimT::CMD_f>());
+  //   else Command(Int2Type<VimT::CMD_F>());
   // }
 
-  inline void Command(Int2Type<VimT::CMD_y>) {
-    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
-    if (diff.y && (diff.x == 0 || nLastX != pos.x)) { 
-      buffer = { {}, true };
-      for (int32_t i = 0; i <= std::abs(diff.y); i++, pos.y += (diff.y > 0) * 2 - 1) {
-        if (diff.y > 0) buffer.first.push_back(lines[pos.y]);
-        else buffer.first.insert(buffer.first.begin(), lines[pos.y]);
-      }
+  // inline void Command(Int2Type<VimT::CMD_COMMA>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (cmd.size() - search.nStartAt > 1) return;
 
-      pos.y += diff.y < 0;
-      int32_t lineEndsAt = mode == ModeT::NORMAL;
-      if (pos.x > lines[pos.y].size()) pos.x = lines[pos.y].size() - lineEndsAt;
-    } else if (diff.x)  {
-      buffer = { { lines[pos.y].substr(nLastX = pos.x += diff.x, std::abs(diff.x) + search.bEnabled) }, false };
-    }
-  }
+  //   if (search.bDirection) Command(Int2Type<VimT::CMD_F>());
+  //   else Command(Int2Type<VimT::CMD_f>());
+  // }
 
-  inline void Command(Int2Type<VimT::CMD_c>)  {
-    auto diff = AnyType<-1, olc::vi2d>::GetValue() - pos;
-    Command(Int2Type<VimT::CMD_d>());
+  // inline void Command(Int2Type<VimT::CMD_f>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (search.bEnabled) search.bDirection = true;
 
-    if (diff.y && (diff.x == 0 || nLastX != pos.x)) Command(Int2Type<VimT::CMD_O>()); 
-    else Command(Int2Type<VimT::CMD_i>()); 
-  }
+  //   auto charAt = lines[pos.y].find(cmd[search.nStartAt], pos.x + 1);
+  //   if (charAt == std::string::npos) return;
+  //   nLastX = pos.x = charAt;
+  // }
 
-  inline void Command(Int2Type<VimT::CMD_p>) {
-    if (!buffer.second) lines[pos.y].insert(++pos.x, buffer.first.front());
-    else {
-      lines.insert(lines.begin() + ++pos.y, buffer.first.begin(), buffer.first.end());
-      nLastX = pos.x = startAt();
-    }
-  }
+  // inline void Command(Int2Type<VimT::CMD_F>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (search.bEnabled) search.bDirection = false;
 
-  inline void Command(Int2Type<VimT::CMD_P>) {
-    if (!buffer.second) lines[pos.y].insert(++pos.x, buffer.first.front());
-    else {
-      lines.insert(lines.begin() + pos.y, buffer.first.begin(), buffer.first.end());
-      nLastX = pos.x = startAt();
-    }
-  }
+  //   auto charAt = lines[pos.y].rfind(cmd[search.nStartAt], std::max(pos.x - 1, 0));
+  //   if (charAt == std::string::npos) return;
+  //   nLastX = pos.x = charAt;
+  // }
 
-  inline void Command(Int2Type<VimT::CMD_x>) {
-    buffer = { { lines[pos.y].substr(nLastX = pos.x, 1) }, false };
-    lines[pos.y].erase(pos.x, 1);
+  // inline void Command(Int2Type<VimT::CMD_n>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
 
-    if (pos.x >= lines[pos.y].size()) nLastX = pos.x = std::max(pos.x - 1, 0);
-  }
+  //   if (search.bDirection) Command(Int2Type<VimT::CMD_SLASH>());
+  //   else Command(Int2Type<VimT::CMD_QUESTION>());
 
-  inline void Command(Int2Type<VimT::CMD_r>) {
-    buffer = { { lines[pos.y].substr(nLastX = pos.x, 1) }, false };
+  //   nLastX = (pos = search.vPos).x;
+  // }
 
-    auto c = cmd[search.nStartAt];
-    lines[pos.y].replace(pos.x, 1, std::string(1, c == '\0' ? ' ': c));
-  }
+  // inline void Command(Int2Type<VimT::CMD_N>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
 
-  inline void Command(Int2Type<VimT::CMD_SQUIGGLE>) { 
-    const char c = lines[pos.y][pos.x];
-    lines[pos.y].replace(pos.x, 1, std::string(1, islower(c) ? toupper(c) : tolower(c)));
-    Process(Int2Type<olc::Key::L>()); nLastX = pos.x;
-  }
+  //   if (search.bDirection) Command(Int2Type<VimT::CMD_QUESTION>());
+  //   else Command(Int2Type<VimT::CMD_SLASH>());
 
-  // TODO: Impl undo/redo !!
-  inline void Command(Int2Type<VimT::CMD_u>) { }
-  inline void Command(Int2Type<VimT::CMD_U>) { }
+  //   nLastX = (pos = search.vPos).x;
+  // }
 
-  inline void Command(Int2Type<VimT::CMD_SEMICOLON>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (cmd.size() - search.nStartAt > 1) return;
+  // inline void Command(Int2Type<VimT::CMD_SLASH>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (search.bEnabled) search.bDirection = true;
 
-    if (search.bDirection) Command(Int2Type<VimT::CMD_f>());
-    else Command(Int2Type<VimT::CMD_F>());
-  }
+  //   auto pos = search.vPrev;
+  //   std::vector<olc::vi2d> foundAt = {};
 
-  inline void Command(Int2Type<VimT::CMD_COMMA>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (cmd.size() - search.nStartAt > 1) return;
+  //   for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
+  //     auto charAt = lines[line].find(search.sPhrase);
+  //     if (charAt == std::string::npos) continue;
 
-    if (search.bDirection) Command(Int2Type<VimT::CMD_F>());
-    else Command(Int2Type<VimT::CMD_f>());
-  }
+  //     if (line > pos.y || (line == pos.y && charAt > pos.x)) { 
+  //       foundAt.insert(foundAt.begin() + offset++, olc::vi2d(charAt, line));
+  //     } else foundAt.push_back(olc::vi2d(charAt, line));
+  //   }
 
-  inline void Command(Int2Type<VimT::CMD_f>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (search.bEnabled) search.bDirection = true;
+  //   if (foundAt.size()) {
+  //     if (search.vPos != foundAt.front()) search.vPrev = search.vPos;
 
-    auto charAt = lines[pos.y].find(cmd[search.nStartAt], pos.x + 1);
-    if (charAt == std::string::npos) return;
-    nLastX = pos.x = charAt;
-  }
+  //     search.vPos = foundAt.front();
+  //   } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
+  // }
 
-  inline void Command(Int2Type<VimT::CMD_F>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (search.bEnabled) search.bDirection = false;
+  // inline void Command(Int2Type<VimT::CMD_QUESTION>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (search.bEnabled) search.bDirection = true;
 
-    auto charAt = lines[pos.y].rfind(cmd[search.nStartAt], std::max(pos.x - 1, 0));
-    if (charAt == std::string::npos) return;
-    nLastX = pos.x = charAt;
-  }
+  //   auto pos = search.vPrev;
+  //   std::vector<olc::vi2d> foundAt = {};
 
-  inline void Command(Int2Type<VimT::CMD_n>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
+  //   for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
+  //     auto charAt = lines[line].find(search.sPhrase);
+  //     if (charAt == std::string::npos) continue;
 
-    if (search.bDirection) Command(Int2Type<VimT::CMD_SLASH>());
-    else Command(Int2Type<VimT::CMD_QUESTION>());
+  //     if (line < pos.y || (line == pos.y && charAt < pos.x)) { 
+  //       foundAt.insert(foundAt.begin(), olc::vi2d(charAt, line));
+  //     } else foundAt.push_back(olc::vi2d(charAt, line));
+  //   }
 
-    nLastX = (pos = search.vPos).x;
-  }
+  //   if (foundAt.size()) {
+  //     if (search.vPos != foundAt.front()) search.vPrev = search.vPos;
 
-  inline void Command(Int2Type<VimT::CMD_N>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-
-    if (search.bDirection) Command(Int2Type<VimT::CMD_QUESTION>());
-    else Command(Int2Type<VimT::CMD_SLASH>());
-
-    nLastX = (pos = search.vPos).x;
-  }
-
-  inline void Command(Int2Type<VimT::CMD_SLASH>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (search.bEnabled) search.bDirection = true;
-
-    auto pos = search.vPrev;
-    std::vector<olc::vi2d> foundAt = {};
-
-    for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
-      auto charAt = lines[line].find(search.sPhrase);
-      if (charAt == std::string::npos) continue;
-
-      if (line > pos.y || (line == pos.y && charAt > pos.x)) { 
-        foundAt.insert(foundAt.begin() + offset++, olc::vi2d(charAt, line));
-      } else foundAt.push_back(olc::vi2d(charAt, line));
-    }
-
-    if (foundAt.size()) {
-      if (search.vPos != foundAt.front()) search.vPrev = search.vPos;
-
-      search.vPos = foundAt.front();
-    } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
-  }
-
-  inline void Command(Int2Type<VimT::CMD_QUESTION>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (search.bEnabled) search.bDirection = true;
-
-    auto pos = search.vPrev;
-    std::vector<olc::vi2d> foundAt = {};
-
-    for (int32_t line = 0, offset = 0; line < lines.size(); line++) {
-      auto charAt = lines[line].find(search.sPhrase);
-      if (charAt == std::string::npos) continue;
-
-      if (line < pos.y || (line == pos.y && charAt < pos.x)) { 
-        foundAt.insert(foundAt.begin(), olc::vi2d(charAt, line));
-      } else foundAt.push_back(olc::vi2d(charAt, line));
-    }
-
-    if (foundAt.size()) {
-      if (search.vPos != foundAt.front()) search.vPrev = search.vPos;
-
-      search.vPos = foundAt.front();
-    } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
-  }
+  //     search.vPos = foundAt.front();
+  //   } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
+  // }
 
   Window::StrokeAction Process(Int2Type<olc::Key::W>) {
     const char startAt = Utils::Classify(symbol());
@@ -407,6 +391,28 @@ public:
 
       // Stop condition: we are on a valid block, and the next character changes type
       if (current != 0 && (bFoundGap || next != current)) shouldProceed = false;
+    }
+
+    return nullptr;
+  }
+  
+  Window::StrokeAction Process(Int2Type<olc::Key::B>) {
+    const char startAt = Utils::Classify(symbol());
+
+    for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
+      if (!pos.x && !pos.y) break; // Start of File safety check
+
+      if (pos.x != 0) Process(Int2Type<olc::Key::H>());
+      else { Process(Int2Type<olc::Key::K>()); Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::K4>()); }
+
+      const char current = Utils::Classify(symbol());
+      const char prev = (pos.x == 0) ? 0 : Utils::Classify(lines[pos.y][pos.x - 1]);
+
+      // Handle transition out of the initial word/punctuation block
+      if (startAt != 0 && current != startAt && !bFoundGap) bFoundGap = true;
+
+      // Stop condition: we are on a valid block, and the previous character changes type
+      if (current != 0 && (bFoundGap || prev != current)) shouldProceed = false;
     }
 
     return nullptr;
@@ -454,6 +460,29 @@ public:
     return nullptr;
   }
 
+  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::B>) {
+    const char startAt = Utils::Classify(symbol()) == 0 ? 0 : 1;
+
+    for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
+      if (!pos.x && !pos.y) break; // Start of File safety check
+
+      if (pos.x != 0) Process(Int2Type<olc::Key::H>());
+      else { Process(Int2Type<olc::Key::K>()); Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::K4>()); }
+
+      const char current = Utils::Classify(symbol()) == 0 ? 0 : 1;
+      const char prev = (pos.x == 0) ? 0 : (Utils::Classify(lines[pos.y][pos.x - 1]) == 0 ? 0 : 1);
+
+      // Handle transition out of the initial WORD block
+      if (startAt != 0 && current != startAt && !bFoundGap) bFoundGap = true;
+
+      // Stop condition: we are on a valid block, and the previous character changes type
+      if (current != 0 && (bFoundGap || prev != current)) shouldProceed = false;
+    }
+
+    return nullptr;
+  }
+
+
   Window::StrokeAction Process(Int2Type<olc::Key::J>) {
     if (pos.y + 1 >= lines.size()) return nullptr;
 
@@ -477,287 +506,14 @@ public:
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::L>) {
-    if (pos.x >= endAt()) return nullptr;
-
-    pos.x++;
-
+    if (pos.x < endAt()) pos.x++;
     return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::H>) {
-    if (pos.x <= 0) return nullptr;
-
-    pos.x--;
-
+    if (pos.x > 0) pos.x--;
     return nullptr;
   }
-
-  void Process(Int2Type<INSERT>, PixelGameEngine* GameEngine) {
-    // FIXME: ....
-    // foreach<KeyEvent, Vim>::Process(this);
-  }
-
-  void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    // FIXME: ....
-    // foreach<KeyEvent, Vim>::Process(this);
-
-    if (!bUpdated) return;
-    else bUpdated = false;
-    
-    #ifdef DEBUG_MODE
-    printf("Vim: '%s' %s\n", cmd.c_str(), err.c_str());
-    #endif
-
-    err.clear(); 
-
-    if (search.bEnabled) {
-      if (cmd.size() - search.nStartAt >= 0) search.sPhrase = cmd.substr(search.nStartAt);
-      return reset(); 
-    }
-
-    // TODO: Add ability to run execution commands aka ':wq'
-
-    if (nCurr == 0) {
-      if (match<12>({ 'i', 'I', 'a', 'A', 'o', 'O', 'C', 'D', 'R', 'u', 'U' })) { phrase(peekPrev()); return reset(); };
-      if (Utils::IsDigit(peek()) && peek() != '0') { nCurr++; return; }
-
-      if (cmd.size() > 1 && match<1>({ '^' })) {
-        if (peek() == 'd') { phrase(Int2Type<VimT::CMD_CTRL_d>(), false); return reset(); }
-        if (peek() == 'u') { phrase(Int2Type<VimT::CMD_CTRL_u>(), false); return reset(); }
-
-        error(peek(), "Invalid operation");
-      }
-
-    } else {
-      uint8_t mask = ((uint8_t)Utils::IsDigit(peekPrev()) << 1) + (uint8_t)Utils::IsDigit(peek());
-
-      switch(mask) {
-        case 0b11: nCurr++; return;
-        case 0b01: error(peek(), "Unexpected number."); return;
-      }
-    }
-
-    // double adverb
-    if (peekPrev() == 'c' && match<1>({ 'c' })) { phrase(Int2Type<VimT::CMD_cc>()); number(); return reset(); } 
-    if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_dd>()); number(); return reset(); } 
-    if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<VimT::CMD_yy>()); number(); return reset(); } 
-
-    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<VimT::CMD_gg>(), false, true); number();  verb(peek(nCurr - 3)); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<VimT::CMD_gd>(), false, true); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'p' })) { phrase(Int2Type<VimT::CMD_gp>(), false, true); return reset(); } 
-
-
-    if (match<26>({ 'h', 'j', 'k', 'l', 'x', 'w', 'W', 'b', 'B', 'e', '0', '$', '^', '_', '~', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
-      switch (peekPrev()) {
-        case 'g': search = Window::SearchT(true, 1, 1, true, pos); return;
-        case 'r': search = Window::SearchT(true, 1, 1, true, pos); break;
-        case 'f': case 'F': search = Window::SearchT(true, 1,  1, true, pos); break;
-        case '/': case '?': search = Window::SearchT(true, 1, -1, true, pos); break;
-      }
-
-      // (noun * number) + verb
-      phrase(peekPrev()); number(); verb(peek(nCurr - 2)); 
-
-      return reset();
-    }
-
-    // adverb
-    if (match<2>({ 'p' , 'P' })) { phrase(peekPrev()); number(); return reset(); }
-
-    // verb
-    if (match<4>({ 'c', 'd', 'y', 'g' })) return;
-
-    error(peek(), "Invalid operation");
-  }
-
-  inline void verb(const char c) {
-    switch (c) {
-      case 'c': case 'd': case 'y': return phrase(c);
-    }
-  }
-
-  inline void phrase(const char c) {
-    // AnyType<-1, int32_t>::GetValue() = c;
-    // bSync = bSync || foreach<SyncVimCommands, AnyType<-1, int32_t>>::Has();
-
-    // auto operation = lambda;
-    // if (locked && foreach<LockedVimCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
-    // else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<VimCommands, Vim>::Command(this); };
-  }
-
-  template<int32_t T>
-  inline void phrase(Int2Type<T> val, bool isSync = true, bool forced = false) {
-    bSync = bSync || isSync;
-
-    auto operation = lambda;
-    if (locked && !forced) lambda = []() {};
-    else lambda = [=]() { operation(); Command(val); };
-  }
-
-  inline void reset(bool exec = true) {
-    // if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
-
-    if (exec) {
-      history.push_back(cmd); if (history.size() > HISTORY_SIZE) history.pop_front();
-
-      AnyType<-1, olc::vi2d>::GetValue() = pos;
-      if (bSync) { lambda(); bUpdated = true; }
-      else { std::thread t(lambda); t.detach(); }
-    }
-
-    if (search.bEnabled && cmd.size() - search.nStartAt != search.nSize) return;
-    cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.bEnabled = false; bSync = false;
-  }
-
-
-  template<int32_t T, int32_t U>
-  void Process(TypeList<Int2Type<T>, Int2Type<U>>) {
-    const char c = static_cast<char>(+U);
-    BasicStrokeHandler(static_cast<olc::Key>(+T), c, toupper(c));
-  }
-
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_2, '/',  '?'); }
-  // // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_4, '[',  '{'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_5, '\\', '|'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_6, ']',  '}'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_7, '\'', '"'); }
-
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K1, '1', '!'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K2, '2', '@'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K3>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K3, '3', '#'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K4, '4', '$'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K5, '5', '%'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K6, '6', '^'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K7, '7', '&'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K8>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K8, '8', '*'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K9>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K9, '9', '('); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K0>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K0, '0', ')'); }
-
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::EQUALS, '=', '+'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::PERIOD, '.', '>'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::COMMA>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::COMMA,  ',', '<'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::MINUS>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::MINUS,  '-', '_'); }
-
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::UP>,    Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::UP).bPressed) Command(Int2Type<VimT::CMD_k>()); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DOWN>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::DOWN).bPressed) Command(Int2Type<VimT::CMD_j>()); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::LEFT>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::LEFT).bPressed) Command(Int2Type<VimT::CMD_h>()); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::RIGHT).bPressed) Command(Int2Type<VimT::CMD_l>()); }
-
-  // template<int32_t U>
-  // void Process(TypeList<Int2Type<olc::Key::TAB>, Int2Type<U>>) {
-  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-  //   if (!GameEngine->GetKey(olc::Key::TAB).bPressed) return;
-
-  //   bUpdated = true;
-
-  //   switch (mode) {
-  //     case NORMAL: break;
-  //     case INSERT: lines[pos.y].insert(pos.x, "  "); nLastX = pos.x += 2; break;
-  //   }
-  // }
-
-  // template<int32_t U>
-  // void Process(TypeList<Int2Type<olc::Key::DEL>, Int2Type<U>>) {
-  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-  //   if (!GameEngine->GetKey(olc::Key::DEL).bPressed) return;
-
-  //   bUpdated = true;
-
-  //   switch (mode) {
-  //     case NORMAL: reset(false); break;
-
-  //     case INSERT: 
-  //       if (pos.x < lines[pos.y].size()) lines[pos.y].erase(pos.x, 1);
-  //       else {
-  //         lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + 1].begin(), lines[pos.y + 1].end());
-  //         lines.erase(lines.begin() + pos.y + 1);
-  //       }
-  //       break;
-  //   }
-  // }
-
-  // template<int32_t U>
-  // void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>) {
-  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-  //   if (!GameEngine->GetKey(olc::Key::BACK).bPressed) return;
-
-  //   bUpdated = true;
-
-  //   switch (mode) {
-  //     case NORMAL: if (cmd.size()) cmd.pop_back(); reset(false); break;
-
-  //     case REPLACE: 
-  //       if (!replaced.size()) break;
-
-  //       lines[pos.y].replace(--pos.x, 1, std::string(1, replaced.back()));
-  //       replaced.pop_back();
-  //       break;
-
-  //     case INSERT: 
-  //       if (pos.x) lines[pos.y].erase(nLastX = --pos.x, 1);
-  //       else {
-  //         if (!pos.y) return;
-  //         int32_t lineEndsAt = mode == ModeT::NORMAL;
-  //         pos.y--; nLastX = pos.x = lines[pos.y].size() - lineEndsAt;
-
-  //         if (pos.y + 1 < lines.size()) {
-  //           lines[pos.y].insert(lines[pos.y].end(), lines[pos.y + 1].begin(), lines[pos.y + 1].end());
-  //           lines.erase(lines.begin() + pos.y + 1);
-  //         }
-  //       }
-  //       break;
-  //   }
-  // }
-
-  // template<int32_t U>
-  // void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>) {
-  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-  //   if (!GameEngine->GetKey(olc::Key::ENTER).bPressed) return;
-
-  //   bUpdated = true;
-
-  //   switch (mode) {
-  //     case NORMAL: 
-  //       if (search.bEnabled) {
-  //         search.nSize = cmd.size() - search.nStartAt;
-  //         nLastX = (pos = search.vPos).x;
-  //       }
-
-  //       reset(search.bEnabled);
-  //       break;
-
-  //     case INSERT: {
-  //       std::string copy = lines[pos.y].substr(pos.x, lines[pos.y].size() - pos.x);
-  //       lines[pos.y].erase(pos.x, copy.size());
-
-  //       nLastX = pos.x = startAt();
-  //       lines.insert(lines.begin() + ++pos.y, std::string(pos.x, ' ') + copy);
-  //       break;
-  //     }
-  //   }
-  // }
-
-  // template<int32_t U>
-  // void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) {
-  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-  //   if (!GameEngine->GetKey(olc::Key::ESCAPE).bPressed) return;
-
-  //   bUpdated = true;
-
-  //   switch (mode) {
-  //     case NORMAL: search.bEnabled = false; reset(false); break;
-  //     case REPLACE: replaced.clear();
-  //     case INSERT: {
-  //       mode = NORMAL;
-
-  //       auto len = lines[pos.y].size();
-  //       nLastX = pos.x = std::min(pos.x, len ? (int32_t)len - 1 : 0);
-  //       break;
-  //     }
-  //   }
-  // }
 
   inline int32_t GetLineSize() { return lines.size(); }
   inline int32_t GetLineSize(int32_t i) { return lines.size() > i ? lines[i].size() : 0; }
@@ -781,11 +537,10 @@ public:
   inline std::string GetMode() {
     switch (mode) {
       case REPLACE: return "-- REPLACE --";
-      case INSERT: return "-- INSERT --";
-      case NORMAL: 
-        if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?' || cmd.front() == ':')) return cmd;
-        if (err.size()) return err;
-        return "-- NORMAL --";
+      case INSERT:  return "-- INSERT --";
+      case NORMAL:  return "-- NORMAL --";
+        // if (search.bEnabled && (cmd.front() == '/' || cmd.front() == '?' || cmd.front() == ':')) return cmd;
+        // if (err.size()) return err;
     }
 
     return "";
@@ -814,41 +569,6 @@ public:
 
 
 private:
-  inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    bool bPressed = GameEngine->GetKey(key).bPressed;
-
-    if (GameEngine->GetKey(key).bReleased) fStrokeRepeat = .0f;
-    if (GameEngine->GetKey(key).bHeld) {
-      fStrokeRepeat += AnyType<-1, float>::GetValue();
-      if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
-    }
-
-    if (!bPressed) return;
-    const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
-    const bool isCtrl = GameEngine->GetKey(olc::Key::CTRL).bHeld;
-    std::string c(1, toUpper ? upper : lower);
-
-    bUpdated = true;
-
-    switch (mode) {
-      case NORMAL: cmd += (isCtrl ? "^" : "") + c; break;
-      case INSERT: lines[pos.y].insert(pos.x++, c); break;
-      case REPLACE: replaced.push_back(lines[pos.y][pos.x]); lines[pos.y].replace(pos.x++, 1, c); break;
-    }
-  }
-
-  template<int32_t T = VimT::CMD_NONE>
-  void number(Int2Type<T> val = Int2Type<T>()) {
-    int32_t nCurr = 0; while (Utils::IsDigit(peek(nCurr))) nCurr++;
-    if (nCurr == 0) return;
-
-    auto len = std::stoul(cmd.substr(0, nCurr)); if (len == 0) return;
-
-    auto prev = lambda;
-    lambda = [=]() { for (int32_t i = 0; i < len; i++) { if (i) Command(val); prev(); } };
-  }
-
   inline int32_t startAt() {
     int32_t startAt = 0;
     while (line().at(startAt) == ' ') startAt++;
@@ -866,20 +586,22 @@ private:
   ModeT mode = NORMAL;
   bool locked = false;
 
-  std::list<std::string> history = {};
+  std::list<std::string> buffer = {};
 
-  std::string replaced = "";
-  std::pair<std::vector<std::string>, bool> buffer = { { "" }, false }; // second value is responsible to distinguish if buffer has a whole line or just a part of it
+  // std::list<std::string> history = {};
+
+  // std::string replaced = "";
   
   // Variables defines animation duration
   float fBlink = 0.f;
   float fStrokeRepeat = 0.f;
 
-  int32_t nLastX = 0; // Used for saving max x pos, when moving from line to line
+  // int32_t nLastX = 0; // Used for saving max x pos, when moving from line to line
 
   olc::vi2d pos = olc::vi2d(0, 0);
   olc::vi2d offset = olc::vi2d(0, 0);
 
+public:
   std::vector<std::string> lines;
   std::list<int32_t> lSeleted;
 
@@ -899,12 +621,24 @@ inline const Window::StrokeT<> Vim::commands = Window::StrokeT<>::Init({
   { Int2Type<olc::Key::O>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::X>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::R>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::Y>(), {
+    { Int2Type<olc::Key::Y>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  }},
   { Int2Type<olc::Key::D>(), {
     { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  }},
+  { Int2Type<olc::Key::C>(), {
+    { Int2Type<olc::Key::C>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::G>(), {
     { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
@@ -918,11 +652,16 @@ inline const Window::StrokeT<> Vim::commands = Window::StrokeT<>::Init({
     { Int2Type<olc::Key::R>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::O>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::C>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::Y>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
 
     { Int2Type<olc::Key::K4>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::K6>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::OEM_3>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::MINUS>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::CTRL>(), {

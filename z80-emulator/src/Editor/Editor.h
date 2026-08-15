@@ -1,5 +1,6 @@
 #pragma once
 #include "Vim.h"
+#include "src/Defs.h"
 
 
 namespace Editor {
@@ -103,8 +104,10 @@ public:
 
     vim.Process(GameEngine);
 
-    if (!vim.bUpdated) return;
-    lexer.scan(vim.Text()); vim.Load(lexer.tokens);
+    // FIXME: Fix this later .....
+    // if (!vim.bUpdated) return;
+    // lexer.scan(vim.Text());
+    //  vim.Load(lexer.tokens);
     // for (auto& err : lexer.errors) printf("LEXER: %s", err.c_str());
   }
 
@@ -142,25 +145,49 @@ public:
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
     auto nHeight = size.y - vStep.y;
 
-    for (auto& token : lexer.tokens) {
-      if (vStartAt.y >= token->line) continue;
-      olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
+    // FIXME: Think about how to Highlight lexemes
+    
+    for (int32_t i = vStartAt.y; i < vim.lines.size(); i++) {
+      // if ( >= token->line) continue;
+      olc::vi2d pos = absolute + (olc::vi2d(1, i + 1) - vStartAt) * vStep + vOffset;
 
       if (pos.x > absolute.x + vOffset.x + size.x + vStep.x) continue;
       if (pos.y > absolute.y + vOffset.y + nHeight) break;
 
       auto nWidth = absolute.x + vOffset.x + vStep.x;
-      if (pos.x < nWidth && pos.x + token->lexeme.size() * vStep.x <= nWidth) continue;
+      if (pos.x < nWidth && pos.x + vim.lines[i].size() * vStep.x <= nWidth) continue;
 
       auto startAt = pos.x < nWidth ? (nWidth - pos.x) / vStep.x : 0;
       auto adj = pos + olc::vi2d(startAt * vStep.x, 0);
       nWidth = absolute.x + vOffset.x + size.x + vStep.x;
 
-      if (pos.x < nWidth && pos.x + token->lexeme.size() * vStep.x > nWidth) {
-        if (startAt > token->lexeme.size()) continue;
-        GameEngine->DrawString(adj, token->lexeme.substr(startAt, (nWidth - pos.x) / vStep.x - startAt - 1), token->color);
-      } else GameEngine->DrawString(adj, token->lexeme.substr(startAt, token->lexeme.size() - startAt), token->color);
+      // auto color = AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue();
+
+      if (pos.x < nWidth && pos.x + vim.lines[i].size() * vStep.x > nWidth) {
+        if (startAt > vim.lines[i].size()) continue;
+        GameEngine->DrawString(adj, vim.lines[i].substr(startAt, (nWidth - pos.x) / vStep.x - startAt - 1), olc::WHITE);
+      } else GameEngine->DrawString(adj, vim.lines[i].substr(startAt, vim.lines[i].size() - startAt), olc::WHITE);
     }
+
+    // for (auto& token : lexer.tokens) {
+    //   if (vStartAt.y >= token->line) continue;
+    //   olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
+
+    //   if (pos.x > absolute.x + vOffset.x + size.x + vStep.x) continue;
+    //   if (pos.y > absolute.y + vOffset.y + nHeight) break;
+
+    //   auto nWidth = absolute.x + vOffset.x + vStep.x;
+    //   if (pos.x < nWidth && pos.x + token->lexeme.size() * vStep.x <= nWidth) continue;
+
+    //   auto startAt = pos.x < nWidth ? (nWidth - pos.x) / vStep.x : 0;
+    //   auto adj = pos + olc::vi2d(startAt * vStep.x, 0);
+    //   nWidth = absolute.x + vOffset.x + size.x + vStep.x;
+
+    //   if (pos.x < nWidth && pos.x + token->lexeme.size() * vStep.x > nWidth) {
+    //     if (startAt > token->lexeme.size()) continue;
+    //     GameEngine->DrawString(adj, token->lexeme.substr(startAt, (nWidth - pos.x) / vStep.x - startAt - 1), token->color);
+    //   } else GameEngine->DrawString(adj, token->lexeme.substr(startAt, token->lexeme.size() - startAt), token->color);
+    // }
 
 
     pos = olc::vi2d(absolute.x, absolute.y + vOffset.y - 10);

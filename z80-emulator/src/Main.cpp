@@ -114,11 +114,12 @@ public:
   template<int32_t T, int32_t U, int32_t V>
   void Process(TypeList<Int2Type<T>, TypeList<Int2Type<U>, Int2Type<V>>> event) {
     olc::HWButton btn = this->GetKey((olc::Key)T);
-    const bool bIncludes = std::find(vKeyCombination.begin(), vKeyCombination.end(), (olc::Key)T) != vKeyCombination.end();
 
-    if (btn.bPressed) fStrokeRepeat = .0f; // NOTE: Improve release functionality
-    if (btn.bHeld && !bIncludes) fStrokeRepeat += GetElapsedTime();
-    if (!btn.bPressed && !(btn.bHeld && !bIncludes && fStrokeRepeat >= .3f ? (fStrokeRepeat -= .04f, true) : false)) return;
+    if (!btn.bPressed && btn.bHeld) vKeyHeld.insert((olc::Key)T);
+    if (btn.bReleased) vKeyHeld.erase((olc::Key)T);
+
+    const bool isProcessed = std::find(vKeyCombination.begin(), vKeyCombination.end(), (olc::Key)T) != vKeyCombination.end();
+    if (!btn.bPressed && !(btn.bHeld && !isProcessed)) return;
 
     if (!vKeyEventListeners.size()) return;
     if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
@@ -139,6 +140,10 @@ public:
 	  Clear(*AnyType<Colors::BLACK, ColorT>::GetValue());
     AnyType<-1, float>::GetValue() = fElapsedTime;
 
+    // FIXME: ?????????
+    // fStrokeRepeat = vKeyHeld.size() ? fStrokeRepeat + fElapsedTime : .0f;
+    // // if (!vKeyHeld.size() || fStrokeRepeat >= .3f ? (fStrokeRepeat -= .04f, true) : false) foreach<KeyEvent, void>::Process(this);
+    // if (!vKeyHeld.size()) 
     foreach<KeyEvent, void>::Process(this);
 
     // go though available commands and execute them
@@ -552,6 +557,7 @@ private:
   float fStrokeRepeat = .0f;
 
   std::vector<olc::Key> vKeyCombination;
+  std::unordered_set<olc::Key> vKeyHeld;
   std::unordered_set<Window::Command*> vKeyEventListeners;
   std::function<void(olc::Key)> fnStrokeAction = nullptr;
 
