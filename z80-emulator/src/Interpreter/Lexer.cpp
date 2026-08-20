@@ -5,7 +5,7 @@ bool Lexer::scan(std::string text) {
   src = text; reset();
 
   while (!isAtEnd()) {
-    nStart = nCurr;
+    prev = curr;
 
     const char c = advance();
     switch (c) {
@@ -42,12 +42,12 @@ bool Lexer::scan(std::string text) {
 
       case ';':
         while (peek() != '\n' && !isAtEnd()) advance();
-        addToken(*AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+        addHighlight(olc::DARK_GREY);
         break;
 
 
-      case '\n': nLine++; nCol = 1; break;
-      case ' ': case '\r': case '\t': addToken(olc::BLANK); break; // Ignore whitespace.
+      case '\n': line++; col = 1; break;
+      case ' ': case '\r': case '\t': break; // Ignore whitespace.
       case '#':
         if (peekNext() != ' ') identifier();
         else error("Unexpected character."); 
@@ -62,7 +62,7 @@ bool Lexer::scan(std::string text) {
     }
   }
 
-  nStart = nCurr;
+  prev = curr;
   addToken(TokenT::OP_EOF);
   return errors.size();
 }

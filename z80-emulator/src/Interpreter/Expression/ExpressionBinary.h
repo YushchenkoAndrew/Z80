@@ -5,7 +5,7 @@ namespace Interpreter {
 
 class ExpressionBinary : public Expression {
 public:
-  ExpressionBinary(std::shared_ptr<Expression> left, std::shared_ptr<Token> op, std::shared_ptr<Expression> right):
+  ExpressionBinary(std::shared_ptr<Expression> left, Token op, std::shared_ptr<Expression> right):
     left(left), operation(op), right(right) {}
 
   inline MemoryT accept(Visitor* visitor) override {
@@ -15,7 +15,7 @@ public:
 public:
   std::shared_ptr<Expression> left;
   std::shared_ptr<Expression> right;
-  std::shared_ptr<Token> operation;
+  Token operation;
 };
 
 };

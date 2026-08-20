@@ -57,264 +57,269 @@ public:
   }
 
   MemoryT visitExprLiteral(ExpressionLiteral* expr) override {
-    switch (expr->token->token) {
-      case TokenT::NUMBER: {
-        uint32_t num = std::stoul(expr->token->literal);
-        if (expr->size && (num & (0xFF << (expr->size * 8))) != 0) {
-          error(expr->token, "Number byte size exceeded allowed size.");
-          return {};
-        }
+    // switch (expr->token->token) {
+    //   case TokenT::NUMBER: {
+    //     uint32_t num = std::stoul(expr->token->literal);
+    //     if (expr->size && (num & (0xFF << (expr->size * 8))) != 0) {
+    //       error(expr->token, "Number byte size exceeded allowed size.");
+    //       return {};
+    //     }
 
-        return Int2Bytes(num, expr->size);
-      }
+    //     return Int2Bytes(num, expr->size);
+    //   }
 
-      case TokenT::STRING: {
-        if (expr->size && expr->token->literal.size() != expr->size) {
-          error(expr->token, "String byte size exceeded allowed size.");
-          return {};
-        }
+    //   case TokenT::STRING: {
+    //     if (expr->size && expr->token->literal.size() != expr->size) {
+    //       error(expr->token, "String byte size exceeded allowed size.");
+    //       return {};
+    //     }
 
-        MemoryT bytes;
-        for (auto c : expr->token->literal) bytes.push_back((uint8_t)c);
-        return bytes;
-      }
-    }
+    //     MemoryT bytes;
+    //     for (auto c : expr->token->literal) bytes.push_back((uint8_t)c);
+    //     return bytes;
+    //   }
+    // }
 
-    error(expr->token, "Unknown literal.");
+    // error(expr->token, "Unknown literal.");
     return {};
   }
 
   MemoryT visitExprBinary(ExpressionBinary* expr) override {
-    MemoryT left = evaluate(expr->left.get());
-    MemoryT right = evaluate(expr->right.get());
+    // MemoryT left = evaluate(expr->left.get());
+    // MemoryT right = evaluate(expr->right.get());
 
-    if (expr->operation->token == TokenT::CONCATENATE) {
-      left.insert(left.end(), right.begin(), right.end());
-      return left;
-    }
+    // if (expr->operation->token == TokenT::CONCATENATE) {
+    //   left.insert(left.end(), right.begin(), right.end());
+    //   return left;
+    // }
 
-    int32_t diff = left.size() - right.size();
-    if (diff > 0) right.insert(right.begin(), diff, 0);
-    else if (diff < 0) left.insert(left.begin(), std::abs(diff), 0);
+    // int32_t diff = left.size() - right.size();
+    // if (diff > 0) right.insert(right.begin(), diff, 0);
+    // else if (diff < 0) left.insert(left.begin(), std::abs(diff), 0);
 
-    switch (expr->operation->token) {
-      case TokenT::PLUS:
-        for (int32_t i = left.size() - 1; i >= 0; i--) {
-          uint16_t acc = left[i] + right[i];
-          uint8_t carry = (acc & 0xFF00) >> 8;
+    // switch (expr->operation->token) {
+    //   case TokenT::PLUS:
+    //     for (int32_t i = left.size() - 1; i >= 0; i--) {
+    //       uint16_t acc = left[i] + right[i];
+    //       uint8_t carry = (acc & 0xFF00) >> 8;
 
-          left[i] = acc & 0xFF;
-          if (!carry) continue;
+    //       left[i] = acc & 0xFF;
+    //       if (!carry) continue;
 
-          if (!i) { left.insert(left.begin(), carry); break; }
+    //       if (!i) { left.insert(left.begin(), carry); break; }
 
-          left[i - 1] += carry;
-        }
+    //       left[i - 1] += carry;
+    //     }
 
-        return left;
+    //     return left;
 
-      case TokenT::MINUS:
-        for (int32_t i = left.size() - 1; i >= 0; i--) {
-          uint16_t acc = (uint16_t)left[i] + ((uint16_t)right[i] ^ 0xFFFF) + 1u;
-          uint8_t carry = (acc & 0xFF00) >> 8;
+    //   case TokenT::MINUS:
+    //     for (int32_t i = left.size() - 1; i >= 0; i--) {
+    //       uint16_t acc = (uint16_t)left[i] + ((uint16_t)right[i] ^ 0xFFFF) + 1u;
+    //       uint8_t carry = (acc & 0xFF00) >> 8;
 
-          left[i] = acc & 0xFF;
-          if (!carry) continue;
+    //       left[i] = acc & 0xFF;
+    //       if (!carry) continue;
 
-          if (i) { left[i - 1] += carry; continue; }
+    //       if (i) { left[i - 1] += carry; continue; }
 
-          // NOTE: Check the sign
-          if (left[i] & 0x80 != 0) break;
+    //       // NOTE: Check the sign
+    //       if (left[i] & 0x80 != 0) break;
 
-          // NOTE: Create 'singed' value
-          left.insert(left.begin(), carry); 
-          break;
-        }
+    //       // NOTE: Create 'singed' value
+    //       left.insert(left.begin(), carry); 
+    //       break;
+    //     }
 
-        return left;
+    //     return left;
 
-      case TokenT::RIGHT_SHIFT: 
-        for (int32_t i = 0; i < Bytes2Int(right); i++) {
-          for (int32_t j = 0, carry = 0; j < left.size(); j++) {
-            const auto prev = left[i] & 0x01;
-            left[i] = ((left[i] >> 1) & 0xFF) | (carry ? 0x80 : 0x00);
-            carry = prev;
-          }
-        }
+    //   case TokenT::RIGHT_SHIFT: 
+    //     for (int32_t i = 0; i < Bytes2Int(right); i++) {
+    //       for (int32_t j = 0, carry = 0; j < left.size(); j++) {
+    //         const auto prev = left[i] & 0x01;
+    //         left[i] = ((left[i] >> 1) & 0xFF) | (carry ? 0x80 : 0x00);
+    //         carry = prev;
+    //       }
+    //     }
 
-        return left;
+    //     return left;
 
-      case TokenT::LEFT_SHIFT:
-        for (int32_t i = 0; i < Bytes2Int(right); i++) {
-          for (int32_t j = left.size() - 1, carry = 0; j >= 0; j--) {
-            const auto prev = left[i] & 0x80;
-            left[i] = ((left[i] << 1) & 0xFF) | (carry ? 0x01 : 0x00);
-            carry = prev;
-          }
-        }
+    //   case TokenT::LEFT_SHIFT:
+    //     for (int32_t i = 0; i < Bytes2Int(right); i++) {
+    //       for (int32_t j = left.size() - 1, carry = 0; j >= 0; j--) {
+    //         const auto prev = left[i] & 0x80;
+    //         left[i] = ((left[i] << 1) & 0xFF) | (carry ? 0x01 : 0x00);
+    //         carry = prev;
+    //       }
+    //     }
 
-        return left;
+    //     return left;
 
-      case TokenT::BIT_OR:
-        for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] | right[i];
-        return left;
+    //   case TokenT::BIT_OR:
+    //     for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] | right[i];
+    //     return left;
 
-      case TokenT::BIT_AND:
-        for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] & right[i];
-        return left;
+    //   case TokenT::BIT_AND:
+    //     for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] & right[i];
+    //     return left;
 
-      case TokenT::BIT_XOR:
-        for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] ^ right[i];
-        return left;
+    //   case TokenT::BIT_XOR:
+    //     for (int32_t i = 0; i < left.size(); i++)  left[i] = left[i] ^ right[i];
+    //     return left;
 
 
-    }
+    // }
 
-    error(expr->operation, "Unknown operation.");
+    // error(expr->operation, "Unknown operation.");
     return {};
   }
 
   MemoryT visitExprUnary(ExpressionUnary* expr) override {
-    MemoryT right = evaluate(expr->right.get());
+    // MemoryT right = evaluate(expr->right.get());
 
-    switch (expr->operation->token) {
-      case TokenT::MINUS:
-        for (int32_t i = right.size() - 1; i >= 0; i--) {
-          uint16_t acc = ((uint16_t)right[i] ^ 0xFFFF) + 1;
-          uint8_t carry = (acc & 0xFF00) >> 8;
+    // switch (expr->operation->token) {
+    //   case TokenT::MINUS:
+    //     for (int32_t i = right.size() - 1; i >= 0; i--) {
+    //       uint16_t acc = ((uint16_t)right[i] ^ 0xFFFF) + 1;
+    //       uint8_t carry = (acc & 0xFF00) >> 8;
 
-          right[i] = acc & 0xFF;
-          if (!carry) continue;
+    //       right[i] = acc & 0xFF;
+    //       if (!carry) continue;
 
-          if (i) { right[i - 1] += carry; continue; }
+    //       if (i) { right[i - 1] += carry; continue; }
 
-          // NOTE: Check the sign
-          if (right[i] & 0x80 != 0) break;
+    //       // NOTE: Check the sign
+    //       if (right[i] & 0x80 != 0) break;
 
-          // NOTE: Create 'singed' value
-          right.insert(right.begin(), carry); 
-          break;
+    //       // NOTE: Create 'singed' value
+    //       right.insert(right.begin(), carry); 
+    //       break;
 
-        }
-        return right;
+    //     }
+    //     return right;
 
-      case TokenT::BIT_NOT:
-        for (auto& val : right) val = val ^ 0xFF;
-        return right;
-    }
+    //   case TokenT::BIT_NOT:
+    //     for (auto& val : right) val = val ^ 0xFF;
+    //     return right;
+    // }
 
-    error(expr->operation, "Unknown operation.");
+    // error(expr->operation, "Unknown operation.");
     return {};
   }
 
   MemoryT visitExprVariable(ExpressionVariable* expr) override {
-    int32_t size = expr->length != nullptr ? std::stol(expr->length->literal) : expr->size;
-    if (!size && !env.has(expr->token->lexeme)) {
-      error(expr->token, "Variable byte size need to be explicitly defined.");
-      return {};
-    }
+    // int32_t size = expr->length != nullptr ? std::stol(expr->length->literal) : expr->size;
+    // if (!size && !env.has(expr->token->lexeme)) {
+    //   error(expr->token, "Variable byte size need to be explicitly defined.");
+    //   return {};
+    // }
 
-    auto bytes = env.get(expr->token->lexeme, size);
-    if (!size || bytes.size() == size) return bytes;
+    // auto bytes = env.get(expr->token->lexeme, size);
+    // if (!size || bytes.size() == size) return bytes;
 
-    error(expr->token, "Variable byte size exceeded allowed size.");
+    // error(expr->token, "Variable byte size exceeded allowed size.");
     return {};
   }
 
   MemoryT visitStmtAddress(StatementAddress* stmt) override {
-    MemoryT expr = evaluate(stmt->expr.get());
-    if (expr.size() > 2) {
-      error(stmt->label, "Address byte size exceeded allowed size.");
-      return {};
-    }
+    // MemoryT expr = evaluate(stmt->expr.get());
+    // if (expr.size() > 2) {
+    //   error(stmt->label, "Address byte size exceeded allowed size.");
+    //   return {};
+    // }
 
-    env.allocate(expr);
+    // env.allocate(expr);
     return {};
   }
 
   MemoryT visitStmtAllocate(StatementAllocate* stmt) override {
-    MemoryT res;
+    // MemoryT res;
 
-    for (auto& expr : stmt->data) {
-      MemoryT bytes = evaluate(expr.get()); const auto nSize = (int32_t)bytes.size() / 2;
-      for (int32_t i = 1; i < stmt->size - nSize; i++) bytes.insert(bytes.begin(), 0);
+    // for (auto& expr : stmt->data) {
+    //   MemoryT bytes = evaluate(expr.get()); const auto nSize = (int32_t)bytes.size() / 2;
+    //   for (int32_t i = 1; i < stmt->size - nSize; i++) bytes.insert(bytes.begin(), 0);
 
-      // TODO: Bellow is quick fix, need to think about how impl this better
-      // Right now `dw "key"` works incorrectly
-      if (stmt->reverse) res.insert(res.end(), bytes.rbegin(), bytes.rend());
-      else res.insert(res.end(), bytes.begin(), bytes.end());
-    }
+    //   // TODO: Bellow is quick fix, need to think about how impl this better
+    //   // Right now `dw "key"` works incorrectly
+    //   if (stmt->reverse) res.insert(res.end(), bytes.rbegin(), bytes.rend());
+    //   else res.insert(res.end(), bytes.begin(), bytes.end());
+    // }
 
-    return res;
+    // return res;
+    return {};
   }
 
   MemoryT visitStmtLambda(StatementLambda* stmt) override {
-    std::vector<uint32_t> argv;
-    for (auto& expr : stmt->expr) {
-      for (auto byte : evaluate(expr.get())) {
-        argv.push_back((uint32_t)byte);
-      }
-    }
+    // std::vector<uint32_t> argv;
+    // for (auto& expr : stmt->expr) {
+    //   for (auto byte : evaluate(expr.get())) {
+    //     argv.push_back((uint32_t)byte);
+    //   }
+    // }
 
-    argv.insert(argv.end(), stmt->argv.begin(), stmt->argv.end());
-    auto opcode = stmt->lambda(argv);
-    if (opcode == 0x00) {
-      error(nullptr, "Invalid lambda operation.");
-      return {};
-    }
+    // argv.insert(argv.end(), stmt->argv.begin(), stmt->argv.end());
+    // auto opcode = stmt->lambda(argv);
+    // if (opcode == 0x00) {
+    //   error(nullptr, "Invalid lambda operation.");
+    //   return {};
+    // }
 
-    env.bind(filepath, stmt->token);
-    return Int2Bytes(opcode);
+    // env.bind(filepath, stmt->token);
+    // return Int2Bytes(opcode);
+    return {};
   }
 
   MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) override {
-    env.bind(filepath, stmt->token);
-    return Int2Bytes(stmt->opcode);
+    // env.bind(filepath, stmt->token);
+    // return Int2Bytes(stmt->opcode);
+    return {};
   }
 
   MemoryT visitStmtOneArg(StatementOneArgCommand* stmt) override {
-    MemoryT expr = evaluate(stmt->expr.get());
-    MemoryT result = Int2Bytes(stmt->opcode);
+    // MemoryT expr = evaluate(stmt->expr.get());
+    // MemoryT result = Int2Bytes(stmt->opcode);
 
-    result.insert(result.end(), expr.rbegin(), expr.rend());
+    // result.insert(result.end(), expr.rbegin(), expr.rend());
 
-    env.bind(filepath, stmt->token);
-    return result;
+    // env.bind(filepath, stmt->token);
+    // return result;
+    return {};
   }
 
   MemoryT visitStmtVariable(StatementVariable* stmt) override {
-    switch (stmt->type) {
-      case StatementVariable::TypeT::ADDRESS:
-        env.define(stmt->label->lexeme, Int2Bytes(env.addr));
-        return {};
+    // switch (stmt->type) {
+    //   case StatementVariable::TypeT::ADDRESS:
+    //     env.define(stmt->label->lexeme, Int2Bytes(env.addr));
+    //     return {};
 
-      case StatementVariable::TypeT::DEFINITION: 
-        env.define(stmt->label->lexeme, evaluate(stmt->definition.get()));
-        return {};
-    }
+    //   case StatementVariable::TypeT::DEFINITION: 
+    //     env.define(stmt->label->lexeme, evaluate(stmt->definition.get()));
+    //     return {};
+    // }
 
-    error(nullptr, "Invalid variable.");
+    // error(nullptr, "Invalid variable.");
     return {};
   }
 
   MemoryT visitStmtInclude(StatementInclude * stmt) override { 
-    auto f = filedir / std::filesystem::path(stmt->expr->token->literal);
-    if (!std::filesystem::exists(f)) {
-      error(stmt->expr->token, "Include file doesn't exist.");
-      return MemoryT();
-    }
+    // auto f = filedir / std::filesystem::path(stmt->expr->token->literal);
+    // if (!std::filesystem::exists(f)) {
+    //   error(stmt->expr->token, "Include file doesn't exist.");
+    //   return MemoryT();
+    // }
 
-    Interpreter included = Interpreter(env.addr, env.vars); included.Load(f);
+    // Interpreter included = Interpreter(env.addr, env.vars); included.Load(f);
 
-    errors.insert(errors.end(), included.errors.begin(), included.errors.end());
-    if (included.errors.size()) return MemoryT();
+    // errors.insert(errors.end(), included.errors.begin(), included.errors.end());
+    // if (included.errors.size()) return MemoryT();
 
-    // for (auto& v : included.env.vars.second) env.define(v.first, v.second);
-    for (auto& u : included.env.unknown) env.undefine(u);
-    for (auto& t : included.env.tokens) env.tokens[t.first] = t.second;
-    included.env.memory.erase(included.env.memory.begin(), included.env.memory.begin() + env.addr);
+    // // for (auto& v : included.env.vars.second) env.define(v.first, v.second);
+    // for (auto& u : included.env.unknown) env.undefine(u);
+    // for (auto& t : included.env.tokens) env.tokens[t.first] = t.second;
+    // included.env.memory.erase(included.env.memory.begin(), included.env.memory.begin() + env.addr);
 
-    return included.env.memory;
+    // return included.env.memory;
+    return {};
   }
 
 private:

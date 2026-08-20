@@ -6,6 +6,7 @@
 #include <functional>
 #include <stdio.h>
 #include <fstream>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -113,18 +114,22 @@ public:
 
   template<int32_t T, int32_t U, int32_t V>
   void Process(TypeList<Int2Type<T>, TypeList<Int2Type<U>, Int2Type<V>>> event) {
-    olc::HWButton btn = this->GetKey((olc::Key)T);
-
-    if (!btn.bPressed && btn.bHeld) vKeyHeld.insert((olc::Key)T);
-    if (btn.bReleased) vKeyHeld.erase((olc::Key)T);
-
-    const bool isProcessed = std::find(vKeyCombination.begin(), vKeyCombination.end(), (olc::Key)T) != vKeyCombination.end();
-    if (!btn.bPressed && !(btn.bHeld && !isProcessed)) return;
-
     if (!vKeyEventListeners.size()) return;
     if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
 
-    this->vKeyCombination.push_back((olc::Key)T);
+    olc::HWButton btn = this->GetKey((olc::Key)T);
+
+    if (btn.bReleased || (!btn.bHeld && vKeyCombinationHeld.count((olc::Key)T))) vKeyCombinationHeld.erase((olc::Key)T);
+    if (!(btn.bPressed || (btn.bHeld && fStrokeRepeat >= .4f ? fStrokeRepeat -= .04f, true : false))) return;
+
+    // Insert held keys into vector
+    for (const auto key : vKeyCombinationHeld) {
+      const auto it = std::find(vKeyCombination.begin(), vKeyCombination.end(), key);
+      if (it == vKeyCombination.end()) this->vKeyCombination.insert(vKeyCombination.begin(), key);
+    }
+
+    if (btn.bPressed) { this->vKeyCombination.push_back((olc::Key)T); fStrokeRepeat = .0f; }
+    if (btn.bHeld) vKeyCombinationHeld.insert((olc::Key)T);
 
     for (const auto listener : vKeyEventListeners) {
       auto [exist, exec] = listener->Executable(this->vKeyCombination);
@@ -140,11 +145,9 @@ public:
 	  Clear(*AnyType<Colors::BLACK, ColorT>::GetValue());
     AnyType<-1, float>::GetValue() = fElapsedTime;
 
-    // FIXME: ?????????
-    // fStrokeRepeat = vKeyHeld.size() ? fStrokeRepeat + fElapsedTime : .0f;
-    // // if (!vKeyHeld.size() || fStrokeRepeat >= .3f ? (fStrokeRepeat -= .04f, true) : false) foreach<KeyEvent, void>::Process(this);
-    // if (!vKeyHeld.size()) 
     foreach<KeyEvent, void>::Process(this);
+    if (vKeyCombinationHeld.size()) fStrokeRepeat += fElapsedTime;
+    else fStrokeRepeat = .0f;
 
     // go though available commands and execute them
 
@@ -513,7 +516,7 @@ private:
   void Compile(std::string src) {
     if (bool err = interpreter.Load(src)) {
       #ifdef DEBUG_MODE 
-      for (auto token : interpreter.parser.lexer.tokens) { token->print(); }
+      for (auto token : interpreter.parser.lexer.tokens) { token.print(); }
       printf("\n");
 
       for (auto err : interpreter.errors) {
@@ -557,7 +560,7 @@ private:
   float fStrokeRepeat = .0f;
 
   std::vector<olc::Key> vKeyCombination;
-  std::unordered_set<olc::Key> vKeyHeld;
+  std::unordered_set<olc::Key> vKeyCombinationHeld;
   std::unordered_set<Window::Command*> vKeyEventListeners;
   std::function<void(olc::Key)> fnStrokeAction = nullptr;
 

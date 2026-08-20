@@ -78,11 +78,12 @@ public:
   void Interrupt(int32_t);
 
   inline float Sound(float fGlobalTime) {
-    if (!GetValue(gate, 0)) return 0.0f;
-    float frequency = (float)clock.second / GetValue(counter, 0);
+    return .0f;
+    // if (!GetValue(gate, 0)) return 0.0f;
+    // float frequency = (float)clock.second / GetValue(counter, 0);
 
-    float output = sinf(2 * 3.14f * frequency * fGlobalTime);
-    return output > 0.0f ? 0.5 : -0.5;
+    // float output = sinf(2 * 3.14f * frequency * fGlobalTime);
+    // return output > 0.0f ? 0.5 : -0.5;
   }
 
   void Runtime() {

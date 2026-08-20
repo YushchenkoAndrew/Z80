@@ -6,7 +6,7 @@ namespace Interpreter {
 
 class StatementAllocate : public Statement {
 public:
-  StatementAllocate(std::shared_ptr<Token> t, std::vector<std::shared_ptr<Expression>> d, int32_t s, bool r = false):
+  StatementAllocate(Token t, std::vector<std::shared_ptr<Expression>> d, int32_t s, bool r = false):
     token(t), data(d), size(s), reverse(r) {}
 
   inline MemoryT accept(Visitor* visitor) override {
@@ -16,7 +16,7 @@ public:
 public:
   int32_t size;
   bool reverse;
-  std::shared_ptr<Token> token;
+  Token token;
   std::vector<std::shared_ptr<Expression>> data;
 };
 

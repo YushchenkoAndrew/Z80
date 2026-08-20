@@ -70,6 +70,24 @@ public:
     lines.clear(); lines.insert(lines.end(), dst.begin(), dst.end());
   }
 
+  void Load(std::string dst) {
+    lines.clear();
+
+    size_t start = 0; // Current search offset
+    size_t end = 0; // Find from the offset
+
+    while ((end = dst.find('\n', start)) != std::string::npos) {
+      // Extract substring between 'start' and 'end'
+      lines.push_back(dst.substr(start, end - start));
+        
+      // Move the offset past the delimiter for the next search
+      start = end + 1;
+    }
+    
+    // Don't forget to grab the very last token after the final delimiter
+    lines.push_back(dst.substr(start));
+  }
+
   void Load(std::vector<std::shared_ptr<Interpreter::Token>>& dst) {
     std::string line = ""; lines.clear();
 

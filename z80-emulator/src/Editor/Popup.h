@@ -12,7 +12,7 @@ public:
   }
 
   void Load(std::vector<std::string>& dst) {
-    // vim.Load(lines = dst); vim.Command(Int2Type<VimT::CMD_gg>());
+    vim.Load(lines = dst); vim.Process(Int2Type<olc::Key::G>(), Int2Type<olc::Key::G>());
   }
 
   void Lock() { vim.Lock(); }

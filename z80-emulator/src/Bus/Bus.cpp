@@ -51,10 +51,10 @@ namespace Bus {
     lcd       ->Initialize();
     keyboard  ->Initialize();
     KR580VV55 ->Initialize();
-    KR580VI53 ->Initialize();
+    // KR580VI53 ->Initialize();
     MC146818  ->Preinitialize();
     interrupt ->Initialize();
-    Z80       ->Initialize();
+    // Z80       ->Initialize();
     W27C512   ->Initialize(); 
   }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "Vim.h"
 #include "src/Defs.h"
+#include <cstdint>
 
 
 namespace Editor {
@@ -26,10 +27,10 @@ public:
     if (f.is_open()) { buf<< f.rdbuf(); f.close(); }
 
     auto filename = std::filesystem::path(path).filename().string();
-    tabs.push_back(std::tuple(path, filename, Interpreter::Lexer(true), Vim()));
+    tabs.push_back(std::tuple(path, filename, Interpreter::Lexer(), Vim()));
 
     auto& tab = tabs.back(); nTab = tabs.size() - 1;
-    LEXER(tab).scan(buf.str()); VIM(tab).Load(LEXER(tab).tokens);
+    LEXER(tab).scan(buf.str()); VIM(tab).Load(buf.str());
     return this;
   }
 
@@ -145,10 +146,14 @@ public:
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
     auto nHeight = size.y - vStep.y;
 
-    // FIXME: Think about how to Highlight lexemes
+    auto DrawHighlightedString = [&](olc::vi2d pos, int32_t y, int32_t start, int32_t end) {
+      for (int32_t x = start; x < end; x++) {
+        auto color = lexer.highlights.count(y) && lexer.highlights[y].count(x) ? lexer.highlights[y][x] : olc::GREY;
+        GameEngine->DrawString(pos + olc::vi2d(x * vStep.x, 0), { vim.lines[y][x] }, color);
+      }
+    };
     
     for (int32_t i = vStartAt.y; i < vim.lines.size(); i++) {
-      // if ( >= token->line) continue;
       olc::vi2d pos = absolute + (olc::vi2d(1, i + 1) - vStartAt) * vStep + vOffset;
 
       if (pos.x > absolute.x + vOffset.x + size.x + vStep.x) continue;
@@ -161,34 +166,11 @@ public:
       auto adj = pos + olc::vi2d(startAt * vStep.x, 0);
       nWidth = absolute.x + vOffset.x + size.x + vStep.x;
 
-      // auto color = AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue();
-
       if (pos.x < nWidth && pos.x + vim.lines[i].size() * vStep.x > nWidth) {
         if (startAt > vim.lines[i].size()) continue;
-        GameEngine->DrawString(adj, vim.lines[i].substr(startAt, (nWidth - pos.x) / vStep.x - startAt - 1), olc::WHITE);
-      } else GameEngine->DrawString(adj, vim.lines[i].substr(startAt, vim.lines[i].size() - startAt), olc::WHITE);
+        DrawHighlightedString(adj, i, startAt, (nWidth - pos.x) / vStep.x - startAt - 1);
+      } else DrawHighlightedString(adj, i, startAt, vim.lines[i].size() - startAt);
     }
-
-    // for (auto& token : lexer.tokens) {
-    //   if (vStartAt.y >= token->line) continue;
-    //   olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt) * vStep + vOffset;
-
-    //   if (pos.x > absolute.x + vOffset.x + size.x + vStep.x) continue;
-    //   if (pos.y > absolute.y + vOffset.y + nHeight) break;
-
-    //   auto nWidth = absolute.x + vOffset.x + vStep.x;
-    //   if (pos.x < nWidth && pos.x + token->lexeme.size() * vStep.x <= nWidth) continue;
-
-    //   auto startAt = pos.x < nWidth ? (nWidth - pos.x) / vStep.x : 0;
-    //   auto adj = pos + olc::vi2d(startAt * vStep.x, 0);
-    //   nWidth = absolute.x + vOffset.x + size.x + vStep.x;
-
-    //   if (pos.x < nWidth && pos.x + token->lexeme.size() * vStep.x > nWidth) {
-    //     if (startAt > token->lexeme.size()) continue;
-    //     GameEngine->DrawString(adj, token->lexeme.substr(startAt, (nWidth - pos.x) / vStep.x - startAt - 1), token->color);
-    //   } else GameEngine->DrawString(adj, token->lexeme.substr(startAt, token->lexeme.size() - startAt), token->color);
-    // }
-
 
     pos = olc::vi2d(absolute.x, absolute.y + vOffset.y - 10);
     for (int32_t i = 0; i < tabs.size(); i++) {

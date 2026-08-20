@@ -1,5 +1,6 @@
 #pragma once
 #include "PIT.h"
+#include "src/Defs.h"
 
 namespace Bus {
 
@@ -193,18 +194,18 @@ private:
     GameEngine->FillRect(pos, { size.x, 8 }, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
 
     for (auto& token : lexer.tokens) {
-      if (vStartAt.second.y >= token->line) continue;
+      if (vStartAt.second.y >= token.line) continue;
       // printf("%s \n", token->lexeme.c_str());
 
-      olc::vi2d pos = absolute + (olc::vi2d(token->col, token->line) - vStartAt.second) * vStep.second + vOffset.second;
+      olc::vi2d pos = absolute + (olc::vi2d(token.col, token.line) - vStartAt.second) * vStep.second + vOffset.second;
 
       // TODO: FIX bug with not displaying anything
       // if (pos.x > size.x) continue;
       if (pos.y >= size.y - vStep.second.y) break;
 
-      if (pos.x < size.x && pos.x + token->lexeme.size() * vStep.second.x > size.x) {
-        GameEngine->DrawString(pos, token->lexeme.substr(0, (size.x - pos.x) / vStep.second.x), token->color);
-      } else GameEngine->DrawString(pos, token->lexeme, token->color);
+      if (pos.x < size.x && pos.x + token.lexeme.size() * vStep.second.x > size.x) {
+        GameEngine->DrawString(pos, token.lexeme.substr(0, (size.x - pos.x) / vStep.second.x), olc::WHITE);
+      } else GameEngine->DrawString(pos, token.lexeme, olc::WHITE);
     }
 
 

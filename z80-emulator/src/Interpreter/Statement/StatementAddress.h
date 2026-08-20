@@ -6,7 +6,7 @@ namespace Interpreter {
 
 class StatementAddress : public Statement {
 public:
-  StatementAddress(std::shared_ptr<Token> t, std::shared_ptr<Expression> e):
+  StatementAddress(Token t, std::shared_ptr<Expression> e):
     label(t), expr(e) {}
 
   inline MemoryT accept(Visitor* visitor) override {
@@ -14,8 +14,8 @@ public:
   }
 
 public:
+  Token label;
   std::shared_ptr<Expression> expr;
-  std::shared_ptr<Token> label;
 };
 
 };

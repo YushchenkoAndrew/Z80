@@ -5,7 +5,7 @@ namespace Interpreter {
 
 class ExpressionUnary : public Expression {
 public:
-  ExpressionUnary(std::shared_ptr<Token> op, std::shared_ptr<Expression> right):
+  ExpressionUnary(Token op, std::shared_ptr<Expression> right):
     operation(op), right(right) {}
   
   
@@ -15,7 +15,7 @@ public:
 
 public:
   std::shared_ptr<Expression> right;
-  std::shared_ptr<Token> operation;
+  Token operation;
 };
 
 };
