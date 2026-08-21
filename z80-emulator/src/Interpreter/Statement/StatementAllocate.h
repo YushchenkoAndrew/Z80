@@ -1,13 +1,15 @@
 #pragma once
-#include "StatementAddress.h"
 
+#include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Statement/Statement.h"
+#include "src/Interpreter/Token.h"
 
 namespace Interpreter {
 
 class StatementAllocate : public Statement {
 public:
-  StatementAllocate(Token t, std::vector<std::shared_ptr<Expression>> d, int32_t s, bool r = false):
-    token(t), data(d), size(s), reverse(r) {}
+  StatementAllocate(Token token, std::vector<Expression> data, int32_t size):
+    token(token), data(data), size(size) {}
 
   inline MemoryT accept(Visitor* visitor) override {
     return visitor->visitStmtAllocate(this);
@@ -15,9 +17,8 @@ public:
 
 public:
   int32_t size;
-  bool reverse;
   Token token;
-  std::vector<std::shared_ptr<Expression>> data;
+  std::vector<Expression> data;
 };
 
 };

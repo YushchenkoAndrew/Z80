@@ -1,5 +1,4 @@
 #pragma once
-#include "PPI.h"
 
 namespace Bus {
 
@@ -22,12 +21,12 @@ public:
     olc::vi2d pos = absolute;
     const olc::vi2d vOffset = olc::vi2d(3 * 8 + vStep.x, 0);
 
-    GameEngine->DrawString(pos, "IRQ", *AnyType<DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + vOffset, Utils::Int2Bin(state), *AnyType<GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, "IRQ", Color::DARK_GREY);
+    GameEngine->DrawString(pos + vOffset, Utils::Int2Bin(state), Color::GREY);
 
     pos += olc::vi2d(0, vStep.y + vStep.y / 2);
-    GameEngine->DrawString(pos, "REG", *AnyType<DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + vOffset, Utils::Int2Bin(enabled), *AnyType<GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, "REG", Color::DARK_GREY);
+    GameEngine->DrawString(pos + vOffset, Utils::Int2Bin(enabled), Color::GREY);
   }
 
   void Interrupt();

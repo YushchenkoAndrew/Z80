@@ -249,7 +249,7 @@ public:
     return {};
   }
 
-  MemoryT visitStmtLambda(StatementLambda* stmt) override {
+  MemoryT visitStmtLambda(StatementRuntimeCommand* stmt) override {
     // std::vector<uint32_t> argv;
     // for (auto& expr : stmt->expr) {
     //   for (auto byte : evaluate(expr.get())) {

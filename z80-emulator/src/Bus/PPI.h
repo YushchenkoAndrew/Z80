@@ -1,5 +1,4 @@
 #pragma once
-#include "Lcd.h"
 
 namespace Bus {
 
@@ -28,8 +27,8 @@ public:
     olc::vi2d pos = absolute;
 
     auto DrawReg = [&](std::string name, uint16_t val) {
-      GameEngine->DrawString(pos, name, *AnyType<DARK_GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos, name, Color::DARK_GREY);
+      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), Color::GREY);
 
       pos.x += vOffset.x + vStep.x * 3;
     };

@@ -1,9 +1,8 @@
 #pragma once
-#include "src/Interpreter/Expression/ExpressionVariable.h"
 
+#include "src/Interpreter/Expression/Expression.h"
 namespace Interpreter {
 
-class Statement : public Expression {
-};
+class Statement : public Expression {};
 
 };

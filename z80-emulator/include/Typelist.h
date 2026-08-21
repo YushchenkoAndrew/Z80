@@ -1,27 +1,25 @@
 #pragma once
 #include <functional>
 #include <string>
-#include <array>
 #include <typeindex>
 
 
-struct DefaultType { virtual ~DefaultType() = default; };
-struct NullType : public DefaultType {};
+struct NullType {};
 
 template<typename T>
-struct Type2Type : public DefaultType {
+struct Type2Type {
 	typedef T Type;
 	inline Type2Type() {}
 };
 
 template<int v>
-struct Int2Type : public DefaultType {
+struct Int2Type {
 	enum { value = v };
 	inline Int2Type() {}
 };
 
 template<class T, class U>
-struct TypeList : public DefaultType {
+struct TypeList {
 	typedef T Head;
 	typedef U Tail;
 	inline TypeList() {}

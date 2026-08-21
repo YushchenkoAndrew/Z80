@@ -1,13 +1,7 @@
 #pragma once
-#include "Bus/Bus.h"
-#include "Editor/Popup.h"
-#include "include/Typelist.h"
+
 #include "src/Defs.h"
 #include "src/Window/Command.h"
-#include <cstdint>
-#include <cstdio>
-#include <functional>
-
 
 template <class T>
 using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, DimensionT, int32_t>;
@@ -91,8 +85,8 @@ public:
       for (auto& w : windows) {
         if (IS_NULL(w) || !SIZE(w).x || !SIZE(w).y) continue;
 
-        auto color = SELECTED(w) ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
-        GameEngine->DrawString(POS(w), std::string(1, '0' + WINDOW(w)), *color, 3);
+        const auto& color = SELECTED(w) ? Color::BLUE : Color::RED;
+        GameEngine->DrawString(POS(w), std::string(1, '0' + WINDOW(w)), color, 3);
       }
     }
     // if (cmd.size() && cmd.back() == 'w' && !search.bEnabled) Highlight(GameEngine);

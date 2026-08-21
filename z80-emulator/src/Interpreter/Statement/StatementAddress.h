@@ -1,13 +1,15 @@
 #pragma once
-#include "Statement.h"
 
+#include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Statement/Statement.h"
+#include "src/Interpreter/Token.h"
 
 namespace Interpreter {
 
 class StatementAddress : public Statement {
 public:
-  StatementAddress(Token t, std::shared_ptr<Expression> e):
-    label(t), expr(e) {}
+  StatementAddress(Token label, Expression expr):
+    label(label), expr(expr) {}
 
   inline MemoryT accept(Visitor* visitor) override {
     return visitor->visitStmtAddress(this);
@@ -15,7 +17,7 @@ public:
 
 public:
   Token label;
-  std::shared_ptr<Expression> expr;
+  Expression expr;
 };
 
 };

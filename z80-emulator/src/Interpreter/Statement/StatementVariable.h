@@ -1,6 +1,8 @@
 #pragma once
-#include "StatementOneArgCommand.h"
 
+#include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Statement/Statement.h"
+#include "src/Interpreter/Token.h"
 
 namespace Interpreter {
 
@@ -8,8 +10,8 @@ class StatementVariable : public Statement {
 public:
   enum TypeT { ADDRESS, DEFINITION };
 
-  StatementVariable(Token t, std::shared_ptr<Expression> a):
-    label(t), definition(a), type(DEFINITION) {}
+  StatementVariable(Token token, Expression expr):
+    label(token), definition(expr), type(DEFINITION) {}
 
   StatementVariable(Token t): label(t), type(ADDRESS) {}
 
@@ -19,7 +21,7 @@ public:
 
 public:
   Token label;
-  std::shared_ptr<Expression> definition;
+  Expression definition;
   const TypeT type;
 };
 

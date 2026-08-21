@@ -126,8 +126,8 @@ public:
       auto offset = olc::vi2d((filename.size() + 1) * vStep.x, 14);
 
       pos.x += 2;
-      auto color = nTab == i ? AnyType<BLUE, ColorT>::GetValue() : AnyType<RED, ColorT>::GetValue();
-      GameEngine->DrawString(pos, std::string(1, '0' + i + 1), *color, 3);
+      const auto& color = nTab == i ? Color::BLUE : Color::RED;
+      GameEngine->DrawString(pos, std::string(1, '0' + i + 1), color, 3);
 
       pos.x += offset.x;
     }
@@ -141,7 +141,7 @@ public:
     const auto vStartAt = vim.vStartAt();
 
     olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (vim.GetPos().y + 1 - vStartAt.y) * vStep.y + vOffset.y);
-    GameEngine->FillRect(pos, { size.x, 8 }, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+    GameEngine->FillRect(pos, { size.x, 8 }, Color::VERY_DARK_GREY);
 
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
     auto nHeight = size.y - vStep.y;
@@ -179,13 +179,13 @@ public:
 
       pos.x += 2;
       if (nTab == i) {
-        GameEngine->FillRect(pos, offset, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+        GameEngine->FillRect(pos, offset, Color::VERY_DARK_GREY);
 
-        GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), *AnyType<Colors::GREY, ColorT>::GetValue());
-        GameEngine->DrawString(pos + olc::vi2d(4, 4), filename, *AnyType<Colors::GREY, ColorT>::GetValue());
+        GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), Color::GREY);
+        GameEngine->DrawString(pos + olc::vi2d(4, 4), filename, Color::GREY);
       } else {
-        GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
-        GameEngine->DrawString(pos + olc::vi2d(4, 4), filename, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+        GameEngine->DrawLine(pos + olc::vi2d(0, offset.y), pos + offset - olc::vi2d(1, 0), Color::DARK_GREY);
+        GameEngine->DrawString(pos + olc::vi2d(4, 4), filename, Color::DARK_GREY);
       }
 
       pos.x += offset.x;
@@ -196,23 +196,23 @@ public:
       auto str = std::to_string(vStartAt.y + i + 1);
       auto line = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y + vOffset.y);
       auto color =
-        vim.IsSelected(vStartAt.y + i) ? AnyType<RED, ColorT>::GetValue() : 
-        (cursor.y - vStartAt.y == i ? AnyType<GREY, ColorT>::GetValue() : AnyType<DARK_GREY, ColorT>::GetValue());
+        vim.IsSelected(vStartAt.y + i) ? Color::RED : 
+        (cursor.y - vStartAt.y == i ? Color::GREY : Color::DARK_GREY);
 
       GameEngine->DrawString(line, str, *color);
     }
 
     pos = olc::vi2d(absolute.x, absolute.y + nHeight + vOffset.y);
-    GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), vim.GetMode(), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, Color::VERY_DARK_GREY);
+    GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), vim.GetMode(), Color::DARK_GREY);
 
     auto humanizedPos = vim.GetHumanizedPos();
 
     pos.x = size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
-    GameEngine->DrawString(pos, humanizedPos, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, humanizedPos, Color::DARK_GREY);
 
     pos.x -= 5 * vStep.x;
-    GameEngine->DrawString(pos, vim.GetCmd(), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, vim.GetCmd(), Color::DARK_GREY);
   }
 
 public:

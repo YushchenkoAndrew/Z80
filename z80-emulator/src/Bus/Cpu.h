@@ -64,16 +64,16 @@ public:
     olc::vi2d pos = absolute;
 
     auto DrawReg = [&](std::string name, uint16_t val) {
-      GameEngine->DrawString(pos, name, *AnyType<DARK_GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val, 4), *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos, name, Color::DARK_GREY);
+      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val, 4), Color::GREY);
 
       if (++index % 2) pos.x += vOffset.x + vStep.x * 6;
       else pos = olc::vi2d(absolute.x, pos.y + vStep.y);
     };
 
     auto DrawFlag = [&](std::string name, bool val) {
-      GameEngine->DrawString(pos - olc::vi2d(vStep.x * (name.size() - 1) / 2, 0), name, *AnyType<DARK_GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + olc::vi2d(0, vStep.y), val ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos - olc::vi2d(vStep.x * (name.size() - 1) / 2, 0), name, Color::DARK_GREY);
+      GameEngine->DrawString(pos + olc::vi2d(0, vStep.y), val ? "1" : "0", Color::GREY);
 
       pos.x += vStep.x * 3;
     };

@@ -17,8 +17,8 @@ public:
     for (int32_t i = 7, val = this->data; i >= 0; i--, val = val << 1) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep + vOffset;
 
-      if (val & 0x80) GameEngine->FillRectDither(pos, olc::vi2d(9, 9), *AnyType<WHITE, ColorT>::GetValue());
-      else GameEngine->FillRectDither(pos, olc::vi2d(9, 9), *AnyType<DARK_GREY, ColorT>::GetValue());
+      if (val & 0x80) GameEngine->FillRectDither(pos, olc::vi2d(9, 9), Color::WHITE);
+      else GameEngine->FillRectDither(pos, olc::vi2d(9, 9), Color::DARK_GREY);
     }
   }
 

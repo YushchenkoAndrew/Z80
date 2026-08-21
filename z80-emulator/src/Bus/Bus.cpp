@@ -123,10 +123,10 @@ namespace Bus {
     interrupt ->Draw(GameEngine);
     Z80       ->Draw(GameEngine);
 
-    for (auto& line : grid) GameEngine->DrawLine(line.first, line.second, *AnyType<DARK_GREY, ColorT>::GetValue());
+    for (auto& line : grid) GameEngine->DrawLine(line.first, line.second, Color::DARK_GREY);
 
     // TODO: Get data from lua
-    // GameEngine->FillRect({ 300, 20 }, { 20, 50 }, *AnyType<VERY_DARK_GREY, ColorT>::GetValue());
+    // GameEngine->FillRect({ 300, 20 }, { 20, 50 }, Color::VERY_DARK_GREY);
   }
 
   void InterruptVector::Interrupt() { if ((uint8_t)(state ^ 0xff)) bus->Z80->Interrupt(); }

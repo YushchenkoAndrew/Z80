@@ -1,11 +1,13 @@
 #pragma once
-#include "ExpressionLiteral.h"
+
+#include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Token.h"
 
 namespace Interpreter {
 
 class ExpressionUnary : public Expression {
 public:
-  ExpressionUnary(Token op, std::shared_ptr<Expression> right):
+  ExpressionUnary(Token op, Expression right):
     operation(op), right(right) {}
   
   
@@ -14,7 +16,7 @@ public:
   }
 
 public:
-  std::shared_ptr<Expression> right;
+  Expression right;
   Token operation;
 };
 

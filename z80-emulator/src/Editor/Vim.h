@@ -63,7 +63,7 @@ public:
       case REPLACE: size *= olc::vi2d(8,  2); pos += olc::vi2d(0, 10); break;
     }
 
-    GameEngine->FillRect(pos, size, *AnyType<GREY, ColorT>::GetValue());
+    GameEngine->FillRect(pos, size, Color::GREY);
   }
 
   void Load(std::vector<std::string>& dst) {

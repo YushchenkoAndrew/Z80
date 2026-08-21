@@ -1,5 +1,6 @@
 #pragma once
 #include "HexDisplay.h"
+#include "src/Defs.h"
 
 namespace Bus {
 
@@ -70,9 +71,9 @@ public:
     for (int32_t j = 0; j < buffer.size(); j++) {
       for (int32_t i = 0; i < sizeof(uint8_t) * 8; i++) {
         const auto pos = absolute + olc::vi2d(j, i) * vStep;
-        ColorT color = (buffer[j] & (0x80 >> i)) ? AnyType<WHITE, ColorT>::GetValue() : bg;
+        const auto& color = (buffer[j] & (0x80 >> i)) ? Color::WHITE : bg;
 
-        GameEngine->FillRectDither(pos, vStep, *color, 1);
+        GameEngine->FillRectDither(pos, vStep, color, 1);
       }
     }
   }
@@ -90,7 +91,7 @@ public:
   inline uint8_t Instruction(Int2Type<MODE>, uint8_t data) { inc = IS_BIT(data, 1); shift = IS_BIT(data, 0); return data; }
 
   inline uint8_t Instruction(Int2Type<DISPLAY>, uint8_t data) {
-    bg = IS_BIT(data, 2) ? AnyType<DARK_GREY, ColorT>::GetValue() : AnyType<VERY_DARK_GREY, ColorT>::GetValue();
+    bg = IS_BIT(data, 2) ? Color::DARK_GREY : Color::VERY_DARK_GREY;
     cursor.first = IS_BIT(data, 1);
     fBlink.first = IS_BIT(data, 0);
     return data;
@@ -121,7 +122,7 @@ private:
   bool inc = true; // addr shift inc/dec
   bool shift = false; // shift whole display
 
-  ColorT bg = AnyType<VERY_DARK_GREY, ColorT>::GetValue();
+  olc::Pixel bg = Color::VERY_DARK_GREY;
   std::pair<bool, uint32_t> cursor = std::pair(true, 0); // first - show cursor on/off
 
   // Variables defines animation duration

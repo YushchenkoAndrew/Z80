@@ -1,11 +1,9 @@
 #pragma once
-#include "Token.h"
-#include "src/Defs.h"
-#include <cstdint>
-#include <unordered_map>
-#include <vector>
-#include <array>
-#include <sstream>
+
+#include "lib/olcPixelGameEngine.h"
+#include "src/Interpreter/Defs.h"
+#include "src/Interpreter/Token.h"
+#include "src/Utils/Utils.h"
 
 
 namespace Interpreter {
@@ -19,12 +17,75 @@ public:
   Lexer() {}
   ~Lexer() { reset(); }
 
-  bool scan(std::string src); 
+  bool scan(std::string text) {
+    src = text; reset();
+
+    while (!isAtEnd()) {
+      prev = curr;
+
+      const char c = advance();
+      switch (c) {
+        case '$': addToken(TokenT::IDENTIFIER); break;
+        case ',': addToken(TokenT::COMMA); break;
+        case ':': addToken(TokenT::COLON); break;
+        case '(': addToken(TokenT::LEFT_BRACE); break;
+        case ')': addToken(TokenT::RIGHT_BRACE); break;
+        case '[': addToken(TokenT::LEFT_SQUARE_BRACE); break;
+        case ']': addToken(TokenT::RIGHT_SQUARE_BRACE); break;
+
+        case '+': addToken(TokenT::PLUS); break;
+        case '-': addToken(TokenT::MINUS); break;
+        case '|': addToken(TokenT::BIT_OR); break;
+        case '&': addToken(TokenT::BIT_AND); break;
+        case '^': addToken(TokenT::BIT_XOR); break;
+        case '~': addToken(TokenT::BIT_NOT); break;
+
+        case '.':
+         if (advance() == '.') { addToken(TokenT::CONCATENATE); break; }
+         else if (Utils::IsAlpha(peekPrev())) { identifier(); break; }
+         else error("Unexpected character."); break;
+
+        case '>':
+         if (advance() != '>') { error("Unexpected character."); break; }
+         addToken(TokenT::RIGHT_SHIFT); break;
+
+        case '<':
+         if (advance() != '<') { error("Unexpected character."); break; }
+         addToken(TokenT::LEFT_SHIFT); break;
+
+
+        case '"': string(c); break;
+
+        case ';':
+          while (peek() != '\n' && !isAtEnd()) advance();
+          addHighlight(olc::DARK_GREY);
+          break;
+
+
+        case '\n': line++; col = 0; break;
+        case ' ': case '\r': case '\t': break; // Ignore whitespace.
+        case '#':
+          if (peekNext() != ' ') identifier();
+          else error("Unexpected character."); 
+          break;
+
+        default:
+          if (Utils::IsDigit(c)) number();
+          else if (isAlpha(c)) identifier();
+          else { addToken(TokenT::NONE); error(std::string("Unexpected char '") + std::string(1, c) + std::string("'.")); }
+          break;
+      }
+    }
+
+    prev = curr;
+    addToken(TokenT::OP_EOF);
+    return errors.size();
+  }
 
 
 private:
   inline void reset() {
-    prev = 0; curr = 0; col = 1; line = 1;
+    prev = 0; curr = 0; col = 0; line = 0;
     tokens.clear(); errors.clear();
   }
 
@@ -62,11 +123,10 @@ private:
   void identifier() {
     while (isAlphaNumeric(peek())) advance();
 
-    AnyType<-1, std::string>::GetValue() = src.substr(prev, curr - prev);
-    int32_t type = foreach<KeywordList, AnyType<-1, std::string>>::Value2Key();
+    const auto& type = Token::GetToken(src.substr(prev, curr - prev));
 
-    if (type == -1) addToken(TokenT::IDENTIFIER);
-    else addToken(static_cast<TokenT>(type));
+    if (type != TokenT::NONE) addToken(type);
+    else addToken(TokenT::IDENTIFIER);
   }
 
   inline const char advance() { col++; return src[curr++]; }
@@ -100,7 +160,6 @@ private:
   void addHighlight(olc::Pixel c) {
     const int32_t len = curr - prev;
 
-    // FIX issue with ivalid highlight cased by line & i
     if (!highlights.count(line)) highlights[line] = {};
     for (int32_t i = col - len; i < col; i++) highlights[line][i] = c;
   }

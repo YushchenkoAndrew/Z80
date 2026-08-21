@@ -1,11 +1,13 @@
 #pragma once
-#include "Expression.h"
+
+#include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Token.h"
 
 namespace Interpreter {
 
 class ExpressionBinary : public Expression {
 public:
-  ExpressionBinary(std::shared_ptr<Expression> left, Token op, std::shared_ptr<Expression> right):
+  ExpressionBinary(Expression left, Token op, Expression right):
     left(left), operation(op), right(right) {}
 
   inline MemoryT accept(Visitor* visitor) override {
@@ -13,8 +15,8 @@ public:
   }
 
 public:
-  std::shared_ptr<Expression> left;
-  std::shared_ptr<Expression> right;
+  Expression left;
+  Expression right;
   Token operation;
 };
 

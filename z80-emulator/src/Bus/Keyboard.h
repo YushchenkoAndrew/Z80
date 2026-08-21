@@ -32,17 +32,17 @@ public:
   void Draw(PixelGameEngine* GameEngine) {
     olc::vi2d pos = absolute;
 
-    auto fg = bEnabled ? AnyType<DARK_GREY, ColorT>::GetValue() : AnyType<BLACK, ColorT>::GetValue();
-    auto bg = bEnabled ? AnyType<BLACK, ColorT>::GetValue()     : AnyType<DARK_GREY, ColorT>::GetValue();
+    const auto& fg = bEnabled ? Color::DARK_GREY : Color::BLACK;
+    const auto& bg = bEnabled ? Color::BLACK     : Color::DARK_GREY;
 
     GameEngine->FillRect(pos - olc::vi2d(1, 1), name.second + olc::vi2d(2, 2), *bg);
-    GameEngine->DrawString(pos, name.first, *fg);
+    GameEngine->DrawString(pos, name.first, fg);
 
     int32_t index = 0; Utils::Lock l(mutex);
     const olc::vi2d vOffset = olc::vi2d(name.second.x, 0) + vStep;
 
     for (auto& val : buffer) {
-      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), Color::GREY);
 
       if (++index > 3) break;
       else pos.x += vStep.x * 3;

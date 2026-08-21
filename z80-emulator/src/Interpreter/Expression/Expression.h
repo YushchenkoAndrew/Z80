@@ -1,5 +1,9 @@
 #pragma once
-#include "src/Interpreter/Token.h"
+
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace Interpreter {
 
@@ -14,7 +18,7 @@ class ExpressionVariable;
 
 class StatementAddress;
 class StatementAllocate;
-class StatementLambda;
+class StatementRuntimeCommand;
 class StatementNoArgCommand;
 class StatementOneArgCommand;
 class StatementVariable;
@@ -29,7 +33,7 @@ public:
 
   virtual MemoryT visitStmtAddress(StatementAddress* stmt) { return {}; }
   virtual MemoryT visitStmtAllocate(StatementAllocate* stmt) { return {}; }
-  virtual MemoryT visitStmtLambda(StatementLambda* stmt) { return {}; }
+  virtual MemoryT visitStmtLambda(StatementRuntimeCommand* stmt) { return {}; }
   virtual MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) { return {}; }
   virtual MemoryT visitStmtOneArg(StatementOneArgCommand* stmt) { return {}; }
   virtual MemoryT visitStmtVariable(StatementVariable* stmt) { return {}; }

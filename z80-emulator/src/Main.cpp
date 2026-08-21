@@ -112,8 +112,8 @@ public:
     return true;
   }
 
-  template<int32_t T, int32_t U, int32_t V>
-  void Process(TypeList<Int2Type<T>, TypeList<Int2Type<U>, Int2Type<V>>> event) {
+  template<int32_t T>
+  void Process(Int2Type<T>) {
     if (!vKeyEventListeners.size()) return;
     if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
 
@@ -142,7 +142,7 @@ public:
   }
 
   bool OnUserUpdate(float fElapsedTime) override {
-	  Clear(*AnyType<Colors::BLACK, ColorT>::GetValue());
+	  Clear(Color::BLACK);
     AnyType<-1, float>::GetValue() = fElapsedTime;
 
     foreach<KeyEvent, void>::Process(this);
@@ -241,39 +241,39 @@ public:
     const auto nHeight = ScreenHeight();
 
     olc::vi2d pos = olc::vi2d(0, nHeight - vStep.y - vOffset.y);
-    FillRect(pos - olc::vi2d(0, 2), olc::vi2d(nWidth, 10), *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
-    DrawString(pos + olc::vi2d(0, vStep.y), keybindings, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    FillRect(pos - olc::vi2d(0, 2), olc::vi2d(nWidth, 10), Color::VERY_DARK_GREY);
+    DrawString(pos + olc::vi2d(0, vStep.y), keybindings, Color::DARK_GREY);
 
     const auto& cmd = Command();
-    DrawString(pos + olc::vi2d(nWidth - ((int32_t)cmd.size() + 2) * vStep.x, vStep.y), cmd, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    DrawString(pos + olc::vi2d(nWidth - ((int32_t)cmd.size() + 2) * vStep.x, vStep.y), cmd, Color::DARK_GREY);
 
-    auto color = panels[nPanel].IsActive() ? AnyType<Colors::DARK_YELLOW, ColorT>::GetValue() : AnyType<Colors::DARK_GREEN, ColorT>::GetValue();
+    auto color = panels[nPanel].IsActive() ? Color::DARK_YELLOW : Color::DARK_GREEN;
     FillRect(pos - olc::vi2d(0, 2), olc::vi2d(vStep.x * 2, vStep.y - 2), *color);
-    DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(nPanel + 1), *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(nPanel + 1), Color::DARK_GREY);
     pos.x += vStep.x * 2;
 
     // const auto nCmd = cmd.size();
     // for (int32_t i = 0; !nCmd && i < panels.size(); i++) {
     for (int32_t i = 0; i < panels.size(); i++) {
       auto str = std::to_string(i + 1) + " " + panels[i].GetName();
-      auto color = i == nPanel ? AnyType<Colors::GREY, ColorT>::GetValue() : AnyType<Colors::DARK_GREY, ColorT>::GetValue();
+      auto color = i == nPanel ? Color::GREY : Color::DARK_GREY;
 
       DrawString(pos + olc::vi2d(vStep.x, 0), str, *color);
       pos.x += GetTextSize(str).x + vStep.x * 2;
     }
 
-    // if (nCmd) DrawString(pos + olc::vi2d(vStep.x, 0), cmd, *AnyType<Colors::GREY, ColorT>::GetValue());
+    // if (nCmd) DrawString(pos + olc::vi2d(vStep.x, 0), cmd, Color::GREY);
 
     std::string name = GetMode() == NORMAL ? "NORMAL" : "DEBUG";
     pos.x = nWidth - ((int32_t)name.size() + 2) * vStep.x;
-    color = GetMode() == NORMAL ? AnyType<Colors::ORANGE, ColorT>::GetValue() : AnyType<Colors::CYAN, ColorT>::GetValue();
+    color = GetMode() == NORMAL ? Color::ORANGE : Color::CYAN;
 
     FillRect(pos - olc::vi2d(vStep.x / 2, 2), GetTextSize(name) + olc::vi2d(vStep.x, 2), *color);
-    DrawString(pos, name, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    DrawString(pos, name, Color::DARK_GREY);
 
     if (!bSyncing.first) return;
     pos.x -= ((int32_t)bSyncing.second.size() + 2) * vStep.x; pos.y += vStep.y;
-    DrawString(pos, bSyncing.second, *AnyType<Colors::DARK_GREY, ColorT>::GetValue());
+    DrawString(pos, bSyncing.second, Color::DARK_GREY);
   }
 
   ModeT GetMode() override { return bus->Z80->IsDebug() ? DEBUG : NORMAL; }

@@ -1,5 +1,10 @@
 #pragma once
-#include "src/Defs.h"
+#include <cstdint>
+#include <iomanip>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <thread>
 
 namespace Utils {
 

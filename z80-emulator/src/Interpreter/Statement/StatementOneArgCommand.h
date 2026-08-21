@@ -1,12 +1,15 @@
 #pragma once
-#include "StatementNoArgCommand.h"
+
+#include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Statement/Statement.h"
+#include "src/Interpreter/Token.h"
 
 namespace Interpreter {
 
 class StatementOneArgCommand : public Statement {
 public:
-  StatementOneArgCommand(uint32_t o, Token t, std::shared_ptr<Expression> a):
-    opcode(o), expr(a), token(t) {}
+  StatementOneArgCommand(uint32_t code, Token token, Expression expr):
+    opcode(code), expr(expr), token(token) {}
 
   inline MemoryT accept(Visitor* visitor) override {
     return visitor->visitStmtOneArg(this);
@@ -15,7 +18,7 @@ public:
 public:
   const uint32_t opcode;
   Token token;
-  std::shared_ptr<Expression> expr;
+  Expression expr;
 };
 
 };

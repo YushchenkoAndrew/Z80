@@ -1,7 +1,9 @@
 #pragma once
-#include "Defs.h"
+
 #include "src/Defs.h"
-#include <utility>
+#include "src/Interpreter/Defs.h"
+#include "lib/olcPixelGameEngine.h"
+#include <string>
 
 namespace Interpreter {
 /**
@@ -17,13 +19,19 @@ public:
     token(t), lexeme(le), literal(li), col(col), line(line) {}
 
   void print() { 
-    AnyType<-1, int32_t>::GetValue() = token;
-    std::string type = *foreach<KeywordList, AnyType<-1, int32_t>>::Key2Value();
+    const auto& [name, _] = GetMetadata(token);
 
-
-    if (!type.length()) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", token, lexeme.c_str(), literal.c_str(), line, col);
-    else printf("{ type: '%s'; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", type.c_str(), lexeme.c_str(), literal.c_str(), line, col);
+    if (!std::strlen(name)) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", token, lexeme.c_str(), literal.c_str(), line, col);
+    else printf("{ type: '%s'; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", name, lexeme.c_str(), literal.c_str(), line, col);
   }
+
+  static const TokenT GetToken(std::string lexeme) {
+    for (const auto& [token, info] : metadata) {
+      if (info.first == lexeme) return token;
+    }
+
+    return TokenT::NONE;
+  };
 
   static const MetadataT& GetMetadata(TokenT token) {
     auto it = metadata.find(token);
@@ -41,134 +49,134 @@ public:
 
 private:
 static inline const std::unordered_map<TokenT, MetadataT> metadata = {
-    { TokenT::NONE,       { "",         olc::RED } },
-    { TokenT::OP_INCLUDE, { "#include", olc::CYAN } },
+    { TokenT::NONE,       { "",         Color::WHITE } },
+    { TokenT::OP_INCLUDE, { "#include", Color::CYAN } },
 
-    { TokenT::OP_ORG, { "ORG", olc::CYAN } },
-    { TokenT::OP_DB,  { "DB",  olc::CYAN } },
-    { TokenT::OP_DW,  { "DW",  olc::CYAN } },
-    { TokenT::OP_EQU, { "EQU", olc::CYAN } },
+    { TokenT::OP_ORG, { "ORG", Color::CYAN } },
+    { TokenT::OP_DB,  { "DB",  Color::CYAN } },
+    { TokenT::OP_DW,  { "DW",  Color::CYAN } },
+    { TokenT::OP_EQU, { "EQU", Color::CYAN } },
 
 
-    { TokenT::CMD_ADC,  { "ADC",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_ADD,  { "ADD",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_AND,  { "AND",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_BIT,  { "BIT",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CALL, { "CALL",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CCF,  { "CCF",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CP,   { "CP",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CPD,  { "CPD",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CPDR, { "CPDR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CPI,  { "CPI",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CPIR, { "CPIR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_CPL,  { "CPL",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_DAA,  { "DAA",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_DEC,  { "DEC",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_DI,   { "DI",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_DJNZ, { "DJNZ",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_EI,   { "EI",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_EX,   { "EX",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_EXX,  { "EXX",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_HALT, { "HALT",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_IM,   { "IM",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_IN,   { "IN",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_INC,  { "INC",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_IND,  { "IND",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_INDR, { "INDR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_INI,  { "INI",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_INIR, { "INIR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_JP,   { "JP",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_JR,   { "JR",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_LD,   { "LD",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_LDD,  { "LDD",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_LDDR, { "LDDR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_LDI,  { "LDI",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_LDIR, { "LDIR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_NEG,  { "NEG",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_NOP,  { "NOP",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_OR,   { "OR",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_OTDR, { "OTDR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_OTIR, { "OTIR",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_OUT,  { "OUT",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_OUTD, { "OUTD",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_OUTI, { "OUTI",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_POP,  { "POP",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_PUSH, { "PUSH",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RES,  { "RES",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RET,  { "RET",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RETI, { "RETI",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RETN, { "RETN",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RL,   { "RL",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RLA,  { "RLA",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RLC,  { "RLC",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RLCA, { "RLCA",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RLD,  { "RLD",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RR,   { "RR",    olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RRA,  { "RRA",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RRC,  { "RRC",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RRCA, { "RRCA",  olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RRD,  { "RRD",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_RST,  { "RST",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_SBC,  { "SBC",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_SCF,  { "SCF",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_SET,  { "SET",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_SLA,  { "SLA",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_SRA,  { "SRA",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_SRL,  { "SRL",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_SUB,  { "SUB",   olc::Pixel(0xCC, 0x75, 0xEC) } },
-    { TokenT::CMD_XOR,  { "XOR",   olc::Pixel(0xCC, 0x75, 0xEC) } },
+    { TokenT::CMD_ADC,  { "ADC",   Color::MAGENTA } },
+    { TokenT::CMD_ADD,  { "ADD",   Color::MAGENTA } },
+    { TokenT::CMD_AND,  { "AND",   Color::MAGENTA } },
+    { TokenT::CMD_BIT,  { "BIT",   Color::MAGENTA } },
+    { TokenT::CMD_CALL, { "CALL",  Color::MAGENTA } },
+    { TokenT::CMD_CCF,  { "CCF",   Color::MAGENTA } },
+    { TokenT::CMD_CP,   { "CP",    Color::MAGENTA } },
+    { TokenT::CMD_CPD,  { "CPD",   Color::MAGENTA } },
+    { TokenT::CMD_CPDR, { "CPDR",  Color::MAGENTA } },
+    { TokenT::CMD_CPI,  { "CPI",   Color::MAGENTA } },
+    { TokenT::CMD_CPIR, { "CPIR",  Color::MAGENTA } },
+    { TokenT::CMD_CPL,  { "CPL",   Color::MAGENTA } },
+    { TokenT::CMD_DAA,  { "DAA",   Color::MAGENTA } },
+    { TokenT::CMD_DEC,  { "DEC",   Color::MAGENTA } },
+    { TokenT::CMD_DI,   { "DI",    Color::MAGENTA } },
+    { TokenT::CMD_DJNZ, { "DJNZ",  Color::MAGENTA } },
+    { TokenT::CMD_EI,   { "EI",    Color::MAGENTA } },
+    { TokenT::CMD_EX,   { "EX",    Color::MAGENTA } },
+    { TokenT::CMD_EXX,  { "EXX",   Color::MAGENTA } },
+    { TokenT::CMD_HALT, { "HALT",  Color::MAGENTA } },
+    { TokenT::CMD_IM,   { "IM",    Color::MAGENTA } },
+    { TokenT::CMD_IN,   { "IN",    Color::MAGENTA } },
+    { TokenT::CMD_INC,  { "INC",   Color::MAGENTA } },
+    { TokenT::CMD_IND,  { "IND",   Color::MAGENTA } },
+    { TokenT::CMD_INDR, { "INDR",  Color::MAGENTA } },
+    { TokenT::CMD_INI,  { "INI",   Color::MAGENTA } },
+    { TokenT::CMD_INIR, { "INIR",  Color::MAGENTA } },
+    { TokenT::CMD_JP,   { "JP",    Color::MAGENTA } },
+    { TokenT::CMD_JR,   { "JR",    Color::MAGENTA } },
+    { TokenT::CMD_LD,   { "LD",    Color::MAGENTA } },
+    { TokenT::CMD_LDD,  { "LDD",   Color::MAGENTA } },
+    { TokenT::CMD_LDDR, { "LDDR",  Color::MAGENTA } },
+    { TokenT::CMD_LDI,  { "LDI",   Color::MAGENTA } },
+    { TokenT::CMD_LDIR, { "LDIR",  Color::MAGENTA } },
+    { TokenT::CMD_NEG,  { "NEG",   Color::MAGENTA } },
+    { TokenT::CMD_NOP,  { "NOP",   Color::MAGENTA } },
+    { TokenT::CMD_OR,   { "OR",    Color::MAGENTA } },
+    { TokenT::CMD_OTDR, { "OTDR",  Color::MAGENTA } },
+    { TokenT::CMD_OTIR, { "OTIR",  Color::MAGENTA } },
+    { TokenT::CMD_OUT,  { "OUT",   Color::MAGENTA } },
+    { TokenT::CMD_OUTD, { "OUTD",  Color::MAGENTA } },
+    { TokenT::CMD_OUTI, { "OUTI",  Color::MAGENTA } },
+    { TokenT::CMD_POP,  { "POP",   Color::MAGENTA } },
+    { TokenT::CMD_PUSH, { "PUSH",  Color::MAGENTA } },
+    { TokenT::CMD_RES,  { "RES",   Color::MAGENTA } },
+    { TokenT::CMD_RET,  { "RET",   Color::MAGENTA } },
+    { TokenT::CMD_RETI, { "RETI",  Color::MAGENTA } },
+    { TokenT::CMD_RETN, { "RETN",  Color::MAGENTA } },
+    { TokenT::CMD_RL,   { "RL",    Color::MAGENTA } },
+    { TokenT::CMD_RLA,  { "RLA",   Color::MAGENTA } },
+    { TokenT::CMD_RLC,  { "RLC",   Color::MAGENTA } },
+    { TokenT::CMD_RLCA, { "RLCA",  Color::MAGENTA } },
+    { TokenT::CMD_RLD,  { "RLD",   Color::MAGENTA } },
+    { TokenT::CMD_RR,   { "RR",    Color::MAGENTA } },
+    { TokenT::CMD_RRA,  { "RRA",   Color::MAGENTA } },
+    { TokenT::CMD_RRC,  { "RRC",   Color::MAGENTA } },
+    { TokenT::CMD_RRCA, { "RRCA",  Color::MAGENTA } },
+    { TokenT::CMD_RRD,  { "RRD",   Color::MAGENTA } },
+    { TokenT::CMD_RST,  { "RST",   Color::MAGENTA } },
+    { TokenT::CMD_SBC,  { "SBC",   Color::MAGENTA } },
+    { TokenT::CMD_SCF,  { "SCF",   Color::MAGENTA } },
+    { TokenT::CMD_SET,  { "SET",   Color::MAGENTA } },
+    { TokenT::CMD_SLA,  { "SLA",   Color::MAGENTA } },
+    { TokenT::CMD_SRA,  { "SRA",   Color::MAGENTA } },
+    { TokenT::CMD_SRL,  { "SRL",   Color::MAGENTA } },
+    { TokenT::CMD_SUB,  { "SUB",   Color::MAGENTA } },
+    { TokenT::CMD_XOR,  { "XOR",   Color::MAGENTA } },
 
     // Registers.val
 
-    { TokenT::REG_AF, { "AF", olc::Pixel(0xE0, 0x9C, 0x5F)} },
-    { TokenT::REG_BC, { "BC", olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_DE, { "DE", olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_HL, { "HL", olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_IX, { "IX", olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_IY, { "IY", olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_SP, { "SP", olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_PC, { "PC", olc::Pixel(0xE0, 0x9C, 0x5F) } },
+    { TokenT::REG_AF, { "AF", Color::ORANGE } },
+    { TokenT::REG_BC, { "BC", Color::ORANGE } },
+    { TokenT::REG_DE, { "DE", Color::ORANGE } },
+    { TokenT::REG_HL, { "HL", Color::ORANGE } },
+    { TokenT::REG_IX, { "IX", Color::ORANGE } },
+    { TokenT::REG_IY, { "IY", Color::ORANGE } },
+    { TokenT::REG_SP, { "SP", Color::ORANGE } },
+    { TokenT::REG_PC, { "PC", Color::ORANGE } },
 
-    { TokenT::REG_AF$,{ "AF'",olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_BC$,{ "BC'",olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_DE$,{ "DE'",olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_HL$,{ "HL'",olc::Pixel(0xD7, 0xAD, 0x5D) } },
+    { TokenT::REG_AF$,{ "AF'",Color::DARK_YELLOW } },
+    { TokenT::REG_BC$,{ "BC'",Color::DARK_YELLOW } },
+    { TokenT::REG_DE$,{ "DE'",Color::DARK_YELLOW } },
+    { TokenT::REG_HL$,{ "HL'",Color::DARK_YELLOW } },
 
-    { TokenT::REG_A, { "A",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_B, { "B",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_C, { "C",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_D, { "D",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_E, { "E",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_H, { "H",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_L, { "L",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_I, { "I",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
-    { TokenT::REG_R, { "R",   olc::Pixel(0xE0, 0x9C, 0x5F) } },
+    { TokenT::REG_A, { "A",   Color::ORANGE } },
+    { TokenT::REG_B, { "B",   Color::ORANGE } },
+    { TokenT::REG_C, { "C",   Color::ORANGE } },
+    { TokenT::REG_D, { "D",   Color::ORANGE } },
+    { TokenT::REG_E, { "E",   Color::ORANGE } },
+    { TokenT::REG_H, { "H",   Color::ORANGE } },
+    { TokenT::REG_L, { "L",   Color::ORANGE } },
+    { TokenT::REG_I, { "I",   Color::ORANGE } },
+    { TokenT::REG_R, { "R",   Color::ORANGE } },
 
-    { TokenT::REG_A$,{ "A'",  olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_B$,{ "B'",  olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_C$,{ "C'",  olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_D$,{ "D'",  olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_E$,{ "E'",  olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_H$,{ "H'",  olc::Pixel(0xD7, 0xAD, 0x5D) } },
-    { TokenT::REG_L$,{ "L'",  olc::Pixel(0xD7, 0xAD, 0x5D) } },
+    { TokenT::REG_A$,{ "A'",  Color::DARK_YELLOW } },
+    { TokenT::REG_B$,{ "B'",  Color::DARK_YELLOW } },
+    { TokenT::REG_C$,{ "C'",  Color::DARK_YELLOW } },
+    { TokenT::REG_D$,{ "D'",  Color::DARK_YELLOW } },
+    { TokenT::REG_E$,{ "E'",  Color::DARK_YELLOW } },
+    { TokenT::REG_H$,{ "H'",  Color::DARK_YELLOW } },
+    { TokenT::REG_L$,{ "L'", Color::DARK_YELLOW } },
 
-    { TokenT::FLAG_C,  { "C",  olc::Pixel(0x4C, 0xB8, 0xFE) } },
-    { TokenT::FLAG_M,  { "M",  olc::Pixel(0x4C, 0xB8, 0xFE) } },
-    { TokenT::FLAG_NC, { "NC", olc::Pixel(0x4C, 0xB8, 0xFE) } },
-    { TokenT::FLAG_NZ, { "NZ", olc::Pixel(0x4C, 0xB8, 0xFE) } },
-    { TokenT::FLAG_P,  { "P",  olc::Pixel(0x4C, 0xB8, 0xFE) } },
-    { TokenT::FLAG_PE, { "PE", olc::Pixel(0x4C, 0xB8, 0xFE) } },
-    { TokenT::FLAG_PO, { "PO", olc::Pixel(0x4C, 0xB8, 0xFE) } },
-    { TokenT::FLAG_Z,  { "Z",  olc::Pixel(0x4C, 0xB8, 0xFE) } },
+    { TokenT::FLAG_C,  { "C",  Color::BLUE } },
+    { TokenT::FLAG_M,  { "M",  Color::BLUE } },
+    { TokenT::FLAG_NC, { "NC", Color::BLUE } },
+    { TokenT::FLAG_NZ, { "NZ", Color::BLUE } },
+    { TokenT::FLAG_P,  { "P",  Color::BLUE } },
+    { TokenT::FLAG_PE, { "PE", Color::BLUE } },
+    { TokenT::FLAG_PO, { "PO", Color::BLUE } },
+    { TokenT::FLAG_Z,  { "Z",  Color::BLUE } },
 
     // Literals
-    { TokenT::NUMBER,     { "", olc::Pixel(0XFF, 0x86, 0x63) } },
-    { TokenT::STRING,     { "", olc::Pixel(0xEC, 0xCE, 0x8A) } },
-    { TokenT::IDENTIFIER, { "", olc::Pixel(0xDB, 0xE5, 0xD5) } },
+    { TokenT::NUMBER,     { "", Color::RED } },
+    { TokenT::STRING,     { "", Color::YELLOW } },
+    { TokenT::IDENTIFIER, { "", Color::WHITE } },
 
     // Additional operations
-    { TokenT::LEFT_SQUARE_BRACE,  { "", olc::Pixel(0XFF, 0x86, 0x63) } },
-    { TokenT::RIGHT_SQUARE_BRACE, { "", olc::Pixel(0XFF, 0x86, 0x63) } },
+    { TokenT::LEFT_SQUARE_BRACE,  { "", Color::RED } },
+    { TokenT::RIGHT_SQUARE_BRACE, { "", Color::RED } },
   };
 };
 };

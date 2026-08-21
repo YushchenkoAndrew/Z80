@@ -1,5 +1,4 @@
 #pragma once
-#include "Keyboard.h"
 
 namespace Bus {
 
@@ -42,19 +41,19 @@ public:
 
   void Draw(PixelGameEngine* GameEngine) {
     olc::vi2d pos = absolute; olc::vi2d vNextLine = olc::vi2d(0, vStep.y);
-    GameEngine->DrawString(pos, "PIT", *AnyType<DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos, "PIT", Color::DARK_GREY);
 
     auto freq = "[" + Utils::Int2Scientific(clock.second) + " Hz]";
     olc::vi2d vOffset = olc::vi2d(vStep.x * 4, 0);
 
-    GameEngine->FillRect(pos + vOffset - olc::vi2d(1, 1), GameEngine->GetTextSize(freq) + olc::vi2d(1, 1), *AnyType<DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + vOffset, freq, *AnyType<BLACK, ColorT>::GetValue());
+    GameEngine->FillRect(pos + vOffset - olc::vi2d(1, 1), GameEngine->GetTextSize(freq) + olc::vi2d(1, 1), Color::DARK_GREY);
+    GameEngine->DrawString(pos + vOffset, freq, Color::BLACK);
     pos.y += vStep.y;
 
-    GameEngine->DrawString(pos + vOffset, "VAL", *AnyType<DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x, 0), "CL", *AnyType<DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 4, 0), "E", *AnyType<DARK_GREY, ColorT>::GetValue());
-    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), "Y", *AnyType<DARK_GREY, ColorT>::GetValue());
+    GameEngine->DrawString(pos + vOffset, "VAL", Color::DARK_GREY);
+    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x, 0), "CL", Color::DARK_GREY);
+    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 4, 0), "E", Color::DARK_GREY);
+    GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), "Y", Color::DARK_GREY);
     pos.y += vStep.y;
 
     for (uint8_t i = 0; i < 3; i++) {
@@ -65,11 +64,11 @@ public:
       uint8_t ctl = GetValue(control, i);
       uint16_t value = GetValue(counter, i);
 
-      GameEngine->DrawString(pos, "CT" + std::to_string(i), *AnyType<DARK_GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(value, 4), *AnyType<GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x, 0), Utils::Int2Hex(ctl), *AnyType<GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 4, 0), cs ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
-      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), !cs || out ? "1" : "0", *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(pos, "CT" + std::to_string(i), Color::DARK_GREY);
+      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(value, 4), Color::GREY);
+      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x, 0), Utils::Int2Hex(ctl), Color::GREY);
+      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 4, 0), cs ? "1" : "0", Color::GREY);
+      GameEngine->DrawString(pos + vOffset * 2 + olc::vi2d(vStep.x * 6, 0), !cs || out ? "1" : "0", Color::GREY);
 
       pos.y += vStep.y;
     }

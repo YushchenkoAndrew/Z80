@@ -26,147 +26,152 @@
 template<class T, class U> 
 struct foreach;
 
-template<int32_t T, class V, class U, class F>
-struct foreach<TypeList<AnyType<T, V>, U>, F> {
-	// static inline void Process() {
-	// 	if (F::template Compare<T>()) return Commands::GetValue().Operation(Int2Type<T>());
-  //   foreach<U, F>::Process();
-	// }
+// template<int32_t T, class V, class U, class F>
+// struct foreach<TypeList<AnyType<T, V>, U>, F> {
+// 	// static inline void Process() {
+// 	// 	if (F::template Compare<T>()) return Commands::GetValue().Operation(Int2Type<T>());
+//   //   foreach<U, F>::Process();
+// 	// }
 
-	static inline int32_t Value2Key() {
-		if (F::template Compare<T>(Type2Type<V>())) return T;
-    return foreach<U, F>::Value2Key();
-	}
+// 	static inline int32_t Value2Key() {
+// 		if (F::template Compare<T>(Type2Type<V>())) return T;
+//     return foreach<U, F>::Value2Key();
+// 	}
 
-	static inline auto& Key2Value() {
-		if (F::template Compare(Int2Type<T>())) return AnyType<T, V>::GetValue();
-    return foreach<U, F>::Key2Value();
-	}
+// 	static inline auto& Key2Value() {
+// 		if (F::template Compare(Int2Type<T>())) return AnyType<T, V>::GetValue();
+//     return foreach<U, F>::Key2Value();
+// 	}
 
-	static inline bool Key2Bool() {
-		if (F::template Compare(Int2Type<T>())) return true;
-    return foreach<U, F>::Key2Value();
-	}
+// 	static inline bool Key2Bool() {
+// 		if (F::template Compare(Int2Type<T>())) return true;
+//     return foreach<U, F>::Key2Value();
+// 	}
 
-	static inline auto Key2Process(F* ref) {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
-    return foreach<U, F>::Key2Process(ref);
-	}
+// 	static inline auto Key2Process(F* ref) {
+// 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
+//     return foreach<U, F>::Key2Process(ref);
+// 	}
 
-};
+// };
 
-template<int32_t T, class V, class F>
-struct foreach<TypeList<AnyType<T, V>, NullType>, F> {
-	// static inline void Process() {
-	// 	if (F::template Compare<T>()) return Commands::GetValue().Operation(Int2Type<T>());
-  //   Commands::GetValue().Operation(Int2Type<-1>());
-	// }
+// template<int32_t T, class V, class F>
+// struct foreach<TypeList<AnyType<T, V>, NullType>, F> {
+// 	// static inline void Process() {
+// 	// 	if (F::template Compare<T>()) return Commands::GetValue().Operation(Int2Type<T>());
+//   //   Commands::GetValue().Operation(Int2Type<-1>());
+// 	// }
 
-	static inline int32_t Value2Key() {
-		if (F::template Compare<T>(Type2Type<V>())) return T;
-    return -1;
-	}
+// 	static inline int32_t Value2Key() {
+// 		if (F::template Compare<T>(Type2Type<V>())) return T;
+//     return -1;
+// 	}
 
-	static inline auto& Key2Value() {
-		if (F::template Compare(Int2Type<T>())) return AnyType<T, V>::GetValue();
-    return AnyType<-2, V>::GetValue();
-	}
+// 	static inline auto& Key2Value() {
+// 		if (F::template Compare(Int2Type<T>())) return AnyType<T, V>::GetValue();
+//     return AnyType<-2, V>::GetValue();
+// 	}
 
-	static inline bool Key2Bool() {
-		if (F::template Compare(Int2Type<T>())) return true;
-    return false;
-	}
+// 	static inline bool Key2Bool() {
+// 		if (F::template Compare(Int2Type<T>())) return true;
+//     return false;
+// 	}
 
-	static inline auto Key2Process(F* ref) {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
-    return ref->Process(Int2Type<-1>());
-	}
+// 	static inline auto Key2Process(F* ref) {
+// 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
+//     return ref->Process(Int2Type<-1>());
+// 	}
 
-};
+// };
 
-template<int32_t T, class V, int32_t Y, class U, class F>
-struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, U>, F> {
+// template<int32_t T, class V, int32_t Y, class U, class F>
+// struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, U>, F> {
 
-	static inline std::pair<V, int32_t> Key2Value() {
-		if (F::template Compare(Int2Type<T>())) return std::pair(AnyType<T, V>::GetValue(), Int2Type<Y>().value);
-    return foreach<U, F>::Key2Value();
-	}
+// 	static inline std::pair<V, int32_t> Key2Value() {
+// 		if (F::template Compare(Int2Type<T>())) return std::pair(AnyType<T, V>::GetValue(), Int2Type<Y>().value);
+//     return foreach<U, F>::Key2Value();
+// 	}
 
-	static inline auto Key2Process(F* ref) {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
-    return foreach<U, F>::Key2Process(ref);
-	}
+// 	static inline auto Key2Process(F* ref) {
+// 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
+//     return foreach<U, F>::Key2Process(ref);
+// 	}
 
-  template<typename ...Args>
-	static inline auto Key2Process(F* ref, Args ...args) {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(args..., Int2Type<T>());
-    return foreach<U, F>::Key2Process(ref, args...);
-	}
-};
+//   template<typename ...Args>
+// 	static inline auto Key2Process(F* ref, Args ...args) {
+// 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(args..., Int2Type<T>());
+//     return foreach<U, F>::Key2Process(ref, args...);
+// 	}
+// };
 
-template<int32_t T, class V, int32_t Y, class F>
-struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, NullType>, F> {
+// template<int32_t T, class V, int32_t Y, class F>
+// struct foreach<TypeList<TypeList<AnyType<T, V>, Int2Type<Y>>, NullType>, F> {
 
-	static inline std::pair<V, int32_t> Key2Value() {
-		if (F::template Compare(Int2Type<T>())) return std::pair(AnyType<T, V>::GetValue(), Int2Type<Y>().value);
-    return std::pair(AnyType<-2, V>::GetValue(), -1);
-	}
+// 	static inline std::pair<V, int32_t> Key2Value() {
+// 		if (F::template Compare(Int2Type<T>())) return std::pair(AnyType<T, V>::GetValue(), Int2Type<Y>().value);
+//     return std::pair(AnyType<-2, V>::GetValue(), -1);
+// 	}
 
-	static inline auto Key2Process(F* ref) {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
-    return ref->Process(Int2Type<-1>());
-	}
+// 	static inline auto Key2Process(F* ref) {
+// 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(Int2Type<T>());
+//     return ref->Process(Int2Type<-1>());
+// 	}
 
-  template<typename ...Args>
-	static inline auto Key2Process(F* ref, Args ...args) {
-		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(args..., Int2Type<T>());
-    return ref->Process(Int2Type<-1>());
-	}
-};
+//   template<typename ...Args>
+// 	static inline auto Key2Process(F* ref, Args ...args) {
+// 		if (AnyType<-1, int32_t>::Compare(Int2Type<T>())) return ref->Process(args..., Int2Type<T>());
+//     return ref->Process(Int2Type<-1>());
+// 	}
+// };
 
-template<int32_t T, typename U, class V, class R>
-struct foreach<TypeList<TypeList<Int2Type<T>, U>, V>, R> {
-	template<class Y>
-	static inline void Process(Y* ref) {
-    foreach<V, R>::Process(ref);
-		ref->Process(TypeList<Int2Type<T>, U>());
-	}
+// template<int32_t T, typename U, class V, class R>
+// struct foreach<TypeList<TypeList<Int2Type<T>, U>, V>, R> {
+// 	template<class Y>
+// 	static inline void Process(Y* ref) {
+//     foreach<V, R>::Process(ref);
+// 		ref->Process(TypeList<Int2Type<T>, U>());
+// 	}
 
-	template<class Y>
-	static inline bool Proccess(Y* ref, const std::vector<int32_t>& sequence) {
-		auto index = foreach<typename UnwrapList<U>::type, void>::PartOf(sequence, 0);
-		switch (index) {
-			case  0: return true;
-			case  1: ref->Process2(Int2Type<T>());
-			case -1: return false;
-		}
+// 	// template<class Y>
+// 	// static inline bool Proccess(Y* ref, const std::vector<int32_t>& sequence) {
+// 	// 	auto index = foreach<typename UnwrapList<U>::type, void>::PartOf(sequence, 0);
+// 	// 	switch (index) {
+// 	// 		case  0: return true;
+// 	// 		case  1: ref->Process2(Int2Type<T>());
+// 	// 		case -1: return false;
+// 	// 	}
 
-		return foreach<V, R>::Process(ref, sequence);
-	}
+// 	// 	return foreach<V, R>::Process(ref, sequence);
+// 	// }
 
-	// static inline void Command(Y* ref) {
-	// 	// FIXME: Think how to impl this
-	// 	// if (!AnyType<-1, int32_t>::Compare(U())) return foreach<V, Y>::Command(ref);
-	// 	// ref->Command(Int2Type<T>());
-	// }
+// 	// static inline void Command(Y* ref) {
+// 	// 	// FIXME: Think how to impl this
+// 	// 	// if (!AnyType<-1, int32_t>::Compare(U())) return foreach<V, Y>::Command(ref);
+// 	// 	// ref->Command(Int2Type<T>());
+// 	// }
 
-	// static inline bool Has() {
-	// 	return false;
+// 	// static inline bool Has() {
+// 	// 	return false;
 
-	// 	// FIXME: Think how to impl this
-	// 	// if (Y::template Compare(U())) return true;
-	// 	// return foreach<V, Y>::Has();
-	// }
-};
+// 	// 	// FIXME: Think how to impl this
+// 	// 	// if (Y::template Compare(U())) return true;
+// 	// 	// return foreach<V, Y>::Has();
+// 	// }
+// };
 
 
 template<int32_t T, class U, class R>
 struct foreach<TypeList<Int2Type<T>, U>, R> {
-	static inline int8_t PartOf(const std::vector<int32_t>& sequence, size_t index) {
-		if (index >= sequence.size()) return 0;
-    if (sequence[index] != +T) return -1;
+	template<class Y>
+	static inline void Process(Y* ref) {
+    foreach<U, R>::Process(ref);
+		ref->Process(Int2Type<T>());
+	}
 
-    return foreach<U, R>::PartOf(sequence, index + 1);
+	template<class Y>
+	static inline R Process(Y* ref, int32_t val) {
+		if (+T == val) return ref->Process(Int2Type<T>());
+		return foreach<U, R>::Process(ref, val);
 	}
 };
 
@@ -174,14 +179,17 @@ struct foreach<TypeList<Int2Type<T>, U>, R> {
 template<class R>
 struct foreach<NullType, R> {
 	template<class Y>
-	static inline R Process(Y* ref) {} // ref->Process(TypeList<Int2Type<T>, U>());
+	static inline R Process(Y* ref) {}
 
 	template<class Y>
-	static inline bool Process(Y* ref, const std::vector<int32_t>& sequence) { return false; }
+	static inline R Process(Y*, int32_t) { return nullptr; }
 
-	static inline int8_t PartOf(const std::vector<int32_t>& sequence, size_t index) {
-    return index == sequence.size() ? 1 : -1;
-	}
+	// template<class Y>
+	// static inline bool Process(Y* ref, const std::vector<int32_t>& sequence) { return false; }
+
+	// static inline int8_t PartOf(const std::vector<int32_t>& sequence, size_t index) {
+  //   return index == sequence.size() ? 1 : -1;
+	// }
 };
 
 // template<class R>

@@ -1,13 +1,14 @@
 #pragma once
-#include "ExpressionUnary.h"
+
+#include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Token.h"
 
 namespace Interpreter {
 
 class ExpressionVariable : public Expression {
 public:
-  ExpressionVariable(Token t, Token l, int32_t s):
-    token(t), length(l), size(s) {}
-  
+  ExpressionVariable(Token t, Token l):
+    token(t), length(l) {}
   
   inline MemoryT accept(Visitor* visitor) override {
     return visitor->visitExprVariable(this);
@@ -16,7 +17,6 @@ public:
 public:
   Token token;
   Token length;
-  const int32_t size;
 };
 
 };

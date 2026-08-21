@@ -1,5 +1,4 @@
 #pragma once
-#include "Editor.h"
 
 namespace Editor {
 
@@ -47,13 +46,13 @@ public:
 
   void Draw(PixelGameEngine* GameEngine) {
     Utils::Lock l(mutex);
-    GameEngine->FillRect(absolute, size, *AnyType<Colors::BLACK, ColorT>::GetValue());
+    GameEngine->FillRect(absolute, size, Color::BLACK);
 
     const auto cursor = vim.GetPos();
     const auto vStartAt = vim.vStartAt();
 
     olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (vim.GetPos().y + 1 - vStartAt.y) * vStep.y + vOffset.y);
-    GameEngine->FillRect(pos, { size.x, 8 }, *AnyType<Colors::VERY_DARK_GREY, ColorT>::GetValue());
+    GameEngine->FillRect(pos, { size.x, 8 }, Color::VERY_DARK_GREY);
 
     vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
 
@@ -78,7 +77,7 @@ public:
         line = lines[i].substr(startAt, (nWidth - pos.x) / vStep.x - startAt - 1);
       } else line = lines[i].substr(startAt, lines[i].size() - startAt);
 
-      GameEngine->DrawString(adj, line, *AnyType<GREY, ColorT>::GetValue());
+      GameEngine->DrawString(adj, line, Color::GREY);
     }
   }
 
