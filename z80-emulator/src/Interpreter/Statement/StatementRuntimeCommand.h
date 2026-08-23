@@ -3,6 +3,7 @@
 #include "src/Interpreter/Expression/Expression.h"
 #include "src/Interpreter/Statement/Statement.h"
 #include "src/Interpreter/Token.h"
+#include <list>
 
 namespace Interpreter {
 
@@ -11,27 +12,29 @@ class StatementRuntimeCommand : public Statement {
 public:
   StatementRuntimeCommand(
     Token token,
-    Expression value,
-    std::function<uint32_t(uint32_t arg)> calc
-  ): token(token), value(value), calc(calc) {}
+    Expression arg,
+    std::function<uint32_t(uint32_t arg1, uint32_t arg2)> calc
+  ): token(token), args({ arg }), calc(calc) {}
 
-  // StatementLambda(
-  //   Token t,
-  //   std::vector<std::shared_ptr<Expression>> expr,
-  //   std::function<uint32_t(std::vector<uint32_t> argv)> lambda,
-  //   std::vector<uint32_t> argv = {}
-  // ): token(t), expr(expr), lambda(lambda), argv(argv) {}
+  StatementRuntimeCommand(
+    Token token,
+    Expression arg1,
+    Expression arg2,
+    std::function<uint32_t(uint32_t arg1, uint32_t arg2)> calc
+  ): token(token), args({ arg1, arg2 }), calc(calc) {}
 
-  inline MemoryT accept(Visitor* visitor) override {
-    return visitor->visitStmtLambda(this);
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
+    return visitor->visitStmtRuntimeCommand(this);
   }
 
 public:
-  // std::vector<uint32_t> argv;
+  SemanticToken semantic;
+  SemanticToken& GetSemantic() override { return semantic; }
+
+public:
   Token token;
-  Expression value;
-  // std::vector<Expression> expr;
-  const std::function<uint32_t(uint32_t arg)> calc;
+  std::list<Expression> args;
+  const std::function<uint32_t(uint32_t arg1, uint32_t arg2)> calc;
 };
 
 };

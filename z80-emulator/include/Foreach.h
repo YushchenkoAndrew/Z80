@@ -182,7 +182,7 @@ struct foreach<NullType, R> {
 	static inline R Process(Y* ref) {}
 
 	template<class Y>
-	static inline R Process(Y*, int32_t) { return nullptr; }
+	static inline R Process(Y*, int32_t) { return R(); }
 
 	// template<class Y>
 	// static inline bool Process(Y* ref, const std::vector<int32_t>& sequence) { return false; }

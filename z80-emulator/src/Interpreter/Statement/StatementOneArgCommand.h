@@ -11,8 +11,8 @@ public:
   StatementOneArgCommand(uint32_t code, Token token, Expression expr):
     opcode(code), expr(expr), token(token) {}
 
-  inline MemoryT accept(Visitor* visitor) override {
-    return visitor->visitStmtOneArg(this);
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
+    return visitor->visitStmtOneArgCommand(this);
   }
 
 public:

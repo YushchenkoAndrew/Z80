@@ -1,9 +1,7 @@
 #pragma once
 
+#include "src/Interpreter/Token.h"
 #include <cstdint>
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace Interpreter {
 
@@ -18,36 +16,61 @@ class ExpressionVariable;
 
 class StatementAddress;
 class StatementAllocate;
-class StatementRuntimeCommand;
 class StatementNoArgCommand;
 class StatementOneArgCommand;
+class StatementRuntimeCommand;
 class StatementVariable;
-class StatementInclude;
 
+class SemanticToken {
+public:
+  // enum class Type { NONE, VALUE, ARRAY };
+
+  SemanticToken() = default;
+  // SemanticToken(SemanticToken& token): type(token.type), token(token.token), bytes(token.bytes) {}
+  // SemanticToken(SemanticToken& token, uint32_t bytes): type(token.type), token(token.token), bytes(bytes) {}
+  // SemanticToken(Token token, uint32_t bytes):
+  //   token(std::move(token)), bytes(bytes), strict(false) {}
+  SemanticToken(Token token, uint32_t bytes, bool strict):
+    token(std::move(token)), bytes(bytes), strict(strict) {}
+
+public:
+  Token token;
+  bool strict;
+  uint32_t bytes;
+};
+
+
+template<typename T>
 class Visitor {
 public:
-  virtual MemoryT visitExprLiteral(ExpressionLiteral* expr) { return {}; }
-  virtual MemoryT visitExprBinary(ExpressionBinary* expr) { return {}; }
-  virtual MemoryT visitExprUnary(ExpressionUnary* expr) { return {}; }
-  virtual MemoryT visitExprVariable(ExpressionVariable* expr) { return {}; }
+  virtual T visitExprLiteral(ExpressionLiteral* expr) = 0;
+  virtual T visitExprBinary(ExpressionBinary* expr) = 0;
+  virtual T visitExprUnary(ExpressionUnary* expr) = 0;
+  virtual T visitExprVariable(ExpressionVariable* expr) = 0;
 
-  virtual MemoryT visitStmtAddress(StatementAddress* stmt) { return {}; }
-  virtual MemoryT visitStmtAllocate(StatementAllocate* stmt) { return {}; }
-  virtual MemoryT visitStmtLambda(StatementRuntimeCommand* stmt) { return {}; }
-  virtual MemoryT visitStmtNoArg(StatementNoArgCommand* stmt) { return {}; }
-  virtual MemoryT visitStmtOneArg(StatementOneArgCommand* stmt) { return {}; }
-  virtual MemoryT visitStmtVariable(StatementVariable* stmt) { return {}; }
-  virtual MemoryT visitStmtInclude(StatementInclude * stmt) { return {}; }
+  virtual T visitStmtAddress(StatementAddress* stmt) = 0;
+  virtual T visitStmtAllocate(StatementAllocate* stmt) = 0;
+  virtual T visitStmtVariable(StatementVariable* stmt) = 0;
+  virtual T visitStmtNoArgCommand(StatementNoArgCommand* stmt) = 0;
+  virtual T visitStmtOneArgCommand(StatementOneArgCommand* stmt) = 0;
+  virtual T visitStmtRuntimeCommand(StatementRuntimeCommand* stmt) = 0;
 
-  virtual MemoryT visitExprUnknown(Expression* expr) { return {}; }
+  virtual T visitExprUnknown(Expression* expr) = 0;
+
+  T evaluate(Expression* expr);
 };
 
 class Expression {
 public:
-
-  inline virtual MemoryT accept(Visitor* visitor) {
+  inline virtual SemanticToken accept(Visitor<SemanticToken>* visitor) {
     return visitor->visitExprUnknown(this);
   }
+
+  virtual SemanticToken& GetSemantic() {
+    static SemanticToken empty;
+    return empty;
+  }
+
 };
 
 };

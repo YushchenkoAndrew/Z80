@@ -7,14 +7,20 @@ namespace Interpreter {
 
 class ExpressionLiteral : public Expression {
 public:
-  ExpressionLiteral(Token t): token(t) {}
+  ExpressionLiteral(Token& t, uint32_t bytes):
+    token(std::move(t)), bytes(bytes) {}
 
-  inline MemoryT accept(Visitor* visitor) override {
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitExprLiteral(this);
   }
 
 public:
+  SemanticToken semantic;
+  SemanticToken& GetSemantic() override { return semantic; }
+
+public:
   Token token;
+  uint32_t bytes;
 };
 
 };

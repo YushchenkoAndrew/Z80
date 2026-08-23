@@ -8,17 +8,21 @@ namespace Interpreter {
 
 class StatementAllocate : public Statement {
 public:
-  StatementAllocate(Token token, std::vector<Expression> data, int32_t size):
+  StatementAllocate(Token token, std::list<Expression> data, uint8_t size):
     token(token), data(data), size(size) {}
 
-  inline MemoryT accept(Visitor* visitor) override {
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitStmtAllocate(this);
   }
 
 public:
-  int32_t size;
+  SemanticToken semantic;
+  SemanticToken& GetSemantic() override { return semantic; }
+
+public:
+  uint8_t size;
   Token token;
-  std::vector<Expression> data;
+  std::list<Expression> data;
 };
 
 };

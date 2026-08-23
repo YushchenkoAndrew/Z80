@@ -9,9 +9,13 @@ class StatementNoArgCommand : public Statement {
 public:
   StatementNoArgCommand(uint32_t code, Token token): opcode(code), token(token) {}
 
-  inline MemoryT accept(Visitor* visitor) override {
-    return visitor->visitStmtNoArg(this);
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
+    return visitor->visitStmtNoArgCommand(this);
   }
+
+public:
+  SemanticToken semantic;
+  SemanticToken& GetSemantic() override { return semantic; }
 
 public:
   const uint32_t opcode;

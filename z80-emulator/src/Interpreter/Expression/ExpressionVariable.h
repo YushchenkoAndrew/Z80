@@ -7,16 +7,21 @@ namespace Interpreter {
 
 class ExpressionVariable : public Expression {
 public:
-  ExpressionVariable(Token t, Token l):
-    token(t), length(l) {}
+  ExpressionVariable(Token t, Token l, uint8_t bytes):
+    token(t), length(l), bytes(bytes) {}
   
-  inline MemoryT accept(Visitor* visitor) override {
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitExprVariable(this);
   }
 
 public:
+  SemanticToken semantic;
+  SemanticToken& GetSemantic() override { return semantic; }
+
+public:
   Token token;
   Token length;
+  uint8_t bytes;
 };
 
 };

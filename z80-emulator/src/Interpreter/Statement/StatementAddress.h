@@ -11,9 +11,13 @@ public:
   StatementAddress(Token label, Expression expr):
     label(label), expr(expr) {}
 
-  inline MemoryT accept(Visitor* visitor) override {
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitStmtAddress(this);
   }
+
+public:
+  SemanticToken semantic;
+  SemanticToken& GetSemantic() override { return semantic; }
 
 public:
   Token label;

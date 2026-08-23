@@ -15,9 +15,13 @@ public:
 
   StatementVariable(Token t): label(t), type(ADDRESS) {}
 
-  inline MemoryT accept(Visitor* visitor) override {
+  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitStmtVariable(this);
   }
+
+public:
+  SemanticToken semantic;
+  SemanticToken& GetSemantic() override { return semantic; }
 
 public:
   Token label;

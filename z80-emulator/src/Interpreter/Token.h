@@ -14,14 +14,14 @@ namespace Interpreter {
 typedef std::pair<const char*, olc::Pixel> MetadataT;
 class Token {
 public:
-  Token(): token(TokenT::NONE), lexeme(""), literal(""), col(-1), line(-1) {}
+  Token(): type(TokenT::NONE), lexeme(""), literal(""), col(-1), line(-1) {}
   Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line):
-    token(t), lexeme(le), literal(li), col(col), line(line) {}
+    type(t), lexeme(le), literal(li), col(col), line(line) {}
 
   void print() { 
-    const auto& [name, _] = GetMetadata(token);
+    const auto& [name, _] = GetMetadata(type);
 
-    if (!std::strlen(name)) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", token, lexeme.c_str(), literal.c_str(), line, col);
+    if (!std::strlen(name)) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", type, lexeme.c_str(), literal.c_str(), line, col);
     else printf("{ type: '%s'; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", name, lexeme.c_str(), literal.c_str(), line, col);
   }
 
@@ -40,12 +40,12 @@ public:
   };
 
 public:
-  const TokenT token;
-  const std::string lexeme;
-  const std::string literal;
+  TokenT type;
+  std::string lexeme;
+  std::string literal;
 
-  const int32_t col;
-  const int32_t line;
+  int32_t col;
+  int32_t line;
 
 private:
 static inline const std::unordered_map<TokenT, MetadataT> metadata = {

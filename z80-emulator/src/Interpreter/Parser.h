@@ -10,7 +10,6 @@
 #include "src/Interpreter/Statement/Statement.h"
 #include "src/Interpreter/Statement/StatementAddress.h"
 #include "src/Interpreter/Statement/StatementAllocate.h"
-#include "src/Interpreter/Statement/StatementInclude.h"
 #include "src/Interpreter/Statement/StatementNoArgCommand.h"
 #include "src/Interpreter/Statement/StatementOneArgCommand.h"
 #include "src/Interpreter/Statement/StatementRuntimeCommand.h"
@@ -30,6 +29,7 @@ namespace Interpreter {
  *  marker      -> IDENTIFIER ':'
  *  statement   -> COMMAND (expression)?  // NOTE: Grammar for each command will be hardcoded based on manual, this grammar is just a common example
  * 
+ *  offset      -> '+' shift
  *  shift       -> term (('>>' | '<<') term)*
  *  term        -> bit (('+' | '-' | '..') bit)*
  *  bit         -> unary (('|' | '&' | '^') unary)*
@@ -65,7 +65,7 @@ private:
 
   Statement declaration() {
     if (match<1>({ TokenT::IDENTIFIER })) {
-      switch (peek().token) {
+      switch (peek().type) {
         case TokenT::COLON: return marker();
         case TokenT::OP_EQU: return variable();
         default: {}
@@ -73,10 +73,11 @@ private:
 
       error(advance(), "Unknown token.");
       return Statement();
-    } else if (match<1>({ TokenT::OP_INCLUDE })) {
-      consume(TokenT::STRING, "Expect string after include stmt.");
-      return StatementInclude(ExpressionLiteral(peekPrev()));
     }
+    // if (match<1>({ TokenT::OP_INCLUDE })) {
+    //   consume(TokenT::STRING, "Expect string after include stmt.");
+    //   return StatementInclude(ExpressionLiteral(peekPrev(), 0));
+    // }
 
     return statement();
   }
@@ -90,48 +91,48 @@ private:
   Statement variable() {
     auto& label = peekPrev();
     consume(TokenT::OP_EQU, "Expect 'EQU' before expression.");
-    return StatementVariable(label, shift());
+    return StatementVariable(label, shift(0));
   }
 
   Statement statement() {
-    return foreach<Commands, Statement>::Process(this, advance().token);
+    return foreach<Commands, Statement>::Process(this, advance().type);
   }
 
-  inline Expression offset() {
+  inline Expression offset(uint8_t bytes) {
     consume(TokenT::PLUS, "Expect '+' before expression.");
-    return shift();
+    return shift(bytes);
   }
 
-  inline Expression shift() {
-    Expression expr = term();
+  inline Expression shift(uint8_t bytes) {
+    Expression expr = term(bytes);
 
     while (match<2>({ TokenT::LEFT_SHIFT, TokenT::RIGHT_SHIFT })) {
       auto& op = peekPrev();
-      auto right = term();
+      auto right = term(bytes);
       expr = ExpressionBinary(expr, op, right);
     }
 
     return expr;
   }
 
-  inline Expression term() {
-    auto expr = bit();
+  inline Expression term(uint8_t bytes) {
+    auto expr = bit(bytes);
 
     while (match<3>({ TokenT::PLUS, TokenT::MINUS, TokenT::CONCATENATE })) {
       auto& op = peekPrev();
-      auto right = bit();
+      auto right = bit(bytes);
       expr = ExpressionBinary(expr, op, right);
     }
 
     return expr;
   }
 
-  inline Expression bit() {
-    auto expr = unary();
+  inline Expression bit(uint8_t bytes) {
+    auto expr = unary(bytes);
 
     while (match<3>({ TokenT::BIT_AND, TokenT::BIT_OR, TokenT::BIT_XOR })) {
       auto& op = peekPrev();
-      auto right = unary();
+      auto right = unary(bytes);
       expr = ExpressionBinary(expr, op, right);
     }
 
@@ -139,18 +140,18 @@ private:
   }
 
 
-  inline Expression unary() {
+  inline Expression unary(uint8_t bytes) {
     if (match<2>({ TokenT::MINUS, TokenT::BIT_NOT })) {
       auto& op = peekPrev();
-      return ExpressionUnary(op, unary());
+      return ExpressionUnary(op, unary(bytes));
     }
 
-    return literal();
+    return literal(bytes);
   }
 
-  inline Expression literal() {
+  inline Expression literal(uint8_t bytes) {
     if (match<2>({ TokenT::NUMBER, TokenT::STRING })) {
-      return ExpressionLiteral(peekPrev());
+      return ExpressionLiteral(peekPrev(), bytes);
     }
 
     if (match<1>({ TokenT::IDENTIFIER })) {
@@ -160,10 +161,10 @@ private:
         auto& length = peekPrev();
 
         consume(TokenT::RIGHT_SQUARE_BRACE, "Expect ']' after expression.");
-        return ExpressionVariable(var, length);
+        return ExpressionVariable(var, length, bytes);
       }
 
-      return ExpressionVariable(var, Token());
+      return ExpressionVariable(var, Token(), bytes);
     }
 
     error(advance(), "Unknown token.");
@@ -178,20 +179,20 @@ public:
   }
 
 
-  inline Statement Process(Int2Type<TokenT::OP_ORG>) { return StatementAddress(peekPrev(), literal()); }
+  inline Statement Process(Int2Type<TokenT::OP_ORG>) { return StatementAddress(peekPrev(), literal(2)); }
   inline Statement Process(Int2Type<TokenT::OP_DB>) {
     auto expr = peekPrev();
-    std::vector<Expression> data;
+    std::list<Expression> data;
 
-    do { data.push_back(shift()); } while(match<1>({ TokenT::COMMA }));
+    do { data.push_back(shift(0)); } while(match<1>({ TokenT::COMMA }));
     return StatementAllocate(expr, data, 1);
   }
 
   inline Statement Process(Int2Type<TokenT::OP_DW>) {
     auto expr = peekPrev();
-    std::vector<Expression> data;
+    std::list<Expression> data;
 
-    do { data.push_back(shift()); } while(match<1>({ TokenT::COMMA }));
+    do { data.push_back(shift(0)); } while(match<1>({ TokenT::COMMA }));
     return StatementAllocate(expr, data, 2);
   }
 
@@ -256,7 +257,7 @@ public:
       return stmt;
     }
 
-    switch(advance().token) {
+    switch(advance().type) {
       case TokenT::REG_A:  return StatementNoArgCommand(0x003D, cmd);
       case TokenT::REG_B:  return StatementNoArgCommand(0x0005, cmd);
       case TokenT::REG_BC: return StatementNoArgCommand(0x000B, cmd);
@@ -278,12 +279,12 @@ public:
   }
 
   inline Statement Process(Int2Type<TokenT::CMD_DJNZ>) {
-    return StatementRuntimeCommand(peekPrev(), shift(), [](uint32_t c) -> uint32_t { return (uint32_t)(0x1000 | ((c - 2) & 0xFF)); });
+    return StatementRuntimeCommand(peekPrev(), shift(2), [](uint32_t arg, uint32_t) -> uint32_t { return (uint32_t)(0x1000 | ((arg - 2) & 0xFF)); });
   }
 
   inline Statement Process(Int2Type<TokenT::CMD_IM>) {
-    return StatementRuntimeCommand(peekPrev(), literal(), [](uint32_t c) -> uint32_t{
-      switch (c) {
+    return StatementRuntimeCommand(peekPrev(), literal(1), [](uint32_t arg, uint32_t) -> uint32_t{
+      switch (arg) {
         case 0x00: return (uint32_t)0xED46;
         case 0x01: return (uint32_t)0xED56;
         case 0x02: return (uint32_t)0xED5E;
@@ -301,7 +302,7 @@ public:
       return stmt;
     }
 
-    switch(advance().token) {
+    switch(advance().type) {
       case TokenT::REG_A:  return StatementNoArgCommand(0x003C, cmd);
       case TokenT::REG_B:  return StatementNoArgCommand(0x0004, cmd);
       case TokenT::REG_BC: return StatementNoArgCommand(0x0003, cmd);
@@ -325,7 +326,7 @@ public:
   inline Statement Process(Int2Type<TokenT::CMD_POP>) {
     auto cmd = peekPrev();
 
-    switch(advance().token) {
+    switch(advance().type) {
       case TokenT::REG_AF: return StatementNoArgCommand(0x00F1, cmd);
       case TokenT::REG_BC: return StatementNoArgCommand(0x00C1, cmd);
       case TokenT::REG_DE: return StatementNoArgCommand(0x00D1, cmd);
@@ -342,7 +343,7 @@ public:
   inline Statement Process(Int2Type<TokenT::CMD_PUSH>) {
     auto cmd = peekPrev();
 
-    switch(advance().token) {
+    switch(advance().type) {
       case TokenT::REG_AF: return StatementNoArgCommand(0x00F5, cmd);
       case TokenT::REG_BC: return StatementNoArgCommand(0x00C5, cmd);
       case TokenT::REG_DE: return StatementNoArgCommand(0x00D5, cmd);
@@ -359,7 +360,7 @@ public:
   inline Statement Process(Int2Type<TokenT::CMD_RET>) {
     auto cmd = peekPrev();
 
-    switch(peek().token) {
+    switch(peek().type) {
       case TokenT::REG_C:
       case TokenT::FLAG_C:  advance(); return StatementNoArgCommand(0x00D8, cmd);
       case TokenT::FLAG_M:  advance(); return StatementNoArgCommand(0x00F8, cmd);
@@ -376,8 +377,8 @@ public:
   }
 
   inline Statement Process(Int2Type<TokenT::CMD_RST>) {
-    return StatementRuntimeCommand(peekPrev(), literal(), [](uint32_t c) -> uint32_t {
-      switch (c) {
+    return StatementRuntimeCommand(peekPrev(), literal(1), [](uint32_t arg, uint32_t) -> uint32_t {
+      switch (arg) {
         case 0x00: return (uint32_t)0x00C7;
         case 0x08: return (uint32_t)0x00CF;
         case 0x10: return (uint32_t)0x00D7;
@@ -400,12 +401,12 @@ public:
     Token& reg = advance();
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
-    switch (reg.token) {
+    switch (reg.type) {
       case TokenT::REG_A:
         return basicRegisterOperation(0x008E, 0x0088, 0x00CE, cmd);
 
       case TokenT::REG_HL:
-        switch(advance().token) {
+        switch(advance().type) {
           case TokenT::REG_BC: return StatementNoArgCommand(0xED4A, cmd);
           case TokenT::REG_DE: return StatementNoArgCommand(0xED5A, cmd);
           case TokenT::REG_HL: return StatementNoArgCommand(0xED6A, cmd);
@@ -429,17 +430,17 @@ public:
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     const uint32_t mask =
-      reg.token == TokenT::REG_IX ? 0xDD00 :
-      reg.token == TokenT::REG_IY ? 0xFD00 : 0x0000;
+      reg.type == TokenT::REG_IX ? 0xDD00 :
+      reg.type == TokenT::REG_IY ? 0xFD00 : 0x0000;
 
-    switch (reg.token) {
+    switch (reg.type) {
       case TokenT::REG_A:
         return basicRegisterOperation(0x0086, 0x0080, 0x00C6, cmd);
 
       case TokenT::REG_IX:
       case TokenT::REG_IY:
       case TokenT::REG_HL:
-        switch(advance().token) {
+        switch(advance().type) {
           case TokenT::REG_BC: return StatementNoArgCommand(0x0009 | mask, cmd);
           case TokenT::REG_DE: return StatementNoArgCommand(0x0019 | mask, cmd);
           case TokenT::REG_HL: return StatementNoArgCommand(0x0029 | mask, cmd);
@@ -459,15 +460,15 @@ public:
 
   inline Statement Process(Int2Type<TokenT::CMD_BIT>) {
     auto cmd = peekPrev();
-    auto expr = literal();
+    auto expr = literal(1);
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
       Statement stmt{};
-      switch (advance().token) {
-        case TokenT::REG_HL: stmt = StatementRuntimeCommand(cmd, expr, [](uint32_t c) { return (uint32_t)(c > 7 ? 0x00 : 0x00CB46 | (c << 3)); }); break;
-        case TokenT::REG_IX: stmt = StatementRuntimeCommand(cmd, { expr, offset() }, [](std::vector<uint32_t> argv) { return (uint32_t)(argv[0] > 7 ? 0x00 : 0xDDCB0046 | (argv[1] << 8) | (argv[0] << 3)); }); break;
-        case TokenT::REG_IY: stmt = StatementRuntimeCommand(cmd, { expr, offset() }, [](std::vector<uint32_t> argv) { return (uint32_t)(argv[0] > 7 ? 0x00 : 0xFDCB0046 | (argv[1] << 8) | (argv[0] << 3)); }); break;
+      switch (advance().type) {
+        case TokenT::REG_HL: stmt = StatementRuntimeCommand(cmd, expr, [](uint32_t arg, uint32_t) { return (uint32_t)(arg > 7 ? 0x00 : 0x00CB46 | (arg << 3)); }); break;
+        case TokenT::REG_IX: stmt = StatementRuntimeCommand(cmd, expr, offset(1), [](uint32_t arg1, uint32_t arg2) { return (uint32_t)(arg1 > 7 ? 0x00 : 0xDDCB0046 | (arg2 << 8) | (arg1 << 3)); }); break;
+        case TokenT::REG_IY: stmt = StatementRuntimeCommand(cmd, expr, offset(1), [](uint32_t arg1, uint32_t arg2) { return (uint32_t)(arg1 > 7 ? 0x00 : 0xFDCB0046 | (arg2 << 8) | (arg1 << 3)); }); break;
         default: error(peekPrev(), "Expect register to be 'HL' | 'IY+o' | 'IX+o'");
       }
 
@@ -476,8 +477,8 @@ public:
     }
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      const auto& mask = GetMask(peekPrev().token);
-      return StatementRuntimeCommand(cmd, expr, [mask](uint32_t c) -> uint32_t { return (uint32_t)(c > 7 ? 0x00 : 0xCB40 | (c << 3) | mask); });
+      const auto& mask = GetMask(peekPrev().type);
+      return StatementRuntimeCommand(cmd, expr, [mask](uint32_t arg, uint32_t) -> uint32_t { return (uint32_t)(arg > 7 ? 0x00 : 0xCB40 | (arg << 3) | mask); });
     }
 
     error(peekPrev(), "Expect register to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
@@ -491,20 +492,20 @@ public:
       Token& flag = peekPrev();
       consume(TokenT::COMMA, "Expect ',' after first expression.");
 
-      switch(flag.token) {
+      switch(flag.type) {
         case TokenT::REG_C:
-        case TokenT::FLAG_C:  return StatementOneArgCommand(0x00DC, cmd, shift());
-        case TokenT::FLAG_M:  return StatementOneArgCommand(0x00FC, cmd, shift());
-        case TokenT::FLAG_NC: return StatementOneArgCommand(0x00D4, cmd, shift());
-        case TokenT::FLAG_NZ: return StatementOneArgCommand(0x00C4, cmd, shift());
-        case TokenT::FLAG_P:  return StatementOneArgCommand(0x00F4, cmd, shift());
-        case TokenT::FLAG_PE: return StatementOneArgCommand(0x00EC, cmd, shift());
-        case TokenT::FLAG_PO: return StatementOneArgCommand(0x00E4, cmd, shift());
-        case TokenT::FLAG_Z:  return StatementOneArgCommand(0x00CC, cmd, shift());
+        case TokenT::FLAG_C:  return StatementOneArgCommand(0x00DC, cmd, shift(2));
+        case TokenT::FLAG_M:  return StatementOneArgCommand(0x00FC, cmd, shift(2));
+        case TokenT::FLAG_NC: return StatementOneArgCommand(0x00D4, cmd, shift(2));
+        case TokenT::FLAG_NZ: return StatementOneArgCommand(0x00C4, cmd, shift(2));
+        case TokenT::FLAG_P:  return StatementOneArgCommand(0x00F4, cmd, shift(2));
+        case TokenT::FLAG_PE: return StatementOneArgCommand(0x00EC, cmd, shift(2));
+        case TokenT::FLAG_PO: return StatementOneArgCommand(0x00E4, cmd, shift(2));
+        case TokenT::FLAG_Z:  return StatementOneArgCommand(0x00CC, cmd, shift(2));
         default: {}
       }
 
-    } else return StatementOneArgCommand(0x00CD, cmd, shift());
+    } else return StatementOneArgCommand(0x00CD, cmd, shift(2));
 
     return Statement();
   }
@@ -546,8 +547,8 @@ public:
     Token& reg = peekPrev();
     consume(TokenT::COMMA, "Expect ',' after expression.");
     consume(TokenT::LEFT_BRACE, "Expect '(' after expression.");
-    if (reg.token == TokenT::REG_A && !check(TokenT::REG_C)) {
-      auto stmt = StatementOneArgCommand(0x00DB, cmd, shift());
+    if (reg.type == TokenT::REG_A && !check(TokenT::REG_C)) {
+      auto stmt = StatementOneArgCommand(0x00DB, cmd, shift(1));
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       return stmt;
     }
@@ -555,7 +556,7 @@ public:
     consume(TokenT::REG_C, "Expect register to be 'C'.");
     consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
 
-    switch (reg.token) {
+    switch (reg.type) {
       case TokenT::REG_A: return StatementNoArgCommand(0xED78, cmd);
       case TokenT::REG_B: return StatementNoArgCommand(0xED40, cmd);
       case TokenT::REG_C: return StatementNoArgCommand(0xED48, cmd);
@@ -575,7 +576,7 @@ public:
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
       Statement stmt{};
-      switch (advance().token) {
+      switch (advance().type) {
         case TokenT::REG_HL: stmt = StatementNoArgCommand(0x00E9, cmd); break;
         case TokenT::REG_IX: stmt = StatementNoArgCommand(0xDDE9, cmd); break;
         case TokenT::REG_IY: stmt = StatementNoArgCommand(0xFDE9, cmd); break;
@@ -590,19 +591,19 @@ public:
       Token& flag = peekPrev();
       consume(TokenT::COMMA, "Expect ',' after first expression.");
 
-      switch(flag.token) {
+      switch(flag.type) {
         case TokenT::REG_C:
-        case TokenT::FLAG_C:  return StatementOneArgCommand(0x00DA, cmd, shift());
-        case TokenT::FLAG_M:  return StatementOneArgCommand(0x00FA, cmd, shift());
-        case TokenT::FLAG_NC: return StatementOneArgCommand(0x00D2, cmd, shift());
-        case TokenT::FLAG_NZ: return StatementOneArgCommand(0x00C2, cmd, shift());
-        case TokenT::FLAG_P:  return StatementOneArgCommand(0x00F2, cmd, shift());
-        case TokenT::FLAG_PE: return StatementOneArgCommand(0x00EA, cmd, shift());
-        case TokenT::FLAG_PO: return StatementOneArgCommand(0x00E2, cmd, shift());
-        case TokenT::FLAG_Z:  return StatementOneArgCommand(0x00CA, cmd, shift());
+        case TokenT::FLAG_C:  return StatementOneArgCommand(0x00DA, cmd, shift(2));
+        case TokenT::FLAG_M:  return StatementOneArgCommand(0x00FA, cmd, shift(2));
+        case TokenT::FLAG_NC: return StatementOneArgCommand(0x00D2, cmd, shift(2));
+        case TokenT::FLAG_NZ: return StatementOneArgCommand(0x00C2, cmd, shift(2));
+        case TokenT::FLAG_P:  return StatementOneArgCommand(0x00F2, cmd, shift(2));
+        case TokenT::FLAG_PE: return StatementOneArgCommand(0x00EA, cmd, shift(2));
+        case TokenT::FLAG_PO: return StatementOneArgCommand(0x00E2, cmd, shift(2));
+        case TokenT::FLAG_Z:  return StatementOneArgCommand(0x00CA, cmd, shift(2));
         default: {}
       }
-    } else return StatementOneArgCommand(0xC3, cmd, shift());
+    } else return StatementOneArgCommand(0xC3, cmd, shift(2));
 
 
     return Statement();
@@ -616,19 +617,19 @@ public:
       consume(TokenT::COMMA, "Expect ',' after first expression.");
 
       // NOTE: Need to do it such way because compiler crashed with internal error (| ~ | `) 
-      const auto cmd = flag.token;
-      return StatementRuntimeCommand(command, shift(), [cmd](uint32_t c) -> uint32_t {
+      const auto cmd = flag.type;
+      return StatementRuntimeCommand(command, shift(2), [cmd](uint32_t arg, uint32_t) -> uint32_t {
         switch(cmd) {
           case TokenT::REG_C:
-          case TokenT::FLAG_C:  return (uint32_t)(0x3800 | ((c - 2) & 0xFF));
-          case TokenT::FLAG_NC: return (uint32_t)(0x3000 | ((c - 2) & 0xFF));
-          case TokenT::FLAG_NZ: return (uint32_t)(0x2000 | ((c - 2) & 0xFF));
-          case TokenT::FLAG_Z:  return (uint32_t)(0x2800 | ((c - 2) & 0xFF));
+          case TokenT::FLAG_C:  return (uint32_t)(0x3800 | ((arg - 2) & 0xFF));
+          case TokenT::FLAG_NC: return (uint32_t)(0x3000 | ((arg - 2) & 0xFF));
+          case TokenT::FLAG_NZ: return (uint32_t)(0x2000 | ((arg - 2) & 0xFF));
+          case TokenT::FLAG_Z:  return (uint32_t)(0x2800 | ((arg - 2) & 0xFF));
           default:              return (uint32_t)0x0000;
         }
       });
 
-    } else return StatementRuntimeCommand(command, shift(), [](uint32_t c) { return (uint32_t)(0x1800 | ((c - 2) & 0xFF)); });
+    } else return StatementRuntimeCommand(command, shift(2), [](uint32_t arg, uint32_t) { return (uint32_t)(0x1800 | ((arg - 2) & 0xFF)); });
 
     return Statement();
   }
@@ -637,7 +638,7 @@ public:
     auto& cmd = peekPrev();
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
-      switch (peek().token) {
+      switch (peek().type) {
         case TokenT::REG_BC:
         case TokenT::REG_DE: {
           Token& reg = advance();
@@ -645,7 +646,7 @@ public:
           consume(TokenT::COMMA, "Expect ',' after expression.");
           consume(TokenT::REG_A, "Expect register 'A' after expression.");
 
-          switch(reg.token) {
+          switch(reg.type) {
             case TokenT::REG_BC: return StatementNoArgCommand(0x0002, cmd);
             case TokenT::REG_DE: return StatementNoArgCommand(0x0012, cmd);
             default: {}
@@ -660,50 +661,51 @@ public:
           consume(TokenT::COMMA, "Expect ',' after expression.");
 
           if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-            return StatementNoArgCommand(0x70 | GetMask(peekPrev().token), cmd);
+            return StatementNoArgCommand(0x70 | GetMask(peekPrev().type), cmd);
           }
 
-          return StatementOneArgCommand(0x36, cmd, shift());
+          return StatementOneArgCommand(0x36, cmd, shift(1));
 
         case TokenT::REG_IX: {
           consume(TokenT::REG_IX, "Expect 'IX' after expression.");
-          auto expr = offset();
+          auto expr = offset(1);
 
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           consume(TokenT::COMMA, "Expect ',' after expression.");
 
           if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-            const auto mask = GetMask(peekPrev().token);
-            return StatementRuntimeCommand(cmd, expr, [mask](uint32_t c) { return (uint32_t)(0xDD7000 | (mask << 8) | c); });
+            const auto mask = GetMask(peekPrev().type);
+            return StatementRuntimeCommand(cmd, expr, [mask](uint32_t arg, uint32_t) { return (uint32_t)(0xDD7000 | (mask << 8) | arg); });
           }
 
-          return std::make_shared<StatementRuntimeCommand>(StatementRuntimeCommand(cmd, { expr, shift() }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xDD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev().token)}));
+
+          return StatementRuntimeCommand(cmd, expr, shift(1), [](uint32_t arg1, uint32_t arg2) { return (uint32_t)(0xDD360000 | (arg1 << 8) | arg2); });
         }
 
         case TokenT::REG_IY: {
           consume(TokenT::REG_IY, "Expect 'IY' after expression.");
-          auto expr = offset();
+          auto expr = offset(1);
 
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           consume(TokenT::COMMA, "Expect ',' after expression.");
 
           if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-            const auto mask = GetMask(peekPrev().token);
-            return std::make_shared<StatementRuntimeCommand>(StatementRuntimeCommand(cmd, expr, [mask](uint32_t c) { return (uint32_t)(0xFD7000 | (mask << 8) | c); });
+            const auto mask = GetMask(peekPrev().type);
+            return StatementRuntimeCommand(cmd, expr, [mask](uint32_t arg, uint32_t) { return (uint32_t)(0xFD7000 | (mask << 8) | arg); });
           }
 
-          return std::make_shared<StatementRuntimeCommand>(StatementRuntimeCommand(cmd, { expr, shift() }, [](std::vector<uint32_t> argv) { return (uint32_t)(0xFD360000 | (argv[0] << 8) | argv[1]); }, { Defs::Reg2Mask(peekPrev().token)}));
+          return StatementRuntimeCommand(cmd, expr, shift(1), [](uint32_t arg1, uint32_t arg2) { return (uint32_t)(0xFD360000 | (arg1 << 8) | arg2); });
         }
 
         default: {}
       }
 
 
-      auto expr = shift();
+      auto expr = shift(2);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       consume(TokenT::COMMA, "Expect ',' after expression.");
 
-      switch (advance().token) {
+      switch (advance().type) {
         case TokenT::REG_A:  return StatementOneArgCommand(0x0032, cmd, expr);
         case TokenT::REG_BC: return StatementOneArgCommand(0xED43, cmd, expr);
         case TokenT::REG_DE: return StatementOneArgCommand(0xED53, cmd, expr);
@@ -719,13 +721,13 @@ public:
       return Statement();
     }
 
-    switch (advance().token) {
+    switch (advance().type) {
       case TokenT::REG_A:
         consume(TokenT::COMMA, "Expect ',' after expression.");
 
         if (match<1>({ TokenT::LEFT_BRACE })) {
           Statement stmt{};
-          switch (peek().token) {
+          switch (peek().type) {
             case TokenT::REG_BC: advance(); stmt = StatementNoArgCommand(0x000A, cmd); break;
             case TokenT::REG_DE: advance(); stmt = StatementNoArgCommand(0x001A, cmd); break;
 
@@ -733,7 +735,7 @@ public:
             case TokenT::REG_IX: 
             case TokenT::REG_IY: stmt = addressRegisterOperation(0x007E, cmd); break;
           
-            default: stmt = StatementOneArgCommand(0x003A, cmd, shift()); break;
+            default: stmt = StatementOneArgCommand(0x003A, cmd, shift(2)); break;
           }
 
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
@@ -741,13 +743,13 @@ public:
         }
 
         if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-          return StatementNoArgCommand(0x0078 | GetMask(peekPrev().token), cmd);
+          return StatementNoArgCommand(0x0078 | GetMask(peekPrev().type), cmd);
         }
 
         if (match<1>({ TokenT::REG_I })) return StatementNoArgCommand(0xED57, cmd);
         if (match<1>({ TokenT::REG_R })) return StatementNoArgCommand(0xED5F, cmd);
 
-        return StatementOneArgCommand(0x003E, cmd, shift());
+        return StatementOneArgCommand(0x003E, cmd, shift(1));
 
       case TokenT::REG_B:
         consume(TokenT::COMMA, "Expect ',' after expression.");
@@ -786,70 +788,70 @@ public:
       case TokenT::REG_BC:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = StatementOneArgCommand(0xED4B, cmd, shift());
+          auto stmt = StatementOneArgCommand(0xED4B, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return StatementOneArgCommand(0x0001, cmd, shift());
+        return StatementOneArgCommand(0x0001, cmd, shift(2));
 
       case TokenT::REG_DE:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = StatementOneArgCommand(0xED5B, cmd, shift());
+          auto stmt = StatementOneArgCommand(0xED5B, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return StatementOneArgCommand(0x0011, cmd, shift());
+        return StatementOneArgCommand(0x0011, cmd, shift(2));
 
       case TokenT::REG_HL:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = StatementOneArgCommand(0x002A, cmd, shift());
+          auto stmt = StatementOneArgCommand(0x002A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return StatementOneArgCommand(0x0021, cmd, shift());
+        return StatementOneArgCommand(0x0021, cmd, shift(2));
 
 
       case TokenT::REG_IX:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = StatementOneArgCommand(0xDD2A, cmd, shift());
+          auto stmt = StatementOneArgCommand(0xDD2A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return StatementOneArgCommand(0xDD21, cmd, shift());
+        return StatementOneArgCommand(0xDD21, cmd, shift(2));
 
       case TokenT::REG_IY:
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = StatementOneArgCommand(0xFD2A, cmd, shift());
+          auto stmt = StatementOneArgCommand(0xFD2A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        return StatementOneArgCommand(0xFD21, cmd, shift());
+        return StatementOneArgCommand(0xFD21, cmd, shift(2));
 
       case TokenT::REG_SP: 
         consume(TokenT::COMMA, "Expect ',' after expression.");
         if (match<1>({ TokenT::LEFT_BRACE })) {
-          auto stmt = StatementOneArgCommand(0x002A, cmd, shift());
+          auto stmt = StatementOneArgCommand(0x002A, cmd, shift(2));
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           return stmt;
         }
 
-        switch (peek().token) {
+        switch (peek().type) {
           case TokenT::REG_HL: advance(); return StatementNoArgCommand(0x00F9, cmd);
           case TokenT::REG_IX: advance(); return StatementNoArgCommand(0xDDF9, cmd);
           case TokenT::REG_IY: advance(); return StatementNoArgCommand(0xFDF9, cmd);
           default: {}
         }
 
-        return StatementOneArgCommand(0x0031, cmd, shift());
+        return StatementOneArgCommand(0x0031, cmd, shift(2));
 
       default: {}
     }
@@ -864,7 +866,7 @@ public:
     consume(TokenT::LEFT_BRACE, "Expect '(' after expression.");
 
     if (!match<1>({ TokenT::REG_C })) {
-      auto expr = shift();
+      auto expr = shift(1);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       consume(TokenT::COMMA, "Expect ',' after expression.");
       consume(TokenT::REG_A, "Expect register to be 'A'");
@@ -873,7 +875,7 @@ public:
 
     consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
     consume(TokenT::COMMA, "Expect ',' after expression.");
-    switch (advance().token) {
+    switch (advance().type) {
       case TokenT::REG_A:  return StatementNoArgCommand(0xED79, cmd);
       case TokenT::REG_B:  return StatementNoArgCommand(0xED41, cmd);
       case TokenT::REG_C:  return StatementNoArgCommand(0xED49, cmd);
@@ -890,7 +892,7 @@ public:
 
   inline Statement Process(Int2Type<TokenT::CMD_RES>) {
     auto cmd = peekPrev();
-    auto expr = literal();
+    auto expr = literal(1);
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
@@ -900,9 +902,9 @@ public:
     }
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      const auto mask = GetMask(peekPrev().token);
-      return StatementRuntimeCommand(cmd, expr, [mask](uint32_t c) -> uint32_t {
-        return (uint32_t)(c > 7 ? 0x00 : 0xCB80 | (c << 3) | mask);
+      const auto mask = GetMask(peekPrev().type);
+      return StatementRuntimeCommand(cmd, expr, [mask](uint32_t arg, uint32_t) -> uint32_t {
+        return (uint32_t)(arg > 7 ? 0x00 : 0xCB80 | (arg << 3) | mask);
       });
     }
 
@@ -916,12 +918,12 @@ public:
     Token& reg = advance();
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
-    switch (reg.token) {
+    switch (reg.type) {
       case TokenT::REG_A:
         return basicRegisterOperation(0x009E, 0x0098, 0x00DE, cmd);
 
       case TokenT::REG_HL:
-        switch(advance().token) {
+        switch(advance().type) {
           case TokenT::REG_BC: return StatementNoArgCommand(0xED42, cmd);
           case TokenT::REG_DE: return StatementNoArgCommand(0xED52, cmd);
           case TokenT::REG_HL: return StatementNoArgCommand(0xED62, cmd);
@@ -941,7 +943,7 @@ public:
 
   inline Statement Process(Int2Type<TokenT::CMD_SET>) {
     auto cmd = peekPrev();
-    auto expr = literal();
+    auto expr = literal(1);
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
@@ -951,9 +953,9 @@ public:
     }
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      const auto mask = GetMask(peekPrev().token);
-      return StatementRuntimeCommand(cmd, expr, [mask](uint32_t c) {
-        return (uint32_t)(c > 7 ? 0x00 : 0xCBC0 | (c << 3) | mask);
+      const auto mask = GetMask(peekPrev().type);
+      return StatementRuntimeCommand(cmd, expr, [mask](uint32_t arg, uint32_t) {
+        return (uint32_t)(arg > 7 ? 0x00 : 0xCBC0 | (arg << 3) | mask);
       });
     }
 
@@ -970,10 +972,10 @@ private:
     }
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(op1 | GetMask(peekPrev().token), cmd);
+      return StatementNoArgCommand(op1 | GetMask(peekPrev().type), cmd);
     }
 
-    return StatementOneArgCommand(op2, cmd, shift());
+    return StatementOneArgCommand(op2, cmd, shift(1));
   }
 
   inline Statement basicRegisterOperation(uint32_t op0, uint32_t op1, Token& cmd) {
@@ -984,7 +986,7 @@ private:
     }
 
     if (match<7>({ TokenT::REG_A, TokenT::REG_B, TokenT::REG_C, TokenT::REG_D, TokenT::REG_E, TokenT::REG_H, TokenT::REG_L })) {
-      return StatementNoArgCommand(op1 | GetMask(peekPrev().token), cmd);
+      return StatementNoArgCommand(op1 | GetMask(peekPrev().type), cmd);
     }
 
     error(peekPrev(), "Expect register to be 'A' | 'B' | 'C' | 'D' | 'E' | 'H' | 'L'");
@@ -992,10 +994,10 @@ private:
   }
 
   inline Statement addressRegisterOperation(uint32_t opcode, Token& cmd) {
-    switch (advance().token) {
+    switch (advance().type) {
       case TokenT::REG_HL: return StatementNoArgCommand( 0x0000 | opcode, cmd);
-      case TokenT::REG_IX: return StatementOneArgCommand(0xDD00 | opcode, cmd, offset());
-      case TokenT::REG_IY: return StatementOneArgCommand(0xFD00 | opcode, cmd, offset());
+      case TokenT::REG_IX: return StatementOneArgCommand(0xDD00 | opcode, cmd, offset(1));
+      case TokenT::REG_IY: return StatementOneArgCommand(0xFD00 | opcode, cmd, offset(1));
       default: {}
     }
 
@@ -1007,10 +1009,10 @@ private:
     uint32_t code = opcode & 0x00FF;
     uint32_t command = ((opcode & 0xFF00) << 8);
 
-    switch (advance().token) {
+    switch (advance().type) {
       case TokenT::REG_HL: return StatementNoArgCommand(opcode, cmd);
-      case TokenT::REG_IX: return StatementRuntimeCommand(cmd, offset(), [command, code](uint32_t c) -> uint32_t { return (uint32_t)(0xDD000000 | command | code | (c << 8)); });
-      case TokenT::REG_IY: return StatementRuntimeCommand(cmd, offset(), [command, code](uint32_t c) -> uint32_t { return (uint32_t)(0xFD000000 | command | code | (c << 8)); });
+      case TokenT::REG_IX: return StatementRuntimeCommand(cmd, offset(1), [command, code](uint32_t arg, uint32_t) -> uint32_t { return (uint32_t)(0xDD000000 | command | code | (arg << 8)); });
+      case TokenT::REG_IY: return StatementRuntimeCommand(cmd, offset(1), [command, code](uint32_t arg, uint32_t) -> uint32_t { return (uint32_t)(0xFD000000 | command | code | (arg << 8)); });
       default: {}
     }
 
@@ -1034,8 +1036,8 @@ private:
 private:
   inline Token& peek() { return token(curr); }
   inline Token& peekPrev() { return token(curr - 1); }
-  inline bool isAtEnd() { return peek().token == TokenT::OP_EOF; }
-  inline bool check(TokenT type) { return isAtEnd() ? false : peek().token == type; }
+  inline bool isAtEnd() { return peek().type == TokenT::OP_EOF; }
+  inline bool check(TokenT type) { return isAtEnd() ? false : peek().type == type; }
 
   inline Token& token(int32_t index) {
     if (index >= 0 && index < lexer.tokens.size()) return lexer.tokens[index];

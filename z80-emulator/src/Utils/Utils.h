@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <utility>
 
 namespace Utils {
 
@@ -24,6 +25,20 @@ namespace Utils {
     }
 
     return str;
+  }
+
+  inline std::pair<bool, uint32_t> Str2Uint(std::string& str) {
+    try { return { true, std::stoul(str)}; } 
+    catch (...) { return { false, 0 }; } 
+  }
+
+  inline uint32_t SizeOf(uint32_t value) {
+    if (value == 0) return 1;
+
+    uint32_t size = 0;
+    while(value & ~((uint32_t)0xFF)) { size++; value >>= 8; }
+
+    return size;
   }
 
   inline std::string Int2Scientific(int32_t i, int32_t width = 2) { 
