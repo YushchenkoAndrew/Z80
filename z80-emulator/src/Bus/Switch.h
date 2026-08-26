@@ -1,6 +1,8 @@
 #pragma once
-#include "Led.h"
 
+#include "src/Bus/Bus.h"
+#include "src/Bus/Device.h"
+#include "src/Window/Window.h"
 namespace Bus {
 
 class Switch : public Window::Window, public Device {

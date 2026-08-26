@@ -1,5 +1,9 @@
 #pragma once
 
+#include "src/Editor/Vim.h"
+#include "src/Utils/Utils.h"
+#include "src/Window/Window.h"
+
 namespace Editor {
 
 class Popup : public Window::Window {

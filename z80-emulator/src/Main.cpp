@@ -1,17 +1,18 @@
-#include "include/Typelist.h"
-#include "src/Defs.h"
-#include "src/Window/Command.h"
-#include <cstdint>
+#pragma once
+#include "src/Interpreter/Preprocessor.h"
 #include <cstdio>
-#include <functional>
-#include <stdio.h>
-#include <fstream>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
 #define DEBUG_MODE
-#include "Panel.h"
+
+#include "include/LuaScript.h"
+#include "lib/olcPixelGameEngine.h"
+#include "src/Bus/Bus.h"
+#include "src/Defs.h"
+#include "src/Editor/Editor.h"
+#include "src/Editor/Popup.h"
+#include "src/Interpreter/Defs.h"
+#include "src/Interpreter/Interpreter.h"
+#include "src/Panel.h"
+#include <unordered_set>
 
 // Check Memory Leaking
 //#define MEM_TRACK
@@ -53,16 +54,16 @@ public:
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
     Compile(luaConfig.GetTableValue<std::string>(nullptr, "src"));
-    interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
+    // interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
 
     auto editor = std::make_shared<Editor::Editor>();
-    for (auto f : interpreter.env.files()) editor->Open(f);
-    editor->Open(interpreter.filepath);
+    // for (auto f : interpreter.env.files()) editor->Open(f);
+    // editor->Open(interpreter.filepath);
 
 
     // auto rom = bus->W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
-    bus->W27C512->Load(interpreter.env.memory);
+    // bus->W27C512->Load(interpreter.env.memory);
 
     // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
@@ -248,7 +249,7 @@ public:
     DrawString(pos + olc::vi2d(nWidth - ((int32_t)cmd.size() + 2) * vStep.x, vStep.y), cmd, Color::DARK_GREY);
 
     auto color = panels[nPanel].IsActive() ? Color::DARK_YELLOW : Color::DARK_GREEN;
-    FillRect(pos - olc::vi2d(0, 2), olc::vi2d(vStep.x * 2, vStep.y - 2), *color);
+    FillRect(pos - olc::vi2d(0, 2), olc::vi2d(vStep.x * 2, vStep.y - 2), color);
     DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(nPanel + 1), Color::DARK_GREY);
     pos.x += vStep.x * 2;
 
@@ -258,7 +259,7 @@ public:
       auto str = std::to_string(i + 1) + " " + panels[i].GetName();
       auto color = i == nPanel ? Color::GREY : Color::DARK_GREY;
 
-      DrawString(pos + olc::vi2d(vStep.x, 0), str, *color);
+      DrawString(pos + olc::vi2d(vStep.x, 0), str, color);
       pos.x += GetTextSize(str).x + vStep.x * 2;
     }
 
@@ -268,7 +269,7 @@ public:
     pos.x = nWidth - ((int32_t)name.size() + 2) * vStep.x;
     color = GetMode() == NORMAL ? Color::ORANGE : Color::CYAN;
 
-    FillRect(pos - olc::vi2d(vStep.x / 2, 2), GetTextSize(name) + olc::vi2d(vStep.x, 2), *color);
+    FillRect(pos - olc::vi2d(vStep.x / 2, 2), GetTextSize(name) + olc::vi2d(vStep.x, 2), color);
     DrawString(pos, name, Color::DARK_GREY);
 
     if (!bSyncing.first) return;
@@ -440,59 +441,59 @@ public:
 
 private:
   inline void Cmd2Action() {
-    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
-    if (editor == nullptr) return;
+    // auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
+    // if (editor == nullptr) return;
 
-    switch (advance()) {
-      case 'w': 
-        if (match('a')) editor->Save();
-        else editor->SaveFile();
+    // switch (advance()) {
+    //   case 'w': 
+    //     if (match('a')) editor->Save();
+    //     else editor->SaveFile();
 
-        return;
+    //     return;
 
-      case 'e':
-        advance(); // Consume ' '
-        if (isAtEnd()) return;
+    //   case 'e':
+    //     advance(); // Consume ' '
+    //     if (isAtEnd()) return;
 
-        editor->Open(cmd.substr(nCurr));
-        return;
+    //     editor->Open(cmd.substr(nCurr));
+    //     return;
 
-      case 'c': {
-        Bus::Z80::Lock l(this);
+    //   case 'c': {
+    //     Bus::Z80::Lock l(this);
 
-        Compile(interpreter.filepath);
-        interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
+    //     Compile(interpreter.filepath);
+    //     interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
 
-        for (auto f : interpreter.env.files()) editor->Open(f);
-        editor->Open(interpreter.filepath);
+    //     for (auto f : interpreter.env.files()) editor->Open(f);
+    //     editor->Open(interpreter.filepath);
 
-        return;
-      }
+    //     return;
+    //   }
 
-      case 'm': {
-        Bus::Z80::Lock l(this);
-        bus->W27C512->Load(interpreter.env.memory);
-        bus->W27C512->Disassemble(); 
+    //   case 'm': {
+    //     Bus::Z80::Lock l(this);
+    //     bus->W27C512->Load(interpreter.env.memory);
+    //     bus->W27C512->Disassemble(); 
 
-        return;
-      }
+    //     return;
+    //   }
 
-      case 'l':  {
-        Bus::Z80::Lock l(this);
-        Compile(editor->File());
-        return;
-      }
-    }
+    //   case 'l':  {
+    //     Bus::Z80::Lock l(this);
+    //     Compile(editor->File());
+    //     return;
+    //   }
+    // }
   }
 
 
   inline RelativeAddr Addr2Token(uint32_t addr) {
     RelativeAddr next = std::pair(0, std::pair("", nullptr));
 
-    for (auto& pos : interpreter.env.tokens) {
-      if (pos.first <= addr) next = pos;
-      else return next;
-    }
+    // for (auto& pos : interpreter.env.tokens) {
+    //   if (pos.first <= addr) next = pos;
+    //   else return next;
+    // }
 
     return next;
   }
@@ -500,10 +501,10 @@ private:
   inline RelativeAddr Pos2Token(olc::vi2d cursor, std::string filename) {
     RelativeAddr next = std::pair(0, std::pair(filename, nullptr));
 
-    for (auto& pos : interpreter.env.tokens) {
-      if (next.second.first != pos.second.first) continue;
-      if (pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1) next = pos;
-    }
+    // for (auto& pos : interpreter.env.tokens) {
+    //   if (next.second.first != pos.second.first) continue;
+    //   if (pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1) next = pos;
+    // }
 
     return next;
   }
@@ -513,19 +514,20 @@ private:
   inline const char peek() { return isAtEnd() ? '\0' : cmd[nCurr]; }
   inline bool match(char c) { if (peek() == c) { advance(); return true; } return false; }
 
-  void Compile(std::string src) {
-    if (bool err = interpreter.Load(src)) {
-      #ifdef DEBUG_MODE 
-      for (auto token : interpreter.parser.lexer.tokens) { token.print(); }
-      printf("\n");
+  void Compile(std::string filepath) {
+    const auto errors = interpreter.load(filepath).scan();
+    if (!errors.size()) return;
 
-      for (auto err : interpreter.errors) {
-        printf("%s", err.c_str());
-      }
+    #ifdef DEBUG_MODE 
+    // for (auto token : interpreter.parser.lexer.tokens) { token.print(); }
+    // printf("\n");
 
-      printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
-      #endif
+    for (auto& msg : errors) {
+      printf("%s", msg.c_str());
     }
+
+    // printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
+    #endif
   }
 
   std::string Command() {

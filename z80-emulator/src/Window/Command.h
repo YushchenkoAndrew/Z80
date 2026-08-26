@@ -1,12 +1,8 @@
 #pragma once
-#include "Window.h"
-#include "include/Typelist.h"
+
+#include "lib/olcPixelGameEngine.h"
 #include "src/Defs.h"
-#include <functional>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include "src/Window/Stroke.h"
 
 namespace Window {
 

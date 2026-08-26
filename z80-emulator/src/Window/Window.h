@@ -1,4 +1,6 @@
 #pragma once
+
+#include "src/Defs.h"
 #include "src/Window/Stroke.h"
 
 namespace Window {

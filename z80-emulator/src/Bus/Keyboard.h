@@ -1,5 +1,8 @@
 #pragma once
-#include "InterruptVector.h"
+
+#include "src/Bus/Bus.h"
+#include "src/Bus/Device.h"
+#include "src/Window/Window.h"
 
 namespace Bus {
 class Keyboard : public Window::Window, public Device {
@@ -24,7 +27,7 @@ public:
     if (!bEnabled) return;
 
     Utils::Lock l(mutex);
-    foreach<KeyboardScanCodes, void>::Process(this);
+    // foreach<KeyboardScanCodes, void>::Process(this);
 
     if (buffer.size()) Interrupt();
   }
@@ -35,7 +38,7 @@ public:
     const auto& fg = bEnabled ? Color::DARK_GREY : Color::BLACK;
     const auto& bg = bEnabled ? Color::BLACK     : Color::DARK_GREY;
 
-    GameEngine->FillRect(pos - olc::vi2d(1, 1), name.second + olc::vi2d(2, 2), *bg);
+    GameEngine->FillRect(pos - olc::vi2d(1, 1), name.second + olc::vi2d(2, 2), bg);
     GameEngine->DrawString(pos, name.first, fg);
 
     int32_t index = 0; Utils::Lock l(mutex);

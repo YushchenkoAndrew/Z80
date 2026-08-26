@@ -1,186 +1,75 @@
 #pragma once
 
 #include "lib/olcPixelGameEngine.h"
+#include <unordered_set>
 
 namespace Interpreter {
 
 class Preprocessor {
 public:
   Preprocessor() {}
-  ~Preprocessor() { reset(); }
+  ~Preprocessor() { files.clear(); }
 
-  // TODO: Impl this should look kinda like lexer but should spit out the final text where it combines includes into one file
-  bool scan(std::string text) {
-    src = text; reset();
+  void scan(std::filesystem::path file) {
+    const auto filedir = std::filesystem::path(file).remove_filename();
+    curr = 0; files.clear(); source = read(file);
 
     while (!isAtEnd()) {
-      prev = curr;
+      const int32_t started_at = curr; const char c = advance();
 
-      const char c = advance();
-      switch (c) {
-        // case '$': addToken(TokenT::IDENTIFIER); break;
-        // case ',': addToken(TokenT::COMMA); break;
-        // case ':': addToken(TokenT::COLON); break;
-        // case '(': addToken(TokenT::LEFT_BRACE); break;
-        // case ')': addToken(TokenT::RIGHT_BRACE); break;
-        // case '[': addToken(TokenT::LEFT_SQUARE_BRACE); break;
-        // case ']': addToken(TokenT::RIGHT_SQUARE_BRACE); break;
+      if (c == ';') { advance('\n'); continue; }
+      if (c == '#') {
+        if (!match("include")) continue;
 
-        // case '+': addToken(TokenT::PLUS); break;
-        // case '-': addToken(TokenT::MINUS); break;
-        // case '|': addToken(TokenT::BIT_OR); break;
-        // case '&': addToken(TokenT::BIT_AND); break;
-        // case '^': addToken(TokenT::BIT_XOR); break;
-        // case '~': addToken(TokenT::BIT_NOT); break;
+        advance('"'); // find the file path
+        const auto filepath = string(advance());
 
-        // case '.':
-        //  if (advance() == '.') { addToken(TokenT::CONCATENATE); break; }
-        //  else if (Utils::IsAlpha(peekPrev())) { identifier(); break; }
-        //  else error("Unexpected character."); break;
-
-        // case '>':
-        //  if (advance() != '>') { error("Unexpected character."); break; }
-        //  addToken(TokenT::RIGHT_SHIFT); break;
-
-        // case '<':
-        //  if (advance() != '<') { error("Unexpected character."); break; }
-        //  addToken(TokenT::LEFT_SHIFT); break;
-
-
-        // case '"': string(c); break;
-
-        // case ';':
-        //   while (peek() != '\n' && !isAtEnd()) advance();
-        //   addHighlight(olc::DARK_GREY);
-        //   break;
-
-
-        // case '\n': line++; col = 0; break;
-        // case ' ': case '\r': case '\t': break; // Ignore whitespace.
-        case '#':
-        // TODO: ....
-        //   if (peekNext() != ' ') identifier();
-        //   else error("Unexpected character."); 
-        //   break;
-
-        // default:
-        //   if (Utils::IsDigit(c)) number();
-        //   else if (isAlpha(c)) identifier();
-        //   else { addToken(TokenT::NONE); error(std::string("Unexpected char '") + std::string(1, c) + std::string("'.")); }
-        //   break;
+        source.erase(started_at, curr - started_at);
+        source.insert(curr = started_at, read(filedir / filepath));
       }
     }
-
-    // prev = curr;
-    // addToken(TokenT::OP_EOF);
-    // return errors.size();
   }
 
 
 private:
-  inline void reset() {
-    prev = 0; curr = 0; col = 0; line = 0;
-    // tokens.clear(); errors.clear();
+  std::string read(std::filesystem::path path) {
+    if (!std::filesystem::exists(path)) return "";
+
+    std::ifstream file(path); std::stringstream buffer;
+    buffer << file.rdbuf(); file.close(); 
+
+    return (files.insert(path.lexically_normal()), buffer.str());
   }
 
-//   void string(const char &c) {
-//     while (peek() != c) {
-//       if (peek() == '\n' || peek() == '\r') break;
-//       advance();
-//     }
+  std::string string(const char c) {
+    const auto started_at = curr;
+    while (peek() != c && !isAtEnd()) advance();
 
-//     if (peek() != c) { addToken(TokenT::NONE); return error("Unclosed string.");  } 
-    
+    if (peek() != c) return "";
+    advance(); // closing quote
 
-//     advance(); // closing quote
-//     addToken(TokenT::STRING, src.substr(prev + 1, curr - prev - 2));
-//   }
+    return source.substr(started_at, curr - started_at - 1);
+  }
 
-//   void number() {
-//     if (peekPrev() == '0' && match<6>({ 'X', 'x', 'O', 'o', 'B', 'b' })) {
-//       int32_t base = 10;
+  inline bool match(std::string pattern) {
+    for (const auto c : pattern) {
+      if (peek() != c) return false;
+      advance();
+    }
 
-//       switch (peekPrev()) {
-//         case 'X': case 'x': base = 16; while (Utils::IsHexDigit(peek())) advance(); break;
-//         case 'O': case 'o': base = 8;  while (Utils::IsOctDigit(peek())) advance(); break;
-//         case 'B': case 'b': base = 2;  while (Utils::IsBinDigit(peek())) advance(); break;
-//       }
+    return true;
+  }
 
-//       const auto nStart = this->prev + 2;
-//       return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(nStart, curr - nStart), nullptr, base)));
-//     }
-    
-//     while (Utils::IsDigit(peek())) advance();
-//     return addToken(TokenT::NUMBER, std::to_string(std::stoul(src.substr(prev, curr - prev))));
-//   }
-
-//   void identifier() {
-//     while (isAlphaNumeric(peek())) advance();
-
-//     const auto& type = Token::GetToken(src.substr(prev, curr - prev));
-
-//     if (type != TokenT::NONE) addToken(type);
-//     else addToken(TokenT::IDENTIFIER);
-//   }
-
-  inline const char advance() { col++; return src[curr++]; }
-//   inline const char peek() { return isAtEnd() ? '\0' : src[curr]; }
-//   inline const char peekPrev() { return !curr ? '\0' : src[curr - 1]; }
-//   inline const char peekNext() { return curr + 1 >= src.length() ? '\0' : src[curr + 1]; }
-
-//   template<int32_t T>
-//   inline bool match(std::array<const char, T> arr) {
-//     for (auto& el : arr) if (match(el)) return true;
-//     return false;
-//   }
-
-//   inline bool match(const char expected) {
-//     if (isAtEnd()) return false;
-//     if (src[curr] != expected) return false;
-
-//     col++; curr++;
-//     return true;
-//   }
-
-//   void addToken(TokenT type, std::string literal = "") {
-//     const int32_t len = curr - prev;
-//     const int32_t start = col - len;
-
-//     const auto& [_, color] = Token::GetMetadata(type);
-//     tokens.push_back({ type, src.substr(prev, len), literal,  start + 1, line + 1 });
-//     addHighlight(color);
-//   }
-
-//   void addHighlight(olc::Pixel c) {
-//     const int32_t len = curr - prev;
-
-//     if (!highlights.count(line)) highlights[line] = {};
-//     for (int32_t i = col - len; i < col; i++) highlights[line][i] = c;
-//   }
-
-  inline bool isAtEnd() { return curr >= src.length(); }
-//   inline bool isAlpha(const char &c) { return Utils::IsAlpha(c) || c == '.' || c == '#' || c == '\''; }
-//   inline bool isAlphaNumeric(const char &c) { return isAlpha(c) || Utils::IsDigit(c); }
-
-
-//   inline void error(std::string message) {
-//     errors.push_back("[Ln " + std::to_string(line) + " Col " + std::to_string(curr) + "] Error: " + message + "\n");
-//   }
-
+  inline const char advance() { return source[curr++]; }
+  inline void advance(const char c) { while (peek() != c && !isAtEnd()) advance(); }
+  inline const char peek() { return isAtEnd() ? '\0' : source[curr]; }
+  inline bool isAtEnd() { return curr >= source.length(); }
 
 private:
-  std::string src;
-
-  int32_t prev = 0; // index of the src, which is pointing to first char in the lexeme
   int32_t curr = 0; // index of the src, which is pointing to the curr char
 
-  int32_t col = 0; // tracks current line position
-  int32_t line = 0; // tracks current line position
-
-// public:
-//   std::vector<Token> tokens;
-//   std::unordered_map<int32_t, std::unordered_map<int32_t, olc::Pixel>> highlights;
-
-//   std::vector<std::string> errors;
+public:
+  std::string source;
+  std::unordered_set<std::filesystem::path> files;
 };
 };

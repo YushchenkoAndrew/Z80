@@ -17,7 +17,7 @@ public:
   Lexer() {}
   ~Lexer() { reset(); }
 
-  bool scan(std::string text) {
+  std::list<std::string> scan(std::string text) {
     src = text; reset();
 
     while (!isAtEnd()) {
@@ -79,7 +79,7 @@ public:
 
     prev = curr;
     addToken(TokenT::OP_EOF);
-    return errors.size();
+    return errors;
   }
 
 
@@ -183,11 +183,11 @@ private:
   int32_t col = 0; // tracks current line position
   int32_t line = 0; // tracks current line position
 
+  std::list<std::string> errors;
+
 public:
   std::vector<Token> tokens;
   std::unordered_map<int32_t, std::unordered_map<int32_t, olc::Pixel>> highlights;
-
-  std::vector<std::string> errors;
 };
 
 };

@@ -1,8 +1,6 @@
+#pragma once
+
 #include "include/Typelist.h"
-#include <cstddef>
-#include <cstdint>
-#include <string>
-#include <vector>
 
 // template<class T, class U, class Arg0 = NullType> 
 // struct foreach;

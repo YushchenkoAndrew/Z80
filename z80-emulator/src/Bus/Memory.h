@@ -1,10 +1,15 @@
 #pragma once
-#include "PIT.h"
-#include "src/Defs.h"
+
+#include "src/Bus/Defs.h"
+#include "src/Bus/Device.h"
+#include "src/Interpreter/Lexer.h"
+#include "src/Utils/Utils.h"
+#include "src/Window/Command.h"
+#include "src/Window/Window.h"
 
 namespace Bus {
 
-typedef Window::SearchT SearchT;
+// typedef Window::SearchT SearchT;
 
 /**
  * Grammar:
@@ -41,7 +46,7 @@ public:
 
   // TODO: Load disassembler here
   void Initialize() { 
-    if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
+    // if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
   }
 
   // TODO: Maybe add ability to set local state with initialization
@@ -85,7 +90,7 @@ public:
 
     if ((mode == NORMAL || mode == CHARACTER) && GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + nWidth && mouse.y < absolute.y + pages.y * vStep.first.y) {
       MoveTo((mouse - absolute) / olc::vi2d(mode == CHARACTER ? vStep.first.y : vStep.first.x, vStep.first.y) + vStartAt.first - pos);
-      Command(Int2Type<Editor::VimT::CMD_gd>());
+      // Command(Int2Type<Editor::VimT::CMD_gd>());
     } else if (mode == DISASSEMBLE && GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x && mouse.y < absolute.y + size.y) {
       auto addr = Line2Index((mouse.y - absolute.y) / vStep.second.y + vStartAt.second.y - 1);
       Index2Pos(addr); cursor.y = dasm.second[addr];
@@ -94,9 +99,9 @@ public:
     bUpdated = false; bReleased = false;
 
     switch (mode) {
-      case NORMAL:    return Process(Int2Type<NORMAL>(), GameEngine);
-      case CHARACTER: return Process(Int2Type<NORMAL>(), GameEngine);
-      case DISASSEMBLE: return Process(Int2Type<NORMAL>(), GameEngine); 
+      // case NORMAL:    return Process(Int2Type<NORMAL>(), GameEngine);
+      // case CHARACTER: return Process(Int2Type<NORMAL>(), GameEngine);
+      // case DISASSEMBLE: return Process(Int2Type<NORMAL>(), GameEngine); 
       // case REPLACE:   return Process(Int2Type<REPLACE>(), GameEngine);
     }
   }
@@ -239,518 +244,518 @@ public:
   template<int32_t T>
   inline void Command(Int2Type<T>) {}
 
-  inline void Command(Int2Type<Editor::VimT::CMD_C>) { mode = mode == NORMAL ? CHARACTER : NORMAL; }
-  // inline void Command(Int2Type<Editor::VimT::CMD_r>) { mode = REPLACE; Command(Int2Type<Editor::VimT::CMD_x>()); }
-  inline void Command(Int2Type<Editor::VimT::CMD_x>) { memory[index()] = 0x00; }
-  inline void Command(Int2Type<Editor::VimT::CMD_yy>) { buffer = { memory[index()] }; }
-  inline void Command(Int2Type<Editor::VimT::CMD_e>) { Command(Int2Type<Editor::VimT::CMD_b>()); }
-  inline void Command(Int2Type<Editor::VimT::CMD_a>) { Command(Int2Type<Editor::VimT::CMD_w>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
-  inline void Command(Int2Type<Editor::VimT::CMD_c>) { Command(Int2Type<Editor::VimT::CMD_d>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_C>) { mode = mode == NORMAL ? CHARACTER : NORMAL; }
+  // // inline void Command(Int2Type<Editor::VimT::CMD_r>) { mode = REPLACE; Command(Int2Type<Editor::VimT::CMD_x>()); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_x>) { memory[index()] = 0x00; }
+  // inline void Command(Int2Type<Editor::VimT::CMD_yy>) { buffer = { memory[index()] }; }
+  // inline void Command(Int2Type<Editor::VimT::CMD_e>) { Command(Int2Type<Editor::VimT::CMD_b>()); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_a>) { Command(Int2Type<Editor::VimT::CMD_w>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_c>) { Command(Int2Type<Editor::VimT::CMD_d>()); Command(Int2Type<Editor::VimT::CMD_i>()); }
 
-  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_0>) { pos.x = 0; }
-  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = pages.x - 1; }
-  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_gg>) { vStartAt.first.y = vStartAt.second.y = pos.y = pos.x = 0; }
-  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_G>) { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x; }
+  // inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_0>) { pos.x = 0; }
+  // inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_DOLLAR>) { pos.x = pages.x - 1; }
+  // inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_gg>) { vStartAt.first.y = vStartAt.second.y = pos.y = pos.x = 0; }
+  // inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_G>) { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x; }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_0>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_0>()); UpdateCursor(); }
-  inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_DOLLAR>()); UpdateCursor(); }
-  inline void Command(Int2Type<Editor::VimT::CMD_gg>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_gg>()); UpdateCursor(); }
-  inline void Command(Int2Type<Editor::VimT::CMD_G>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_G>()); UpdateCursor(); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_0>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_0>()); UpdateCursor(); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_DOLLAR>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_DOLLAR>()); UpdateCursor(); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_gg>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_gg>()); UpdateCursor(); }
+  // inline void Command(Int2Type<Editor::VimT::CMD_G>) { Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_G>()); UpdateCursor(); }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_D>) {
-    if (mode == DISASSEMBLE) mode = NORMAL;
-    else { mode = DISASSEMBLE; UpdateCursor();}
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_D>) {
+  //   if (mode == DISASSEMBLE) mode = NORMAL;
+  //   else { mode = DISASSEMBLE; UpdateCursor();}
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_i>) { 
-    for (int32_t i = memory.size() - 1, size = index() + 1; i >= size; i--) memory[i] = memory[i - 1];
+  // inline void Command(Int2Type<Editor::VimT::CMD_i>) { 
+  //   for (int32_t i = memory.size() - 1, size = index() + 1; i >= size; i--) memory[i] = memory[i - 1];
 
-    search = SearchT(false, 1, 2, true, pos); 
-    // TODO: Impl this
-    // Command(Int2Type<Editor::VimT::CMD_r>()); 
-  }
+  //   search = SearchT(false, 1, 2, true, pos); 
+  //   // TODO: Impl this
+  //   // Command(Int2Type<Editor::VimT::CMD_r>()); 
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_gd>) { 
-    if (type != MemoryT::W27C512) return;
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>(), index());
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_gd>) { 
+  //   if (type != MemoryT::W27C512) return;
+  //   AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>(), index());
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (cmd.size() - search.nStartAt > 1) return;
+  // inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (cmd.size() - search.nStartAt > 1) return;
 
-    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_f>());
-    else Command(Int2Type<Editor::VimT::CMD_F>());
-  }
+  //   if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_f>());
+  //   else Command(Int2Type<Editor::VimT::CMD_F>());
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_COMMA>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (cmd.size() - search.nStartAt > 1) return;
+  // inline void Command(Int2Type<Editor::VimT::CMD_COMMA>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (cmd.size() - search.nStartAt > 1) return;
 
-    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_F>());
-    else Command(Int2Type<Editor::VimT::CMD_f>());
-  }
+  //   if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_F>());
+  //   else Command(Int2Type<Editor::VimT::CMD_f>());
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_f>) { 
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (!Utils::IsHexDigit(search.sPhrase.front())) return;
-    if (search.bEnabled) search.bDirection = true;
+  // inline void Command(Int2Type<Editor::VimT::CMD_f>) { 
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (!Utils::IsHexDigit(search.sPhrase.front())) return;
+  //   if (search.bEnabled) search.bDirection = true;
 
-    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
-    for (int32_t i = index() + 1; i < memory.size(); i++) {
-      if (digit != memory[i]) continue;
+  //   uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
+  //   for (int32_t i = index() + 1; i < memory.size(); i++) {
+  //     if (digit != memory[i]) continue;
 
-      pos.x = i & (pages.x - 1); pos.y = i / pages.x;
-      break;
-    }
-  }
+  //     pos.x = i & (pages.x - 1); pos.y = i / pages.x;
+  //     break;
+  //   }
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_F>) { 
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (!Utils::IsHexDigit(search.sPhrase.front())) return;
-    if (search.bEnabled) search.bDirection = false;
+  // inline void Command(Int2Type<Editor::VimT::CMD_F>) { 
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (!Utils::IsHexDigit(search.sPhrase.front())) return;
+  //   if (search.bEnabled) search.bDirection = false;
 
-    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
-    for (int32_t i = index() - 1; i >= 0; i--) {
-      if (digit != memory[i]) continue;
-      pos.x = i & (pages.x - 1); pos.y = i / pages.x;
-    }
-  }
+  //   uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
+  //   for (int32_t i = index() - 1; i >= 0; i--) {
+  //     if (digit != memory[i]) continue;
+  //     pos.x = i & (pages.x - 1); pos.y = i / pages.x;
+  //   }
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_n>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
+  // inline void Command(Int2Type<Editor::VimT::CMD_n>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
 
-    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_SLASH>());
-    else Command(Int2Type<Editor::VimT::CMD_QUESTION>());
+  //   if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_SLASH>());
+  //   else Command(Int2Type<Editor::VimT::CMD_QUESTION>());
 
-    pos = search.vPos;
-  }
+  //   pos = search.vPos;
+  // }
 
-  inline void Command(Int2Type<Editor:: VimT::CMD_N>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
+  // inline void Command(Int2Type<Editor:: VimT::CMD_N>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
 
-    if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_QUESTION>());
-    else Command(Int2Type<Editor::VimT::CMD_SLASH>());
+  //   if (search.bDirection) Command(Int2Type<Editor::VimT::CMD_QUESTION>());
+  //   else Command(Int2Type<Editor::VimT::CMD_SLASH>());
 
-    pos = search.vPos;
-  }
+  //   pos = search.vPos;
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_SLASH>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (search.bEnabled) search.bDirection = true;
+  // inline void Command(Int2Type<Editor::VimT::CMD_SLASH>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (search.bEnabled) search.bDirection = true;
 
-    bool isValid = true;
-    for (auto& c : search.sPhrase) isValid = isValid && Utils::IsHexDigit(c);
-    if (!isValid) return;
+  //   bool isValid = true;
+  //   for (auto& c : search.sPhrase) isValid = isValid && Utils::IsHexDigit(c);
+  //   if (!isValid) return;
 
-    std::vector<int32_t> foundAt = {};
-    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
+  //   std::vector<int32_t> foundAt = {};
+  //   uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
 
-    for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
-      if (memory[i] != digit) continue;
+  //   for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
+  //     if (memory[i] != digit) continue;
 
-      if (i - index() - 1 < 0) foundAt.push_back(i);
-      else foundAt.insert(foundAt.begin() + offset++, i);
-    }
+  //     if (i - index() - 1 < 0) foundAt.push_back(i);
+  //     else foundAt.insert(foundAt.begin() + offset++, i);
+  //   }
 
-    if (foundAt.size())  {
-      int32_t index = foundAt.front();
-      auto next = olc::vi2d(index & (pages.x - 1), index / pages.x);
+  //   if (foundAt.size())  {
+  //     int32_t index = foundAt.front();
+  //     auto next = olc::vi2d(index & (pages.x - 1), index / pages.x);
 
-      if (search.vPos != next) search.vPrev = search.vPos;
-      search.vPos = next;
-    } else { search.vPrev = search.vPos = this->pos; }
-  }
+  //     if (search.vPos != next) search.vPrev = search.vPos;
+  //     search.vPos = next;
+  //   } else { search.vPrev = search.vPos = this->pos; }
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
-    if (cmd.size() - search.nStartAt <= 0) return;
-    if (search.bEnabled) search.bDirection = false;
+  // inline void Command(Int2Type<Editor::VimT::CMD_QUESTION>) {
+  //   if (cmd.size() - search.nStartAt <= 0) return;
+  //   if (search.bEnabled) search.bDirection = false;
 
-    bool isValid = true;
-    for (auto& c : search.sPhrase) isValid = isValid && Utils::IsHexDigit(c);
-    if (!isValid) return;
+  //   bool isValid = true;
+  //   for (auto& c : search.sPhrase) isValid = isValid && Utils::IsHexDigit(c);
+  //   if (!isValid) return;
 
-    std::vector<int32_t> foundAt = {};
-    uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
+  //   std::vector<int32_t> foundAt = {};
+  //   uint8_t digit = std::stoul(search.sPhrase, nullptr, 16);
 
-    for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
-      if (memory[i] != digit) continue;
+  //   for (int32_t i = 0, offset = 0; i < memory.size(); i++) {
+  //     if (memory[i] != digit) continue;
 
-      if (index() - 1 - i > 0) foundAt.insert(foundAt.begin(), i);
-      else foundAt.insert(foundAt.end() - offset++, i);
-    }
+  //     if (index() - 1 - i > 0) foundAt.insert(foundAt.begin(), i);
+  //     else foundAt.insert(foundAt.end() - offset++, i);
+  //   }
 
-    if (foundAt.size())  {
-      int32_t index = foundAt.front();
-      auto next = olc::vi2d(index & (pages.x - 1), index / pages.x);
+  //   if (foundAt.size())  {
+  //     int32_t index = foundAt.front();
+  //     auto next = olc::vi2d(index & (pages.x - 1), index / pages.x);
 
-      if (search.vPos != next) search.vPrev = search.vPos;
-      search.vPos = next;
-    } else { search.vPrev = search.vPos = this->pos; }
-  }
+  //     if (search.vPos != next) search.vPrev = search.vPos;
+  //     search.vPos = next;
+  //   } else { search.vPrev = search.vPos = this->pos; }
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_P>) { 
-    int32_t offset = buffer.size(); if (!offset) return;
+  // inline void Command(Int2Type<Editor::VimT::CMD_P>) { 
+  //   int32_t offset = buffer.size(); if (!offset) return;
 
-    for (int32_t i = memory.size() - 1, size = index() + offset; i >= size; i--) memory[i] = memory[i - offset];
-    for (int32_t i = 0, j = index(); i < offset; i++) memory[j + i] = buffer[i];
-  }
+  //   for (int32_t i = memory.size() - 1, size = index() + offset; i >= size; i--) memory[i] = memory[i - offset];
+  //   for (int32_t i = 0, j = index(); i < offset; i++) memory[j + i] = buffer[i];
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_p>) { 
-    if (!buffer.size()) return;
+  // inline void Command(Int2Type<Editor::VimT::CMD_p>) { 
+  //   if (!buffer.size()) return;
 
-    Command(Int2Type<Editor::VimT::CMD_w>()); 
-    Command(Int2Type<Editor::VimT::CMD_P>()); 
+  //   Command(Int2Type<Editor::VimT::CMD_w>()); 
+  //   Command(Int2Type<Editor::VimT::CMD_P>()); 
 
-    for (int32_t i = 0; i < buffer.size() - 1; i++) Command(Int2Type<Editor::VimT::CMD_w>()); 
-  }
+  //   for (int32_t i = 0; i < buffer.size() - 1; i++) Command(Int2Type<Editor::VimT::CMD_w>()); 
+  // }
 
 
-  inline void Command(Int2Type<Editor::VimT::CMD_dd>) { 
-    Command(Int2Type<Editor::VimT::CMD_yy>()); 
+  // inline void Command(Int2Type<Editor::VimT::CMD_dd>) { 
+  //   Command(Int2Type<Editor::VimT::CMD_yy>()); 
 
-    for (int32_t i = index(); i < memory.size() - 1; i++) memory[i] = memory[i + 1];
-    memory[memory.size() - 1] = 0x00;
-  }
+  //   for (int32_t i = index(); i < memory.size() - 1; i++) memory[i] = memory[i + 1];
+  //   memory[memory.size() - 1] = 0x00;
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_y>) { 
-    auto diff = index(AnyType<-1, olc::vi2d>::GetValue()) - index(); if (diff == 0) return;
-    auto size = (int32_t)memory.size(); buffer = {};
+  // inline void Command(Int2Type<Editor::VimT::CMD_y>) { 
+  //   auto diff = index(AnyType<-1, olc::vi2d>::GetValue()) - index(); if (diff == 0) return;
+  //   auto size = (int32_t)memory.size(); buffer = {};
 
-    for (int32_t i = 0, j = index(); diff > 0 && i < diff; i++) buffer.push_back(memory[i + j]);
-    for (int32_t i = 0, j = index(); diff < 0 && i < std::abs(diff); i++) buffer.push_back(memory[i + j + diff]);
+  //   for (int32_t i = 0, j = index(); diff > 0 && i < diff; i++) buffer.push_back(memory[i + j]);
+  //   for (int32_t i = 0, j = index(); diff < 0 && i < std::abs(diff); i++) buffer.push_back(memory[i + j + diff]);
 
-    if (diff < 0) pos = AnyType<-1, olc::vi2d>::GetValue();
-  }
+  //   if (diff < 0) pos = AnyType<-1, olc::vi2d>::GetValue();
+  // }
   
-  inline void Command(Int2Type<Editor::VimT::CMD_d>) { 
-    auto diff = index(AnyType<-1, olc::vi2d>::GetValue()) - index(); if (diff == 0) return;
-    auto size = (int32_t)memory.size(); buffer = {};
+  // inline void Command(Int2Type<Editor::VimT::CMD_d>) { 
+  //   auto diff = index(AnyType<-1, olc::vi2d>::GetValue()) - index(); if (diff == 0) return;
+  //   auto size = (int32_t)memory.size(); buffer = {};
 
-    for (int32_t i = 0, j = index(); diff > 0 && i < diff; i++) buffer.push_back(memory[i + j]);
-    for (int32_t i = 0, j = index(); diff < 0 && i < std::abs(diff); i++) buffer.push_back(memory[i + j + diff]);
+  //   for (int32_t i = 0, j = index(); diff > 0 && i < diff; i++) buffer.push_back(memory[i + j]);
+  //   for (int32_t i = 0, j = index(); diff < 0 && i < std::abs(diff); i++) buffer.push_back(memory[i + j + diff]);
 
-    for (int32_t i = index(); diff > 0 && i < size - diff; i++) memory[i] = memory[i + diff];
-    for (int32_t i = index() + diff; diff < 0 && i < size + diff; i++) memory[i] = memory[i - diff];
+  //   for (int32_t i = index(); diff > 0 && i < size - diff; i++) memory[i] = memory[i + diff];
+  //   for (int32_t i = index() + diff; diff < 0 && i < size + diff; i++) memory[i] = memory[i - diff];
 
-    for (int32_t i = 0; i < std::abs(diff); i++) memory[size - 1 - std::abs(diff) + i] = 0x00;
-    if (diff < 0) pos = AnyType<-1, olc::vi2d>::GetValue();
-  }
+  //   for (int32_t i = 0; i < std::abs(diff); i++) memory[size - 1 - std::abs(diff) + i] = 0x00;
+  //   if (diff < 0) pos = AnyType<-1, olc::vi2d>::GetValue();
+  // }
 
-  // TODO: Impl undo/redo !!
-  inline void Command(Int2Type<Editor::VimT::CMD_u>) { }
-  inline void Command(Int2Type<Editor::VimT::CMD_U>) { }
+  // // TODO: Impl undo/redo !!
+  // inline void Command(Int2Type<Editor::VimT::CMD_u>) { }
+  // inline void Command(Int2Type<Editor::VimT::CMD_U>) { }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_w>) { 
-    if (pos.x < (pages.x - 1)) return Command(Int2Type<Editor::VimT::CMD_l>());
-    Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_0>()); Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_j>());
-    UpdateCursor();
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_w>) { 
+  //   if (pos.x < (pages.x - 1)) return Command(Int2Type<Editor::VimT::CMD_l>());
+  //   Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_0>()); Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_j>());
+  //   UpdateCursor();
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_b>) { 
-    if (pos.x > 0x00) return Command(Int2Type<Editor::VimT::CMD_h>());
-    Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_DOLLAR>()); Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_k>());
-    UpdateCursor();
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_b>) { 
+  //   if (pos.x > 0x00) return Command(Int2Type<Editor::VimT::CMD_h>());
+  //   Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_DOLLAR>()); Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_k>());
+  //   UpdateCursor();
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_CTRL_u>) {
-    for (int32_t i = 0; i < 20; i++) Command(Int2Type<Editor::VimT::CMD_k>());
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_CTRL_u>) {
+  //   for (int32_t i = 0; i < 20; i++) Command(Int2Type<Editor::VimT::CMD_k>());
+  // }
   
-  inline void Command(Int2Type<Editor::VimT::CMD_CTRL_d>) {
-    for (int32_t i = 0; i < 20; i++) Command(Int2Type<Editor::VimT::CMD_j>());
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_CTRL_d>) {
+  //   for (int32_t i = 0; i < 20; i++) Command(Int2Type<Editor::VimT::CMD_j>());
+  // }
 
 
-  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_j>) {
-    if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++;
-  }
+  // inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_j>) {
+  //   if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++;
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_j>) {
-    switch (mode) {
-      case NORMAL:
-      case CHARACTER:
-        Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_j>());
-        break;
+  // inline void Command(Int2Type<Editor::VimT::CMD_j>) {
+  //   switch (mode) {
+  //     case NORMAL:
+  //     case CHARACTER:
+  //       Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_j>());
+  //       break;
     
-      case DISASSEMBLE: {
-        const int32_t posAt = index();
-        int32_t next = memory.size() - 1;
+  //     case DISASSEMBLE: {
+  //       const int32_t posAt = index();
+  //       int32_t next = memory.size() - 1;
 
-        for (auto& addr : dasm.second) {
-          if (addr.first > posAt && addr.first < next) next = addr.first;
-        }
+  //       for (auto& addr : dasm.second) {
+  //         if (addr.first > posAt && addr.first < next) next = addr.first;
+  //       }
 
-        Index2Pos(next); cursor.y = dasm.second[next];
-        break;
-      }
-    }
-  }
+  //       Index2Pos(next); cursor.y = dasm.second[next];
+  //       break;
+  //     }
+  //   }
+  // }
 
 
-  inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_k>) {
-    if (pos.y > 0x00) pos.y--;
-  }
+  // inline void Command(Int2Type<NORMAL>, Int2Type<Editor::VimT::CMD_k>) {
+  //   if (pos.y > 0x00) pos.y--;
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_k>) {
-    switch (mode) {
-      case NORMAL:
-      case CHARACTER:
-        Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_k>());
-        break;
+  // inline void Command(Int2Type<Editor::VimT::CMD_k>) {
+  //   switch (mode) {
+  //     case NORMAL:
+  //     case CHARACTER:
+  //       Command(Int2Type<NORMAL>(), Int2Type<Editor::VimT::CMD_k>());
+  //       break;
     
-      case DISASSEMBLE: {
-        const int32_t posAt = index();
-        int32_t next = 0;
+  //     case DISASSEMBLE: {
+  //       const int32_t posAt = index();
+  //       int32_t next = 0;
 
-        for (auto& addr : dasm.second) {
-          if (addr.first < posAt && addr.first > next) next = addr.first;
-        }
+  //       for (auto& addr : dasm.second) {
+  //         if (addr.first < posAt && addr.first > next) next = addr.first;
+  //       }
 
-        Index2Pos(next); cursor.y = dasm.second[next];
-        break;
-      }
-    }
-  }
+  //       Index2Pos(next); cursor.y = dasm.second[next];
+  //       break;
+  //     }
+  //   }
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_l>) {
-    if (pos.x < (pages.x - 1)) pos.x++;
-    UpdateCursor();
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_l>) {
+  //   if (pos.x < (pages.x - 1)) pos.x++;
+  //   UpdateCursor();
+  // }
 
-  inline void Command(Int2Type<Editor::VimT::CMD_h>) {
-    if (pos.x > 0x00) pos.x--;
-    UpdateCursor();
-  }
+  // inline void Command(Int2Type<Editor::VimT::CMD_h>) {
+  //   if (pos.x > 0x00) pos.x--;
+  //   UpdateCursor();
+  // }
 
 
 private:
-  void Process(Int2Type<REPLACE>, PixelGameEngine* GameEngine) {
-    // FIXME: ....
-    // foreach<KeyEvent, Memory>::Process(this);
-  }
+//   void Process(Int2Type<REPLACE>, PixelGameEngine* GameEngine) {
+//     // FIXME: ....
+//     // foreach<KeyEvent, Memory>::Process(this);
+//   }
 
-  void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-    // FIXME: .....
-    // foreach<KeyEvent, Memory>::Process(this);
+//   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
+//     // FIXME: .....
+//     // foreach<KeyEvent, Memory>::Process(this);
 
-    if (!bUpdated) return;
-    else bUpdated = false;
+//     if (!bUpdated) return;
+//     else bUpdated = false;
     
-    #ifdef DEBUG_MODE
-    printf("Memory: '%s'\n", cmd.c_str());
-    #endif
+//     #ifdef DEBUG_MODE
+//     printf("Memory: '%s'\n", cmd.c_str());
+//     #endif
 
-    if (search.bEnabled) {
-      // TODO: ADD ability to edit this string
-      // std::get<0>(search2.second).push_back(cmd.back());
-      // if (std::get<0>(search.second).size() == std::get<1>(search.second)) 
-      if (cmd.size() - search.nStartAt >= 0) search.sPhrase = cmd.substr(search.nStartAt);
-      return reset(); 
-    }
+//     if (search.bEnabled) {
+//       // TODO: ADD ability to edit this string
+//       // std::get<0>(search2.second).push_back(cmd.back());
+//       // if (std::get<0>(search.second).size() == std::get<1>(search.second)) 
+//       if (cmd.size() - search.nStartAt >= 0) search.sPhrase = cmd.substr(search.nStartAt);
+//       return reset(); 
+//     }
 
-    if (nCurr == 0) {
-      if (match<6>({ 'i', 'a', 'C', 'D',  'u', 'U' })) { phrase(peekPrev()); return reset(); };
-      if (Utils::IsDigit(peek()) && peek() != '0') { nCurr++; return; }
+//     if (nCurr == 0) {
+//       if (match<6>({ 'i', 'a', 'C', 'D',  'u', 'U' })) { phrase(peekPrev()); return reset(); };
+//       if (Utils::IsDigit(peek()) && peek() != '0') { nCurr++; return; }
 
-      if (cmd.size() > 1 && match<1>({ '^' })) {
-        if (peek() == 'd') { phrase(Int2Type<Editor::VimT::CMD_CTRL_d>(), false); return reset(); }
-        if (peek() == 'u') { phrase(Int2Type<Editor::VimT::CMD_CTRL_u>(), false); return reset(); }
+//       if (cmd.size() > 1 && match<1>({ '^' })) {
+//         if (peek() == 'd') { phrase(Int2Type<Editor::VimT::CMD_CTRL_d>(), false); return reset(); }
+//         if (peek() == 'u') { phrase(Int2Type<Editor::VimT::CMD_CTRL_u>(), false); return reset(); }
 
-        error(peek(), "Invalid operation");
-      }
+//         error(peek(), "Invalid operation");
+//       }
 
-    } else {
-      uint8_t mask = ((uint8_t)Utils::IsDigit(peekPrev()) << 1) + (uint8_t)Utils::IsDigit(peek());
+//     } else {
+//       uint8_t mask = ((uint8_t)Utils::IsDigit(peekPrev()) << 1) + (uint8_t)Utils::IsDigit(peek());
 
-      switch(mask) {
-        case 0b11: nCurr++; return;
-        case 0b01: reset(false); return;
-      }
-    }
+//       switch(mask) {
+//         case 0b11: nCurr++; return;
+//         case 0b01: reset(false); return;
+//       }
+//     }
 
 
-    if (match<21>({ 'h', 'j', 'k', 'l', 'x', 'r', 'w', 'b', 'e', '0', '$', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
-      switch (peekPrev()) {
-        case 'g': search = SearchT(true, 1, 1, true, pos); return;
-        // case 'r': search = SearchT(true, 1, 2, true, pos); break; // TODO: Impl replace logic
-        case 'f': case 'F': search = SearchT(true, 1, 1, true, pos); break;
-        case '/': case '?': search = SearchT(true, 1, -1, true, pos); break;
-      }
+//     if (match<21>({ 'h', 'j', 'k', 'l', 'x', 'r', 'w', 'b', 'e', '0', '$', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
+//       switch (peekPrev()) {
+//         case 'g': search = SearchT(true, 1, 1, true, pos); return;
+//         // case 'r': search = SearchT(true, 1, 2, true, pos); break; // TODO: Impl replace logic
+//         case 'f': case 'F': search = SearchT(true, 1, 1, true, pos); break;
+//         case '/': case '?': search = SearchT(true, 1, -1, true, pos); break;
+//       }
 
-      // (noun * number) + verb
-      phrase(peekPrev()); number(); verb(peek(nCurr - 2)); 
+//       // (noun * number) + verb
+//       phrase(peekPrev()); number(); verb(peek(nCurr - 2)); 
 
-      return reset();
-    }
+//       return reset();
+//     }
 
-    // adverb
-    if (match<2>({ 'p', 'P' })) { phrase(peekPrev()); number(); return reset(); }
-    if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_dd>(), false); number(); return reset(); } 
-    if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<Editor::VimT::CMD_yy>(), false); number(); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_gd>(), false); return reset(); } 
-    if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<Editor::VimT::CMD_gg>(), true, true); number();  verb(peek(nCurr - 3)); return reset(); } 
+//     // adverb
+//     if (match<2>({ 'p', 'P' })) { phrase(peekPrev()); number(); return reset(); }
+//     if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_dd>(), false); number(); return reset(); } 
+//     if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<Editor::VimT::CMD_yy>(), false); number(); return reset(); } 
+//     if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_gd>(), false); return reset(); } 
+//     if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<Editor::VimT::CMD_gg>(), true, true); number();  verb(peek(nCurr - 3)); return reset(); } 
 
-    // verb
-    if (match<4>({ 'c', 'd', 'y', 'g' })) return;
+//     // verb
+//     if (match<4>({ 'c', 'd', 'y', 'g' })) return;
 
-    reset(false);
-  }
+//     reset(false);
+//   }
 
-  inline void verb(const char c) {
-    switch (c) {
-      case 'c': case 'd': case 'y': return phrase(c);
-    }
-  }
+//   inline void verb(const char c) {
+//     switch (c) {
+//       case 'c': case 'd': case 'y': return phrase(c);
+//     }
+//   }
 
-  inline void phrase(const char c) {
-    // AnyType<-1, int32_t>::GetValue() = c;
-    // bSync = bSync || foreach<SyncMemoryCommands, AnyType<-1, int32_t>>::Has();
+//   inline void phrase(const char c) {
+//     // AnyType<-1, int32_t>::GetValue() = c;
+//     // bSync = bSync || foreach<SyncMemoryCommands, AnyType<-1, int32_t>>::Has();
     
-    // auto operation = lambda;
-    // if (locked && foreach<LockedMemoryCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
-    // else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<MemoryCommands, Memory>::Command(this); };
-  }
+//     // auto operation = lambda;
+//     // if (locked && foreach<LockedMemoryCommands, AnyType<-1, int32_t>>::Has()) lambda = []() {};
+//     // else lambda = [=]() { operation(); AnyType<-1, int32_t>::GetValue() = c; foreach<MemoryCommands, Memory>::Command(this); };
+//   }
 
-  template<int32_t T>
-  inline void phrase(Int2Type<T> val, bool isSync = true, bool forced = false) {
-    bSync = bSync || isSync;
+//   template<int32_t T>
+//   inline void phrase(Int2Type<T> val, bool isSync = true, bool forced = false) {
+//     bSync = bSync || isSync;
 
-    auto operation = lambda;
-    if (locked && !forced) lambda = []() {};
-    else lambda = [=]() { operation(); Command(val); };
-  }
+//     auto operation = lambda;
+//     if (locked && !forced) lambda = []() {};
+//     else lambda = [=]() { operation(); Command(val); };
+//   }
 
-  inline void reset(bool exec = true) {
-    // if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
+//   inline void reset(bool exec = true) {
+//     // if (search.first && std::get<0>(search.second).size() != std::get<1>(search.second)) return;
 
-    if (exec) {
-      AnyType<-1, olc::vi2d>::GetValue() = pos;
-      if (bSync) { lambda(); bUpdated = true; }
-      else { std::thread t(lambda); t.detach(); }
-    }
+//     if (exec) {
+//       AnyType<-1, olc::vi2d>::GetValue() = pos;
+//       if (bSync) { lambda(); bUpdated = true; }
+//       else { std::thread t(lambda); t.detach(); }
+//     }
 
-    if (search.bEnabled && cmd.size() - search.nStartAt != search.nSize) return;
-    cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.bEnabled = false; bSync = false;
-  }
+//     if (search.bEnabled && cmd.size() - search.nStartAt != search.nSize) return;
+//     cmd.clear(); nStart = nCurr = 0; lambda = []() {}; search.bEnabled = false; bSync = false;
+//   }
 
 public:
 
-  template<int32_t T, int32_t U>
-  void Process(TypeList<Int2Type<T>, Int2Type<U>>) {
-    const char c = static_cast<char>(+U);
-    BasicStrokeHandler(static_cast<olc::Key>(+T), c, toupper(c));
-  }
+//   template<int32_t T, int32_t U>
+//   void Process(TypeList<Int2Type<T>, Int2Type<U>>) {
+//     const char c = static_cast<char>(+U);
+//     BasicStrokeHandler(static_cast<olc::Key>(+T), c, toupper(c));
+//   }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_2, '/',  '?'); }
-  // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_4, '[',  '{'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_5, '\\', '|'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_6, ']',  '}'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_7, '\'', '"'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_1, ';',  ':'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_2, '/',  '?'); }
+//   // template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_3>, Int2Type<U>>) { /** // FIXME: Strange bag BasicStrokeHandler(olc::Key::OEM_3, '\'',  '~'); */ }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_4, '[',  '{'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_5, '\\', '|'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_6, ']',  '}'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::OEM_7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::OEM_7, '\'', '"'); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K1, '1', '!'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K2, '2', '@'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K3>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K3, '3', '#'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K4, '4', '$'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K5, '5', '%'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K6, '6', '^'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K7, '7', '&'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K8>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K8, '8', '*'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K9>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K9, '9', '('); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K0>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K0, '0', ')'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K1>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K1, '1', '!'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K2>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K2, '2', '@'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K3>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K3, '3', '#'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K4>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K4, '4', '$'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K5>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K5, '5', '%'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K6>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K6, '6', '^'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K7>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K7, '7', '&'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K8>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K8, '8', '*'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K9>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K9, '9', '('); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::K0>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::K0, '0', ')'); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::EQUALS, '=', '+'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::PERIOD, '.', '>'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::COMMA>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::COMMA,  ',', '<'); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::MINUS>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::MINUS,  '-', '_'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::EQUALS>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::EQUALS, '=', '+'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::PERIOD>, Int2Type<U>>) { BasicStrokeHandler(olc::Key::PERIOD, '.', '>'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::COMMA>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::COMMA,  ',', '<'); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::MINUS>,  Int2Type<U>>) { BasicStrokeHandler(olc::Key::MINUS,  '-', '_'); }
 
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::UP>,    Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::UP).bPressed) Command(Int2Type<Editor::VimT::CMD_k>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DOWN>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::DOWN).bPressed) Command(Int2Type<Editor::VimT::CMD_j>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::LEFT>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::LEFT).bPressed) Command(Int2Type<Editor::VimT::CMD_h>()); }
-  template<int32_t U> void Process(TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::RIGHT).bPressed) Command(Int2Type<Editor::VimT::CMD_l>()); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::UP>,    Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::UP).bPressed) Command(Int2Type<Editor::VimT::CMD_k>()); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::DOWN>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::DOWN).bPressed) Command(Int2Type<Editor::VimT::CMD_j>()); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::LEFT>,  Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::LEFT).bPressed) Command(Int2Type<Editor::VimT::CMD_h>()); }
+//   template<int32_t U> void Process(TypeList<Int2Type<olc::Key::RIGHT>, Int2Type<U>>) { if (AnyType<-1, PixelGameEngine*>::GetValue()->GetKey(olc::Key::RIGHT).bPressed) Command(Int2Type<Editor::VimT::CMD_l>()); }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::DEL>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::DEL).bPressed) return;
+//   template<int32_t U>
+//   void Process(TypeList<Int2Type<olc::Key::DEL>, Int2Type<U>>) {
+//     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+//     if (!GameEngine->GetKey(olc::Key::DEL).bPressed) return;
 
-    bUpdated = true;
+//     bUpdated = true;
 
-    switch (mode) {
-      case DISASSEMBLE: 
-      case CHARACTER:
-      case NORMAL: reset(false); break;
+//     switch (mode) {
+//       case DISASSEMBLE: 
+//       case CHARACTER:
+//       case NORMAL: reset(false); break;
 
-      case REPLACE: memory[index()] = 0x00; break;
-    }
-  }
+//       case REPLACE: memory[index()] = 0x00; break;
+//     }
+//   }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::BACK).bPressed) return;
+//   template<int32_t U>
+//   void Process(TypeList<Int2Type<olc::Key::BACK>, Int2Type<U>>) {
+//     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+//     if (!GameEngine->GetKey(olc::Key::BACK).bPressed) return;
 
-    bUpdated = true;
+//     bUpdated = true;
 
-    switch (mode) {
-      case CHARACTER: 
-      case DISASSEMBLE: 
-      case NORMAL: if (cmd.size()) cmd.pop_back(); reset(false); break;
+//     switch (mode) {
+//       case CHARACTER: 
+//       case DISASSEMBLE: 
+//       case NORMAL: if (cmd.size()) cmd.pop_back(); reset(false); break;
 
-      case REPLACE: 
-        memory[index()] = (memory[index()] / pages.x) & 0xF0;
-        if (cmd.size()) cmd.pop_back();
-        break;
-    }
-  }
+//       case REPLACE: 
+//         memory[index()] = (memory[index()] / pages.x) & 0xF0;
+//         if (cmd.size()) cmd.pop_back();
+//         break;
+//     }
+//   }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::ENTER).bPressed) return;
+//   template<int32_t U>
+//   void Process(TypeList<Int2Type<olc::Key::ENTER>, Int2Type<U>>) {
+//     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+//     if (!GameEngine->GetKey(olc::Key::ENTER).bPressed) return;
 
-    bUpdated = true;
+//     bUpdated = true;
 
-    switch (mode) {
-      case NORMAL: 
-      case CHARACTER:
-        if (search.bEnabled) { search.nSize = cmd.size() - search.nStartAt; pos = search.vPos; UpdateCursor(); }
+//     switch (mode) {
+//       case NORMAL: 
+//       case CHARACTER:
+//         if (search.bEnabled) { search.nSize = cmd.size() - search.nStartAt; pos = search.vPos; UpdateCursor(); }
 
-        reset(search.bEnabled);
-        break;
+//         reset(search.bEnabled);
+//         break;
 
-      case DISASSEMBLE: 
-      case REPLACE: mode = NORMAL; break;
-    }
-  }
+//       case DISASSEMBLE: 
+//       case REPLACE: mode = NORMAL; break;
+//     }
+//   }
 
-  template<int32_t U>
-  void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    if (!GameEngine->GetKey(olc::Key::ESCAPE).bPressed) return;
+//   template<int32_t U>
+//   void Process(TypeList<Int2Type<olc::Key::ESCAPE>, Int2Type<U>>) {
+//     auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+//     if (!GameEngine->GetKey(olc::Key::ESCAPE).bPressed) return;
 
-    bUpdated = true;
+//     bUpdated = true;
 
-    switch (mode) {
-      case CHARACTER:
-      case DISASSEMBLE:
-      case NORMAL: search.bEnabled = false; reset(false);
-      case REPLACE: mode = NORMAL; break;
-    }
-  }
+//     switch (mode) {
+//       case CHARACTER:
+//       case DISASSEMBLE:
+//       case NORMAL: search.bEnabled = false; reset(false);
+//       case REPLACE: mode = NORMAL; break;
+//     }
+//   }
 
   inline void Move2Addr(uint32_t addr) { Index2Pos(addr & (memory.size() - 1)); UpdateCursor(); }
   inline void MoveTo(olc::vi2d offset) {
     for (int32_t i = 0; i < std::abs(offset.y); i++) {
-      if (offset.y > 0) Command(Int2Type<Editor::VimT::CMD_j>());
-      else Command(Int2Type<Editor::VimT::CMD_k>());
+      // if (offset.y > 0) Command(Int2Type<Editor::VimT::CMD_j>());
+      // else Command(Int2Type<Editor::VimT::CMD_k>());
     }
 
     for (int32_t i = 0; i < std::abs(offset.x); i++) {
-      if (offset.x > 0) Command(Int2Type<Editor::VimT::CMD_l>());
-      else Command(Int2Type<Editor::VimT::CMD_h>());
+      // if (offset.x > 0) Command(Int2Type<Editor::VimT::CMD_l>());
+      // else Command(Int2Type<Editor::VimT::CMD_h>());
     }
   }
 
@@ -788,39 +793,39 @@ public:
   inline std::string GetBindings() { return "memory"; }
 
 private:
-  inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
-    auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
-    bool bPressed = GameEngine->GetKey(key).bPressed;
+  // inline void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
+  //   auto GameEngine = AnyType<-1, PixelGameEngine*>::GetValue();
+  //   bool bPressed = GameEngine->GetKey(key).bPressed;
 
-    if (GameEngine->GetKey(key).bReleased) fStrokeRepeat = .0f;
-    if (GameEngine->GetKey(key).bHeld) {
-      fStrokeRepeat += AnyType<-1, float>::GetValue();
-      if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
-    }
+  //   if (GameEngine->GetKey(key).bReleased) fStrokeRepeat = .0f;
+  //   if (GameEngine->GetKey(key).bHeld) {
+  //     fStrokeRepeat += AnyType<-1, float>::GetValue();
+  //     if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
+  //   }
 
-    if (!bPressed) return;
-    const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
-    const bool isCtrl = GameEngine->GetKey(olc::Key::CTRL).bHeld;
-    const char c = toUpper ? upper : lower;
+  //   if (!bPressed) return;
+  //   const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
+  //   const bool isCtrl = GameEngine->GetKey(olc::Key::CTRL).bHeld;
+  //   const char c = toUpper ? upper : lower;
 
-    bUpdated = true;
+  //   bUpdated = true;
 
-    switch (mode) {
-      case DISASSEMBLE: cmd += isCtrl ? "^" : "";
-      case CHARACTER: case NORMAL: cmd += std::string(1, c); break;
+  //   switch (mode) {
+  //     case DISASSEMBLE: cmd += isCtrl ? "^" : "";
+  //     case CHARACTER: case NORMAL: cmd += std::string(1, c); break;
 
-      // case REPLACE: {
-      //   if (!Utils::IsHexDigit(c)) { memory[index()] = c & 0xFF; mode = NORMAL; break; }
+  //     // case REPLACE: {
+  //     //   if (!Utils::IsHexDigit(c)) { memory[index()] = c & 0xFF; mode = NORMAL; break; }
 
-      //   memory[index()] = ((memory[index()] & 0x0F) << 4) | Utils::Hex2Int(c);
-      //   // TODO: Fix some strange behavior with cmd 'r12'
+  //     //   memory[index()] = ((memory[index()] & 0x0F) << 4) | Utils::Hex2Int(c);
+  //     //   // TODO: Fix some strange behavior with cmd 'r12'
 
-      //   cmd.push_back(c);
-      //   if (cmd.size() - search.nStartAt == search.nSize) mode = NORMAL;
-      //   break;
-      // }
-    }
-  }
+  //     //   cmd.push_back(c);
+  //     //   if (cmd.size() - search.nStartAt == search.nSize) mode = NORMAL;
+  //     //   break;
+  //     // }
+  //   }
+  // }
 
   void UpdateCursor() {
     const int32_t posAt = index(); cursor.y = 0;
@@ -832,16 +837,16 @@ private:
     cursor.y = dasm.second[cursor.y];
   }
 
-  template<int32_t T = Editor::VimT::CMD_NONE>
-  void number(Int2Type<T> val = Int2Type<T>()) {
-    int32_t nCurr = 0; while (Utils::IsDigit(peek(nCurr))) nCurr++;
-    if (nCurr == 0) return;
+  // template<int32_t T = Editor::VimT::CMD_NONE>
+  // void number(Int2Type<T> val = Int2Type<T>()) {
+  //   int32_t nCurr = 0; while (Utils::IsDigit(peek(nCurr))) nCurr++;
+  //   if (nCurr == 0) return;
 
-    auto len = std::stoul(cmd.substr(0, nCurr)); if (len == 0) return;
+  //   auto len = std::stoul(cmd.substr(0, nCurr)); if (len == 0) return;
 
-    auto prev = lambda;
-    lambda = [=]() { for (int32_t i = 0; i < len; i++) { if (i) Command(val); prev(); } };
-  }
+  //   auto prev = lambda;
+  //   lambda = [=]() { for (int32_t i = 0; i < len; i++) { if (i) Command(val); prev(); } };
+  // }
 
   inline int32_t index() { return index(pos.x, pos.y); }
   inline int32_t index(olc::vi2d pos) { return index(pos.x, pos.y); }

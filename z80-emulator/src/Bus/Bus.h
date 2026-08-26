@@ -1,9 +1,25 @@
 #pragma once
-#include "Cpu.h"
+
+#include "include/LuaScript.h"
+#include "src/Bus/Cpu.h"
+#include "src/Bus/Defs.h"
+#include "src/Bus/Device.h"
+#include "src/Bus/HexDisplay.h"
+#include "src/Bus/InterruptVector.h"
+#include "src/Bus/Keyboard.h"
+#include "src/Bus/Lcd.h"
+#include "src/Bus/Led.h"
+#include "src/Bus/Memory.h"
+#include "src/Bus/PIT.h"
+#include "src/Bus/PPI.h"
+#include "src/Bus/RTC.h"
+#include "src/Bus/Switch.h"
+#include "src/Window/Window.h"
+
 
 namespace Bus {
 
-// #define BIT(word, pos) ((word >> pos) & 0x01)
+#define BIT(word, pos) ((word >> pos) & 0x01)
 class Bus : public Window::Window, public Device {
 private:
   struct MUX { 

@@ -1,6 +1,11 @@
 #pragma once
-#include "RTC.h"
 
+#include "include/Foreach.h"
+#include "src/Bus/Defs.h"
+#include "src/Bus/Device.h"
+#include "src/Utils/Utils.h"
+#include "src/Window/Window.h"
+#include <condition_variable>
 
 namespace Bus {
 
@@ -113,7 +118,7 @@ private:
       }
 
       AnyType<-1, int32_t>::GetValue() = Read();
-      foreach<Instructions, CPU>::Key2Process(this);
+      // foreach<Instructions, CPU>::Key2Process(this); // FIXME:
       std::this_thread::sleep_for(std::chrono::nanoseconds(clock));
 
 
@@ -184,32 +189,32 @@ public:
 
   inline void Process(Int2Type<Instruction::BIT_INSTR>) {
     AnyType<-1, int32_t>::GetValue() = Read();
-    foreach<BitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::BIT_INSTR>());
+    // foreach<BitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::BIT_INSTR>()); // FIXME:
   }
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>) {
     AnyType<-1, int32_t>::GetValue() = Read();
-    foreach<MiscMInstructions, CPU>::Key2Process(this, Int2Type<Instruction::MISC_INSTR>());
+    // foreach<MiscMInstructions, CPU>::Key2Process(this, Int2Type<Instruction::MISC_INSTR>()); // FIXME:
   }
 
   inline void Process(Int2Type<Instruction::IX_INSTR>) {
     AnyType<-1, int32_t>::GetValue() = Read();
-    foreach<IxInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IX_INSTR>());
+    // foreach<IxInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IX_INSTR>()); // FIXME:
   }
 
   inline void Process(Int2Type<Instruction::IY_INSTR>) {
     AnyType<-1, int32_t>::GetValue() = Read();
-    foreach<IyInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IY_INSTR>());
+    // foreach<IyInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IY_INSTR>()); // FIXME:
   }
 
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>) {
     AnyType<-1, int32_t>::GetValue() = Read();
-    foreach<IxBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IX_INSTR>(), Int2Type<IxInstruction::IxBitInstr>());
+    // foreach<IxBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IX_INSTR>(), Int2Type<IxInstruction::IxBitInstr>()); // FIXME:
   }
 
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>) {
     AnyType<-1, int32_t>::GetValue() = Read();
-    foreach<IyBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IY_INSTR>(), Int2Type<IyInstruction::IyBitInstr>());
+    // foreach<IyBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IY_INSTR>(), Int2Type<IyInstruction::IyBitInstr>()); // FIXME:
   }
 
 

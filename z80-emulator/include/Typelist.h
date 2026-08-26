@@ -1,8 +1,7 @@
 #pragma once
-#include <functional>
+
 #include <string>
 #include <typeindex>
-
 
 struct NullType {};
 
@@ -48,8 +47,6 @@ struct TypeList<TypeList<T, Int2Type<Y>>, std::array<U, +Y>> {
   ArrT& operator = (ArrT& c) { return val = c; }
   ArrT& operator* () { return val; }
 };
-
-
 
 template <typename... Args>
 struct ListT;
@@ -222,19 +219,19 @@ struct AnyListType {
 // 	}
 // }
 
-template<typename T>
-struct Recursive {
-    std::function<Recursive<T>(T)> internal_fn;
+// template<typename T>
+// struct Recursive {
+//     std::function<Recursive<T>(T)> internal_fn;
 
-    Recursive operator()(T arg) const {
-        if (internal_fn) return internal_fn(arg);
-        return { nullptr };
-    }
+//     Recursive operator()(T arg) const {
+//         if (internal_fn) return internal_fn(arg);
+//         return { nullptr };
+//     }
 
-    template <typename F>
-    Recursive(F&& f) : internal_fn(std::forward<F>(f)) {}
-    Recursive(std::nullptr_t) : internal_fn(nullptr) {}
+//     template <typename F>
+//     Recursive(F&& f) : internal_fn(std::forward<F>(f)) {}
+//     Recursive(std::nullptr_t) : internal_fn(nullptr) {}
 
-    bool operator==(std::nullptr_t) const { return internal_fn == nullptr; }
-    bool operator!=(std::nullptr_t) const { return internal_fn != nullptr; }
-};
+//     bool operator==(std::nullptr_t) const { return internal_fn == nullptr; }
+//     bool operator!=(std::nullptr_t) const { return internal_fn != nullptr; }
+// };

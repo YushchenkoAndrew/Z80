@@ -1,7 +1,8 @@
 #pragma once
-#include "HexDisplay.h"
-#include "src/Defs.h"
 
+#include "src/Bus/Bus.h"
+#include "src/Bus/Device.h"
+#include "src/Window/Window.h"
 namespace Bus {
 
 #define BIT_M(flag, n) (((uint8_t)flag) << n)
@@ -47,13 +48,14 @@ public:
       return 0x00;
     }
 
-    AnyType<-1 , int32_t>::GetValue() = data;
-    auto c = foreach<LcdChars, AnyType<-1 , int32_t>>::Key2Value();
-    for (int32_t j = 0; j < LCD_SEGMENT_SIZE; j++) buffer[cursor.second][j] = c.val[j];
+    // FIXME:
+    // AnyType<-1 , int32_t>::GetValue() = data;
+    // auto c = foreach<LcdChars, AnyType<-1 , int32_t>>::Key2Value();
+    // for (int32_t j = 0; j < LCD_SEGMENT_SIZE; j++) buffer[cursor.second][j] = c.val[j];
 
-    // TODO: Impl shift
-    // Instruction(Int2Type<CURSOR>(), BIT_M(shift, 3) | BIT_M(inc, 2));
-    Instruction(Int2Type<CURSOR>(), BIT_M(inc, 2));
+    // // TODO: Impl shift
+    // // Instruction(Int2Type<CURSOR>(), BIT_M(shift, 3) | BIT_M(inc, 2));
+    // Instruction(Int2Type<CURSOR>(), BIT_M(inc, 2));
     return data;
   }
 

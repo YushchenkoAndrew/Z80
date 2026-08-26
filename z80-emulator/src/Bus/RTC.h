@@ -1,5 +1,7 @@
 #pragma once
-#include "Memory.h"
+
+#include "src/Bus/Defs.h"
+#include "src/Bus/Memory.h"
 
 namespace Bus {
 

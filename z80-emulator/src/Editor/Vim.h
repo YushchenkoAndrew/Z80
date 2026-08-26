@@ -1,10 +1,8 @@
 #pragma once
-#include "Defs.h"
-#include "include/Typelist.h"
-#include "src/Defs.h"
+
+#include "src/Interpreter/Token.h"
 #include "src/Utils/Utils.h"
-#include <cstdint>
-#include <string>
+#include "src/Window/Command.h"
 
 namespace Editor {
 

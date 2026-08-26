@@ -1,5 +1,10 @@
 #pragma once
 
+#include "lib/olcPGEX_Sound.h"
+#include "src/Bus/Bus.h"
+#include "src/Bus/Device.h"
+#include "src/Window/Window.h"
+
 namespace Bus {
 
 #define CT0(p)  std::get<0>(p)

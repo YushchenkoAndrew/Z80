@@ -42,17 +42,18 @@ namespace Interpreter {
  */
 class Parser {
 public:
-  Parser(): lexer(Lexer()) {}
-  Parser(Lexer l): lexer(l) {}
-
+  Parser(Lexer& l): lexer(l) {}
   ~Parser() { reset(); }
 
-  bool scan(std::string src) {
+  std::list<std::string> scan(std::string src) {
     reset();
 
-    if (lexer.scan(src)) { errors.insert(errors.end(), lexer.errors.begin(), lexer.errors.end()); return true; }
-    program();
-    return errors.size();
+    const auto err = lexer.scan(src);
+    if (err.size()) return err;
+
+    for (auto token : lexer.tokens) { token.print(); }
+
+    return (program(), errors);
   }
 
 private:
@@ -1072,15 +1073,14 @@ private:
     errors.push_back(ss.str());
   }
 
+private:
+  Lexer& lexer;
+
+  int32_t curr = 0; // index of the token, which is pointing to the curr token
+  std::list<std::string> errors;
 
 public:
-  Lexer lexer;
-
-  std::vector<Statement> stmt;
-  std::vector<std::string> errors;
-
-private:
-  int32_t curr = 0; // index of the token, which is pointing to the curr token
+  std::list<Statement> stmt;
 };
 
 };

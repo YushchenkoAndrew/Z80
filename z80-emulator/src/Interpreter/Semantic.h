@@ -8,6 +8,7 @@
 #include "src/Interpreter/Expression/ExpressionLiteral.h"
 #include "src/Interpreter/Expression/ExpressionUnary.h"
 #include "src/Interpreter/Expression/ExpressionVariable.h"
+#include "src/Interpreter/Parser.h"
 #include "src/Interpreter/Statement/StatementAddress.h"
 #include "src/Interpreter/Statement/StatementAllocate.h"
 #include "src/Interpreter/Statement/StatementNoArgCommand.h"
@@ -24,54 +25,16 @@ namespace Interpreter {
 
 class Semantic : public Visitor<SemanticToken> {
 public:
-  Semantic() {}
+  Semantic(Parser& p): parser(p) {}
 
+  std::list<std::string> scan(std::string src) {
+    errors.clear();
 
-  // Interpreter(uint32_t a, std::shared_ptr<VariableT> v): parser(Parser()), vars(nullptr), env(a) { env.vars = v; }
-  // Interpreter(): parser(Parser()), env(0) { env.vars = vars; }
-  // Interpreter(Parser p): parser(p), vars(), env(0) { env.vars = vars; }
+    const auto err = parser.scan(src);
+    if (err.size()) return err;
 
-  // bool Load(std::string path) {
-  //   filedir = std::filesystem::path(path).remove_filename();
-
-  //   filepath = std::filesystem::canonical(path);
-  //   filename = std::filesystem::path(path).filename();
-
-  //   std::ifstream f(path); std::stringstream buf;
-  //   buf << f.rdbuf(); f.close();
-
-  //   return scan((buf.str()));
-  // }
-
-  bool scan(std::string src) {
-    // errors.clear();
-
-    // if (parser.scan(src)) { 
-    //   for (auto& err : parser.errors) errors.push_back("File '" + filename.string() + "' " + err);
-    //   return true;
-    // }
-
-    // if (vars == nullptr) {
-    //   env.reset();
-    //   for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
-    //   return errors.size();
-    // }
-
-    // // NOTE: Main loop linker + final result
-    // env.reset(); unlock(); 
-    // for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
-
-    // // Interpreter
-    // env.reset(); lock();
-    // for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
-
-
-    // for (auto& var : env.unknown) {
-    //   error(nullptr, "Unknown variable '" + var + "'.");
-    // }
-
-    return false;
-    // return errors.size();
+    for (Expression& stmt : parser.stmt) evaluate(&stmt);
+    return errors;
   }
 
   SemanticToken visitExprLiteral(ExpressionLiteral* expr) override {
@@ -176,6 +139,7 @@ public:
     //     env.define(stmt->label->lexeme, Int2Bytes(env.addr));
     //     return {};
 
+
     //   case StatementVariable::TypeT::DEFINITION: 
     //     env.define(stmt->label->lexeme, evaluate(stmt->definition.get()));
     //     return {};
@@ -197,16 +161,9 @@ private:
     return SemanticToken();
   }
 
-public:
-  // Environment env;
-  // Parser parser;
-
-  // std::filesystem::path filedir;
-  // std::filesystem::path filepath;
-  // std::filesystem::path filename;
-
-  // std::shared_ptr<VariableT> vars = std::make_shared<VariableT>(false, std::unordered_map<std::string, MemoryT>()); // first is shown if vars is locked or not
-  std::vector<std::string> errors;
+private:
+  Parser& parser;
+  std::list<std::string> errors;
 };
 
 };

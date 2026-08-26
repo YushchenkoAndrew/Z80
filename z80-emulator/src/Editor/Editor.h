@@ -1,8 +1,8 @@
 #pragma once
-#include "Vim.h"
-#include "src/Defs.h"
-#include <cstdint>
 
+#include "src/Editor/Vim.h"
+#include "src/Interpreter/Lexer.h"
+#include "src/Window/Window.h"
 
 namespace Editor {
 #define PATH(e)     std::get<0>(e)
@@ -30,7 +30,8 @@ public:
     tabs.push_back(std::tuple(path, filename, Interpreter::Lexer(), Vim()));
 
     auto& tab = tabs.back(); nTab = tabs.size() - 1;
-    LEXER(tab).scan(buf.str()); VIM(tab).Load(buf.str());
+    auto context = buf.str();
+    LEXER(tab).scan(context); VIM(tab).Load(buf.str());
     return this;
   }
 
@@ -45,7 +46,7 @@ public:
   }
   
 
-  inline void Select(DimensionT dimensions) {
+  inline void Select(DimensionT dimensions) override {
     VIM(tabs[nTab]).Select();
 
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
@@ -53,10 +54,10 @@ public:
 
   const ::Window::StrokeT<>& GetCommands() const override { return VIM(tabs[nTab]).GetCommands(); }
     
-  void Lock() { Utils::Lock l(mutex); for (auto& tab : tabs) VIM(tab).Lock(); }
-  void Unlock() { Utils::Lock l(mutex); for (auto& tab : tabs) VIM(tab).Unlock(); }
+  void Lock() override { Utils::Lock l(mutex); for (auto& tab : tabs) VIM(tab).Lock(); }
+  void Unlock() override { Utils::Lock l(mutex); for (auto& tab : tabs) VIM(tab).Unlock(); }
 
-  void Preprocess() {
+  void Preprocess() override {
     Utils::Lock l(mutex);
     auto& vim = VIM(tabs[nTab]);
 
@@ -71,7 +72,7 @@ public:
     if ((cursor.x - vStartAt.x - 1 < 0 && cursor.x) || (!cursor.x && cursor.x != vStartAt.x)) vStartAt.x--;
   }
 
-  void Process(PixelGameEngine* GameEngine) {
+  void Process(PixelGameEngine* GameEngine) override {
     Utils::Lock l(mutex);
 
     const auto mouse = GameEngine->GetMousePos();
@@ -112,12 +113,12 @@ public:
     // for (auto& err : lexer.errors) printf("LEXER: %s", err.c_str());
   }
 
-  void SelectHighlight(int32_t i) { 
+  void SelectHighlight(int32_t i) override { 
     Utils::Lock l(mutex);
     if (i <= tabs.size() && i >= 1) nTab = i - 1;
   }
 
-  void Highlight(PixelGameEngine* GameEngine) {
+  void Highlight(PixelGameEngine* GameEngine) override {
     Utils::Lock l(mutex);
 
     auto pos = olc::vi2d(absolute.x, absolute.y + vOffset.y + vStep.y);
@@ -133,7 +134,7 @@ public:
     }
   }
 
-  void Draw(PixelGameEngine* GameEngine) {
+  void Draw(PixelGameEngine* GameEngine) override {
     Utils::Lock l(mutex);
     auto& vim = VIM(tabs[nTab]); auto& lexer = LEXER(tabs[nTab]);
 
@@ -199,7 +200,7 @@ public:
         vim.IsSelected(vStartAt.y + i) ? Color::RED : 
         (cursor.y - vStartAt.y == i ? Color::GREY : Color::DARK_GREY);
 
-      GameEngine->DrawString(line, str, *color);
+      GameEngine->DrawString(line, str, color);
     }
 
     pos = olc::vi2d(absolute.x, absolute.y + nHeight + vOffset.y);
@@ -225,9 +226,9 @@ public:
     return filename.substr(0, nWidth);
   }
 
-  inline std::string GetId() { return typeid(this).name(); }
-  inline std::string GetName() { return "vim"; }
-  inline std::string GetBindings() { return "editor"; }
+  inline std::string GetId() override { return typeid(this).name(); }
+  inline std::string GetName() override { return "vim"; }
+  inline std::string GetBindings() override { return "editor"; }
   inline std::string File() { Utils::Lock l(mutex); return PATH(tabs[nTab]); }
   inline void SelectLine(int32_t line) { Utils::Lock l(mutex); VIM(tabs[nTab]).SelectLine(line); }
 
