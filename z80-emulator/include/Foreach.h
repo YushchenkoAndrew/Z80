@@ -1,6 +1,7 @@
 #pragma once
 
 #include "include/Typelist.h"
+#include <memory>
 
 // template<class T, class U, class Arg0 = NullType> 
 // struct foreach;
@@ -181,13 +182,6 @@ struct foreach<NullType, R> {
 
 	template<class Y>
 	static inline R Process(Y*, int32_t) { return R(); }
-
-	// template<class Y>
-	// static inline bool Process(Y* ref, const std::vector<int32_t>& sequence) { return false; }
-
-	// static inline int8_t PartOf(const std::vector<int32_t>& sequence, size_t index) {
-  //   return index == sequence.size() ? 1 : -1;
-	// }
 };
 
 // template<class R>

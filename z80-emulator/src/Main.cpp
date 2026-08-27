@@ -57,7 +57,7 @@ public:
     // interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
 
     auto editor = std::make_shared<Editor::Editor>();
-    // for (auto f : interpreter.env.files()) editor->Open(f);
+    for (auto f : interpreter.files()) editor->Open(f);
     // editor->Open(interpreter.filepath);
 
 
@@ -515,7 +515,7 @@ private:
   inline bool match(char c) { if (peek() == c) { advance(); return true; } return false; }
 
   void Compile(std::string filepath) {
-    const auto errors = interpreter.load(filepath).scan();
+    const auto& errors = interpreter.load(filepath).scan();
     if (!errors.size()) return;
 
     #ifdef DEBUG_MODE 

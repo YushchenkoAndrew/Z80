@@ -43,7 +43,7 @@ enum TokenT {
   CMD_SCF,  CMD_SET,  CMD_SLA,  CMD_SRA,  CMD_SRL,  CMD_SUB,   CMD_XOR,
 
   // Operations
-  OP_ORG, OP_DB, OP_DW, OP_EQU, OP_INCLUDE,
+  OP_ORG, OP_DB, OP_DW, OP_EQU, OP_INCLUDE, OP_DEFINE,
 
   OP_EOF, OP_NONE
 };

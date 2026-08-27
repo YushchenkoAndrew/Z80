@@ -10,13 +10,9 @@ public:
   ExpressionLiteral(Token& t, uint32_t bytes):
     token(std::move(t)), bytes(bytes) {}
 
-  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitExprLiteral(this);
   }
-
-public:
-  SemanticToken semantic;
-  SemanticToken& GetSemantic() override { return semantic; }
 
 public:
   Token token;

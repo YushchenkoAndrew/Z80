@@ -14,11 +14,11 @@ public:
 
   Interpreter& load(std::filesystem::path path) { return (preprocessor.scan(path), *this); }
 
+  std::unordered_set<std::filesystem::path>& files() { return preprocessor.files; }
+
   std::list<std::string> scan() { return scan(preprocessor.source); }
   std::list<std::string> scan(std::string src) {
-    printf("%s\n", src.c_str());
-
-    const auto err = semantic.scan(src);
+    const auto& err = semantic.scan(src);
     if (err.size()) return err;
 
 //     if (parser.scan(src)) { 

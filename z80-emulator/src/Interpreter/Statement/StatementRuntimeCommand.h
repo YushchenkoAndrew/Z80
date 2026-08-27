@@ -1,39 +1,34 @@
 #pragma once
 
 #include "src/Interpreter/Expression/Expression.h"
-#include "src/Interpreter/Statement/Statement.h"
 #include "src/Interpreter/Token.h"
 #include <list>
 
 namespace Interpreter {
 
 
-class StatementRuntimeCommand : public Statement {
+class StatementRuntimeCommand : public Expression {
 public:
   StatementRuntimeCommand(
     Token token,
-    Expression arg,
+    std::unique_ptr<Expression> arg,
     std::function<uint32_t(uint32_t arg1, uint32_t arg2)> calc
-  ): token(token), args({ arg }), calc(calc) {}
+  ): token(token), calc(calc) { args.push_back(std::move(arg)); }
 
   StatementRuntimeCommand(
     Token token,
-    Expression arg1,
-    Expression arg2,
+    std::unique_ptr<Expression> arg1,
+    std::unique_ptr<Expression> arg2,
     std::function<uint32_t(uint32_t arg1, uint32_t arg2)> calc
-  ): token(token), args({ arg1, arg2 }), calc(calc) {}
+  ): token(token), calc(calc) { args.push_back(std::move(arg1)); args.push_back(std::move(arg2)); }
 
-  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitStmtRuntimeCommand(this);
   }
 
 public:
-  SemanticToken semantic;
-  SemanticToken& GetSemantic() override { return semantic; }
-
-public:
   Token token;
-  std::list<Expression> args;
+  std::list<std::unique_ptr<Expression>> args;
   const std::function<uint32_t(uint32_t arg1, uint32_t arg2)> calc;
 };
 

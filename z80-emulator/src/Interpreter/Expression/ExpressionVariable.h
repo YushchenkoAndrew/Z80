@@ -10,13 +10,9 @@ public:
   ExpressionVariable(Token t, Token l, uint8_t bytes):
     token(t), length(l), bytes(bytes) {}
   
-  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitExprVariable(this);
   }
-
-public:
-  SemanticToken semantic;
-  SemanticToken& GetSemantic() override { return semantic; }
 
 public:
   Token token;

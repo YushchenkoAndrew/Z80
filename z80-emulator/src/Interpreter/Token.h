@@ -21,11 +21,12 @@ public:
   void print() { 
     const auto& [name, _] = GetMetadata(type);
 
-    if (!std::strlen(name)) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", type, lexeme.c_str(), literal.c_str(), line, col);
-    else printf("{ type: '%s'; lexeme: '%s'; literal: '%s' } Ln %d, Col %d\n", name, lexeme.c_str(), literal.c_str(), line, col);
+    if (!std::strlen(name)) printf("{ type: %d; lexeme: '%s'; literal: '%s' } Ln %d Col %d\n", type, lexeme.c_str(), literal.c_str(), line, col);
+    else printf("{ type: '%s'; lexeme: '%s'; literal: '%s' } Ln %d Col %d\n", name, lexeme.c_str(), literal.c_str(), line, col);
   }
 
   static const TokenT GetToken(std::string lexeme) {
+    for (char& c: lexeme) c = std::toupper(c);
     for (const auto& [token, info] : metadata) {
       if (info.first == lexeme) return token;
     }
@@ -50,7 +51,8 @@ public:
 private:
 static inline const std::unordered_map<TokenT, MetadataT> metadata = {
     { TokenT::NONE,       { "",         Color::WHITE } },
-    { TokenT::OP_INCLUDE, { "#include", Color::CYAN } },
+    { TokenT::OP_INCLUDE, { "#INCLUDE", Color::BLUE } },
+    { TokenT::OP_DEFINE,  { "#DEFINE",  Color::BLUE } },
 
     { TokenT::OP_ORG, { "ORG", Color::CYAN } },
     { TokenT::OP_DB,  { "DB",  Color::CYAN } },
@@ -160,7 +162,7 @@ static inline const std::unordered_map<TokenT, MetadataT> metadata = {
     { TokenT::REG_H$,{ "H'",  Color::DARK_YELLOW } },
     { TokenT::REG_L$,{ "L'", Color::DARK_YELLOW } },
 
-    { TokenT::FLAG_C,  { "C",  Color::BLUE } },
+    // { TokenT::FLAG_C,  { "C",  Color::BLUE } },
     { TokenT::FLAG_M,  { "M",  Color::BLUE } },
     { TokenT::FLAG_NC, { "NC", Color::BLUE } },
     { TokenT::FLAG_NZ, { "NZ", Color::BLUE } },

@@ -7,20 +7,16 @@ namespace Interpreter {
 
 class ExpressionBinary : public Expression {
 public:
-  ExpressionBinary(Expression left, Token op, Expression right):
+  ExpressionBinary(std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right):
     left(std::move(left)), op(op), right(std::move(right)) {}
 
-  inline SemanticToken accept(Visitor<SemanticToken>* visitor) override {
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
     return visitor->visitExprBinary(this);
   }
 
 public:
-  SemanticToken semantic;
-  SemanticToken& GetSemantic() override { return semantic; }
-
-public:
-  Expression left;
-  Expression right;
+  std::unique_ptr<Expression> left;
+  std::unique_ptr<Expression> right;
   Token op;
 };
 

@@ -27,13 +27,13 @@ class Semantic : public Visitor<SemanticToken> {
 public:
   Semantic(Parser& p): parser(p) {}
 
-  std::list<std::string> scan(std::string src) {
+  std::list<std::string> scan(std::string& src) {
     errors.clear();
 
-    const auto err = parser.scan(src);
+    const auto& err = parser.scan(src);
     if (err.size()) return err;
 
-    for (Expression& stmt : parser.stmt) evaluate(&stmt);
+    for (auto& stmt : parser.stmt) evaluate(stmt.get());
     return errors;
   }
 
@@ -55,8 +55,8 @@ public:
   }
 
   SemanticToken visitExprBinary(ExpressionBinary* expr) override {
-    auto left = evaluate(&expr->left);
-    auto right = evaluate(&expr->right);
+    auto left = evaluate(expr->left.get());
+    auto right = evaluate(expr->right.get());
 
     if (expr->op.type == TokenT::CONCATENATE) return SemanticToken(expr->op, left.bytes + right.bytes, false);
 
@@ -72,7 +72,7 @@ public:
   }
 
   SemanticToken visitExprUnary(ExpressionUnary* expr) override {
-    auto right = evaluate(&expr->right);
+    auto right = evaluate(expr->right.get());
     // if (right.type != SemanticToken::Type::VALUE) return error(expr->op, "Unary value must be a simple value");
 
     switch (expr->op.type) {
@@ -97,7 +97,7 @@ public:
   }
 
   SemanticToken visitStmtAddress(StatementAddress* stmt) override {
-    auto right = evaluate(&stmt->expr);
+    auto right = evaluate(stmt->expr.get());
 
     // ? I think I need this value to determine the offset .....
     if (right.bytes > 2) return error(stmt->label, "Address byte size exceeded allowed size.");
@@ -107,8 +107,8 @@ public:
   SemanticToken visitStmtAllocate(StatementAllocate* stmt) override {
     uint32_t bytes = 0;
 
-    for (auto& el : stmt->data) {
-      bytes += (evaluate(&el).bytes << (stmt->size - 1));
+    for (auto& it : stmt->data) {
+      bytes += (evaluate(it.get()).bytes << (stmt->size - 1));
     }
 
     return SemanticToken(stmt->token, bytes, false);
@@ -119,13 +119,13 @@ public:
   }
 
   SemanticToken visitStmtOneArgCommand(StatementOneArgCommand* stmt) override {
-    SemanticToken expr = evaluate(&stmt->expr);
+    SemanticToken expr = evaluate(stmt->expr.get());
     return SemanticToken(stmt->token, Utils::SizeOf(stmt->opcode) + expr.bytes, false);
   }
 
   SemanticToken visitStmtRuntimeCommand(StatementRuntimeCommand* stmt) override {
     uint32_t bytes = 0;
-    for (auto& arg : stmt->args) bytes += evaluate(&arg).bytes;
+    for (auto& arg : stmt->args) bytes += evaluate(arg.get()).bytes;
 
     uint32_t opcode = stmt->calc(0, 0);
     if (!opcode) error(stmt->token, "Invalid lambda operation.");

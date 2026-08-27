@@ -1,7 +1,10 @@
 #pragma once
 
+#include "include/LuaScript.h"
 #include "src/Defs.h"
+#include "src/Editor/Popup.h"
 #include "src/Window/Command.h"
+#include "src/Window/Window.h"
 
 template <class T>
 using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, DimensionT, int32_t>;
