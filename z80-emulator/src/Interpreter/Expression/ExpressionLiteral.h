@@ -14,6 +14,10 @@ public:
     return visitor->visitExprLiteral(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitExprLiteral(this);
+  }
+
 public:
   Token token;
   uint32_t bytes;

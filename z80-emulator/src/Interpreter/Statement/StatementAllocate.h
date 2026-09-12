@@ -14,6 +14,10 @@ public:
     return visitor->visitStmtAllocate(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitStmtAllocate(this);
+  }
+
 public:
   uint8_t size;
   Token token;

@@ -14,6 +14,10 @@ public:
     return visitor->visitExprBinary(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitExprBinary(this);
+  }
+
 public:
   std::unique_ptr<Expression> left;
   std::unique_ptr<Expression> right;

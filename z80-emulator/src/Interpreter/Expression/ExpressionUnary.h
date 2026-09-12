@@ -14,6 +14,10 @@ public:
     return visitor->visitExprUnary(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitExprUnary(this);
+  }
+
 public:
   Token op;
   std::unique_ptr<Expression> right;

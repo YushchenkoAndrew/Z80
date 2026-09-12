@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <iomanip>
 #include <mutex>
@@ -30,6 +32,10 @@ namespace Utils {
   inline std::pair<bool, uint32_t> Str2Uint(std::string& str) {
     try { return { true, std::stoul(str)}; } 
     catch (...) { return { false, 0 }; } 
+  }
+
+  inline uint32_t TruncateInt(uint32_t val, size_t size) {
+    return ((uint32_t)std::pow(2, size * 8) - 1) & val;
   }
 
   inline uint32_t SizeOf(uint32_t value) {

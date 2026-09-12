@@ -1,57 +1,23 @@
 #pragma once
 
-#include "lib/olcPixelGameEngine.h"
+#include "src/Interpreter/Reader.h"
 #include "src/Utils/Utils.h"
 #include <cstdint>
+#include <filesystem>
+#include <list>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 
 namespace Interpreter {
-
 class Preprocessor {
 public:
   Preprocessor() {}
   ~Preprocessor() { files.clear(); }
 
   void scan(std::filesystem::path file) {
-    const auto filedir = std::filesystem::path(file).remove_filename();
-    curr = 0; files.clear(); source = read(file);
-
-    while (!isAtEnd()) {
-      const int32_t started_at = curr; const char c = advance();
-
-      if (c == ';') { advance('\n'); continue; }
-      if (c == '#') {
-        if (match("include")) {
-          advance('"'); // find the file path
-          const auto filepath = string(advance());
-
-          source.erase(started_at, curr - started_at);
-          source.insert(curr = started_at, read(filedir / filepath));
-          continue;
-        }
-
-        if (match("define")) {
-          whitespace(); const auto name = identifier();
-          whitespace(); const auto args = arguments();
-          whitespace(); const auto code = snippet();
-
-          macros[name] = std::pair(args, code);
-          source.erase(started_at, curr - started_at);
-          continue;
-        }
-      }
-    }
-
-    return snippets();
-  }
-
-
-private:
-  void snippets() {
-    curr = 0;
+    auto reader = Reader(file);
+    curr = 0; source = reader.source; files = reader.files;
 
     while (!isAtEnd()) {
       const int32_t started_at = curr; const char c = advance();
@@ -89,15 +55,8 @@ private:
     }
   }
 
-  std::string read(std::filesystem::path path) {
-    if (!std::filesystem::exists(path)) return "";
 
-    std::ifstream file(path); std::stringstream buffer;
-    buffer << file.rdbuf(); file.close(); 
-
-    return (files.insert(path.lexically_normal()), buffer.str());
-  }
-
+private:
   std::string string(const char c) {
     const auto started_at = curr;
     while (peek() != c && !isAtEnd()) advance();

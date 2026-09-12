@@ -14,6 +14,10 @@ public:
     return visitor->visitStmtOneArgCommand(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitStmtOneArgCommand(this);
+  }
+
 public:
   const uint32_t opcode;
   Token token;

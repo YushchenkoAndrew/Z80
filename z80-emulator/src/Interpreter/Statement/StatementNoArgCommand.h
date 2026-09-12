@@ -13,6 +13,10 @@ public:
     return visitor->visitStmtNoArgCommand(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitStmtNoArgCommand(this);
+  }
+
 public:
   const uint32_t opcode;
   Token token;

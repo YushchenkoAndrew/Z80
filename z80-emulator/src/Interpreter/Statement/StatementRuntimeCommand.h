@@ -26,6 +26,10 @@ public:
     return visitor->visitStmtRuntimeCommand(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitStmtRuntimeCommand(this);
+  }
+
 public:
   Token token;
   std::list<std::unique_ptr<Expression>> args;

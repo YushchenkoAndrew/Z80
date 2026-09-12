@@ -17,9 +17,6 @@
 #include "src/Interpreter/Statement/StatementVariable.h"
 #include "src/Interpreter/Token.h"
 #include "src/Utils/Utils.h"
-#include <algorithm>
-#include <cstdint>
-#include <string>
 
 namespace Interpreter {
 
@@ -34,6 +31,17 @@ public:
     if (err.size()) return err;
 
     for (auto& stmt : parser.stmt) evaluate(stmt.get());
+
+    for (const auto& [label, expr]: refs) {
+      const auto def = vars.find(label);
+
+      if (def != vars.end()) expr->semantic.bytes = def->second->semantic.bytes;
+      else {
+        if (label == "$") expr->semantic.bytes = 2;
+        else error("Variable '" + label + "' is not defined.");
+      }
+    }
+
     return errors;
   }
 
@@ -83,17 +91,11 @@ public:
   }
 
   SemanticToken visitExprVariable(ExpressionVariable* expr) override {
-    // int32_t size = expr->length != nullptr ? std::stol(expr->length->literal) : expr->size;
-    // if (!size && !env.has(expr->token->lexeme)) {
-    //   error(expr->token, "Variable byte size need to be explicitly defined.");
-    //   return {};
-    // }
+    const auto [valid, value] = expr->length.type == TokenT::NUMBER ? Utils::Str2Uint(expr->length.literal) : std::pair(true, expr->bytes);
+    if (!valid) return error(expr->label, "Invalid size format.");
 
-    // auto bytes = env.get(expr->token->lexeme, size);
-    // if (!size || bytes.size() == size) return bytes;
-
-    // error(expr->token, "Variable byte size exceeded allowed size.");
-    return {};
+    refs[expr->label.lexeme] = expr;
+    return SemanticToken(expr->label, 0, false);
   }
 
   SemanticToken visitStmtAddress(StatementAddress* stmt) override {
@@ -134,36 +136,34 @@ public:
   }
 
   SemanticToken visitStmtVariable(StatementVariable* stmt) override {
-    // switch (stmt->type) {
-    //   case StatementVariable::TypeT::ADDRESS:
-    //     env.define(stmt->label->lexeme, Int2Bytes(env.addr));
-    //     return {};
+    vars[stmt->label.lexeme] = stmt;
 
-
-    //   case StatementVariable::TypeT::DEFINITION: 
-    //     env.define(stmt->label->lexeme, evaluate(stmt->definition.get()));
-    //     return {};
-    // }
-
-    // error(nullptr, "Invalid variable.");
-    return {};
+    const auto bytes = stmt->type == StatementVariable::TypeT::DEFINITION ? evaluate(stmt->definition.get()).bytes : 2;
+    return SemanticToken(stmt->label, bytes, true);
   }
 
   SemanticToken visitExprUnknown(Expression* expr) override {
-    auto empty = Token();
-    return error(empty, "Unknown operation.");
+    return error("Unknown operation.");
   }
 
 private:
+  SemanticToken error(std::string message) {
+    errors.push_back("[Ln 1] Error: " + message + "\n");
+    return SemanticToken();
+  }
+
   SemanticToken error(Token& token, std::string message) {
-    // errors.push_back("File '" + filename.string() << "' " + "[Ln " + token.line << " Col " << token.col << "] Error at '" << token.lexeme << "': " << message << "\n";
-    errors.push_back(std::string("File '") + "TODO: filename" + "' [Ln " + std::to_string(token.line) + " Col " + std::to_string(token.col) + "] Error at '" + token.lexeme + "': " + message + "\n");
+    errors.push_back("[Ln " + std::to_string(token.line) + " Col " + std::to_string(token.col) + "] Error at '" + token.lexeme + "': " + message + "\n");
     return SemanticToken();
   }
 
 private:
   Parser& parser;
   std::list<std::string> errors;
+  std::unordered_map<std::string, ExpressionVariable*> refs;
+
+public:
+  std::unordered_map<std::string, StatementVariable*> vars;
 };
 
 };

@@ -5,8 +5,8 @@
 
 namespace Interpreter {
 
-typedef std::vector<uint8_t> MemoryT;
-typedef std::pair<bool, std::unordered_map<std::string, MemoryT>> VariableT;
+typedef std::vector<uint8_t> Bytes;
+// typedef std::pair<bool, std::unordered_map<std::string, MemoryT>> VariableT;
 
 class Expression;
 class ExpressionLiteral;
@@ -57,6 +57,10 @@ public:
 class Expression {
 public:
   virtual SemanticToken accept(Visitor<SemanticToken>* visitor) {
+    return visitor->visitExprUnknown(this);
+  }
+
+  virtual Bytes accept(Visitor<Bytes>* visitor) {
     return visitor->visitExprUnknown(this);
   }
 

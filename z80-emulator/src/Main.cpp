@@ -1,6 +1,4 @@
 #pragma once
-#include "src/Interpreter/Preprocessor.h"
-#include <cstdio>
 #define DEBUG_MODE
 
 #include "include/LuaScript.h"

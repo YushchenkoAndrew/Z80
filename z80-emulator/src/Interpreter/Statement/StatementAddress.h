@@ -14,6 +14,10 @@ public:
     return visitor->visitStmtAddress(this);
   }
 
+  Bytes accept(Visitor<Bytes>* visitor) override {
+    return visitor->visitStmtAddress(this);
+  }
+
 public:
   Token label;
   std::unique_ptr<Expression> expr;
