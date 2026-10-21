@@ -22,9 +22,9 @@ class PIT : public Window::Window, public Device {
 typedef std::tuple<uint16_t, uint16_t, uint16_t> RegT;
 
 public:
-  PIT(Bus* b, int32_t c): bus(b), clock(std::pair(c, 1.0E9F / c)) {
-    olc::SOUND::InitialiseAudio();
-    olc::SOUND::SetUserSynthFunction([&](int nChannel, float fGlobalTime, float) { return Sound(fGlobalTime); });
+  PIT(Bus* b, int32_t c): bus(b), clock(std::pair(c, 1.0E9F / c)), Window::Window(nullptr) {
+    // olc::SOUND::InitialiseAudio();
+    // olc::SOUND::SetUserSynthFunction([&](int nChannel, float fGlobalTime, float) { return Sound(fGlobalTime); });
   }
 
   ~PIT() {
@@ -82,12 +82,11 @@ public:
   void Interrupt(int32_t);
 
   inline float Sound(float fGlobalTime) {
-    return .0f;
-    // if (!GetValue(gate, 0)) return 0.0f;
-    // float frequency = (float)clock.second / GetValue(counter, 0);
+    if (!GetValue(gate, 0)) return 0.0f;
+    float frequency = (float)clock.second / GetValue(counter, 0);
 
-    // float output = sinf(2 * 3.14f * frequency * fGlobalTime);
-    // return output > 0.0f ? 0.5 : -0.5;
+    float output = sinf(2 * 3.14f * frequency * fGlobalTime);
+    return output > 0.0f ? 0.5 : -0.5;
   }
 
   void Runtime() {

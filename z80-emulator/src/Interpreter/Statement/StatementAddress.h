@@ -10,13 +10,9 @@ public:
   StatementAddress(Token label, std::unique_ptr<Expression> expr):
     label(label), expr(std::move(expr)) {}
 
-  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
-    return visitor->visitStmtAddress(this);
-  }
-
-  Bytes accept(Visitor<Bytes>* visitor) override {
-    return visitor->visitStmtAddress(this);
-  }
+  Bytes         accept(Visitor<Bytes>*         visitor) override { return visitor->visitStmtAddress(this); }
+  uint32_t      accept(Visitor<uint32_t>*      visitor) override { return visitor->visitStmtAddress(this); }
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override { return visitor->visitStmtAddress(this); }
 
 public:
   Token label;

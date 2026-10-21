@@ -10,13 +10,10 @@ public:
   ExpressionBinary(std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right):
     left(std::move(left)), op(op), right(std::move(right)) {}
 
-  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
-    return visitor->visitExprBinary(this);
-  }
+  Bytes         accept(Visitor<Bytes>*         visitor) override { return visitor->visitExprBinary(this); }
+  uint32_t      accept(Visitor<uint32_t>*      visitor) override { return visitor->visitExprBinary(this); }
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override { return visitor->visitExprBinary(this); }
 
-  Bytes accept(Visitor<Bytes>* visitor) override {
-    return visitor->visitExprBinary(this);
-  }
 
 public:
   std::unique_ptr<Expression> left;

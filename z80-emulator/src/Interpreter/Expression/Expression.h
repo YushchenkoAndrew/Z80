@@ -24,13 +24,15 @@ class StatementVariable;
 class SemanticToken {
 public:
   SemanticToken() = default;
-  SemanticToken(Token token, uint32_t bytes, bool strict):
-    token(std::move(token)), bytes(bytes), strict(strict) {}
+  SemanticToken(Token token, uint32_t bytes, bool strict, bool sequence = false):
+    token(std::move(token)), bytes(bytes), strict(strict), sequence(sequence) {}
 
 public:
   Token token;
   bool strict;
+  bool sequence;
   uint32_t bytes;
+  uint32_t address;
 };
 
 
@@ -56,13 +58,9 @@ public:
 
 class Expression {
 public:
-  virtual SemanticToken accept(Visitor<SemanticToken>* visitor) {
-    return visitor->visitExprUnknown(this);
-  }
-
-  virtual Bytes accept(Visitor<Bytes>* visitor) {
-    return visitor->visitExprUnknown(this);
-  }
+  virtual Bytes         accept(Visitor<Bytes>*         visitor) { return visitor->visitExprUnknown(this); }
+  virtual uint32_t      accept(Visitor<uint32_t>*      visitor) { return visitor->visitExprUnknown(this); }
+  virtual SemanticToken accept(Visitor<SemanticToken>* visitor) { return visitor->visitExprUnknown(this); }
 
   SemanticToken semantic;
 };

@@ -5,7 +5,7 @@
 #include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
 #include "src/Bus/HexDisplay.h"
-#include "src/Bus/InterruptVector.h"
+#include "src/Bus/IRQ.h"
 #include "src/Bus/Keyboard.h"
 #include "src/Bus/Lcd.h"
 #include "src/Bus/Led.h"
@@ -106,11 +106,11 @@ private:
       case MUX::IORQ::HEX_PORT:      return 0x00;
       case MUX::IORQ::PPI_PORT:      return KR580VV55->Read(addr & 0x00FF, true);
       case MUX::IORQ::UART_PORT:     break; // TODO
-      case MUX::IORQ::KEYBOARD_PORT: return interrupt->SetFlag(InterruptVector::IRQ::KEYBOARD), keyboard->Read(addr, true);
+      case MUX::IORQ::KEYBOARD_PORT: return interrupt->SetFlag(Interrupt::IRQ::KEYBOARD), keyboard->Read(addr, true);
       case MUX::IORQ::INT_PORT:      return interrupt->Read(addr, true);
       case MUX::IORQ::PIT_PORT: {
-        interrupt->SetFlag(InterruptVector::IRQ::CT1);
-        interrupt->SetFlag(InterruptVector::IRQ::CT2);
+        interrupt->SetFlag(IRQ::BIT::CT1);
+        interrupt->SetFlag(IRQ::BIT::CT2);
 
         return KR580VI53->Read(addr, true);
       }
@@ -127,8 +127,8 @@ private:
       case MUX::IORQ::KEYBOARD_PORT: return 0x00;
       case MUX::IORQ::INT_PORT:      return interrupt->Write(addr, data, true);
       case MUX::IORQ::PIT_PORT: {
-        interrupt->SetFlag(InterruptVector::IRQ::CT1);
-        interrupt->SetFlag(InterruptVector::IRQ::CT2);
+        interrupt->SetFlag(IRQ::BIT::CT1);
+        interrupt->SetFlag(IRQ::BIT::CT2);
 
         return KR580VI53->Write(addr, data, true);
       }
@@ -169,7 +169,7 @@ public:
   std::shared_ptr<PIT> KR580VI53; // Counter КР580ВИ53
   std::shared_ptr<RTC> MC146818;
 
-  std::shared_ptr<InterruptVector> interrupt;
+  std::shared_ptr<IRQ> interrupt;
 
   std::shared_ptr<Z80::CPU> Z80;
   std::shared_ptr<W27C512_T> W27C512;

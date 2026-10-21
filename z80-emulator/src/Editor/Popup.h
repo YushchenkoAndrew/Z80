@@ -8,6 +8,7 @@ namespace Editor {
 
 class Popup : public Window::Window {
 public:
+  Popup(PixelGameEngine* engine): Window::Window(engine), vim(engine) {}
 
   // inline void Preinitialize() { Lock(); }
   inline void Select(DimensionT dimensions) {

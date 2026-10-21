@@ -2,7 +2,7 @@
 
 #include "src/Interpreter/Token.h"
 #include "src/Utils/Utils.h"
-#include "src/Window/Command.h"
+#include "src/Window/Event/KeyboardEvent.h"
 
 namespace Editor {
 
@@ -20,9 +20,11 @@ namespace Editor {
  *  adverb      -> 'dd' | 'cc' | 'yy' | 'p' | 'P'
  *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R' | ' ' | 'u' | 'U'
  */
-class Vim : public Window::Command {
+class Vim : public Window::KeyboardEvent {
 public:
   enum ModeT { NORMAL, INSERT, REPLACE };
+
+  Vim(PixelGameEngine* engine): Window::KeyboardEvent(engine) {}
 
   inline void Lock() { 
     locked = true;

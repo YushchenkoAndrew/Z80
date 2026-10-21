@@ -7,7 +7,7 @@ namespace Bus {
 
 class Switch : public Window::Window, public Device {
 public:
-  Switch(Bus* b): bus(b) {}
+  Switch(Bus* b): bus(b), Window::Window(nullptr) {}
 
   void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;

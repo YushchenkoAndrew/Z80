@@ -1,36 +1,30 @@
 #pragma once
+#include "src/Registry.h"
+#include <vector>
 #define DEBUG_MODE
 
 #include "include/LuaScript.h"
 #include "lib/olcPixelGameEngine.h"
-#include "src/Bus/Bus.h"
 #include "src/Defs.h"
 #include "src/Editor/Editor.h"
 #include "src/Editor/Popup.h"
 #include "src/Interpreter/Defs.h"
-#include "src/Interpreter/Interpreter.h"
-#include "src/Panel.h"
+#include "src/Window/Panel.h"
 #include <unordered_set>
 
 // Check Memory Leaking
 //#define MEM_TRACK
 //#include "include/MemTrack.h"
 
-
-float Test(int, float fGlobalTime, float) {
-	// std::function<float(int, float, float)> SOUND::funcUserSynth = nullptr;
-			// fMixerSample += funcUserSynth(nChannel, fGlobalTime, fTimeStep);
-  return 0.5 * sin(440.0 * 2 * 3.14 * fGlobalTime);
-}
-
 class App : public PixelGameEngine {
 private:
   typedef std::pair<uint32_t, Interpreter::RelativeToken> RelativeAddr;
 
 public:
-  App(LuaScript& config): luaConfig(config), bus(std::make_shared<Bus::Bus>(config)) {
+  App(LuaScript lua): lua(std::move(lua)) {
     sAppName = "Z80 Emulator";
-    AnyType<-1, PixelGameEngine*>::GetValue() = this;
+    Registry::Initialize(this);
+    AnyType<-1, PixelGameEngine*>::GetValue() = this; // FIXME: remove this !!!
   }
 
   ~App() { if (offload != nullptr && offload->joinable()) offload->join(); }
@@ -51,21 +45,21 @@ public:
 
     // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
     // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
-    Compile(luaConfig.GetTableValue<std::string>(nullptr, "src"));
+    Compile(lua.GetOr("SOURCE", ""));
     // interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
 
-    auto editor = std::make_shared<Editor::Editor>();
-    for (auto f : interpreter.files()) editor->Open(f);
+    // auto editor = std::make_shared<Editor::Editor>(this);
+    for (auto f : Registry::Interpreter()->files()) Registry::Editor()->Open(f);
     // editor->Open(interpreter.filepath);
 
 
     // auto rom = bus->W27C512;
     // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
-    // bus->W27C512->Load(interpreter.env.memory);
+    Registry::W27C512()->Load(Registry::Interpreter()->memory);
 
     // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
 
-    auto popup = std::make_shared<Editor::Popup>();
+    // auto popup = std::make_shared<Editor::Popup>(this);
 
     // std::ofstream f("Test.asm");
     // interpreter.env.save("out.bin");
@@ -78,35 +72,50 @@ public:
     // lines->lines.push_back("Success !!");
 
     // auto offset = 210;
-    olc::vi2d zero = olc::vi2d(0, 0);
-    olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y);
-    olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y);
+    // olc::vi2d zero = olc::vi2d(0, 0);
+    // olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y);
+    // olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y);
 
-    auto panel = Panel();
-    panel.Push(std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))));
-    panel.Push(std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))));
-    panel.Push(std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))));
-    panel.Push(std::tuple(popup,        std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(zero.x,            zero.y))));
+    struct Rect { int x = 0, y = 0, width = 0, height = 0; };
 
-    panels = {
-      panel,
-      Panel(
-        std::tuple(bus,           std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
-        std::tuple(bus->HY62256A, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, window.y)))
-      )
-    };
+    const size_t groups = lua.Length("PANELS");
+    for (size_t i = 1; i <= groups; ++i) {
+      uint32_t index = panels.size();
+      std::string group = "PANELS." + std::to_string(i);
+      panels.push_back(Panel(this));
 
-    this->GetPanel().Select(std::pair(olc::vi2d(0, 0), size));
+      for (const std::string& name : lua.Keys(group)) {
+        auto e = lua.Get<Rect>(group + "." + name);
+
+        if (e) panels[index].Push(std::tuple(Registry::GetInstance(name), std::pair(olc::vi2d(e->x, e->y), olc::vi2d(e->width, e->height))));
+        else fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
+      }
+    }
+
+    // auto t = lua.GetTableKeys("panels");
+
+    // panels[0].Push(
+    //   std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
+    //   std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
+    //   std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
+    //   std::tuple(popup,        std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(zero.x,            zero.y)))
+    // );
+
+    // panels[1].Push(
+    //   std::tuple(bus,           std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
+    //   std::tuple(bus->HY62256A, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, window.y)))
+    // );
+
+    panel().Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
     // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
 
-    offload = std::make_unique<std::thread>([&]() {
-      bus->W27C512->Disassemble(); 
-      for (auto& p : panels) p.Initialize();
+    // TODO: Refactor this bellow
+    // offload = std::make_unique<std::thread>([&]() {
+    //   bus->W27C512->Disassemble(); 
+    //   for (auto& p : panels) p.Initialize();
       
-      bSyncing.first = false;
-    });
-
-
+    //   bSyncing.first = false;
+    // });
 
     return true;
   }
@@ -114,12 +123,12 @@ public:
   template<int32_t T>
   void Process(Int2Type<T>) {
     if (!vKeyEventListeners.size()) return;
-    if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
-
     olc::HWButton btn = this->GetKey((olc::Key)T);
 
     if (btn.bReleased || (!btn.bHeld && vKeyCombinationHeld.count((olc::Key)T))) vKeyCombinationHeld.erase((olc::Key)T);
     if (!(btn.bPressed || (btn.bHeld && fStrokeRepeat >= .4f ? fStrokeRepeat -= .04f, true : false))) return;
+
+    if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
 
     // Insert held keys into vector
     for (const auto key : vKeyCombinationHeld) {
@@ -187,9 +196,9 @@ public:
       // bool bPressed = btn.bPressed;
       // bool bReleased = btn.bReleased;
 
-    panels[nPanel].Preprocess();
-    panels[nPanel].Process(this); 
-    panels[nPanel].Draw(this); 
+    // panels[nPanel].Preprocess();
+    panels[nPanel].Process(); 
+    panels[nPanel].Draw(); 
 
     Process();
     Draw();
@@ -390,7 +399,7 @@ public:
     std::cout << "KEYBOARD_EVENT_SUBSCRIBE\n";
     #endif
 
-    this->vKeyEventListeners.insert(static_cast<Window::Command*>(ptr));
+    this->vKeyEventListeners.insert(static_cast<Window::KeyboardEvent*>(ptr));
   }
 
   void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,  void* ptr) override {
@@ -398,7 +407,7 @@ public:
     std::cout << "KEYBOARD_EVENT_UNSUBSCRIBE\n";
     #endif
 
-    this->vKeyEventListeners.erase(static_cast<Window::Command*>(ptr));
+    this->vKeyEventListeners.erase(static_cast<Window::KeyboardEvent*>(ptr));
   }
 
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
@@ -513,7 +522,7 @@ private:
   inline bool match(char c) { if (peek() == c) { advance(); return true; } return false; }
 
   void Compile(std::string filepath) {
-    const auto& errors = interpreter.load(filepath).scan();
+    const auto& errors = Registry::Interpreter()->load(filepath).scan();
     if (!errors.size()) return;
 
     #ifdef DEBUG_MODE 
@@ -531,23 +540,25 @@ private:
   std::string Command() {
     std::string result = "";
     for (size_t i = 0; i < vKeyCombination.size(); i++, result += "+") {
-      result += Window::Command::GetKeycode(vKeyCombination[i]);
+      result += Window::KeyboardEvent::GetKeycode(vKeyCombination[i]);
     }
 
     return result;
   }
 
 private:
-  Panel& GetPanel() { return this->panels[nPanel]; }
+  Panel& panel() { return this->panels[nPanel]; }
 
 private:
   const olc::vi2d vOffset = olc::vi2d(0, 12);
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
   int32_t nPanel = 0;
-  std::array<Panel, 2> panels;
-  Interpreter::Interpreter interpreter;
-  std::shared_ptr<Bus::Bus> bus;
+
+  LuaScript lua;
+  std::vector<Panel> panels;
+  // Interpreter::Interpreter interpreter;
+  // std::shared_ptr<Bus::Bus> bus;
 
   std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
   std::unique_ptr<std::thread> offload = nullptr;
@@ -555,13 +566,12 @@ private:
   int32_t nCurr = 0;
   std::string cmd = "";
   std::atomic<bool> bExec = true;
-  LuaScript& luaConfig;
 
   float fStrokeRepeat = .0f;
 
   std::vector<olc::Key> vKeyCombination;
   std::unordered_set<olc::Key> vKeyCombinationHeld;
-  std::unordered_set<Window::Command*> vKeyEventListeners;
+  std::unordered_set<Window::KeyboardEvent*> vKeyEventListeners;
   std::function<void(olc::Key)> fnStrokeAction = nullptr;
 
   static inline const std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";
@@ -570,22 +580,22 @@ private:
 int main() {
   Defs::Init(); Interpreter::Defs::Init(); Bus::Defs::Init();  // Initialize types
 
-  LuaScript luaConfig;
-  if (!luaConfig.Init("src/lua/Config.lua")) return 0;
-  if (!luaConfig.GetTable("Init")) return 0;
+  LuaScript lua;
+  if (!lua.DoFile("src/lua/Config.lua")) return 0;
+  if (!lua.Has("Config")) return 0;
 
-  if (!Panel::GetConfig().Init("src/lua/Bindings.lua")) return 0;
-  if (!Panel::GetConfig().GetTable("Bindings")) return 0;
+  // if (!Panel::GetConfig().Init("src/lua/Bindings.lua")) return 0;
+  // if (!Panel::GetConfig().GetTable("Bindings")) return 0;
 
   // TODO: Create defs to load colors from lua
   // Defs::Load(&luaConfig);
 
-  const int32_t nScreenWidth = luaConfig.GetTableValue<int32_t>(nullptr, "width");
-  const int32_t nScreenHeight = luaConfig.GetTableValue<int32_t>(nullptr, "height");
-  const int32_t nPixel = luaConfig.GetTableValue<int32_t>(nullptr, "pixel");
+  const int32_t w  = lua.GetOr("WIDTH", 700)
+  const int32_t h  = lua.GetOr("HIGHT", 412);
+  const int32_t px = lua.GetOr("PIXELS", 2);
 
-  App app(luaConfig);
-  if (app.Construct(nScreenWidth, nScreenHeight, nPixel, nPixel)) app.Start();
+  App app(std::move(lua));
+  if (app.Construct(w, h, px, px)) app.Start();
   
   return 0;
 }

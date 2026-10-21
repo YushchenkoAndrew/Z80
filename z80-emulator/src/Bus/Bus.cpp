@@ -21,11 +21,12 @@ namespace Bus {
   #undef TEMPLATE
   #undef CLASS
 
-  void Keyboard::Interrupt() { bus->interrupt->ResetFlag(InterruptVector::IRQ::KEYBOARD); }
+  void Keyboard::Interrupt() { bus->interrupt->ResetFlag(IntVector::IRQ::KEYBOARD); }
   void RTC::Interrupt() { IRQF(); bus->interrupt->ResetFlag(InterruptVector::IRQ::RTC); }
-  void PIT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(InterruptVector::IRQ::CT1 - ct + 1); }
+  void PIT::Interrupt(int32_t ct) { bus->interrupt->ResetFlag(IntVector::IRQ::CT1 - ct + 1); }
 
   Bus::Bus(LuaScript& config):
+    Window::Window(nullptr),
     luaConfig(config),
 
     led(std::make_shared<Led>(this)),
@@ -129,7 +130,7 @@ namespace Bus {
     // GameEngine->FillRect({ 300, 20 }, { 20, 50 }, Color::VERY_DARK_GREY);
   }
 
-  void InterruptVector::Interrupt() { if ((uint8_t)(state ^ 0xff)) bus->Z80->Interrupt(); }
+  void IntVector::Interrupt() { if ((uint8_t)(state ^ 0xff)) bus->Z80->Interrupt(); }
   inline DisassembleT Bus::Disassemble() { return Z80->Disassemble(); }
 
 

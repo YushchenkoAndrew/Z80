@@ -17,6 +17,7 @@ struct TypeList<T, olc::Pixel> {
   olc::Pixel& operator* () { return val; }
 };
 
+
 #define HISTORY_SIZE 100
 
 namespace Color {

@@ -18,7 +18,7 @@ public:
   struct REG { enum { A, B, C, CONTROL, CH = 2, CL = 3 }; };
   enum { DATA2REG, REG2DATA, PORT2REG, REG2PORT };
 
-  PPI(Bus* b): bus(b) {}
+  PPI(Bus* b): bus(b), Window::Window(nullptr) {}
 
   void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;

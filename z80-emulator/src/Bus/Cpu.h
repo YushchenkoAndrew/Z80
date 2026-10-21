@@ -45,7 +45,7 @@ private:
 public:
   enum ModeT { NORMAL, DEBUG, FREEZE };
 
-  CPU(Bus* b, int32_t c = 1000): bus(b), clock(c) { Reset(); }
+  CPU(Bus* b, int32_t c = 1000): bus(b), clock(c), Window::Window(nullptr) { Reset(); }
   ~CPU() {
     bExec = false; sync.second.notify_all();
 

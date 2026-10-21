@@ -36,10 +36,8 @@ public:
       const auto def = vars.find(label);
 
       if (def != vars.end()) expr->semantic.bytes = def->second->semantic.bytes;
-      else {
-        if (label == "$") expr->semantic.bytes = 2;
-        else error("Variable '" + label + "' is not defined.");
-      }
+      else if (label == "$") expr->semantic.bytes = 2;
+      else error("Variable '" + label + "' is not defined.");
     }
 
     return errors;
@@ -56,7 +54,7 @@ public:
 
       case TokenT::STRING: 
         if (expr->bytes && expr->token.literal.size() > expr->bytes) return error(expr->token, "String byte size exceeded allowed size.");
-        return SemanticToken(expr->token, std::max(expr->bytes, (uint32_t)expr->token.literal.size()), expr->bytes);
+        return SemanticToken(expr->token, std::max(expr->bytes, (uint32_t)expr->token.literal.size()), expr->bytes, true);
 
       default: return error(expr->token, "Unknown literal.");
     }

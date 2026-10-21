@@ -10,7 +10,7 @@ class HexDisplay : public Window::Window, public Device {
   enum { HEX };
 
 public:
-  HexDisplay(Bus* b): bus(b) {}
+  HexDisplay(Bus* b): bus(b), Window::Window(nullptr) {}
 
   void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;

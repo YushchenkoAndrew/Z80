@@ -6,14 +6,14 @@
 
 namespace Bus {
 
-class InterruptVector : public Window::Window, public Device {
+class IRQ : public Window::Window, public Device {
 
 public:
-  struct IRQ {
+  struct BIT {
     enum { NONE1, NONE2, CT2, CT1, RTC, TxRDT, RxRDY, KEYBOARD };
   };
 
-  InterruptVector(Bus* b): bus(b) {}
+  IRQ(Bus* b): bus(b), Window::Window(nullptr) {}
 
   void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;

@@ -2,7 +2,8 @@
 
 #include "lib/olcPixelGameEngine.h"
 #include "src/Defs.h"
-#include "src/Window/Stroke.h"
+#include "src/Window/Base.h"
+#include "src/Window/Event/StrokeAction.h"
 
 namespace Window {
 
@@ -20,9 +21,14 @@ struct SearchT {
 };
 
 
-class Command {
+class KeyboardEvent : public Base {
 public:
-  void Select() { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>(), this); }
+  KeyboardEvent(PixelGameEngine* engine): Base(engine) {}
+  
+  void Focus(bool state) override { 
+    if (state) GameEngine->Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>(), this);
+    else GameEngine->Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>(), this);
+  }
 
   std::pair<bool, StrokeCallback> Executable(const std::vector<olc::Key>& keys) {
     auto node = &GetCommands();

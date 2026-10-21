@@ -4,8 +4,8 @@
 #include "src/Bus/Device.h"
 #include "src/Interpreter/Lexer.h"
 #include "src/Utils/Utils.h"
-#include "src/Window/Command.h"
 #include "src/Window/Window.h"
+#include "src/Window/Event/KeyboardEvent.h"
 
 namespace Bus {
 
@@ -23,19 +23,19 @@ namespace Bus {
  *  phrase      -> 'C' | ' ' | 'i' | 'a' | 'u' | 'U'
  */
 template<int32_t TypeT, int32_t SizeT>
-class Memory : public Window::Window, public Window::Command, public Device {
+class Memory : public Window::Window, public Window::KeyboardEvent, public Device {
 public:
   enum ModeT { NORMAL, REPLACE, CHARACTER, DISASSEMBLE };
 
-  Memory(): mode(NORMAL), bus(nullptr) {}
-  Memory(ModeT m): mode(m), bus(nullptr) {}
+  Memory(): mode(NORMAL), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
+  Memory(ModeT m): mode(m), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
   // Memory(int32_t s): pages(s, 0), bus(nullptr) {}
 
-  Memory(Bus* b): bus(b) {}
+  Memory(Bus* b): bus(b), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
 
   void Disassemble();
 
-  void Load(std::vector<uint8_t> code) {
+  void Load(std::vector<uint8_t>& code) {
     for (auto& bank : memory) bank = 0x00;
 
     for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];

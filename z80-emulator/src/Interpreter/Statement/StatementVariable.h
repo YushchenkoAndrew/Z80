@@ -14,13 +14,9 @@ public:
 
   StatementVariable(Token t): label(t), type(ADDRESS) {}
 
-  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
-    return visitor->visitStmtVariable(this);
-  }
-
-  Bytes accept(Visitor<Bytes>* visitor) override {
-    return visitor->visitStmtVariable(this);
-  }
+  Bytes         accept(Visitor<Bytes>*         visitor) override { return visitor->visitStmtVariable(this); }
+  uint32_t      accept(Visitor<uint32_t>*      visitor) override { return visitor->visitStmtVariable(this); }
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override { return visitor->visitStmtVariable(this); }
 
 public:
   Token label;

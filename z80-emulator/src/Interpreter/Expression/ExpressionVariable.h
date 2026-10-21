@@ -10,13 +10,9 @@ public:
   ExpressionVariable(Token t, Token l, uint32_t bytes):
     label(t), length(l), bytes(bytes) {}
   
-  SemanticToken accept(Visitor<SemanticToken>* visitor) override {
-    return visitor->visitExprVariable(this);
-  }
-
-  Bytes accept(Visitor<Bytes>* visitor) override {
-    return visitor->visitExprVariable(this);
-  }
+  Bytes         accept(Visitor<Bytes>*         visitor) override { return visitor->visitExprVariable(this); }
+  uint32_t      accept(Visitor<uint32_t>*      visitor) override { return visitor->visitExprVariable(this); }
+  SemanticToken accept(Visitor<SemanticToken>* visitor) override { return visitor->visitExprVariable(this); }
 
 public:
   Token label;

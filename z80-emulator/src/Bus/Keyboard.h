@@ -7,7 +7,7 @@
 namespace Bus {
 class Keyboard : public Window::Window, public Device {
 public:
-  Keyboard(Bus* b): bus(b) {}
+  Keyboard(Bus* b): bus(b), Window::Window(nullptr) {}
 
   void Select(DimensionT dimensions) {
     this->absolute = dimensions.first; this->size = dimensions.second;

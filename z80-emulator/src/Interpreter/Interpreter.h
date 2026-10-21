@@ -1,18 +1,20 @@
 #pragma once
 
 #include "src/Interpreter/Expression/Expression.h"
+#include "src/Interpreter/Layout.h"
 #include "src/Interpreter/Lexer.h"
 #include "src/Interpreter/Parser.h"
 #include "src/Interpreter/Preprocessor.h"
 #include "src/Interpreter/Semantic.h"
 #include "src/Utils/Utils.h"
+#include <array>
 #include <cstdint>
 
 namespace Interpreter {
 
 class Interpreter : public Visitor<Bytes> {
 public:
-  Interpreter(): parser(lexer), semantic(parser) {}
+  Interpreter(): parser(lexer), semantic(parser), layout(parser, semantic) {}
 
   Interpreter& load(std::filesystem::path path) { return (preprocessor.scan(path), *this); }
 
@@ -20,39 +22,14 @@ public:
 
   std::list<std::string> scan() { return scan(preprocessor.source); }
   std::list<std::string> scan(std::string src) {
-    const auto& err = semantic.scan(src);
+    const auto& err = layout.scan(src);
     if (err.size()) return err;
 
-//     if (parser.scan(src)) { 
-//       for (auto& err : parser.errors) errors.push_back("File '" + filename.string() + "' " + err);
-//       return true;
-//     }
-
-      // parser
-
-//     if (vars == nullptr) {
-//       env.reset();
-//       for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
-//       return errors.size();
-//     }
-
-//     // NOTE: Main loop linker + final result
-//     env.reset(); unlock(); 
-//     for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
-
-//     // Interpreter
-//     env.reset(); lock();
-//     for (auto& stmt : parser.stmt) env.insert(evaluate(stmt.get()));
-
-
-//     for (auto& var : env.unknown) {
-//       error(nullptr, "Unknown variable '" + var + "'.");
-//     }
-
+    for (auto& stmt : parser.stmt) evaluate(stmt.get());
     return {};
   }
 
-  Bytes visitExprUnknown(Expression* expr) override { return {}; }
+  Bytes visitExprUnknown(Expression* expr) override { return Bytes(); }
 
   Bytes visitExprLiteral(ExpressionLiteral* expr) override {
     switch (expr->token.type) {
@@ -67,7 +44,7 @@ public:
         return bytes;
       }
 
-      default: return {};
+      default: return Bytes();
     }
   }
 
@@ -101,7 +78,7 @@ public:
       case TokenT::LEFT_SHIFT: 
         return Int2Bytes(Bytes2Int(left) << Bytes2Int(right), expr->semantic.bytes);
 
-      default: return {};
+      default: return Bytes();
     }
   }
 
@@ -117,40 +94,38 @@ public:
       case TokenT::MINUS:
         return Int2Bytes(Utils::TruncateInt(~Bytes2Int(right) + 1, size), size);
 
-      default: return {};
+      default: return Bytes();
     }
   }
 
   Bytes visitExprVariable(ExpressionVariable* expr) override {
+    if (expr->label.lexeme == "$") return Int2Bytes(address);
     return evaluate(semantic.vars[expr->label.lexeme]);
   }
 
   Bytes visitStmtAddress(StatementAddress* stmt) override {
-//     // MemoryT expr = evaluate(stmt->expr.get());
-//     // if (expr.size() > 2) {
-//     //   error(stmt->label, "Address byte size exceeded allowed size.");
-//     //   return {};
-//     // }
+    address = Bytes2Int(evaluate(stmt->expr.get()));
+    if (memory.size() < address) memory.insert(memory.end(), address - memory.size(), 0);
 
-//     // env.allocate(expr);
-    return {};
+    return Bytes();
   }
 
   Bytes visitStmtAllocate(StatementAllocate* stmt) override {
-//     // MemoryT res;
+    for (const auto& expr : stmt->data) {
+      Bytes bytes = evaluate(expr.get());
 
-//     // for (auto& expr : stmt->data) {
-//     //   MemoryT bytes = evaluate(expr.get()); const auto nSize = (int32_t)bytes.size() / 2;
-//     //   for (int32_t i = 1; i < stmt->size - nSize; i++) bytes.insert(bytes.begin(), 0);
+      if (!expr->semantic.sequence) {
+        if (stmt->size > bytes.size()) bytes.insert(bytes.begin(), stmt->size - bytes.size(), 0);
+        std::reverse(bytes.begin(), bytes.end());
+      } else if (stmt->size > 1) {
+        const uint8_t length = bytes.size();
+        for (uint8_t i = 0; i < length; i += stmt->size) bytes.insert(bytes.begin() + i, 0);
+      } 
 
-//     //   // TODO: Bellow is quick fix, need to think about how impl this better
-//     //   // Right now `dw "key"` works incorrectly
-//     //   if (stmt->reverse) res.insert(res.end(), bytes.rbegin(), bytes.rend());
-//     //   else res.insert(res.end(), bytes.begin(), bytes.end());
-//     // }
+      write(bytes);
+    }
 
-//     // return res;
-    return {};
+    return Bytes();
   }
 
 
@@ -167,8 +142,8 @@ public:
   }
 
   Bytes visitStmtRuntimeCommand(StatementRuntimeCommand* stmt) override {
-    std::vector<uint32_t> args;
-    for (auto& expr : stmt->args) args.push_back(Bytes2Int(evaluate(expr.get())));
+    std::array<uint32_t, 2> args = { 0, 0 }; uint32_t index = 0;
+    for (auto& expr : stmt->args) args[index++] = Bytes2Int(evaluate(expr.get()));
 
     auto opcode = stmt->calc(args[0], args[1]);
     return write(Int2Bytes(opcode)), Bytes();
@@ -177,15 +152,12 @@ public:
   Bytes visitStmtVariable(StatementVariable* stmt) override {
     switch (stmt->type) {
       case StatementVariable::TypeT::ADDRESS:
-        // TODO: think about this ?????
-        // ? maybe can be done in semantic level ????
-        // env.define(stmt->label->lexeme, Int2Bytes(env.addr));
-        return {};
+        return Int2Bytes(stmt->semantic.address);
 
       case StatementVariable::TypeT::DEFINITION: 
         return evaluate(stmt->definition.get());
 
-      default: return {};
+      default: return Bytes();
     }
   }
 
@@ -223,8 +195,8 @@ private:
   }
 
   inline void write(Bytes bytes) {
+    memory.insert(memory.begin() + address, bytes.begin(), bytes.end());
     address += bytes.size();
-    memory.insert(memory.end(), bytes.begin(), bytes.end());
   }
 
 public:
@@ -236,6 +208,7 @@ private:
   Lexer lexer;
   Parser parser;
   Semantic semantic;
+  Layout layout;
 };
 
 };

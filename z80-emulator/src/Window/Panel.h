@@ -2,9 +2,8 @@
 
 #include "include/LuaScript.h"
 #include "src/Defs.h"
-#include "src/Editor/Popup.h"
-#include "src/Window/Command.h"
 #include "src/Window/Window.h"
+#include "src/Window/Event/KeyboardEvent.h"
 
 template <class T>
 using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, DimensionT, int32_t>;
@@ -25,30 +24,28 @@ using WindowInitT = std::tuple<std::shared_ptr<T>, DimensionT>;
 #define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
 #define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
         
-class Panel : public Window::Command {
+class Panel : public Window::KeyboardEvent {
   // enum ModeT { NORMAL, COMMAND };
 
 public:
-  template<typename ...Args>
-  Panel(Args ...args) { Push(args...); }
+  Panel(PixelGameEngine* e): Window::KeyboardEvent(e) {}
 
-
-  void Initialize() {
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize();
-  }
+  // void Initialize() {
+  //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize();
+  // }
 
   void Select(DimensionT dimensions) {
-    Window::Command::Select();
+    Window::KeyboardEvent::Focus(true);
 
     this->absolute = dimensions.first; this->size = dimensions.second; bFullScreen = false;
     for (auto& w : windows) if (EXIST(w)) PTR(w)->Select(DIMENSION(w));
   }
 
-  void Preprocess() {
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Preprocess();
-  }
+  // void Preprocess() {
+  //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Preprocess();
+  // }
 
-  void Process(PixelGameEngine* GameEngine) {
+  void Process() {
     // TODO: For some reason this, is much slower, maybe I'll use it in a future, ha pan not intended
     // std::vector<std::shared_future<void>> vFuture;
 
@@ -66,12 +63,13 @@ public:
       if (mouse.y - size.y > 0) return;
 
       for (auto& w : windows) if (!bFullScreen && EXIST(w)) SELECTED(w) = IS_INSIDE(w, mouse);
+      for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w)); 
     }
 
     for (auto& w : windows) if (SELECTED(w)) PTR(w)->Process(GameEngine);
   }
 
-  void Draw(PixelGameEngine* GameEngine) {
+  void Draw() {
     // TODO: For some reason this, is much slower, maybe I'll use it in a future, ha pan not intended
     // std::vector<std::shared_future<void>> vFuture;
 
@@ -95,17 +93,17 @@ public:
     // if (cmd.size() && cmd.back() == 'w' && !search.bEnabled) Highlight(GameEngine);
   }
 
-  void Highlight(PixelGameEngine* GameEngine) {
-    for (auto& w : windows) if (EXIST(w) && SHOULD_DRAW(bFullScreen, w)) PTR(w)->Highlight(GameEngine);
-  }
+  // void Highlight(PixelGameEngine* GameEngine) {
+  //   for (auto& w : windows) if (EXIST(w) && SHOULD_DRAW(bFullScreen, w)) PTR(w)->Highlight(GameEngine);
+  // }
 
-  void Lock() {
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Lock();
-  }
+  // void Lock() {
+  //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Lock();
+  // }
 
-  void Unlock() {
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Unlock();
-  }
+  // void Unlock() {
+  //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Unlock();
+  // }
 
 public:
   // template<int32_t T>
@@ -174,19 +172,19 @@ public:
   // }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::A>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); 
+    GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); 
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::C>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); 
+    GameEngine->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); 
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::D>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); 
+    GameEngine->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); 
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K7>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PROGRAM_EXIT>()); 
+    GameEngine->Event(Int2Type<PROGRAM_EXIT>()); 
     return nullptr;
   }
 
@@ -196,31 +194,32 @@ public:
     return [&](olc::Key k) {
       int32_t digit = k - olc::Key::K0; bDrawWindowIndex = false;
       for (auto& w : windows) if (EXIST(w)) SELECTED(w) = WINDOW(w) == digit;
+      for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w)); 
     };
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K1>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 1); 
+    GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 1); 
     return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K2>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 2); 
+    GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 2); 
     return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K3>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 3); 
+    GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 3); 
     return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K4>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 4); 
+    GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 4); 
     return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K5>) { 
-    AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 5); 
+    GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 5); 
     return nullptr;
   }
 
@@ -276,19 +275,19 @@ public:
     // reset(false);
   // }
 
-private:
-  template<class T>
-  WindowT<Window::Window>& Window(Type2Type<T> type) {
-    std::string id = typeid(T*).name();
-    for (auto& w : windows) if (EXIST(w) && PTR(w)->GetId() == id) return w;
+// private:
+//   template<class T>
+//   WindowT<Window::Window>& Window(Type2Type<T> type) {
+//     std::string id = typeid(T*).name();
+//     for (auto& w : windows) if (EXIST(w) && PTR(w)->GetId() == id) return w;
 
-    static WindowT<Window::Window> empty = std::tuple_cat(std::make_tuple(false, false, nullptr, std::pair(olc::vi2d(), olc::vi2d()), 0));
-    return empty;
-  }
+//     static WindowT<Window::Window> empty = std::tuple_cat(std::make_tuple(false, false, nullptr, std::pair(olc::vi2d(), olc::vi2d()), 0));
+//     return empty;
+//   }
 
 public:
-  template<class T>
-  std::shared_ptr<T> Find(Type2Type<T> type) { return std::dynamic_pointer_cast<T>(PTR(Window(type))); }
+  // template<class T>
+  // std::shared_ptr<T> Find(Type2Type<T> type) { return std::dynamic_pointer_cast<T>(PTR(Window(type))); }
 
 // private:
   template<typename T, typename... Args>
@@ -304,12 +303,7 @@ public:
   inline bool IsActive() { return false; } // FIXME:?????????
   inline olc::vi2d GetSize() { return olc::vi2d(size.x, size.y); }
 
-  inline std::string GetName() { 
-    for (auto& w : windows) if (SELECTED(w)) return PTR(w)->GetName();
-    return "";
-  }
-
-  static LuaScript& GetConfig() { static LuaScript config; return config; }
+  // static LuaScript& GetConfig() { static LuaScript config; return config; }
   const Window::StrokeT<>& GetCommands() const override { return Panel::commands; }
 
 private:

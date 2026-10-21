@@ -1,27 +1,26 @@
 #pragma once
 
 #include "src/Defs.h"
-#include "src/Window/Stroke.h"
+#include "src/Window/Base.h"
+#include "src/Window/Event/StrokeAction.h"
 
 namespace Window {
 
-class Window {
+class Window : public Base {
 public:
-  virtual void Initialize() {};
-  virtual void Select(DimensionT) = 0;
-  virtual void Preprocess() {};
-  virtual void Process(PixelGameEngine *GameEngine) = 0;
-  virtual void Draw(PixelGameEngine *GameEngine) = 0;
-  virtual void Highlight(PixelGameEngine *GameEngine) {};
-  virtual void SelectHighlight(int32_t i) {};
+  Window(PixelGameEngine* engine): Base(engine) {}
 
-  virtual std::string GetId() { return ""; };
-  virtual std::string GetName() { return ""; };
-  virtual std::string GetBindings() { return ""; };
+  virtual void Select(DimensionT) = 0;
+  virtual void Process() = 0;
+  virtual void Draw() = 0;
 
   virtual const StrokeT<>& GetCommands() const {};
 
-  virtual void Lock() {};
-  virtual void Unlock() {};
+  // virtual void Lock() {};
+  // virtual void Unlock() {};
+  // virtual void Initialize() {};
+  // virtual void Preprocess() {}; // TODO DELETE THIS 
+  // virtual void Highlight(PixelGameEngine *GameEngine) {};
+  // virtual void SelectHighlight(int32_t i) {};
 };
 }; // namespace Window
