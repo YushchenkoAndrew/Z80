@@ -1,19 +1,17 @@
 #pragma once
 
-#include "src/Bus/Bus.h"
 #include "src/Bus/Device.h"
+#include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
+#include <mutex>
 
 namespace Bus {
 class Keyboard : public Window::Window, public Device {
 public:
-  Keyboard(Bus* b): bus(b), Window::Window(nullptr) {}
+  Keyboard(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
-
-  void Process(PixelGameEngine* GameEngine) {
+  void Process() override {
     const auto mouse = GameEngine->GetMousePos();
     const bool bPressed = GameEngine->GetMouse(0).bPressed;
 
@@ -32,7 +30,7 @@ public:
     if (buffer.size()) Interrupt();
   }
 
-  void Draw(PixelGameEngine* GameEngine) {
+  void Draw() override {
     olc::vi2d pos = absolute;
 
     const auto& fg = bEnabled ? Color::DARK_GREY : Color::BLACK;
@@ -91,8 +89,6 @@ private:
   olc::vi2d absolute = olc::vi2d(0, 0);
 
   const olc::vi2d vStep = olc::vi2d(8, 0);
-
-  Bus* bus;
 
   std::atomic<bool> bEnabled = false;
   std::pair<const char*, olc::vi2d> name = std::pair("buf", olc::vi2d(8 * 3, 8));

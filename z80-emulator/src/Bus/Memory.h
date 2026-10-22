@@ -22,16 +22,17 @@ namespace Bus {
  *  adverb      -> 'dd' | 'yy' | 'p' | 'P' | 'x'
  *  phrase      -> 'C' | ' ' | 'i' | 'a' | 'u' | 'U'
  */
-template<int32_t TypeT, int32_t SizeT>
+template<int32_t SizeT>
 class Memory : public Window::Window, public Window::KeyboardEvent, public Device {
 public:
   enum ModeT { NORMAL, REPLACE, CHARACTER, DISASSEMBLE };
 
-  Memory(): mode(NORMAL), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
-  Memory(ModeT m): mode(m), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
+  // Memory(): mode(NORMAL), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
+  // Memory(ModeT m): mode(m), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
   // Memory(int32_t s): pages(s, 0), bus(nullptr) {}
 
-  Memory(Bus* b): bus(b), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
+  // Memory(Bus* b): bus(b), Window::Window(nullptr),{}
+  Memory(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, id), ::Window::KeyboardEvent(engine) {}
 
   void Disassemble();
 
@@ -45,12 +46,12 @@ public:
   inline uint8_t Write(uint32_t addr, uint8_t data, bool) { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
   // TODO: Load disassembler here
-  void Initialize() { 
-    // if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
-  }
+  // void Initialize() { 
+  //   // if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
+  // }
 
   // TODO: Maybe add ability to set local state with initialization
-  void Select(DimensionT dimensions) {
+  void Select(DimensionT dimensions) override {
     this->absolute = dimensions.first; this->size = dimensions.second - vOffset.first;
 
     const int32_t prev = index();
@@ -80,7 +81,7 @@ public:
     }
   }
 
-  void Process(PixelGameEngine* GameEngine) {
+  void Process() override {
     auto nWheel = GameEngine->GetMouseWheel();
     if (nWheel > 0) MoveTo({ 0, -1 });
     else if (nWheel < 0) MoveTo({ 0, 1 });
@@ -107,7 +108,7 @@ public:
   }
 
 
-  void Draw(PixelGameEngine* GameEngine) {
+  void Draw() {
     switch (mode) {
       case NORMAL:    Draw(Int2Type<NORMAL>(), GameEngine); break;
       // case REPLACE:   Draw(Int2Type<NORMAL>(), GameEngine); break;
@@ -124,9 +125,8 @@ public:
 
     auto cmd = GetCmd();
     if (!cmd.size()) {
-      auto name = GetName();
-      pos.x += nWidth - ((int32_t)name.size() + 1) * vStep.second.x;
-      GameEngine->DrawString(pos, name, Color::DARK_GREY);
+      pos.x += nWidth - ((int32_t)windowId.size() + 1) * vStep.second.x;
+      GameEngine->DrawString(pos, windowId, Color::DARK_GREY);
     } else {
       pos.x += nWidth - ((int32_t)cmd.size() + 2) * vStep.second.x;
       GameEngine->DrawString(pos, cmd, Color::DARK_GREY);
@@ -780,14 +780,14 @@ public:
     return cmd;
   }
 
-  inline std::string GetName() { 
-    switch (type) {
-      case MemoryT::W27C512: return "W27C512";
-      case MemoryT::IMS1423: return "IMS1423";
-      case MemoryT::HY62256A: return "HY62256A";
-    }
-    return "";
-  }
+  // inline std::string GetName() { 
+  //   switch (type) {
+  //     case MemoryT::W27C512: return "W27C512";
+  //     case MemoryT::IMS1423: return "IMS1423";
+  //     case MemoryT::HY62256A: return "HY62256A";
+  //   }
+  //   return "";
+  // }
 
   inline std::string GetId() { return typeid(this).name(); }
   inline std::string GetBindings() { return "memory"; }
@@ -861,7 +861,7 @@ private:
 
 
 private:
-  const int32_t type = +TypeT;
+  // const int32_t type = +TypeT;
 
   olc::vi2d size = olc::vi2d(0, 0);
   olc::vi2d pages = olc::vi2d(0x10, 0);
@@ -890,7 +890,6 @@ protected:
   olc::vi2d cursor = olc::vi2d(0, 0);
 
   std::array<uint8_t, SizeT> memory;
-  Bus* bus;
 
 };
 

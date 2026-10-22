@@ -1,19 +1,8 @@
 #pragma once
 
 #include "include/LuaScript.h"
-#include "src/Bus/Cpu.h"
 #include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
-#include "src/Bus/HexDisplay.h"
-#include "src/Bus/IRQ.h"
-#include "src/Bus/Keyboard.h"
-#include "src/Bus/Lcd.h"
-#include "src/Bus/Led.h"
-#include "src/Bus/Memory.h"
-#include "src/Bus/PIT.h"
-#include "src/Bus/PPI.h"
-#include "src/Bus/RTC.h"
-#include "src/Bus/Switch.h"
 #include "src/Window/Window.h"
 
 
@@ -33,155 +22,54 @@ private:
   enum REQUEST { MREQ, IORQ };
 
 public:
-  typedef Memory<MemoryT::W27C512, W27C512_SIZE> W27C512_T;
-  typedef Memory<MemoryT::IMS1423, IMS1423_SIZE> IMS1423_T;
-  typedef Memory<MemoryT::HY62256A, HY62256A_SIZE> HY62256A_T;
+  Bus(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
 
-  Bus(LuaScript& config);
-
-  void Initialize();
-  void Select(DimensionT dimensions);
-
-  void Preprocess();
-  void Process(PixelGameEngine* GameEngine);
-
-  void Draw(PixelGameEngine* GameEngine);
+  void Select(DimensionT dimensions) override {}
+  void Process() override {}
+  void Draw() override {}
 
   inline DisassembleT Disassemble();
 
-  uint8_t Read(uint32_t addr, bool mreq) {
-    if (mreq) return mux(Int2Type<MREQ>(), addr);
-    else return mux(Int2Type<IORQ>(), addr);
-  }
-
-  uint8_t Write(uint32_t addr, uint8_t data, bool mreq) {
-    if (mreq) return mux(Int2Type<MREQ>(), addr, data);
-    else return mux(Int2Type<IORQ>(), addr, data);
-  }
+  uint8_t Read(uint32_t addr, bool mreq);
+  uint8_t Write(uint32_t addr, uint8_t data, bool mreq);
 
 private:
-  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16) {
-    auto addr = addr16 & 0x3FFF;
-    auto mmu = KR580VV55->regB(Int2Type<PPI::REG2PORT>());
+  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16);
+  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16, uint8_t data);
+  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr);
+  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr, uint8_t data);
 
-    switch((addr16 & 0xC000) >> 14) {
-      case MUX::MREQ::W27C512: return W27C512->Read(addr | ((mmu & 0x03) << 14), true);
-      case MUX::MREQ::HY62256A: return HY62256A->Read(addr, true);
-      case MUX::MREQ::KM28C17: break;
-      case MUX::MREQ::STACK: {
-        switch((addr16 & 0x3000) >> 12) {
-          case MUX::STACK::IMS1423_1: 
-          case MUX::STACK::IMS1423_2: return IMS1423->Read(addr, true);
-          case MUX::STACK::MC146818:  return MC146818->Read(addr, true);
-        }
-      }
-    }
-
-    return 0x00;
-  }
-
-  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16, uint8_t data) {
-    auto addr = addr16 & 0x3FFF;
-    auto mmu = KR580VV55->regB(Int2Type<PPI::REG2PORT>());
-
-    switch((addr16 & 0xC000) >> 14) {
-      case MUX::MREQ::W27C512: return 0x00;
-      case MUX::MREQ::HY62256A: return HY62256A->Write(addr, data, true);
-      case MUX::MREQ::KM28C17: break;
-      case MUX::MREQ::STACK: {
-        switch((addr16 & 0x3000) >> 12) {
-          case MUX::STACK::IMS1423_1: 
-          case MUX::STACK::IMS1423_2: return IMS1423->Write(addr, data, true);
-          case MUX::STACK::MC146818:  return MC146818->Write(addr, data, true);
-        }
-      }
-    }
-
-    return 0x00;
-  }
-
-  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr) {
-    switch((addr & 0x00F0) >> 4) {
-      case MUX::IORQ::IN_OUT_PORT:   return switches->Read(addr & 0x00FF, true);
-      case MUX::IORQ::HEX_PORT:      return 0x00;
-      case MUX::IORQ::PPI_PORT:      return KR580VV55->Read(addr & 0x00FF, true);
-      case MUX::IORQ::UART_PORT:     break; // TODO
-      case MUX::IORQ::KEYBOARD_PORT: return interrupt->SetFlag(Interrupt::IRQ::KEYBOARD), keyboard->Read(addr, true);
-      case MUX::IORQ::INT_PORT:      return interrupt->Read(addr, true);
-      case MUX::IORQ::PIT_PORT: {
-        interrupt->SetFlag(IRQ::BIT::CT1);
-        interrupt->SetFlag(IRQ::BIT::CT2);
-
-        return KR580VI53->Read(addr, true);
-      }
-    }
-
-    return 0x00;
-  }
-
-  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr, uint8_t data) {
-    switch((addr & 0x00F0) >> 4) {
-      case MUX::IORQ::IN_OUT_PORT:   return led->Write(addr, data, true);
-      case MUX::IORQ::HEX_PORT:      return hexDisplay->Write(addr, data, true); 
-      case MUX::IORQ::UART_PORT:     break; // TODO
-      case MUX::IORQ::KEYBOARD_PORT: return 0x00;
-      case MUX::IORQ::INT_PORT:      return interrupt->Write(addr, data, true);
-      case MUX::IORQ::PIT_PORT: {
-        interrupt->SetFlag(IRQ::BIT::CT1);
-        interrupt->SetFlag(IRQ::BIT::CT2);
-
-        return KR580VI53->Write(addr, data, true);
-      }
-      case MUX::IORQ::PPI_PORT: {
-        KR580VV55->Write(addr, data, true);
-        uint8_t ctrl = KR580VV55->regC(Int2Type<PPI::REG2PORT>());
-
-        KR580VI53->SetGate(0, BIT(ctrl, MUX::PPI_CS::CS0));
-        KR580VI53->SetGate(1, BIT(ctrl, MUX::PPI_CS::CS1));
-
-        switch ((ctrl >> MUX::PPI_CS::CS3) & 7) {
-          case MUX::PPI_IO::LCD_PORT:
-            if (BIT(ctrl, MUX::PPI_CS::CSW)) lcd->Read(addr, BIT(ctrl, MUX::PPI_CS::CSA));
-            else lcd->Write(addr, KR580VV55->regA(Int2Type<PPI::REG2PORT>()), BIT(ctrl, MUX::PPI_CS::CSA));
-            break;
-        }
-
-        return data;
-      }
-    }
-
-    return 0x00;
-  }
+// public:
+  // inline std::string GetId() { return typeid(this).name(); }
+  // inline std::string GetName() { return "bus"; }
+  // inline std::string GetBindings() { return "bus"; }
 
 public:
-  inline std::string GetId() { return typeid(this).name(); }
-  inline std::string GetName() { return "bus"; }
-  inline std::string GetBindings() { return "bus"; }
+  std::list<::Window::Window> windows;
 
-public:
-  std::shared_ptr<Led> led;
-  std::shared_ptr<Switch> switches;
-  std::shared_ptr<HexDisplay> hexDisplay;
-  std::shared_ptr<LCD> lcd;
-  std::shared_ptr<Keyboard> keyboard;
+  // std::shared_ptr<Led> led;
+  // std::shared_ptr<Switch> switches;
+  // std::shared_ptr<HexDisplay> hexDisplay;
+  // std::shared_ptr<LCD> lcd;
+  // std::shared_ptr<Keyboard> keyboard;
 
-  std::shared_ptr<PPI> KR580VV55; // PPI КР580ВВ55А
-  std::shared_ptr<PIT> KR580VI53; // Counter КР580ВИ53
-  std::shared_ptr<RTC> MC146818;
+  // std::shared_ptr<PPI> KR580VV55; // PPI КР580ВВ55А
+  // std::shared_ptr<PIT> KR580VI53; // Counter КР580ВИ53
+  // std::shared_ptr<RTC> MC146818;
 
-  std::shared_ptr<IRQ> interrupt;
+  // std::shared_ptr<IRQ> interrupt;
 
-  std::shared_ptr<Z80::CPU> Z80;
-  std::shared_ptr<W27C512_T> W27C512;
-  std::shared_ptr<IMS1423_T> IMS1423;
-  std::shared_ptr<HY62256A_T> HY62256A;
+  // std::shared_ptr<Z80::CPU> Z80;
+  // std::shared_ptr<W27C512_T> W27C512;
+  // std::shared_ptr<IMS1423_T> IMS1423;
+  // std::shared_ptr<HY62256A_T> HY62256A;
 
   // TODO: RAM HY62256A A14 = 0 A15 = 1 
   // TODO: ROM KM28C17-20 A14 = 1 A15 = 1
 
 
 private:
-  LuaScript& luaConfig;
+  // LuaScript& luaConfig;
 
   std::list<std::pair<olc::vi2d, olc::vi2d>> grid;
 };

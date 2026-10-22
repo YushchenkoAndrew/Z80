@@ -200,8 +200,6 @@ enum Events {
 
 class PixelGameEngine : public olc::PixelGameEngine {
   public:
-  enum ModeT { NORMAL, DEBUG };
-
   virtual void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) = 0;
   virtual void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) = 0;
   virtual void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) = 0;
@@ -221,7 +219,7 @@ class PixelGameEngine : public olc::PixelGameEngine {
   virtual void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string) = 0;
   virtual void Event(Int2Type<PROGRAM_EXIT>) = 0;
 
-  virtual ModeT GetMode() = 0;
+  virtual uint32_t GetMode() = 0;
 
   void FillRectDither(olc::vi2d pos, olc::vi2d size, olc::Pixel color = olc::WHITE, int32_t scale = 1, int32_t flag = 0) {
     for (int32_t i = 0, k = flag; i < size.y; i += scale, k ^= 1) {

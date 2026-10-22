@@ -2,6 +2,7 @@
 
 #include "src/Interpreter/Token.h"
 #include "src/Utils/Utils.h"
+#include "src/Window/Base.h"
 #include "src/Window/Event/KeyboardEvent.h"
 
 namespace Editor {
@@ -24,7 +25,7 @@ class Vim : public Window::KeyboardEvent {
 public:
   enum ModeT { NORMAL, INSERT, REPLACE };
 
-  Vim(PixelGameEngine* engine): Window::KeyboardEvent(engine) {}
+  Vim(PixelGameEngine* engine): Window::Base(engine), Window::KeyboardEvent(engine) {}
 
   inline void Lock() { 
     locked = true;

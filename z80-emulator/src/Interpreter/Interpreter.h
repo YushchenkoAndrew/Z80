@@ -18,6 +18,14 @@ public:
 
   Interpreter& load(std::filesystem::path path) { return (preprocessor.scan(path), *this); }
 
+  bool save(std::filesystem::path path) {
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return false;
+
+    f.write(reinterpret_cast<const char*>(memory.data()), static_cast<std::streamsize>(memory.size()));
+    return f.good();
+  }
+
   std::unordered_set<std::filesystem::path>& files() { return preprocessor.files; }
 
   std::list<std::string> scan() { return scan(preprocessor.source); }

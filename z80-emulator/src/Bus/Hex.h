@@ -1,24 +1,19 @@
 #pragma once
 
-#include "src/Bus/Bus.h"
 #include "src/Bus/Device.h"
 #include "src/Window/Window.h"
 
 namespace Bus {
 
-class HexDisplay : public Window::Window, public Device {
+class Hex : public Window::Window, public Device {
   enum { HEX };
 
 public:
-  HexDisplay(Bus* b): bus(b), Window::Window(nullptr) {}
-
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
-
-  void Process(PixelGameEngine* GameEngine) {}
-
-  void Draw(PixelGameEngine* GameEngine) {
+  Hex(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
+  
+  void Process() override {}
+  void Draw() override {
     olc::vi2d pos = absolute + vOffset;
 
     Draw(Int2Type<HEX>(), GameEngine, data >> 8, pos);
@@ -62,7 +57,6 @@ private:
   const olc::vi2d vStep = olc::vi2d(12, 12);
   const olc::vi2d vOffset = olc::vi2d(0, 0);
 
-  Bus* bus;
   uint16_t data = 0x0000;
 };
 

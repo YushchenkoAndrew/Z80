@@ -1,7 +1,7 @@
 #pragma once
 
-#include "src/Bus/Bus.h"
 #include "src/Bus/Device.h"
+#include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 
 namespace Bus {
@@ -18,15 +18,11 @@ public:
   struct REG { enum { A, B, C, CONTROL, CH = 2, CL = 3 }; };
   enum { DATA2REG, REG2DATA, PORT2REG, REG2PORT };
 
-  PPI(Bus* b): bus(b), Window::Window(nullptr) {}
+  PPI(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
-
-  void Process(PixelGameEngine* GameEngine) {}
-
-  void Draw(PixelGameEngine* GameEngine) {
+  void Process() override {}
+  void Draw() override {
     int32_t index = 0;
     olc::vi2d pos = absolute;
 
@@ -153,8 +149,6 @@ private:
 
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(16, 0);
-
-  Bus* bus;
 
   std::array<uint8_t, 3> regs;
   std::array<std::pair<ModeT, bool>, 4> options;

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "lib/olcPGEX_Sound.h"
-#include "src/Bus/Bus.h"
 #include "src/Bus/Device.h"
+#include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 
 namespace Bus {
@@ -22,7 +22,7 @@ class PIT : public Window::Window, public Device {
 typedef std::tuple<uint16_t, uint16_t, uint16_t> RegT;
 
 public:
-  PIT(Bus* b, int32_t c): bus(b), clock(std::pair(c, 1.0E9F / c)), Window::Window(nullptr) {
+  PIT(PixelGameEngine* engine, std::string id, int32_t c): Window::Base(engine), Window::Window(engine, std::move(id)), clock(std::pair(c, 1.0E9F / c)) {
     // olc::SOUND::InitialiseAudio();
     // olc::SOUND::SetUserSynthFunction([&](int nChannel, float fGlobalTime, float) { return Sound(fGlobalTime); });
   }
@@ -32,19 +32,13 @@ public:
 
     olc::SOUND::DestroyAudio();
     if (runtime != nullptr && runtime->joinable()) runtime->join();
+    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&PIT::Runtime, this)); 
   }
 
-  void Initialize() {
-    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&PIT::Runtime, this));
-  }
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
-
-  void Process(PixelGameEngine* GameEngine) {}
-
-  void Draw(PixelGameEngine* GameEngine) {
+  void Process() override {}
+  void Draw() override {
     olc::vi2d pos = absolute; olc::vi2d vNextLine = olc::vi2d(0, vStep.y);
     GameEngine->DrawString(pos, "PIT", Color::DARK_GREY);
 
@@ -210,8 +204,6 @@ private:
 
   std::atomic<bool> bExec = true;
   std::unique_ptr<std::thread> runtime = nullptr;
-
-  Bus* bus;
 
   std::mutex mutex;
   

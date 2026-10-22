@@ -1,11 +1,12 @@
 #pragma once
 
-#include "include/Foreach.h"
 #include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 #include <condition_variable>
+#include <memory>
+#include <string>
 
 namespace Bus {
 
@@ -45,7 +46,7 @@ private:
 public:
   enum ModeT { NORMAL, DEBUG, FREEZE };
 
-  CPU(Bus* b, int32_t c = 1000): bus(b), clock(c), Window::Window(nullptr) { Reset(); }
+  CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c) { Reset(); }
   ~CPU() {
     bExec = false; sync.second.notify_all();
 
@@ -58,13 +59,10 @@ public:
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
   }
 
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Process(PixelGameEngine* GameEngine) {}
-
-  void Draw(PixelGameEngine* GameEngine) {
+  void Process() override {}
+  void Draw() override {
     int32_t index = 0;
     olc::vi2d pos = absolute;
 
@@ -1345,6 +1343,7 @@ public:
   inline bool IsDebug() { return mode == DEBUG; }
   inline void Debug() { mode = DEBUG; }
   inline void Normal() { mode = NORMAL; sync.second.notify_all(); }
+  inline ModeT GetMode() { return mode; }
 
   inline void Step() { if (mode == DEBUG) sync.second.notify_all(); }
   inline uint16_t Stack() { return regSP(); }
@@ -1390,8 +1389,6 @@ private:
   
   std::mutex mutex;
   std::list<uint16_t> breakpoints;
-
-  Bus* bus;
 };
 
 };

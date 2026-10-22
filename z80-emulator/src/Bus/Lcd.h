@@ -1,10 +1,10 @@
 #pragma once
 
-#include "src/Bus/Bus.h"
+#include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
 #include "src/Defs.h"
 #include "src/Window/Window.h"
-#include <memory>
+
 namespace Bus {
 
 #define BIT_M(flag, n) (((uint8_t)flag) << n)
@@ -15,16 +15,14 @@ class LCD : public Window::Window, public Device {
   enum { CLEAR=1, RETURN=2, MODE=4, DISPLAY=8, CURSOR=16, FUNCTION=32, CGRAM=64, DDRAM=128 };
 
 public:
-  LCD(PixelGameEngine* engine, std::shared_ptr<Bus> bus): bus(std::move(bus)), Window::Window(engine) {
+  LCD(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {
     Instruction(Int2Type<CLEAR>(), 0);
   }
 
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Process() {}
-  void Draw() {
+  void Process() override {}
+  void Draw() override {
 
     for (int32_t i = 0; i < buffer.size(); i++) {
       const auto index = olc::vi2d(i % 16, i / 16);
@@ -132,8 +130,6 @@ private:
 
   // Variables defines animation duration
   std::pair<bool, float> fBlink = std::pair(true, 0.f);
-
-  std::shared_ptr<Bus> bus;
   uint16_t data = 0x0000;
 
   // std::array<SegmentT, 32> buffer;

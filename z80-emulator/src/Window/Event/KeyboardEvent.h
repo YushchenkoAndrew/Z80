@@ -21,10 +21,10 @@ struct SearchT {
 };
 
 
-class KeyboardEvent : public Base {
+class KeyboardEvent : virtual public Base {
 public:
   KeyboardEvent(PixelGameEngine* engine): Base(engine) {}
-  
+
   void Focus(bool state) override { 
     if (state) GameEngine->Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>(), this);
     else GameEngine->Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>(), this);

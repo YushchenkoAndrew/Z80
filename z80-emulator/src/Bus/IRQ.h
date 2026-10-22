@@ -1,7 +1,7 @@
 #pragma once
 
-#include "src/Bus/Bus.h"
 #include "src/Bus/Device.h"
+#include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 
 namespace Bus {
@@ -13,15 +13,11 @@ public:
     enum { NONE1, NONE2, CT2, CT1, RTC, TxRDT, RxRDY, KEYBOARD };
   };
 
-  IRQ(Bus* b): bus(b), Window::Window(nullptr) {}
+  IRQ(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
-
-  void Process(PixelGameEngine* GameEngine) {}
-
-  void Draw(PixelGameEngine* GameEngine) {
+  void Process() override {}
+  void Draw() override {
     olc::vi2d pos = absolute;
     const olc::vi2d vOffset = olc::vi2d(3 * 8 + vStep.x, 0);
 
@@ -48,8 +44,6 @@ private:
 
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(16, 0);
-
-  Bus* bus;
 
   uint8_t state   = 0xff;
   uint8_t enabled = 0x00;

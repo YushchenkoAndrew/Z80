@@ -7,20 +7,17 @@ namespace Bus {
 
 class Switch : public Window::Window, public Device {
 public:
-  Switch(Bus* b): bus(b), Window::Window(nullptr) {}
+  Switch(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
+  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-  }
-
-  void Process(PixelGameEngine* GameEngine) {
+  void Process() override {
     auto mouse = GameEngine->GetMousePos() - vOffset;
     if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + vStep.x * sizeof(uint8_t) * 8 && mouse.y < absolute.y + vStep.y) {
       data = data ^ (0x01 << ((mouse.x - absolute.x) / vStep.x));
     }
   }
 
-  void Draw(PixelGameEngine* GameEngine) {
+  void Draw() override {
     for (int32_t i = sizeof(uint8_t) * 7, data = this->data; i >= 0; i--, data = data << 1) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep + vOffset;
 
@@ -39,7 +36,6 @@ private:
   const olc::vi2d vStep = olc::vi2d(12, 12);
   const olc::vi2d vOffset = olc::vi2d(0, 0);
 
-  Bus* bus;
   uint8_t data = 0x00;
 };
 

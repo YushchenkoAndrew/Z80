@@ -6,9 +6,9 @@
 
 namespace Window {
 
-class Window : public Base {
+class Window : virtual public Base {
 public:
-  Window(PixelGameEngine* engine): Base(engine) {}
+  Window(PixelGameEngine* engine, std::string id): Base(engine), windowId(std::move(id)) {}
 
   virtual void Select(DimensionT) = 0;
   virtual void Process() = 0;
@@ -22,5 +22,6 @@ public:
   // virtual void Preprocess() {}; // TODO DELETE THIS 
   // virtual void Highlight(PixelGameEngine *GameEngine) {};
   // virtual void SelectHighlight(int32_t i) {};
+  const std::string windowId;
 };
 }; // namespace Window

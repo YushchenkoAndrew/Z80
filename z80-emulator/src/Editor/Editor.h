@@ -15,7 +15,7 @@ class Editor : public Window::Window {
 public:
   typedef std::tuple<std::string, std::string, Interpreter::Lexer, Vim> TabT;
 
-  Editor(PixelGameEngine* engine): Window::Window(engine) {}
+  Editor(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
 
   Editor* Open(std::string path) { 
     Utils::Lock l(mutex);

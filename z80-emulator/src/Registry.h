@@ -1,79 +1,91 @@
 #pragma once
 
+#include "include/LuaScript.h"
 #include "src/Bus/Cpu.h"
 #include "src/Bus/Defs.h"
+#include "src/Bus/Hex.h"
 #include "src/Bus/IRQ.h"
 #include "src/Bus/Keyboard.h"
 #include "src/Bus/Lcd.h"
 #include "src/Bus/Led.h"
 #include "src/Bus/Memory.h"
+#include "src/Bus/PIT.h"
+#include "src/Bus/PPI.h"
 #include "src/Bus/RTC.h"
 #include "src/Bus/Switch.h"
 #include "src/Defs.h"
 #include "src/Editor/Editor.h"
 #include "src/Editor/Popup.h"
 #include "src/Interpreter/Interpreter.h"
+#include "src/Window/Window.h"
 #include <memory>
+#include <unordered_set>
 
 class Registry {
 private:
-  typedef Bus::Memory<Bus::MemoryT::W27C512, W27C512_SIZE> W27C512_T;
-  typedef Bus::Memory<Bus::MemoryT::IMS1423, IMS1423_SIZE> IMS1423_T;
-  typedef Bus::Memory<Bus::MemoryT::HY62256A, HY62256A_SIZE> HY62256A_T;
+  typedef Bus::Memory<W27C512_SIZE> W27C512_T;
+  typedef Bus::Memory<IMS1423_SIZE> IMS1423_T;
+  typedef Bus::Memory<HY62256A_SIZE> HY62256A_T;
 
 public:
-  static void Initialize(PixelGameEngine* engine) {
-    // Bus() = std::make_shared<Bus::Bus>(nullptr);
-    Led() = std::make_shared<Bus::Led>(engine, Bus());
-    Lcd() = std::make_shared<Bus::LCD>(engine, Bus());
-    // MC146818() { static std::shared_ptr<Bus::RTC>        value = nullptr; return value; }
-    // KR580VI53(){ static std::shared_ptr<Bus::PIT>        value = nullptr; return value; }
-    // KR580VV55(){ static std::shared_ptr<Bus::PPI>        value = nullptr; return value; }
-    // Switch()   { static std::shared_ptr<Bus::Switch>     value = nullptr; return value; }
-    // Keyboard() { static std::shared_ptr<Bus::Keyboard>   value = nullptr; return value; }
-    // Hex()      { static std::shared_ptr<Bus::HexDisplay> value = nullptr; return value; }
-    // Interrupt(){ static std::shared_ptr<Bus::Interrupt>  value = nullptr; return value; }
-    // Z80()      { static std::shared_ptr<Bus::Z80::CPU>   value = nullptr; return value; }
+  static void Initialize(PixelGameEngine* engine, LuaScript& lua) {
+    const auto clock = lua.GetOr("CLOCK", 1);
 
-    // W27C512()  { static std::shared_ptr<W27C512_T>       value = nullptr; return value; }
-    // IMS1423()  { static std::shared_ptr<IMS1423_T>       value = nullptr; return value; }
-    // HY62256A() { static std::shared_ptr<HY62256A_T>      value = nullptr; return value; }
+    windows.insert(Bus = std::make_shared<Bus::Bus>(engine, "bus"));
+    windows.insert(Led = std::make_shared<Bus::Led>(engine, "led"));
+    windows.insert(Lcd = std::make_shared<Bus::LCD>(engine, "lcd"));
+    windows.insert(Hex = std::make_shared<Bus::Hex>(engine, "hex"));
+    windows.insert(IRQ = std::make_shared<Bus::IRQ>(engine, "irq"));
 
-    Editor()   = std::make_shared<Editor::Editor>(engine);
-    Bindings() = std::make_shared<Editor::Popup>(engine);
+    windows.insert(KR580VV55 = std::make_shared<Bus::PPI>(engine, "KR580VV55"));
+    windows.insert(Switch = std::make_shared<Bus::Switch>(engine, "switch"));
+    windows.insert(Keyboard = std::make_shared<Bus::Keyboard>(engine, "keyboard"));
 
-    Interpreter() = std::make_shared<Interpreter::Interpreter>();
+    windows.insert(Z80 = std::make_shared<Bus::Z80::CPU>(engine, "Z80", clock));
+    windows.insert(KR580VI53 = std::make_shared<Bus::PIT>(engine, "KR580VI53", clock * 8));
+
+    windows.insert(W27C512 = std::make_shared<W27C512_T>(engine, "W27C512"));
+    windows.insert(IMS1423 = std::make_shared<IMS1423_T>(engine, "IMS1423"));
+    windows.insert(MC146818 = std::make_shared<Bus::RTC>(engine, "MC146818"));
+    windows.insert(HY62256A = std::make_shared<HY62256A_T>(engine, "HY62256A"));
+
+    windows.insert(Editor = std::make_shared<Editor::Editor>(engine, "editor"));
+    windows.insert(Bindings = std::make_shared<Editor::Popup>(engine, "bindings"));
+
+    Interpreter = std::make_shared<Interpreter::Interpreter>();
   }
 
-  static std::shared_ptr<Window::Window> GetInstance(std::string name) {
-    if (name == "Z80")      return Z80();
-    if (name == "W27C512")  return W27C512();
-    if (name == "IMS1423")  return IMS1423();
-    if (name == "HY62256A") return HY62256A();
-    if (name == "editor")   return Editor();
-    if (name == "bindings") return Bindings();
+  static std::shared_ptr<Window::Window> GetInstance(std::string id) {
+    for (auto& ptr : windows) {
+      if (ptr->windowId == id) return ptr;
+    }
+
     return nullptr;
   }
 
 public:
-  static std::shared_ptr<Bus::Bus>        Bus()       { static std::shared_ptr<Bus::Bus>        value = nullptr; return value; }
-  static std::shared_ptr<Bus::Led>        Led()       { static std::shared_ptr<Bus::Led>        value = nullptr; return value; }
-  static std::shared_ptr<Bus::LCD>        Lcd()       { static std::shared_ptr<Bus::LCD>        value = nullptr; return value; }
-  static std::shared_ptr<Bus::IRQ>        IRQ()       { static std::shared_ptr<Bus::IRQ>        value = nullptr; return value; }
-  static std::shared_ptr<Bus::RTC>        MC146818()  { static std::shared_ptr<Bus::RTC>        value = nullptr; return value; }
-  static std::shared_ptr<Bus::PIT>        KR580VI53() { static std::shared_ptr<Bus::PIT>        value = nullptr; return value; }
-  static std::shared_ptr<Bus::PPI>        KR580VV55() { static std::shared_ptr<Bus::PPI>        value = nullptr; return value; }
-  static std::shared_ptr<Bus::Switch>     Switch()    { static std::shared_ptr<Bus::Switch>     value = nullptr; return value; }
-  static std::shared_ptr<Bus::Keyboard>   Keyboard()  { static std::shared_ptr<Bus::Keyboard>   value = nullptr; return value; }
-  static std::shared_ptr<Bus::HexDisplay> Hex()       { static std::shared_ptr<Bus::HexDisplay> value = nullptr; return value; }
-  static std::shared_ptr<Bus::Z80::CPU>   Z80()       { static std::shared_ptr<Bus::Z80::CPU>   value = nullptr; return value; }
+  inline static std::shared_ptr<Bus::Bus> Bus = nullptr;
+  inline static std::shared_ptr<Bus::Led>        Led;
+  inline static std::shared_ptr<Bus::LCD>        Lcd;
+  inline static std::shared_ptr<Bus::Hex>        Hex;
 
-  static std::shared_ptr<W27C512_T>       W27C512()   { static std::shared_ptr<W27C512_T>       value = nullptr; return value; }
-  static std::shared_ptr<IMS1423_T>       IMS1423()   { static std::shared_ptr<IMS1423_T>       value = nullptr; return value; }
-  static std::shared_ptr<HY62256A_T>      HY62256A()  { static std::shared_ptr<HY62256A_T>      value = nullptr; return value; }
+  inline static std::shared_ptr<Bus::IRQ>        IRQ;
+  inline static std::shared_ptr<Bus::Switch>     Switch;
+  inline static std::shared_ptr<Bus::RTC>        MC146818;
+  inline static std::shared_ptr<Bus::PIT>        KR580VI53;
+  inline static std::shared_ptr<Bus::PPI>        KR580VV55;
+  inline static std::shared_ptr<Bus::Keyboard>   Keyboard;
+  inline static std::shared_ptr<Bus::Z80::CPU>   Z80;
 
-  static std::shared_ptr<Editor::Popup>   Bindings()  { static std::shared_ptr<Editor::Popup>   value = nullptr; return value; }
-  static std::shared_ptr<Editor::Editor>  Editor()    { static std::shared_ptr<Editor::Editor>  value = nullptr; return value; }
+  inline static std::shared_ptr<W27C512_T>       W27C512;
+  inline static std::shared_ptr<IMS1423_T>       IMS1423;
+  inline static std::shared_ptr<HY62256A_T>      HY62256A;
 
-  static std::shared_ptr<Interpreter::Interpreter> Interpreter(){ static std::shared_ptr<Interpreter::Interpreter> value = nullptr; return value; }
+  inline static std::shared_ptr<Editor::Popup>   Bindings;
+  inline static std::shared_ptr<Editor::Editor>  Editor;
+
+  inline static std::shared_ptr<Interpreter::Interpreter> Interpreter;
+
+private:
+  inline static std::unordered_set<std::shared_ptr<Window::Window>> windows;
 };

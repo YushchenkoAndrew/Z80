@@ -1,9 +1,10 @@
 #pragma once
 
-#include "include/LuaScript.h"
 #include "src/Defs.h"
+#include "src/Editor/Popup.h"
 #include "src/Window/Window.h"
 #include "src/Window/Event/KeyboardEvent.h"
+#include <memory>
 
 template <class T>
 using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, DimensionT, int32_t>;
@@ -28,7 +29,7 @@ class Panel : public Window::KeyboardEvent {
   // enum ModeT { NORMAL, COMMAND };
 
 public:
-  Panel(PixelGameEngine* e): Window::KeyboardEvent(e) {}
+  Panel(PixelGameEngine* engine): Window::Base(engine), ::Window::KeyboardEvent(engine) {}
 
   // void Initialize() {
   //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize();
@@ -66,7 +67,7 @@ public:
       for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w)); 
     }
 
-    for (auto& w : windows) if (SELECTED(w)) PTR(w)->Process(GameEngine);
+    for (auto& w : windows) if (SELECTED(w)) PTR(w)->Process();
   }
 
   void Draw() {
@@ -78,7 +79,7 @@ public:
 
     // for(auto& future : vFuture) future.wait();
 
-    for (auto& w : windows) if (EXIST(w) && SHOULD_DRAW(bFullScreen, w)) PTR(w)->Draw(GameEngine);
+    for (auto& w : windows) if (EXIST(w) && SHOULD_DRAW(bFullScreen, w)) PTR(w)->Draw();
 
     // if (mode == NORMAL) return;
     // if (cmd.size() && cmd.back() == 'q' && !search.bEnabled)
@@ -115,18 +116,21 @@ public:
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_2>) { 
-    auto popup = Find(Type2Type<Editor::Popup>());
-    auto& window = Window(Type2Type<Editor::Popup>());
-    if (!(EXIST(window))) return nullptr;
+    WindowT<Window::Window>* bindings = nullptr;
+    for (auto& w : windows) if (EXIST(w) && PTR(w)->windowId == "bindings") { bindings = &w; break; }
+
+    if (bindings == nullptr) return nullptr;
+
 
     int32_t selected = 0;
     std::vector<std::string> commands = this->Combinations(&GetCommands());
+    auto vim = std::dynamic_pointer_cast<Editor::Popup>(PTR(*bindings));
 
-    if (SELECTED(window)) {
-      popup->Load(commands);
+    if (SELECTED(*bindings)) {
+      vim->Load(commands);
       Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
 
-      SELECTED(window) = false;
+      SELECTED(*bindings) = false;
       // cmd.push_back(popup->window + '0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
       return nullptr;
     }
@@ -154,7 +158,7 @@ public:
     // bindings.insert(bindings.end(), panel.begin(), panel.end());
 
 
-    popup->Load(commands); popup->window = selected; SELECTED(window) = true;
+    vim->Load(commands); vim->window = selected; SELECTED(*bindings) = true;
     Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
 
     // TODO: Impl POPUP logic HERE
@@ -302,6 +306,10 @@ public:
   // inline bool IsActive() { return mode == COMMAND; }
   inline bool IsActive() { return false; } // FIXME:?????????
   inline olc::vi2d GetSize() { return olc::vi2d(size.x, size.y); }
+  inline std::string GetName() {
+    for (const auto& w: windows) if (EXIST(w) && SELECTED(w)) return PTR(w)->windowId;
+    return windows.size() ? PTR(windows.front())->windowId : "unknown";
+  }
 
   // static LuaScript& GetConfig() { static LuaScript config; return config; }
   const Window::StrokeT<>& GetCommands() const override { return Panel::commands; }

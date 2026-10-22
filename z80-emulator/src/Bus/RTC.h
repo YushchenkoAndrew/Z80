@@ -2,12 +2,13 @@
 
 #include "src/Bus/Defs.h"
 #include "src/Bus/Memory.h"
+#include "src/Defs.h"
 
 namespace Bus {
 
 #define MASK(pos) (1 << (pos))
 
-class RTC : public Memory<MemoryT::MC146818, MC146818_SIZE> {
+class RTC : public Memory<MC146818_SIZE> {
   struct ADDR {
     struct CLOCK { enum { SECONDS = 0, MINUTES = 2, HOURS = 4 }; };
     struct ALARM { enum { SECONDS = 1, MINUTES = 3, HOURS = 5 }; };
@@ -24,7 +25,7 @@ class RTC : public Memory<MemoryT::MC146818, MC146818_SIZE> {
   };
 
 public:
-  RTC(Bus* b): Memory(b) {}
+  RTC(PixelGameEngine* engine, std::string id): Window::Base(engine), Memory(engine, std::move(id)) {}
 
   ~RTC() {
     bExec = false;
@@ -33,7 +34,7 @@ public:
   }
 
   void Preinitialize() {
-    Memory::Initialize();
+    // Memory::Initialize();
 
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&RTC::Runtime, this));
   }

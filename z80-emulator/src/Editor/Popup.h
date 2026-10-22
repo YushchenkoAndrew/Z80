@@ -8,7 +8,7 @@ namespace Editor {
 
 class Popup : public Window::Window {
 public:
-  Popup(PixelGameEngine* engine): Window::Window(engine), vim(engine) {}
+  Popup(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, id), vim(engine) {}
 
   // inline void Preinitialize() { Lock(); }
   inline void Select(DimensionT dimensions) {
@@ -36,7 +36,7 @@ public:
     if ((cursor.x - vStartAt.x - 1 < 0 && cursor.x) || (!cursor.x && cursor.x != vStartAt.x)) vStartAt.x--;
   }
 
-  void Process(PixelGameEngine* GameEngine) { 
+  void Process() { 
     Utils::Lock l(mutex);
 
     auto nWheel = GameEngine->GetMouseWheel();
@@ -49,7 +49,7 @@ public:
     lines = vim.GetLines();
   }
 
-  void Draw(PixelGameEngine* GameEngine) {
+  void Draw() {
     Utils::Lock l(mutex);
     GameEngine->FillRect(absolute, size, Color::BLACK);
 

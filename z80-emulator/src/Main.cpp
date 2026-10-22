@@ -1,13 +1,13 @@
 #pragma once
+#include "src/Bus/Cpu.h"
 #include "src/Registry.h"
+#include <utility>
 #include <vector>
 #define DEBUG_MODE
 
 #include "include/LuaScript.h"
 #include "lib/olcPixelGameEngine.h"
 #include "src/Defs.h"
-#include "src/Editor/Editor.h"
-#include "src/Editor/Popup.h"
 #include "src/Interpreter/Defs.h"
 #include "src/Window/Panel.h"
 #include <unordered_set>
@@ -23,60 +23,16 @@ private:
 public:
   App(LuaScript lua): lua(std::move(lua)) {
     sAppName = "Z80 Emulator";
-    Registry::Initialize(this);
-    AnyType<-1, PixelGameEngine*>::GetValue() = this; // FIXME: remove this !!!
+    Registry::Initialize(this, this->lua);
   }
 
-  ~App() { if (offload != nullptr && offload->joinable()) offload->join(); }
+  ~App() { if (sync.second != nullptr && sync.second->joinable()) sync.second->join(); }
 
   bool OnUserCreate() override {
-    // std::ifstream f("../RTC_Test/Test.asm");
-    // std::ifstream f(file);
-    // std::stringstream buffer;
-    // buffer << f.rdbuf();
-    // f.close();
-
-    // std::string s = buffer.str();
-
-    // mMinecraft.Init(ScreenHeight(), ScreenWidth(), luaConfig);
-
-    // TODO: Impl terminal
-    // auto terminal = std::make_shared<Window::Terminal>();
-
-    // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
-    // if (bool err = interpreter.Load("assets/SevenSegmentDisplay/Test.asm")) {
     Compile(lua.GetOr("SOURCE", ""));
-    // interpreter.env.save(std::filesystem::path(interpreter.filepath).replace_extension("bin"));
+    Registry::W27C512->Load(Registry::Interpreter->memory);
 
-    // auto editor = std::make_shared<Editor::Editor>(this);
-    for (auto f : Registry::Interpreter()->files()) Registry::Editor()->Open(f);
-    // editor->Open(interpreter.filepath);
-
-
-    // auto rom = bus->W27C512;
-    // auto rom = std::make_shared<Bus::Memory<Bus::EEPROM, 65536>>(8);
-    Registry::W27C512()->Load(Registry::Interpreter()->memory);
-
-    // bus->hexDisplay->Write(0, 0x79, false); bus->hexDisplay->Write(0, 0x24, false);
-
-    // auto popup = std::make_shared<Editor::Popup>(this);
-
-    // std::ofstream f("Test.asm");
-    // interpreter.env.save("out.bin");
-    // f << bus->Disassemble().first << "\n";
-    // f.close();
-    // emulator.editor.size = {  };
-
-
-    // // lines->lines = interpreter.errors;
-    // lines->lines.push_back("Success !!");
-
-    // auto offset = 210;
-    // olc::vi2d zero = olc::vi2d(0, 0);
-    // olc::vi2d size = olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y);
-    // olc::vi2d window = olc::vi2d(size.x * 7 / 10, size.y);
-
-    struct Rect { int x = 0, y = 0, width = 0, height = 0; };
+    for (auto f : Registry::Interpreter->files()) Registry::Editor->Open(f);
 
     const size_t groups = lua.Length("PANELS");
     for (size_t i = 1; i <= groups; ++i) {
@@ -85,38 +41,17 @@ public:
       panels.push_back(Panel(this));
 
       for (const std::string& name : lua.Keys(group)) {
-        auto e = lua.Get<Rect>(group + "." + name);
+        const std::string p = group + "." + name; 
 
-        if (e) panels[index].Push(std::tuple(Registry::GetInstance(name), std::pair(olc::vi2d(e->x, e->y), olc::vi2d(e->width, e->height))));
-        else fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
+        auto instance = Registry::GetInstance(name);
+        if (!instance) fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
+        else panels[index].Push(std::tuple(instance, std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
       }
     }
 
-    // auto t = lua.GetTableKeys("panels");
+    panels[nPanel].Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
 
-    // panels[0].Push(
-    //   std::tuple(editor,       std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
-    //   std::tuple(bus->W27C512, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, (int)size.y * 3 / 4))),
-    //   std::tuple(bus->IMS1423, std::pair(olc::vi2d(window.x, (int)size.y * 3 / 4), olc::vi2d(size.x - window.x, (int)size.y / 4))),
-    //   std::tuple(popup,        std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(zero.x,            zero.y)))
-    // );
-
-    // panels[1].Push(
-    //   std::tuple(bus,           std::pair(olc::vi2d(zero.x,   zero.y),              olc::vi2d(window.x,          window.y))),
-    //   std::tuple(bus->HY62256A, std::pair(olc::vi2d(window.x, (int)zero.y),         olc::vi2d(size.x - window.x, window.y)))
-    // );
-
-    panel().Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
-    // Panel::Panel p = Panel::Panel(std::make_shared<Editor::Editor>(emulator.editor));
-
-    // TODO: Refactor this bellow
-    // offload = std::make_unique<std::thread>([&]() {
-    //   bus->W27C512->Disassemble(); 
-    //   for (auto& p : panels) p.Initialize();
-      
-    //   bSyncing.first = false;
-    // });
-
+    sync = std::pair(true, std::make_unique<std::thread>([&]() { Registry::W27C512->Disassemble(); sync.first = false; }));
     return true;
   }
 
@@ -157,78 +92,14 @@ public:
     if (vKeyCombinationHeld.size()) fStrokeRepeat += fElapsedTime;
     else fStrokeRepeat = .0f;
 
-    // go though available commands and execute them
+    Process(); Draw();
 
-    // olc::Key::CTRL, olc::Key::SPACE, olc::KEY::z
-
-    // for (uint8_t i = olc::Key::A; i < olc::Key::ENUM_END; i++) {
-    //   olc::HWButton btn =  this->GetKey(static_cast<olc::Key>(i));
-
-    //   if (!btn.bPressed) continue;
-
-    // }
-
-    // if (this->command.size()) {
-
-    //   // Int2Type<olc::Key::E>, Int2Type<'e'>
-
-    // }
-
-    // for(auto& t : this->command) {
-    //   printf("KEY - %d", t);
-    // }
-
-
-      // if (btn.bReleased) { fStrokeRepeat = .0f; bReleased = true; }
-      // if (btn.bHeld) {
-      //   fStrokeRepeat += AnyType<-1, float>::GetValue();
-      //   if (fStrokeRepeat >= 0.3f) { fStrokeRepeat = .2f; bPressed = true; }
-      // }
-
-      // if (GameEngine->GetKey(olc::Key::CTRL).bHeld) cmd += "^";
-
-  //   const bool toUpper = GameEngine->GetKey(olc::Key::SHIFT).bHeld;
-  //   const char c = toUpper ? upper : lower;
-
-  //   bUpdated = true; cmd += std::string(1, c); 
-
-
-      // bool bPressed = btn.bPressed;
-      // bool bReleased = btn.bReleased;
-
-    // panels[nPanel].Preprocess();
-    panels[nPanel].Process(); 
-    panels[nPanel].Draw(); 
-
-    Process();
-    Draw();
-
-    // AnyType<-2, float>::GetValue() += fElapsedTime;
-
-    // emulator.ROM.Draw(this);
-
-    // TODO: Text editor
-    // std::ifstream t("../RTC_Test/Test.asm");
-    // std::stringstream buffer;
-    // buffer << t.rdbuf();
-
-    // // mMinecraft.Update(*this, fElapsedTime);
-    // Interpreter::Lexer lexer = Interpreter::Lexer(buffer.str());
-    // if (lexer.scan()) printf("%s\n", lexer.error().c_str());
-
-
-    // // this->DrawString(10, 10, buffer.str());
-    // for (auto t : lexer.vDst) {
-    //   this->DrawString(t->col * 8, t->line * 12, t->lexeme, t->color);
-    // }
-
-
-    // // mMinecraft.Draw(*this, fElapsedTime);
-    // // return mMinecraft.IsFinished();
     return bExec;
   }
 
   void Process() {
+    panels[nPanel].Process(); 
+
     const auto mouse = GetMousePos();
     const bool bPressed = GetMouse(0).bPressed;
 
@@ -245,6 +116,8 @@ public:
   }
 
   void Draw() {
+    panels[nPanel].Draw(); 
+
     const auto nWidth = ScreenWidth();
     const auto nHeight = ScreenHeight();
 
@@ -272,19 +145,21 @@ public:
 
     // if (nCmd) DrawString(pos + olc::vi2d(vStep.x, 0), cmd, Color::GREY);
 
-    std::string name = GetMode() == NORMAL ? "NORMAL" : "DEBUG";
+    std::string name = GetMode() == Bus::Z80::CPU::ModeT::NORMAL ? "NORMAL" : "DEBUG";
     pos.x = nWidth - ((int32_t)name.size() + 2) * vStep.x;
-    color = GetMode() == NORMAL ? Color::ORANGE : Color::CYAN;
+    color = GetMode() == Bus::Z80::CPU::ModeT::NORMAL ? Color::ORANGE : Color::CYAN;
 
     FillRect(pos - olc::vi2d(vStep.x / 2, 2), GetTextSize(name) + olc::vi2d(vStep.x, 2), color);
     DrawString(pos, name, Color::DARK_GREY);
 
-    if (!bSyncing.first) return;
-    pos.x -= ((int32_t)bSyncing.second.size() + 2) * vStep.x; pos.y += vStep.y;
-    DrawString(pos, bSyncing.second, Color::DARK_GREY);
+    if (!sync.first) return;
+
+    const std::string synchronizing = "Synchronizing... ";
+    pos.x = nWidth - synchronizing.size() * vStep.x; pos.y += vStep.y;
+    DrawString(pos, synchronizing, Color::DARK_GREY);
   }
 
-  ModeT GetMode() override { return bus->Z80->IsDebug() ? DEBUG : NORMAL; }
+  uint32_t GetMode() override { return Registry::Z80->GetMode(); }
 
   void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) override {
     #ifdef DEBUG_MODE 
@@ -300,10 +175,10 @@ public:
     std::cout << "ATTACH_DEBUG_MODE_CALLBACK\n";
     #endif
 
-    if (!bus->Z80->IsRunning()) return;
+    if (!Registry::Z80->IsRunning()) return;
 
-    bus->Z80->Debug();
-    for (auto& p : panels) p.Lock();
+    Registry::Z80->Debug();
+    // for (auto& p : panels) p.Lock(); // TODO: ????
   }
 
   void Event(Int2Type<DEBUG_RESET_CALLBACK>) override {
@@ -311,10 +186,10 @@ public:
     std::cout << "DEBUG_RESET_CALLBACK\n";
     #endif
 
-    if (!bus->Z80->IsRunning()) return;
+    if (!Registry::Z80->IsRunning()) return;
 
-    bus->Z80->Addr(); // Wait until cpu will enter debug mode
-    bus->Z80->Reset();
+    // Wait until cpu will enter debug mode
+    Registry::Z80->Addr(); Registry::Z80->Reset();
   }
 
 
@@ -323,21 +198,16 @@ public:
     std::cout << "NEXT_DEBUG_STEP_CALLBACK\n";
     #endif
 
-    if (!bus->Z80->IsRunning()) return;
-    if (!bus->Z80->IsDebug()) return;
-    else bus->Z80->Step();
+    if (!Registry::Z80->IsRunning()) return;
+    if (!Registry::Z80->IsDebug()) return;
+    else Registry::Z80->Step();
 
-    RelativeAddr next = Addr2Token(bus->Z80->Addr());
+    RelativeAddr next = Addr2Token(Registry::Z80->Addr());
     if (next.second.second == nullptr) return;
 
-    Panel& p = panels[nPanel];
-    auto editor = p.Find(Type2Type<Editor::Editor>());
-    auto eeprom = p.Find(Type2Type<Bus::Bus::W27C512_T>());
-    auto stack =  p.Find(Type2Type<Bus::Bus::IMS1423_T>());
-
-    if (editor != nullptr) editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
-    if (eeprom != nullptr) eeprom->Move2Addr(next.first);
-    if (stack  != nullptr) stack->Move2Addr(bus->Z80->Stack());
+    Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
+    Registry::W27C512->Move2Addr(next.first);
+    Registry::IMS1423->Move2Addr(Registry::Z80->Stack());
   }
 
   void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override {
@@ -345,10 +215,10 @@ public:
     std::cout << "DETACH_DEBUG_MODE_CALLBACK\n";
     #endif
 
-    if (!bus->Z80->IsRunning()) return;
+    if (!Registry::Z80->IsRunning()) return;
 
-    bus->Z80->Normal();
-    for (auto& p : panels) p.Unlock();
+    Registry::Z80->Normal();
+    // for (auto& p : panels) p.Unlock(); // TODO: ???
   }
 
   void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d cursor) override {
@@ -356,13 +226,8 @@ public:
     std::cout << "EDITOR_SELECT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
-    auto eeprom = panels[nPanel].Find(Type2Type<Bus::Bus::W27C512_T>());
-    if (editor == nullptr || eeprom == nullptr) return;
-
-    const RelativeAddr next = Pos2Token(cursor, editor->File());
-    if (next.second.second == nullptr || eeprom == nullptr) return;
-    eeprom->Move2Addr(next.first);
+    const RelativeAddr next = Pos2Token(cursor, Registry::Editor->File());
+    if (next.second.second != nullptr) Registry::W27C512->Move2Addr(next.first);
   }
 
   void Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>, olc::vi2d cursor) override {
@@ -370,15 +235,12 @@ public:
     std::cout << "EDITOR_SELECT_LINE_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
-    if (editor == nullptr) return;
-
-    const RelativeAddr next = Pos2Token(cursor, editor->File());
+    const RelativeAddr next = Pos2Token(cursor, Registry::Editor->File());
     if (next.second.second == nullptr) return;
     std::cout << next.second.second->line << std::endl;
 
-    bus->Z80->SetBreakpoint((uint16_t)next.first);
-    editor->SelectLine((int32_t)next.second.second->line - 1);
+    Registry::Z80->SetBreakpoint((uint16_t)next.first);
+    Registry::Editor->SelectLine((int32_t)next.second.second->line - 1);
   }
 
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
@@ -386,12 +248,10 @@ public:
     std::cout << "MEMORY_SELECT_CALLBACK [Addr " <<  std::setfill('0') << std::setw(5) << std::hex << std::uppercase << index << "]\n";
     #endif
 
-    auto editor = panels[nPanel].Find(Type2Type<Editor::Editor>());
-    if (editor == nullptr) return;
-
     const RelativeAddr next = Addr2Token(index);
-    if (next.second.second == nullptr || editor == nullptr) return;
-    editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
+    if (next.second.second == nullptr) return;
+
+    Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
   }
 
   void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override {
@@ -426,7 +286,7 @@ public:
     std::cout << "CMD_UPDATE_CALLBACK '" << cmd << "'" << std::endl;
     #endif
 
-    nCurr = 0; this->cmd = cmd;
+    // nCurr = 0; this->cmd = cmd;
   }
 
   void Event(Int2Type<CMD_EXEC_CALLBACK>) override {
@@ -434,9 +294,9 @@ public:
     std::cout << "CMD_EXEC_CALLBACK\n";
     #endif
 
-    advance(); // Consume ':'
+    // advance(); // Consume ':'
 
-    Cmd2Action(); nCurr = 0; cmd = "";
+    // Cmd2Action(); nCurr = 0; cmd = "";
   }
 
   void Event(Int2Type<PROGRAM_EXIT>) override {
@@ -497,6 +357,7 @@ private:
   inline RelativeAddr Addr2Token(uint32_t addr) {
     RelativeAddr next = std::pair(0, std::pair("", nullptr));
 
+    // TODO:
     // for (auto& pos : interpreter.env.tokens) {
     //   if (pos.first <= addr) next = pos;
     //   else return next;
@@ -508,6 +369,7 @@ private:
   inline RelativeAddr Pos2Token(olc::vi2d cursor, std::string filename) {
     RelativeAddr next = std::pair(0, std::pair(filename, nullptr));
 
+    // TODO:
     // for (auto& pos : interpreter.env.tokens) {
     //   if (next.second.first != pos.second.first) continue;
     //   if (pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1) next = pos;
@@ -516,14 +378,16 @@ private:
     return next;
   }
 
-  inline bool isAtEnd() { return nCurr >= cmd.size(); }
-  inline const char advance() { return isAtEnd() ? '\0': cmd[nCurr++]; }
-  inline const char peek() { return isAtEnd() ? '\0' : cmd[nCurr]; }
-  inline bool match(char c) { if (peek() == c) { advance(); return true; } return false; }
+  // inline bool isAtEnd() { return nCurr >= cmd.size(); }
+  // inline const char advance() { return isAtEnd() ? '\0': cmd[nCurr++]; }
+  // inline const char peek() { return isAtEnd() ? '\0' : cmd[nCurr]; }
+  // inline bool match(char c) { if (peek() == c) { advance(); return true; } return false; }
 
-  void Compile(std::string filepath) {
-    const auto& errors = Registry::Interpreter()->load(filepath).scan();
-    if (!errors.size()) return;
+  bool Compile(std::string filepath) {
+    if (!filepath.size()) return false;
+
+    const auto& errors = Registry::Interpreter->load(filepath).scan();
+    if (!errors.size()) return Registry::Interpreter->save(std::filesystem::path(filepath).replace_extension("bin"));
 
     #ifdef DEBUG_MODE 
     // for (auto token : interpreter.parser.lexer.tokens) { token.print(); }
@@ -535,6 +399,8 @@ private:
 
     // printf("\nHAS AN ERROR %ld\n", interpreter.errors.size());
     #endif
+
+    return false;
   }
 
   std::string Command() {
@@ -547,33 +413,22 @@ private:
   }
 
 private:
-  Panel& panel() { return this->panels[nPanel]; }
-
-private:
   const olc::vi2d vOffset = olc::vi2d(0, 12);
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
-  int32_t nPanel = 0;
-
   LuaScript lua;
   std::vector<Panel> panels;
-  // Interpreter::Interpreter interpreter;
-  // std::shared_ptr<Bus::Bus> bus;
 
-  std::pair<std::atomic<bool>, const std::string> bSyncing = std::pair(true, "Syncing");
-  std::unique_ptr<std::thread> offload = nullptr;
-
-  int32_t nCurr = 0;
-  std::string cmd = "";
-  std::atomic<bool> bExec = true;
-
+  int32_t nPanel = 0;
   float fStrokeRepeat = .0f;
+  std::atomic<bool> bExec = true;
 
   std::vector<olc::Key> vKeyCombination;
   std::unordered_set<olc::Key> vKeyCombinationHeld;
   std::unordered_set<Window::KeyboardEvent*> vKeyEventListeners;
   std::function<void(olc::Key)> fnStrokeAction = nullptr;
 
+  std::pair<std::atomic<bool>, std::unique_ptr<std::thread>> sync = std::pair(false, nullptr);
   static inline const std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";
 };
 
@@ -582,7 +437,7 @@ int main() {
 
   LuaScript lua;
   if (!lua.DoFile("src/lua/Config.lua")) return 0;
-  if (!lua.Has("Config")) return 0;
+  // if (!lua.Has("Config")) return 0;
 
   // if (!Panel::GetConfig().Init("src/lua/Bindings.lua")) return 0;
   // if (!Panel::GetConfig().GetTable("Bindings")) return 0;
@@ -590,12 +445,12 @@ int main() {
   // TODO: Create defs to load colors from lua
   // Defs::Load(&luaConfig);
 
-  const int32_t w  = lua.GetOr("WIDTH", 700)
-  const int32_t h  = lua.GetOr("HIGHT", 412);
+  const int32_t width  = lua.GetOr("WIDTH", 700);
+  const int32_t height  = lua.GetOr("HIGHT", 412);
   const int32_t px = lua.GetOr("PIXELS", 2);
 
   App app(std::move(lua));
-  if (app.Construct(w, h, px, px)) app.Start();
+  if (app.Construct(width, height, px, px)) app.Start();
   
   return 0;
 }
