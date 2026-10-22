@@ -28,8 +28,6 @@ public:
   void Process() override {}
   void Draw() override {}
 
-  inline DisassembleT Disassemble();
-
   uint8_t Read(uint32_t addr, bool mreq);
   uint8_t Write(uint32_t addr, uint8_t data, bool mreq);
 

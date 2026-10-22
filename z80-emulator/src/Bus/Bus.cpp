@@ -10,10 +10,10 @@ namespace Bus {
   #define CLASS Memory<SizeT>
 
   TEMPLATE void CLASS::Disassemble() {
-    dasm = Registry::Bus->Disassemble();
-    lexer.scan(dasm.first); 
+    // dasm = Registry::Z80->Disassemble();
+    // lexer.scan(dasm.first); 
 
-    for (auto& addr : dasm.second) LINES_SIZE = std::max(LINES_SIZE, addr.second);
+    // for (auto& addr : dasm.second) LINES_SIZE = std::max(LINES_SIZE, addr.second);
   }
 
 
@@ -212,139 +212,138 @@ namespace Bus {
   // }
 
   void IRQ::Interrupt() { if ((uint8_t)(state ^ 0xff)) Registry::Z80->Interrupt(); }
-  inline DisassembleT Bus::Disassemble() { return Registry::Z80->Disassemble(); }
 
 
 namespace Z80 {
 
-  inline uint8_t CPU::Read() { return Registry::Bus->Read(regPC()++, true); }
+  uint8_t CPU::Read() { return Registry::Bus->Read(regPC()++, true); }
 
-  inline uint8_t CPU::Read(uint32_t addr, bool mreq) { return Registry::Bus->Read(addr, mreq); }
-  inline uint8_t CPU::Write(uint32_t addr, uint8_t data, bool mreq) { return Registry::Bus->Write(addr, data, mreq); }
+  uint8_t CPU::Read(uint32_t addr, bool mreq) { return Registry::Bus->Read(addr, mreq); }
+  uint8_t CPU::Write(uint32_t addr, uint8_t data, bool mreq) { return Registry::Bus->Write(addr, data, mreq); }
 
-  DisassembleT CPU::Disassemble() {
-    DisassembleT dasm = std::pair("", std::unordered_map<int32_t, int32_t>());
+  // DisassembleT CPU::Disassemble() {
+  //   DisassembleT dasm = std::pair("", std::unordered_map<int32_t, int32_t>());
   
-    for (uint32_t i = 0, line = 0; i < 0xFFFF; line++, i++) {
-      std::pair<std::string, int32_t> cmd;
-      dasm.second[i] = line;
-      std::string unknown = "";
+  //   for (uint32_t i = 0, line = 0; i < 0xFFFF; line++, i++) {
+  //     std::pair<std::string, int32_t> cmd;
+  //     dasm.second[i] = line;
+  //     std::string unknown = "";
 
-      switch (uint32_t instruction = Registry::Bus->Read(i, true)) {
-        case Z80::MISC_INSTR: {
-          // FIXME: 
-          // AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
-          // std::pair<MiscSTR, int32_t> res = foreach<MiscMInstructions, AnyType<-1, int32_t>>::Key2Value();
-          // if (res.second == -1) unknown = sprintf("db 0xED, 0x%02x", AnyType<-1, int32_t>::GetValue());
+  //     switch (uint32_t instruction = Registry::Bus->Read(i, true)) {
+  //       case Z80::MISC_INSTR: {
+  //         // FIXME: 
+  //         // AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
+  //         // std::pair<MiscSTR, int32_t> res = foreach<MiscMInstructions, AnyType<-1, int32_t>>::Key2Value();
+  //         // if (res.second == -1) unknown = sprintf("db 0xED, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
-          // cmd = std::pair(*res.first, res.second); break;
-        }
+  //         // cmd = std::pair(*res.first, res.second); break;
+  //       }
         
-        case Z80::BIT_INSTR: {
-          // FIXME: 
-          // AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
-          // std::pair<BitSTR, int32_t> res = foreach<BitInstructions, AnyType<-1, int32_t>>::Key2Value();
-          // if (res.second == -1) unknown = sprintf("db 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
+  //       case Z80::BIT_INSTR: {
+  //         // FIXME: 
+  //         // AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
+  //         // std::pair<BitSTR, int32_t> res = foreach<BitInstructions, AnyType<-1, int32_t>>::Key2Value();
+  //         // if (res.second == -1) unknown = sprintf("db 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
-          // cmd = std::pair(*res.first, res.second); break;
-        }
+  //         // cmd = std::pair(*res.first, res.second); break;
+  //       }
 
-        case Z80::IX_INSTR: {
-          // FIXME: 
-          // instruction = bus->Read(++i, true);
+  //       case Z80::IX_INSTR: {
+  //         // FIXME: 
+  //         // instruction = bus->Read(++i, true);
 
-          // if (instruction == Z80::IxBitInstr) {
-          //   AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
-          //   std::pair<IxBitSTR, int32_t> res = foreach<IxBitInstructions, AnyType<-1, int32_t>>::Key2Value();
-          //   if (res.second == -1) unknown = sprintf("db 0xDD, 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
+  //         // if (instruction == Z80::IxBitInstr) {
+  //         //   AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
+  //         //   std::pair<IxBitSTR, int32_t> res = foreach<IxBitInstructions, AnyType<-1, int32_t>>::Key2Value();
+  //         //   if (res.second == -1) unknown = sprintf("db 0xDD, 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
-          //   cmd = std::pair(*res.first, res.second); break;
-          // } 
+  //         //   cmd = std::pair(*res.first, res.second); break;
+  //         // } 
 
-          // AnyType<-1, int32_t>::GetValue() = instruction;
-          // std::pair<IxSTR, int32_t> res = foreach<IxInstructions, AnyType<-1, int32_t>>::Key2Value();
-          // if (res.second == -1) unknown = sprintf("db 0xDD, 0x%02x", AnyType<-1, int32_t>::GetValue());
+  //         // AnyType<-1, int32_t>::GetValue() = instruction;
+  //         // std::pair<IxSTR, int32_t> res = foreach<IxInstructions, AnyType<-1, int32_t>>::Key2Value();
+  //         // if (res.second == -1) unknown = sprintf("db 0xDD, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
-          // cmd = std::pair(*res.first, res.second); break;
-        }
+  //         // cmd = std::pair(*res.first, res.second); break;
+  //       }
 
-        case Z80::IY_INSTR: {
-          // FIXME: 
-          // instruction = bus->Read(++i, true);
+  //       case Z80::IY_INSTR: {
+  //         // FIXME: 
+  //         // instruction = bus->Read(++i, true);
 
-          // if (instruction == Z80::IyBitInstr) {
-          //   AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
-          //   std::pair<IyBitSTR, int32_t> res = foreach<IyBitInstructions, AnyType<-1, int32_t>>::Key2Value();
-          //   if (res.second == -1) unknown = sprintf("db 0xFD, 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
+  //         // if (instruction == Z80::IyBitInstr) {
+  //         //   AnyType<-1, int32_t>::GetValue() = bus->Read(++i, true);
+  //         //   std::pair<IyBitSTR, int32_t> res = foreach<IyBitInstructions, AnyType<-1, int32_t>>::Key2Value();
+  //         //   if (res.second == -1) unknown = sprintf("db 0xFD, 0xCB, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
-          //   cmd = std::pair(*res.first, res.second); break;
-          // } 
+  //         //   cmd = std::pair(*res.first, res.second); break;
+  //         // } 
 
-          // AnyType<-1, int32_t>::GetValue() = instruction;
-          // std::pair<IySTR, int32_t> res = foreach<IyInstructions, AnyType<-1, int32_t>>::Key2Value();
-          // if (res.second == -1) unknown = sprintf("db 0xFD, 0x%02x", AnyType<-1, int32_t>::GetValue());
+  //         // AnyType<-1, int32_t>::GetValue() = instruction;
+  //         // std::pair<IySTR, int32_t> res = foreach<IyInstructions, AnyType<-1, int32_t>>::Key2Value();
+  //         // if (res.second == -1) unknown = sprintf("db 0xFD, 0x%02x", AnyType<-1, int32_t>::GetValue());
 
-          // cmd = std::pair(*res.first, res.second); break;
-        }
+  //         // cmd = std::pair(*res.first, res.second); break;
+  //       }
 
-        default: {
-          // FIXME: 
-          // AnyType<-1, int32_t>::GetValue() = instruction;
-          // std::pair<InstrSTR, int32_t> res = foreach<Instructions, AnyType<-1, int32_t>>::Key2Value();
-          // if (res.second == -1) unknown = sprintf("db 0x%02x", AnyType<-1, int32_t>::GetValue());
+  //       default: {
+  //         // FIXME: 
+  //         // AnyType<-1, int32_t>::GetValue() = instruction;
+  //         // std::pair<InstrSTR, int32_t> res = foreach<Instructions, AnyType<-1, int32_t>>::Key2Value();
+  //         // if (res.second == -1) unknown = sprintf("db 0x%02x", AnyType<-1, int32_t>::GetValue());
 
-          // cmd = std::pair(*res.first, res.second); break;
-        }
-      }
+  //         // cmd = std::pair(*res.first, res.second); break;
+  //       }
+  //     }
       
 
-      if (unknown.size()) { dasm.first += unknown + "\n"; continue; }
+  //     if (unknown.size()) { dasm.first += unknown + "\n"; continue; }
 
-      std::string phrase = cmd.first;
-      for (int32_t cnt = cmd.second & 0x0F, offset = 1; cnt != 1; offset++) {
-        const int32_t bytes = (cmd.second >> (4 * offset)) & 0x0F;
-        int32_t word = 0x00; cnt -= bytes;
-        for (int32_t j = 0; j < bytes; j++) {
-          word = word | (Registry::Bus->Read(++i, true) << (j * 8));
-        }
+  //     std::string phrase = cmd.first;
+  //     for (int32_t cnt = cmd.second & 0x0F, offset = 1; cnt != 1; offset++) {
+  //       const int32_t bytes = (cmd.second >> (4 * offset)) & 0x0F;
+  //       int32_t word = 0x00; cnt -= bytes;
+  //       for (int32_t j = 0; j < bytes; j++) {
+  //         word = word | (Registry::Bus->Read(++i, true) << (j * 8));
+  //       }
       
-        phrase = sprintf(phrase, word);
-      }
+  //       phrase = sprintf(phrase, word);
+  //     }
 
-      dasm.first += phrase + "\n";
-    }
+  //     dasm.first += phrase + "\n";
+  //   }
 
-    return dasm;
-  }
+  //   return dasm;
+  // }
 
-  std::string CPU::sprintf(std::string str, int32_t byte) {
-    for (int32_t i = 0; i < str.size(); i++) {
-      if (str[i] != '%' && i + 1 < str.size()) continue;
-      std::stringstream ss;
+  // std::string CPU::sprintf(std::string str, int32_t byte) {
+  //   for (int32_t i = 0; i < str.size(); i++) {
+  //     if (str[i] != '%' && i + 1 < str.size()) continue;
+  //     std::stringstream ss;
 
-      int32_t size = 2; int32_t startAt = i;
+  //     int32_t size = 2; int32_t startAt = i;
 
-      if (str[i + 1] != 'd' || str[i + 1] != 'c' || str[i + 1] != 'x') {
-        ss << std::setfill(str[++i]); size++;
+  //     if (str[i + 1] != 'd' || str[i + 1] != 'c' || str[i + 1] != 'x') {
+  //       ss << std::setfill(str[++i]); size++;
 
-        if (i + 1 < str.size() && str[i + 1] >= '0' && str[i + 1] <= '9') {
-          ss << std::setw(str[++i] - '0'); size++;
-        }
-      }
+  //       if (i + 1 < str.size() && str[i + 1] >= '0' && str[i + 1] <= '9') {
+  //         ss << std::setw(str[++i] - '0'); size++;
+  //       }
+  //     }
 
-      switch (str[i + 1]) {
-        case 'd': ss << byte; break;
-        case 'c': ss << (char)byte; break;
-        case 'x': ss << std::hex << std::uppercase << byte; break;
-        default: return str;
-      }
+  //     switch (str[i + 1]) {
+  //       case 'd': ss << byte; break;
+  //       case 'c': ss << (char)byte; break;
+  //       case 'x': ss << std::hex << std::uppercase << byte; break;
+  //       default: return str;
+  //     }
       
-      str.replace(startAt, size, ss.str());
-      return str;
-    }
+  //     str.replace(startAt, size, ss.str());
+  //     return str;
+  //   }
 
-    return str;
-  }
+  //   return str;
+  // }
 };
 
 };

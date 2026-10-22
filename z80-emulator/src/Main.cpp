@@ -21,14 +21,12 @@ private:
   typedef std::pair<uint32_t, Interpreter::RelativeToken> RelativeAddr;
 
 public:
-  App(LuaScript lua): lua(std::move(lua)) {
-    sAppName = "Z80 Emulator";
-    Registry::Initialize(this, this->lua);
-  }
-
+  App(LuaScript lua): lua(std::move(lua)) { sAppName = "Z80 Emulator"; }
   ~App() { if (sync.second != nullptr && sync.second->joinable()) sync.second->join(); }
 
   bool OnUserCreate() override {
+    Registry::Initialize(this, lua);
+
     Compile(lua.GetOr("SOURCE", ""));
     Registry::W27C512->Load(Registry::Interpreter->memory);
 
@@ -86,7 +84,7 @@ public:
 
   bool OnUserUpdate(float fElapsedTime) override {
 	  Clear(Color::BLACK);
-    AnyType<-1, float>::GetValue() = fElapsedTime;
+    // AnyType<-1, float>::GetValue() = fElapsedTime;
 
     foreach<KeyEvent, void>::Process(this);
     if (vKeyCombinationHeld.size()) fStrokeRepeat += fElapsedTime;

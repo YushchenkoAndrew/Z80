@@ -38,12 +38,11 @@ public:
 
   void Load(std::vector<uint8_t>& code) {
     for (auto& bank : memory) bank = 0x00;
-
     for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];
   }
 
-  inline uint8_t Read(uint32_t addr, bool) { return memory[addr & (uint32_t)(memory.size() - 1)]; }
-  inline uint8_t Write(uint32_t addr, uint8_t data, bool) { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
+  inline uint8_t Read(uint32_t addr, bool) override { return memory[addr & (uint32_t)(memory.size() - 1)]; }
+  inline uint8_t Write(uint32_t addr, uint8_t data, bool) override { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
   // TODO: Load disassembler here
   // void Initialize() { 
@@ -76,7 +75,7 @@ public:
     switch (mode) {
       case NORMAL:      return Preprocess(Int2Type<NORMAL>());
       case CHARACTER:   return Preprocess(Int2Type<NORMAL>());
-      case DISASSEMBLE: return Preprocess(Int2Type<DISASSEMBLE>()); 
+      // case DISASSEMBLE: return Preprocess(Int2Type<DISASSEMBLE>()); 
       // case REPLACE:     return Preprocess(Int2Type<NORMAL>());
     }
   }
@@ -93,8 +92,8 @@ public:
       MoveTo((mouse - absolute) / olc::vi2d(mode == CHARACTER ? vStep.first.y : vStep.first.x, vStep.first.y) + vStartAt.first - pos);
       // Command(Int2Type<Editor::VimT::CMD_gd>());
     } else if (mode == DISASSEMBLE && GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + size.x && mouse.y < absolute.y + size.y) {
-      auto addr = Line2Index((mouse.y - absolute.y) / vStep.second.y + vStartAt.second.y - 1);
-      Index2Pos(addr); cursor.y = dasm.second[addr];
+      // auto addr = Line2Index((mouse.y - absolute.y) / vStep.second.y + vStartAt.second.y - 1);
+      // Index2Pos(addr); cursor.y = dasm.second[addr];
     }
 
     bUpdated = false; bReleased = false;
@@ -108,7 +107,7 @@ public:
   }
 
 
-  void Draw() {
+  void Draw() override {
     switch (mode) {
       case NORMAL:    Draw(Int2Type<NORMAL>(), GameEngine); break;
       // case REPLACE:   Draw(Int2Type<NORMAL>(), GameEngine); break;
@@ -235,10 +234,10 @@ private:
     if (pos.y - vStartAt.first.y < 0 && pos.y) vStartAt.first.y -= pages.y;
   }
 
-  inline void Preprocess(Int2Type<DISASSEMBLE>) {
-    if (cursor.y - vStartAt.second.y + 3 >  (size.y + vOffset.second.y) / vStep.second.y && cursor.y < LINES_SIZE) vStartAt.second.y++;
-    if ((cursor.y - vStartAt.second.y - 1 < 0 && cursor.y) || (!cursor.y && cursor.y != vStartAt.second.y)) vStartAt.second.y--;
-  }
+  // inline void Preprocess(Int2Type<DISASSEMBLE>) {
+  //   if (cursor.y - vStartAt.second.y + 3 >  (size.y + vOffset.second.y) / vStep.second.y && cursor.y < LINES_SIZE) vStartAt.second.y++;
+  //   if ((cursor.y - vStartAt.second.y - 1 < 0 && cursor.y) || (!cursor.y && cursor.y != vStartAt.second.y)) vStartAt.second.y--;
+  // }
 
 public:
   template<int32_t T>
@@ -830,11 +829,12 @@ private:
   void UpdateCursor() {
     const int32_t posAt = index(); cursor.y = 0;
 
-    for (auto& addr : dasm.second) {
-      if (addr.first <= posAt && addr.first >= cursor.y) cursor.y = addr.first;
-    }
+    // FIXME:
+    // for (auto& addr : dasm.second) {
+    //   if (addr.first <= posAt && addr.first >= cursor.y) cursor.y = addr.first;
+    // }
 
-    cursor.y = dasm.second[cursor.y];
+    // cursor.y = dasm.second[cursor.y];
   }
 
   // template<int32_t T = Editor::VimT::CMD_NONE>
@@ -854,8 +854,9 @@ private:
   inline void Index2Pos(int32_t index) { pos.y = index / pages.x; pos.x = index - (pos.y * pages.x); }
 
   inline int32_t Line2Index(int32_t line) {
-    for (auto& addr : dasm.second) if (addr.second == line) return addr.first;
-    return dasm.second.begin()->first;
+    // for (auto& addr : dasm.second) if (addr.second == line) return addr.first;
+    // return dasm.second.begin()->first;
+    return 0;
   }
 
 
@@ -880,8 +881,8 @@ private:
   // Variables defines animation duration
   float fStrokeRepeat = 0.f;
 
-  int32_t LINES_SIZE = 0;
-  DisassembleT dasm;
+  // int32_t LINES_SIZE = 0;
+  // DisassembleT dasm;
   Interpreter::Lexer lexer;
   
 

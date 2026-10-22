@@ -1,5 +1,6 @@
 #pragma once
 
+#include "include/Foreach.h"
 #include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
 #include "src/Utils/Utils.h"
@@ -46,22 +47,20 @@ private:
 public:
   enum ModeT { NORMAL, DEBUG, FREEZE };
 
+  // CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c), runtime(std::make_unique<std::thread>(std::thread(&CPU::Runtime, this))) { Reset(); }
   CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c) { Reset(); }
   ~CPU() {
     bExec = false; sync.second.notify_all();
-
     if (runtime != nullptr && runtime->joinable()) runtime->join();
   }
 
   inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; cycles = 1; IFF.first = IFF.second = false; }
 
-  void Initialize() { 
-    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
-  }
-
   void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Process() override {}
+  void Process() override {
+    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
+  }
   void Draw() override {
     int32_t index = 0;
     olc::vi2d pos = absolute;
@@ -96,7 +95,7 @@ public:
     DrawFlag("H", flagH()); DrawFlag("Z", flagZ()); DrawFlag("S", flagS());
   }
 
-  DisassembleT Disassemble();
+  // DisassembleT Disassemble();
 
   // void Interrupt() { interrupt.second = true; halt.second.notify_all(); }
   void Interrupt() { interrupt.second = true; }
@@ -115,14 +114,13 @@ private:
         }
       }
 
-      AnyType<-1, int32_t>::GetValue() = Read();
-      // foreach<Instructions, CPU>::Key2Process(this); // FIXME:
+      foreach<Instructions, void>::Process(this, Read());
       std::this_thread::sleep_for(std::chrono::nanoseconds(clock));
 
 
       if (mode == NORMAL) {
         { Utils::Lock l(mutex); if (!IsBreakpoint(regPC())) continue; }
-        mode = FREEZE; AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
+        mode = FREEZE; GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
       }
 
       callback.second.notify_all();
@@ -133,10 +131,10 @@ private:
   }
 
 private:
-  uint8_t Read();
   inline uint16_t Word() { return Read() | (Read() << 8); }
   inline uint16_t Word(uint32_t addr) { return Read(addr) | (Read(addr + 1) << 8); }
 
+  uint8_t Read();
   uint8_t Read(uint32_t addr, bool mreq = true);
   uint8_t Write(uint32_t addr, uint8_t data, bool mreq = true);
   uint16_t Write(uint32_t addr, uint16_t data, bool mreq = true) {
@@ -185,33 +183,20 @@ public:
   }
 
 
-  inline void Process(Int2Type<Instruction::BIT_INSTR>) {
-    AnyType<-1, int32_t>::GetValue() = Read();
-    // foreach<BitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::BIT_INSTR>()); // FIXME:
-  }
-
-  inline void Process(Int2Type<Instruction::MISC_INSTR>) {
-    AnyType<-1, int32_t>::GetValue() = Read();
-    // foreach<MiscMInstructions, CPU>::Key2Process(this, Int2Type<Instruction::MISC_INSTR>()); // FIXME:
-  }
-
-  inline void Process(Int2Type<Instruction::IX_INSTR>) {
-    AnyType<-1, int32_t>::GetValue() = Read();
-    // foreach<IxInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IX_INSTR>()); // FIXME:
-  }
-
-  inline void Process(Int2Type<Instruction::IY_INSTR>) {
-    AnyType<-1, int32_t>::GetValue() = Read();
-    // foreach<IyInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IY_INSTR>()); // FIXME:
-  }
+  inline void Process(Int2Type<Instruction::BIT_INSTR>)  { foreach<BitInstructions,   void>::Process(this, Read()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>) { foreach<MiscMInstructions, void>::Process(this, Read()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>)   { foreach<IxInstructions,    void>::Process(this, Read()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>)   { foreach<IyInstructions,    void>::Process(this, Read()); }
 
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>) {
-    AnyType<-1, int32_t>::GetValue() = Read();
+    // FIXME:
+    // AnyType<-1, int32_t>::GetValue() = Read();
     // foreach<IxBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IX_INSTR>(), Int2Type<IxInstruction::IxBitInstr>()); // FIXME:
   }
 
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>) {
-    AnyType<-1, int32_t>::GetValue() = Read();
+    // FIXME:
+    // AnyType<-1, int32_t>::GetValue() = Read();
     // foreach<IyBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IY_INSTR>(), Int2Type<IyInstruction::IyBitInstr>()); // FIXME:
   }
 
@@ -1144,7 +1129,7 @@ public:
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_7_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 7); }
 
 private:
-  std::string sprintf(std::string str, int32_t byte);
+  // std::string sprintf(std::string str, int32_t byte);
 
   inline uint8_t Inc8(uint8_t a) {
     uint16_t acc = (uint16_t)a + 1;

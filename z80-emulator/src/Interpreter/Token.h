@@ -10,9 +10,9 @@ namespace Interpreter {
  * This code was hardly expired by the book {Creating Interpreters}
  * Check out this link for more info: http://www.craftinginterpreters.com/scanning.html#lexemes-and-tokens
  */
-
-typedef std::pair<const char*, olc::Pixel> MetadataT;
 class Token {
+  typedef std::pair<const char*, olc::Pixel> MetadataT;
+
 public:
   Token(): type(TokenT::NONE), lexeme(""), literal(""), col(-1), line(-1) {}
   Token(TokenT t, std::string le, std::string li, int32_t col, int32_t line):

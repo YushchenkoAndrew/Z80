@@ -4,6 +4,7 @@ WINDOW = { width = WIDTH, height = HIGHT - 24 }
 
 CLOCK = 250; -- nano seconds = 4MHz
 SOURCE = "assets/src/DoS/Main.asm";
+-- SOURCE = "assets/test/Test.asm";
 -- src = "assets/test/Timer/Test.asm",
 -- src = "assets/test/RTC/Test.asm",
 -- src = "assets/test/LCD/Test.asm",
