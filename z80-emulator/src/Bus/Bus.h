@@ -1,7 +1,5 @@
 #pragma once
 
-#include "include/LuaScript.h"
-#include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
 #include "src/Window/Window.h"
 
@@ -28,14 +26,14 @@ public:
   void Process() override {}
   void Draw() override {}
 
-  uint8_t Read(uint32_t addr, bool mreq);
-  uint8_t Write(uint32_t addr, uint8_t data, bool mreq);
+  uint8_t Read(uint32_t addr, bool mreq) override;
+  uint8_t Write(uint32_t addr, uint8_t data, bool mreq) override;
 
 private:
-  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16);
-  inline uint8_t mux(Int2Type<MREQ>, uint32_t addr16, uint8_t data);
-  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr);
-  inline uint8_t mux(Int2Type<IORQ>, uint32_t addr, uint8_t data);
+  uint8_t mux(Int2Type<MREQ>, uint32_t addr16);
+  uint8_t mux(Int2Type<MREQ>, uint32_t addr16, uint8_t data);
+  uint8_t mux(Int2Type<IORQ>, uint32_t addr);
+  uint8_t mux(Int2Type<IORQ>, uint32_t addr, uint8_t data);
 
 // public:
   // inline std::string GetId() { return typeid(this).name(); }

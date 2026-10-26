@@ -175,16 +175,24 @@ public:
   //   AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<CMD_EXEC_CALLBACK>());
   // }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::A>) { 
+  Window::StrokeAction Process(Int2Type<olc::Key::SPACE>) { 
+    GameEngine->Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>()); 
+    return nullptr;
+  }
+
+  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SPACE>) { 
     GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); 
+    return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::C>) { 
     GameEngine->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); 
+    return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::D>) { 
     GameEngine->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); 
+    return nullptr;
   }
 
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K7>) { 
@@ -329,6 +337,7 @@ private:
 
 
 inline const Window::StrokeT<> Panel::commands = Window::StrokeT<>::Init({
+  { Int2Type<olc::Key::SPACE>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::CTRL>(), {
     { Int2Type<olc::Key::SPACE>(), {
       { Int2Type<olc::Key::K1>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
@@ -337,7 +346,8 @@ inline const Window::StrokeT<> Panel::commands = Window::StrokeT<>::Init({
       { Int2Type<olc::Key::K4>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
       { Int2Type<olc::Key::K5>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
 
-      { Int2Type<olc::Key::A>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+      { Int2Type<olc::Key::SPACE>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
+      // { Int2Type<olc::Key::A>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
       { Int2Type<olc::Key::C>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
       { Int2Type<olc::Key::D>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
       { Int2Type<olc::Key::Q>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },

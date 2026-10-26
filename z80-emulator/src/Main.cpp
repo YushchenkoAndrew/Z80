@@ -28,7 +28,7 @@ public:
     Registry::Initialize(this, lua);
 
     Compile(lua.GetOr("SOURCE", ""));
-    Registry::W27C512->Load(Registry::Interpreter->memory);
+    Registry::W27C512->Load(Registry::Interpreter->memory); Registry::Z80->Continue();
 
     for (auto f : Registry::Interpreter->files()) Registry::Editor->Open(f);
 
@@ -159,46 +159,24 @@ public:
 
   uint32_t GetMode() override { return Registry::Z80->GetMode(); }
 
-  void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "NEW_DEBUG_MODE_CALLBACK\n";
-    #endif
 
-    Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
-    Event(Int2Type<DEBUG_RESET_CALLBACK>());
-  }
+  void Event(Int2Type<PROGRAM_EXIT>)               override { bExec = false; }
+  void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>)    override { Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); Event(Int2Type<DEBUG_RESET_CALLBACK>()); }
+  void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Debug(); }
+  void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Normal(); }
+  void Event(Int2Type<DEBUG_RESET_CALLBACK>)       override { Registry::Z80->Addr(); Registry::Z80->Reset(); }
 
-  void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "ATTACH_DEBUG_MODE_CALLBACK\n";
-    #endif
-
-    if (!Registry::Z80->IsRunning()) return;
-
-    Registry::Z80->Debug();
-    // for (auto& p : panels) p.Lock(); // TODO: ????
-  }
-
-  void Event(Int2Type<DEBUG_RESET_CALLBACK>) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "DEBUG_RESET_CALLBACK\n";
-    #endif
-
-    if (!Registry::Z80->IsRunning()) return;
-
-    // Wait until cpu will enter debug mode
-    Registry::Z80->Addr(); Registry::Z80->Reset();
-  }
-
+  void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override { this->vKeyEventListeners.insert(static_cast<Window::KeyboardEvent*>(ptr)); }
+  void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,void* ptr) override { this->vKeyEventListeners.erase(static_cast<Window::KeyboardEvent*>(ptr)); }
 
   void Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>) override {
     #ifdef DEBUG_MODE 
     std::cout << "NEXT_DEBUG_STEP_CALLBACK\n";
     #endif
 
-    if (!Registry::Z80->IsRunning()) return;
+    // if (!Registry::Z80->IsRunning()) return;
     if (!Registry::Z80->IsDebug()) return;
-    else Registry::Z80->Step();
+    else Registry::Z80->Continue();
 
     RelativeAddr next = Addr2Token(Registry::Z80->Addr());
     if (next.second.second == nullptr) return;
@@ -208,16 +186,6 @@ public:
     Registry::IMS1423->Move2Addr(Registry::Z80->Stack());
   }
 
-  void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "DETACH_DEBUG_MODE_CALLBACK\n";
-    #endif
-
-    if (!Registry::Z80->IsRunning()) return;
-
-    Registry::Z80->Normal();
-    // for (auto& p : panels) p.Unlock(); // TODO: ???
-  }
 
   void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d cursor) override {
     #ifdef DEBUG_MODE 
@@ -252,22 +220,6 @@ public:
     Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
   }
 
-  void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "KEYBOARD_EVENT_SUBSCRIBE\n";
-    #endif
-
-    this->vKeyEventListeners.insert(static_cast<Window::KeyboardEvent*>(ptr));
-  }
-
-  void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,  void* ptr) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "KEYBOARD_EVENT_UNSUBSCRIBE\n";
-    #endif
-
-    this->vKeyEventListeners.erase(static_cast<Window::KeyboardEvent*>(ptr));
-  }
-
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
     #ifdef DEBUG_MODE 
     std::cout << "PANEL_SELECT_CALLBACK " << index << "\n" ;
@@ -295,13 +247,6 @@ public:
     // advance(); // Consume ':'
 
     // Cmd2Action(); nCurr = 0; cmd = "";
-  }
-
-  void Event(Int2Type<PROGRAM_EXIT>) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "PROGRAM_EXIT\n";
-    #endif
-    bExec = false;
   }
 
 private:

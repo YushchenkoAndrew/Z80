@@ -6,24 +6,6 @@
 namespace Bus {
   #define BIT(word, pos) ((word >> pos) & 0x01)
 
-  #define TEMPLATE template <int32_t SizeT>
-  #define CLASS Memory<SizeT>
-
-  TEMPLATE void CLASS::Disassemble() {
-    // dasm = Registry::Z80->Disassemble();
-    // lexer.scan(dasm.first); 
-
-    // for (auto& addr : dasm.second) LINES_SIZE = std::max(LINES_SIZE, addr.second);
-  }
-
-
-  template class Memory<W27C512_SIZE>;
-  template class Memory<IMS1423_SIZE>;
-  template class Memory<HY62256A_SIZE>;
-
-  #undef TEMPLATE
-  #undef CLASS
-
   void Keyboard::Interrupt() { Registry::IRQ->ResetFlag(IRQ::BIT::KEYBOARD); }
   void RTC::Interrupt() { IRQF(); Registry::IRQ->ResetFlag(IRQ::BIT::RTC); }
   void PIT::Interrupt(int32_t ct) { Registry::IRQ->ResetFlag(IRQ::BIT::CT1 - ct + 1); }

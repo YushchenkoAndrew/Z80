@@ -6,6 +6,7 @@
 #include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 #include <condition_variable>
+#include <cstdio>
 #include <memory>
 #include <string>
 
@@ -47,20 +48,17 @@ private:
 public:
   enum ModeT { NORMAL, DEBUG, FREEZE };
 
-  // CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c), runtime(std::make_unique<std::thread>(std::thread(&CPU::Runtime, this))) { Reset(); }
-  CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c) { Reset(); }
+  CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c), runtime(std::thread(&CPU::Runtime, this)) { Reset(); }
   ~CPU() {
     bExec = false; sync.second.notify_all();
-    if (runtime != nullptr && runtime->joinable()) runtime->join();
+    if (runtime.joinable()) runtime.join();
   }
 
   inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; cycles = 1; IFF.first = IFF.second = false; }
 
   void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Process() override {
-    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&CPU::Runtime, this));
-  }
+  void Process() override {}
   void Draw() override {
     int32_t index = 0;
     olc::vi2d pos = absolute;
@@ -102,6 +100,8 @@ public:
   
 private:
   void Runtime() {
+    Wait();
+
     while (bExec) {
       if (cycles < 100 && --cycles != 0) continue;
 
@@ -123,20 +123,18 @@ private:
         mode = FREEZE; GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
       }
 
-      callback.second.notify_all();
-
-      std::unique_lock<std::mutex> lock(sync.first);
-      sync.second.wait(lock);
+      callback.second.notify_all(); Wait();
     }
   }
+
 
 private:
   inline uint16_t Word() { return Read() | (Read() << 8); }
   inline uint16_t Word(uint32_t addr) { return Read(addr) | (Read(addr + 1) << 8); }
 
   uint8_t Read();
-  uint8_t Read(uint32_t addr, bool mreq = true);
-  uint8_t Write(uint32_t addr, uint8_t data, bool mreq = true);
+  uint8_t Read(uint32_t addr, bool mreq = true) override;
+  uint8_t Write(uint32_t addr, uint8_t data, bool mreq = true) override;
   uint16_t Write(uint32_t addr, uint16_t data, bool mreq = true) {
     Write(addr + 1, HIGH(data), mreq); Write(addr, LOW(data), mreq);
     return data;
@@ -1323,14 +1321,16 @@ private:
    */
   inline bool IsParity(uint8_t x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (~x) & 1; }
 
+private:
+  inline void Wait() { std::unique_lock<std::mutex> lock(sync.first); sync.second.wait(lock); }
+
 public:
-  inline bool IsRunning() { return runtime != nullptr; }
   inline bool IsDebug() { return mode == DEBUG; }
   inline void Debug() { mode = DEBUG; }
-  inline void Normal() { mode = NORMAL; sync.second.notify_all(); }
+  inline void Normal() { mode = NORMAL; Continue(); }
   inline ModeT GetMode() { return mode; }
 
-  inline void Step() { if (mode == DEBUG) sync.second.notify_all(); }
+  inline void Continue() { sync.second.notify_all(); }
   inline uint16_t Stack() { return regSP(); }
   inline uint16_t Addr() { 
     std::unique_lock<std::mutex> lock(callback.first);
@@ -1367,8 +1367,8 @@ private:
   std::pair<std::mutex, std::condition_variable> halt;
   std::pair<IM_T, std::atomic<bool>> interrupt = std::pair(IM0, false);
 
+  std::thread runtime;
   std::atomic<bool> bExec = true;
-  std::unique_ptr<std::thread> runtime = nullptr;
 
   std::array<std::atomic<uint16_t>, 13> reg;
   

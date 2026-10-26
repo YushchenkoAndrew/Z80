@@ -1,11 +1,12 @@
 #pragma once
 
-#include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
+#include "src/Interpreter/Disassembler.h"
 #include "src/Interpreter/Lexer.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 #include "src/Window/Event/KeyboardEvent.h"
+#include <algorithm>
 
 namespace Bus {
 
@@ -32,13 +33,20 @@ public:
   // Memory(int32_t s): pages(s, 0), bus(nullptr) {}
 
   // Memory(Bus* b): bus(b), Window::Window(nullptr),{}
-  Memory(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, id), ::Window::KeyboardEvent(engine) {}
+  Memory(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, id), ::Window::KeyboardEvent(engine), disassembler(memory) {}
 
-  void Disassemble();
+  void Disassemble() {
+    disassembler.scan();
+    // dasm = Registry::Z80->Disassemble();
+    // lexer.scan(dasm.first); 
+
+    // for (auto& addr : dasm.second) LINES_SIZE = std::max(LINES_SIZE, addr.second);
+
+  }
 
   void Load(std::vector<uint8_t>& code) {
-    for (auto& bank : memory) bank = 0x00;
-    for (uint32_t i = 0; i < code.size(); i++) memory[i] = code[i];
+    memory.fill(0); const auto size = std::min(code.size(), memory.size());
+    std::copy(code.begin(), code.begin() + size, memory.begin());
   }
 
   inline uint8_t Read(uint32_t addr, bool) override { return memory[addr & (uint32_t)(memory.size() - 1)]; }
@@ -71,15 +79,6 @@ public:
   inline void Unlock() { locked = false; }
 
 
-  void Preprocess() {
-    switch (mode) {
-      case NORMAL:      return Preprocess(Int2Type<NORMAL>());
-      case CHARACTER:   return Preprocess(Int2Type<NORMAL>());
-      // case DISASSEMBLE: return Preprocess(Int2Type<DISASSEMBLE>()); 
-      // case REPLACE:     return Preprocess(Int2Type<NORMAL>());
-    }
-  }
-
   void Process() override {
     auto nWheel = GameEngine->GetMouseWheel();
     if (nWheel > 0) MoveTo({ 0, -1 });
@@ -96,23 +95,23 @@ public:
       // Index2Pos(addr); cursor.y = dasm.second[addr];
     }
 
-    bUpdated = false; bReleased = false;
+    // bUpdated = false; bReleased = false;
 
-    switch (mode) {
-      // case NORMAL:    return Process(Int2Type<NORMAL>(), GameEngine);
-      // case CHARACTER: return Process(Int2Type<NORMAL>(), GameEngine);
-      // case DISASSEMBLE: return Process(Int2Type<NORMAL>(), GameEngine); 
-      // case REPLACE:   return Process(Int2Type<REPLACE>(), GameEngine);
-    }
+    // switch (mode) {
+    //   case NORMAL:    return Process(Int2Type<NORMAL>());
+    //   case CHARACTER: return Process(Int2Type<NORMAL>());
+    //   case DISASSEMBLE: return Process(Int2Type<NORMAL>()); 
+    //   // case REPLACE:   return Process(Int2Type<REPLACE>(), GameEngine);
+    // }
   }
 
 
   void Draw() override {
     switch (mode) {
-      case NORMAL:    Draw(Int2Type<NORMAL>(), GameEngine); break;
+      case NORMAL:    Draw(Int2Type<NORMAL>()); break;
       // case REPLACE:   Draw(Int2Type<NORMAL>(), GameEngine); break;
-      case CHARACTER: Draw(Int2Type<CHARACTER>(), GameEngine); break;
-      case DISASSEMBLE: Draw(Int2Type<DISASSEMBLE>(), GameEngine); break;
+      case CHARACTER: Draw(Int2Type<CHARACTER>()); break;
+      case DISASSEMBLE: Draw(Int2Type<DISASSEMBLE>()); break;
     }
 
     auto nWidth = (mode == CHARACTER ? vStep.first.y : vStep.first.x) * pages.x + vOffset.first.x;
@@ -133,7 +132,7 @@ public:
   }
 
 private:
-  void Draw(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
+  void Draw(Int2Type<NORMAL>) {
     for (int32_t i = 0; i < pages.x; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * vStep.first + olc::vi2d(vOffset.first.x, 0);
       const auto& color = i == this->pos.x ? Color::GREY : Color::DARK_GREY;
@@ -163,7 +162,7 @@ private:
     GameEngine->DrawString(cursor, Utils::Int2Hex(memory[index(pos)]), Color::BLACK);
   }
 
-  void Draw(Int2Type<CHARACTER>, PixelGameEngine* GameEngine) {
+  void Draw(Int2Type<CHARACTER>) {
     for (int32_t i = 0; i < pages.x; i++) {
       olc::vi2d pos = absolute + olc::vi2d(i, 0) * olc::vi2d(vStep.first.y, vStep.first.y) + olc::vi2d(vOffset.first.x, 0);
       const auto& color = i == this->pos.x ? Color::GREY : Color::DARK_GREY;
@@ -191,7 +190,7 @@ private:
     GameEngine->DrawString(cursor, isprint(memory[index(pos)]) ? std::string(1, memory[index(pos)]) : ".", Color::BLACK);
   }
 
-  void Draw(Int2Type<DISASSEMBLE>, PixelGameEngine* GameEngine) {
+  void Draw(Int2Type<DISASSEMBLE>) {
     const olc::vi2d size = this->size + this->vOffset.first;
 
     olc::vi2d pos = olc::vi2d(absolute.x + vOffset.second.x, absolute.y + (cursor.y + 1 - vStartAt.second.y) * vStep.second.y + vOffset.second.y);
@@ -225,14 +224,14 @@ private:
     }
   }
 
-  inline void Preprocess(Int2Type<NORMAL>) {
-    if (pos.y - vStartAt.first.y >= pages.y && pos.y < ((int32_t)memory.size() / pages.x)) {
-      if (vStartAt.first.y + pages.y <= (int32_t)memory.size()) vStartAt.first.y += pages.y;
-      else vStartAt.first.y += (vStartAt.first.y + pages.y) % (int32_t)memory.size();
-    }
+  // inline void Preprocess(Int2Type<NORMAL>) {
+  //   if (pos.y - vStartAt.first.y >= pages.y && pos.y < ((int32_t)memory.size() / pages.x)) {
+  //     if (vStartAt.first.y + pages.y <= (int32_t)memory.size()) vStartAt.first.y += pages.y;
+  //     else vStartAt.first.y += (vStartAt.first.y + pages.y) % (int32_t)memory.size();
+  //   }
 
-    if (pos.y - vStartAt.first.y < 0 && pos.y) vStartAt.first.y -= pages.y;
-  }
+  //   if (pos.y - vStartAt.first.y < 0 && pos.y) vStartAt.first.y -= pages.y;
+  // }
 
   // inline void Preprocess(Int2Type<DISASSEMBLE>) {
   //   if (cursor.y - vStartAt.second.y + 3 >  (size.y + vOffset.second.y) / vStep.second.y && cursor.y < LINES_SIZE) vStartAt.second.y++;
@@ -529,77 +528,77 @@ public:
 
 
 private:
-//   void Process(Int2Type<REPLACE>, PixelGameEngine* GameEngine) {
-//     // FIXME: ....
-//     // foreach<KeyEvent, Memory>::Process(this);
-//   }
+  // void Process(Int2Type<REPLACE>) {
+  //   // FIXME: ....
+  //   // foreach<KeyEvent, Memory>::Process(this);
+  // }
 
-//   void Process(Int2Type<NORMAL>, PixelGameEngine* GameEngine) {
-//     // FIXME: .....
-//     // foreach<KeyEvent, Memory>::Process(this);
+  // void Process(Int2Type<NORMAL>) {
+  //   // FIXME: .....
+  //   // foreach<KeyEvent, Memory>::Process(this);
 
-//     if (!bUpdated) return;
-//     else bUpdated = false;
+  //   // if (!bUpdated) return;
+  //   // else bUpdated = false;
     
-//     #ifdef DEBUG_MODE
-//     printf("Memory: '%s'\n", cmd.c_str());
-//     #endif
+  //   // #ifdef DEBUG_MODE
+  //   // printf("Memory: '%s'\n", cmd.c_str());
+  //   // #endif
 
-//     if (search.bEnabled) {
-//       // TODO: ADD ability to edit this string
-//       // std::get<0>(search2.second).push_back(cmd.back());
-//       // if (std::get<0>(search.second).size() == std::get<1>(search.second)) 
-//       if (cmd.size() - search.nStartAt >= 0) search.sPhrase = cmd.substr(search.nStartAt);
-//       return reset(); 
-//     }
+  //   // if (search.bEnabled) {
+  //   //   // TODO: ADD ability to edit this string
+  //   //   // std::get<0>(search2.second).push_back(cmd.back());
+  //   //   // if (std::get<0>(search.second).size() == std::get<1>(search.second)) 
+  //   //   if (cmd.size() - search.nStartAt >= 0) search.sPhrase = cmd.substr(search.nStartAt);
+  //   //   return reset(); 
+  //   // }
 
-//     if (nCurr == 0) {
-//       if (match<6>({ 'i', 'a', 'C', 'D',  'u', 'U' })) { phrase(peekPrev()); return reset(); };
-//       if (Utils::IsDigit(peek()) && peek() != '0') { nCurr++; return; }
+  //   // if (nCurr == 0) {
+  //   //   if (match<6>({ 'i', 'a', 'C', 'D',  'u', 'U' })) { phrase(peekPrev()); return reset(); };
+  //   //   if (Utils::IsDigit(peek()) && peek() != '0') { nCurr++; return; }
 
-//       if (cmd.size() > 1 && match<1>({ '^' })) {
-//         if (peek() == 'd') { phrase(Int2Type<Editor::VimT::CMD_CTRL_d>(), false); return reset(); }
-//         if (peek() == 'u') { phrase(Int2Type<Editor::VimT::CMD_CTRL_u>(), false); return reset(); }
+  //   //   if (cmd.size() > 1 && match<1>({ '^' })) {
+  //   //     if (peek() == 'd') { phrase(Int2Type<Editor::VimT::CMD_CTRL_d>(), false); return reset(); }
+  //   //     if (peek() == 'u') { phrase(Int2Type<Editor::VimT::CMD_CTRL_u>(), false); return reset(); }
 
-//         error(peek(), "Invalid operation");
-//       }
+  //   //     error(peek(), "Invalid operation");
+  //   //   }
 
-//     } else {
-//       uint8_t mask = ((uint8_t)Utils::IsDigit(peekPrev()) << 1) + (uint8_t)Utils::IsDigit(peek());
+  //   // } else {
+  //   //   uint8_t mask = ((uint8_t)Utils::IsDigit(peekPrev()) << 1) + (uint8_t)Utils::IsDigit(peek());
 
-//       switch(mask) {
-//         case 0b11: nCurr++; return;
-//         case 0b01: reset(false); return;
-//       }
-//     }
+  //   //   switch(mask) {
+  //   //     case 0b11: nCurr++; return;
+  //   //     case 0b01: reset(false); return;
+  //   //   }
+  //   // }
 
 
-//     if (match<21>({ 'h', 'j', 'k', 'l', 'x', 'r', 'w', 'b', 'e', '0', '$', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
-//       switch (peekPrev()) {
-//         case 'g': search = SearchT(true, 1, 1, true, pos); return;
-//         // case 'r': search = SearchT(true, 1, 2, true, pos); break; // TODO: Impl replace logic
-//         case 'f': case 'F': search = SearchT(true, 1, 1, true, pos); break;
-//         case '/': case '?': search = SearchT(true, 1, -1, true, pos); break;
-//       }
+  //   // if (match<21>({ 'h', 'j', 'k', 'l', 'x', 'r', 'w', 'b', 'e', '0', '$', 'G', '/', '?', 'n', 'N', 'f', 'F', 'r', ',', ';' })) {
+  //   //   switch (peekPrev()) {
+  //   //     case 'g': search = SearchT(true, 1, 1, true, pos); return;
+  //   //     // case 'r': search = SearchT(true, 1, 2, true, pos); break; // TODO: Impl replace logic
+  //   //     case 'f': case 'F': search = SearchT(true, 1, 1, true, pos); break;
+  //   //     case '/': case '?': search = SearchT(true, 1, -1, true, pos); break;
+  //   //   }
 
-//       // (noun * number) + verb
-//       phrase(peekPrev()); number(); verb(peek(nCurr - 2)); 
+  //   //   // (noun * number) + verb
+  //   //   phrase(peekPrev()); number(); verb(peek(nCurr - 2)); 
 
-//       return reset();
-//     }
+  //   //   return reset();
+  //   // }
 
-//     // adverb
-//     if (match<2>({ 'p', 'P' })) { phrase(peekPrev()); number(); return reset(); }
-//     if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_dd>(), false); number(); return reset(); } 
-//     if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<Editor::VimT::CMD_yy>(), false); number(); return reset(); } 
-//     if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_gd>(), false); return reset(); } 
-//     if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<Editor::VimT::CMD_gg>(), true, true); number();  verb(peek(nCurr - 3)); return reset(); } 
+  //   // // adverb
+  //   // if (match<2>({ 'p', 'P' })) { phrase(peekPrev()); number(); return reset(); }
+  //   // if (peekPrev() == 'd' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_dd>(), false); number(); return reset(); } 
+  //   // if (peekPrev() == 'y' && match<1>({ 'y' })) { phrase(Int2Type<Editor::VimT::CMD_yy>(), false); number(); return reset(); } 
+  //   // if (peekPrev() == 'g' && match<1>({ 'd' })) { phrase(Int2Type<Editor::VimT::CMD_gd>(), false); return reset(); } 
+  //   // if (peekPrev() == 'g' && match<1>({ 'g' })) { phrase(Int2Type<Editor::VimT::CMD_gg>(), true, true); number();  verb(peek(nCurr - 3)); return reset(); } 
 
-//     // verb
-//     if (match<4>({ 'c', 'd', 'y', 'g' })) return;
+  //   // // verb
+  //   // if (match<4>({ 'c', 'd', 'y', 'g' })) return;
 
-//     reset(false);
-//   }
+  //   // reset(false);
+  // }
 
 //   inline void verb(const char c) {
 //     switch (c) {
@@ -879,7 +878,7 @@ private:
 
 
   // Variables defines animation duration
-  float fStrokeRepeat = 0.f;
+  // float fStrokeRepeat = 0.f;
 
   // int32_t LINES_SIZE = 0;
   // DisassembleT dasm;
@@ -890,7 +889,8 @@ protected:
   olc::vi2d pos = olc::vi2d(0, 0);
   olc::vi2d cursor = olc::vi2d(0, 0);
 
-  std::array<uint8_t, SizeT> memory;
+  Interpreter::Disassembler<SizeT> disassembler;
+  std::array<uint8_t, SizeT> memory = {};
 
 };
 

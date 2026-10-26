@@ -37,7 +37,7 @@ public:
   }
 
 
-  uint8_t Read(uint32_t addr, bool) { 
+  uint8_t Read(uint32_t addr, bool) override { 
     switch (addr & 3) {
       case REG::A: return regA(Int2Type<REG2DATA>());
       case REG::B: return regB(Int2Type<REG2DATA>());
@@ -48,7 +48,7 @@ public:
   }
 
 
-  uint8_t Write(uint32_t addr, uint8_t data, bool) {
+  uint8_t Write(uint32_t addr, uint8_t data, bool) override {
     switch (addr & 3) {
       case REG::A: return regA(Int2Type<DATA2REG>(), data);
       case REG::B: return regB(Int2Type<DATA2REG>(), data);
@@ -150,8 +150,8 @@ private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(16, 0);
 
-  std::array<uint8_t, 3> regs;
-  std::array<std::pair<ModeT, bool>, 4> options;
+  std::array<uint8_t, 3> regs = {};
+  std::array<std::pair<ModeT, bool>, 4> options = {};
 };
 
 #undef BIT
