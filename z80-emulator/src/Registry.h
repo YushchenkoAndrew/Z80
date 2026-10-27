@@ -22,11 +22,6 @@
 #include <unordered_set>
 
 class Registry {
-private:
-  typedef Bus::Memory<W27C512_SIZE> W27C512_T;
-  typedef Bus::Memory<IMS1423_SIZE> IMS1423_T;
-  typedef Bus::Memory<HY62256A_SIZE> HY62256A_T;
-
 public:
   static void Initialize(PixelGameEngine* engine, LuaScript& lua) {
     const auto clock = lua.GetOr("CLOCK", 1);
@@ -44,10 +39,10 @@ public:
     windows.insert(Z80 = std::make_shared<Bus::Z80::CPU>(engine, "Z80", clock));
     windows.insert(KR580VI53 = std::make_shared<Bus::PIT>(engine, "KR580VI53", clock * 8));
 
-    windows.insert(W27C512 = std::make_shared<W27C512_T>(engine, "W27C512"));
-    windows.insert(IMS1423 = std::make_shared<IMS1423_T>(engine, "IMS1423"));
-    windows.insert(MC146818 = std::make_shared<Bus::RTC>(engine, "MC146818"));
-    windows.insert(HY62256A = std::make_shared<HY62256A_T>(engine, "HY62256A"));
+    windows.insert(MC146818 = std::make_shared<Bus::RTC>   (engine, "MC146818"));
+    windows.insert(W27C512  = std::make_shared<Bus::Memory>(engine, "W27C512", W27C512_SIZE));
+    windows.insert(IMS1423  = std::make_shared<Bus::Memory>(engine, "IMS1423", IMS1423_SIZE));
+    windows.insert(HY62256A = std::make_shared<Bus::Memory>(engine, "HY62256A",HY62256A_SIZE));
 
     windows.insert(Editor = std::make_shared<Editor::Editor>(engine, "editor"));
     windows.insert(Bindings = std::make_shared<Editor::Popup>(engine, "bindings"));
@@ -77,9 +72,9 @@ public:
   inline static std::shared_ptr<Bus::Keyboard>   Keyboard;
   inline static std::shared_ptr<Bus::Z80::CPU>   Z80;
 
-  inline static std::shared_ptr<W27C512_T>       W27C512;
-  inline static std::shared_ptr<IMS1423_T>       IMS1423;
-  inline static std::shared_ptr<HY62256A_T>      HY62256A;
+  inline static std::shared_ptr<Bus::Memory>       W27C512;
+  inline static std::shared_ptr<Bus::Memory>       IMS1423;
+  inline static std::shared_ptr<Bus::Memory>      HY62256A;
 
   inline static std::shared_ptr<Editor::Popup>   Bindings;
   inline static std::shared_ptr<Editor::Editor>  Editor;

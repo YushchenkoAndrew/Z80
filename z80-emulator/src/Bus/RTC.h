@@ -8,7 +8,7 @@ namespace Bus {
 
 #define MASK(pos) (1 << (pos))
 
-class RTC : public Memory<MC146818_SIZE> {
+class RTC : public Memory {
   struct ADDR {
     struct CLOCK { enum { SECONDS = 0, MINUTES = 2, HOURS = 4 }; };
     struct ALARM { enum { SECONDS = 1, MINUTES = 3, HOURS = 5 }; };
@@ -25,7 +25,7 @@ class RTC : public Memory<MC146818_SIZE> {
   };
 
 public:
-  RTC(PixelGameEngine* engine, std::string id): Window::Base(engine), Memory(engine, std::move(id)) {}
+  RTC(PixelGameEngine* engine, std::string id): Window::Base(engine), Memory(engine, std::move(id), MC146818_SIZE) {}
 
   ~RTC() {
     bExec = false;

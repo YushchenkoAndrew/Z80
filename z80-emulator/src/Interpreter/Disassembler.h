@@ -1,28 +1,29 @@
 #pragma once
 
 #include "src/Bus/Defs.h"
-#include <array>
+#include "src/Interpreter/Lexer.h"
 #include <cstdint>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace Interpreter {
 
-template<int32_t SizeT>
 class Disassembler {
   typedef std::pair<const char*, uint8_t> MetadataT;
 
 public:
-  Disassembler(std::array<uint8_t, SizeT>& memory): memory(memory) {}
+  Disassembler(std::vector<uint8_t>& memory): memory(memory) {}
 
-  std::string scan() {
-    std::string str = ""; index = 0;
+  std::list<std::string> scan() {
+    src = ""; index = 0;
 
     while (!isAtEnd()) {
       auto cmd = GetInstruction(advance());
-      str += (cmd.second ? GetCode(cmd.first, cmd.second) : cmd.first) + "\n";
+      src += (cmd.second ? GetCode(cmd.first, cmd.second) : cmd.first) + "\n";
     }
 
-    return std::move(str);
+    return lexer.scan(src);
   }
 
   std::string GetCode(std::string phrase, uint8_t mask) {
@@ -119,11 +120,14 @@ public:
 
 private:
   inline uint8_t advance() { return memory[index++]; }
-  inline bool isAtEnd() { return index >= +SizeT; }
+  inline bool isAtEnd() { return index >= memory.size(); }
 
 private:
+  Lexer lexer;
+
   int32_t index = 0; 
-  std::array<uint8_t, SizeT>& memory;
+  std::string src = "";
+  std::vector<uint8_t>& memory;
 
 private:
 static inline const std::unordered_map<uint8_t, MetadataT> instructions = {

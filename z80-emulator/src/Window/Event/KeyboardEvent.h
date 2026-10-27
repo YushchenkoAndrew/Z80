@@ -50,7 +50,7 @@ public:
     for (const auto& [key, child] : node->children) {
       const auto code = std::string(GetKeycode(key));
 
-      if (child.func != nullptr) { keys.push_back(code); continue; }
+      if (child.func != nullptr) { keys.push_back(code); keys.push_back("<key>"); continue; }
       for (const auto& combination : Combinations(&child)) {
         keys.push_back(code + " " + combination);
       }
