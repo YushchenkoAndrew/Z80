@@ -4,6 +4,8 @@
 #include "src/Defs.h"
 #include "src/Window/Base.h"
 #include "src/Window/Event/StrokeAction.h"
+#include <cctype>
+#include <utility>
 
 namespace Window {
 
@@ -48,7 +50,8 @@ public:
     std::vector<std::string> keys;
 
     for (const auto& [key, child] : node->children) {
-      const auto code = std::string(GetKeycode(key));
+      auto code = std::string(GetKeycode(key, true));
+      // for (auto& c : code) c = std::toupper(c);
 
       if (child.func != nullptr) { keys.push_back(code); keys.push_back("<key>"); continue; }
       for (const auto& combination : Combinations(&child)) {
@@ -59,7 +62,10 @@ public:
     return keys;
   }
 
-  static const char* GetKeycode(olc::Key key) { return keycodes.at(key); };
+  static const char* GetKeycode(olc::Key key, bool upper = false) {
+    auto keycode = keycodes.at(key);
+    return upper ? keycode.second : keycode.first;
+  };
 
 protected:
   inline void reset(bool exec = true) {
@@ -129,31 +135,39 @@ public:
   bool bReleased = false;
 
 private:
-  static inline const std::unordered_map<olc::Key, const char*> keycodes = {
-    { olc::Key::SPACE,  "SPACE" }, { olc::Key::TAB,    "TAB" },   { olc::Key::SHIFT,  "SHIFT" }, { olc::Key::CTRL,   "CTRL" }, { olc::Key::INS,    "INS" },
-    { olc::Key::DEL,    "DEL" },   { olc::Key::HOME,   "HOME" },  { olc::Key::END,    "END" },   { olc::Key::PGUP,   "PGUP" }, { olc::Key::PGDN,   "PGDN" }, 
-    { olc::Key::BACK,  "BACK" }, { olc::Key::ESCAPE,"ESCAPE" },{ olc::Key::RETURN,"RETURN" },{ olc::Key::ENTER, "ENTER" },{ olc::Key::PAUSE, "PAUSE" },
-    { olc::Key::SCROLL,"SCOLL" },
+  static inline const std::unordered_map<olc::Key, std::pair<const char*, const char*>> keycodes = {
+    { olc::Key::SPACE, { "SPACE",  "SPACE" } }, { olc::Key::TAB,   { "TAB",    "TAB"   } }, { olc::Key::SHIFT, { "SHIFT",  "SHIFT" } },
+    { olc::Key::CTRL,  { "CTRL",   "CTRL"  } }, { olc::Key::INS,   { "INS",    "INS"   } }, { olc::Key::DEL,   { "DEL",    "DEL"   } },
+    { olc::Key::HOME,  { "HOME",   "HOME"  } }, { olc::Key::END,   { "END",    "END"   } }, { olc::Key::PGUP,  { "PGUP",   "PGUP"  } },
+    { olc::Key::PGDN,  { "PGDN",   "PGDN"  } }, { olc::Key::BACK,  { "BACK",   "BACK"  } }, { olc::Key::ESCAPE,{ "ESCAPE", "ESCAPE"} },
+    { olc::Key::RETURN,{ "RETURN", "RETURN"} }, { olc::Key::ENTER, { "ENTER",  "ENTER" } }, { olc::Key::PAUSE, { "PAUSE",  "PAUSE" } },
+    { olc::Key::SCROLL,{ "SCOLL",  "SCOLL" } }, { olc::Key::OEM_1, { ";",     ":"      } }, { olc::Key::OEM_2, { "/",      "?"     } },
+    { olc::Key::OEM_3, { "`",      "~"     } }, { olc::Key::OEM_4, { "[",     "{"      } }, { olc::Key::OEM_5, { "\\",     "|"     } },
+    { olc::Key::OEM_6, { "]",      "}"     } }, { olc::Key::OEM_7, { "'",     "\""     } }, { olc::Key::OEM_8, { "#",      "#"     } },
+    { olc::Key::COMMA, { ",",      "<"     } }, { olc::Key::PERIOD,{ ".",     ">"      } }, { olc::Key::MINUS, { "-",      "_"     } },
+    { olc::Key::UP,    { "UP",     "UP"    } }, { olc::Key::DOWN,  { "DOWN",  "DOWN"   } }, { olc::Key::RIGHT, { "RIGHT",  "RIGHT" } },
+    { olc::Key::LEFT,  { "LEFT",   "LEFT"  } }, { olc::Key::NP_MUL,{ "*",     "*"      } }, { olc::Key::NP_DIV,{ "/",      "/"     } },
+    { olc::Key::NP_ADD,{ "+",      "+"     } }, { olc::Key::NP_SUB,{ "-",     "-"      } }, { olc::Key::EQUALS,{ "=",      "+"     } },
 
-    { olc::Key::A, "A" }, { olc::Key::B, "B" }, { olc::Key::C, "C" }, { olc::Key::D, "D" }, { olc::Key::E, "E" }, { olc::Key::F, "F" },
-    { olc::Key::G, "G" }, { olc::Key::H, "H" }, { olc::Key::I, "I" }, { olc::Key::J, "J" }, { olc::Key::K, "K" }, { olc::Key::L, "L" },
-    { olc::Key::M, "M" }, { olc::Key::N, "N" }, { olc::Key::O, "O" }, { olc::Key::P, "P" }, { olc::Key::Q, "Q" }, { olc::Key::R, "R" },
-    { olc::Key::S, "S" }, { olc::Key::T, "T" }, { olc::Key::U, "U" }, { olc::Key::V, "V" }, { olc::Key::W, "W" }, { olc::Key::X, "X" },
-    { olc::Key::Y, "Y" }, { olc::Key::Z, "Z" },
+    { olc::Key::NP0,   { "0",      ")"     } }, { olc::Key::NP1,   { "1",     "!"      } }, { olc::Key::NP2,   { "2",      "@"     } },
+    { olc::Key::NP3,   { "3",      "#"     } }, { olc::Key::NP4,   { "4",     "$"      } }, { olc::Key::NP5,   { "5",      "%"     } },
+    { olc::Key::NP6,   { "6",      "^"     } }, { olc::Key::NP7,   { "7",     "&"      } }, { olc::Key::NP8,   { "8",      "*"     } },
+    { olc::Key::NP9,   { "9",      "("     } },
 
-    { olc::Key::K0, "0" }, { olc::Key::K1, "1" }, { olc::Key::K2, "2" }, { olc::Key::K3, "3" }, { olc::Key::K4, "4" }, { olc::Key::K5, "5" },
-    { olc::Key::K6, "6" }, { olc::Key::K7, "7" }, { olc::Key::K8, "8" }, { olc::Key::K9, "9" },
+    { olc::Key::K0,    { "0",      ")"     } }, { olc::Key::K1,    { "1",     "!"      } }, { olc::Key::K2,    { "2",      "@"     } },
+    { olc::Key::K3,    { "3",      "#"     } }, { olc::Key::K4,    { "4",     "$"      } }, { olc::Key::K5,    { "5",      "%"     } },
+    { olc::Key::K6,    { "6",      "^"     } }, { olc::Key::K7,    { "7",     "&"      } }, { olc::Key::K8,    { "8",      "*"     } },
+    { olc::Key::K9,    { "9",      "("     } },
 
-    { olc::Key::NP0, "0" }, { olc::Key::NP1, "1" }, { olc::Key::NP2, "2" }, { olc::Key::NP3, "3" }, { olc::Key::NP4, "4" }, { olc::Key::NP5, "5" },
-    { olc::Key::NP6, "6" }, { olc::Key::NP7, "7" }, { olc::Key::NP8, "8" }, { olc::Key::NP9, "9" },
-
-    { olc::Key::OEM_1, ";" }, { olc::Key::OEM_2, "/" }, { olc::Key::OEM_3, "`" }, { olc::Key::OEM_4, "[" }, { olc::Key::OEM_5, "\\"},
-    { olc::Key::OEM_6, "]" }, { olc::Key::OEM_7, "'" }, { olc::Key::OEM_8, "\0"},
-
-
-    { olc::Key::UP,   "UP" },  { olc::Key::DOWN, "DOWN" }, { olc::Key::RIGHT,"RIGHT" }, { olc::Key::LEFT, "LEFT" },
-    { olc::Key::NP_MUL, "*" }, { olc::Key::NP_DIV, "/" },  { olc::Key::NP_ADD, "+" },   { olc::Key::NP_SUB, "-" },
-    { olc::Key::EQUALS,"=" },  { olc::Key::COMMA, "," },   { olc::Key::PERIOD,"." },    { olc::Key::MINUS, "-" },
+    { olc::Key::A,     { "a",      "A"     } }, { olc::Key::B,     { "b",     "B"      } }, { olc::Key::C,     { "c",      "C"     } },
+    { olc::Key::D,     { "d",      "D"     } }, { olc::Key::E,     { "e",     "E"      } }, { olc::Key::F,     { "f",      "F"     } },
+    { olc::Key::G,     { "g",      "G"     } }, { olc::Key::H,     { "h",     "H"      } }, { olc::Key::I,     { "i",      "I"     } },
+    { olc::Key::J,     { "j",      "J"     } }, { olc::Key::K,     { "k",     "K"      } }, { olc::Key::L,     { "l",      "L"     } },
+    { olc::Key::M,     { "m",      "M"     } }, { olc::Key::N,     { "n",     "N"      } }, { olc::Key::O,     { "o",      "O"     } },
+    { olc::Key::P,     { "p",      "P"     } }, { olc::Key::Q,     { "q",     "Q"      } }, { olc::Key::R,     { "r",      "R"     } },
+    { olc::Key::S,     { "s",      "S"     } }, { olc::Key::T,     { "t",     "T"      } }, { olc::Key::U,     { "u",      "U"     } },
+    { olc::Key::V,     { "v",      "V"     } }, { olc::Key::W,     { "w",     "W"      } }, { olc::Key::X,     { "x",      "X"     } },
+    { olc::Key::Y,     { "y",      "Y"     } }, { olc::Key::Z,     { "z",     "Z"      } },
   };
 };
 };

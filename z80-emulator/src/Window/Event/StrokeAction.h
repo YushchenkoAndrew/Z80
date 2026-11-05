@@ -2,10 +2,11 @@
 
 #include "include/Typelist.h"
 #include "lib/olcPixelGameEngine.h"
+#include <cstdint>
 
 namespace Window {
 
-typedef std::function<void(olc::Key)> StrokeAction;
+typedef std::function<bool(olc::Key, int32_t)> StrokeAction;
 typedef std::function<StrokeAction(void*)> StrokeCallback;
 
 template <olc::Key... CompiledKeys>

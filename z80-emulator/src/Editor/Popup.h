@@ -19,9 +19,6 @@ public:
     vim.Load(lines = dst); vim.Process(Int2Type<olc::Key::G>(), Int2Type<olc::Key::G>());
   }
 
-  void Lock() { vim.Lock(); }
-  void Unlock() { vim.Unlock(); }
-
   void Preprocess() {
     Utils::Lock l(mutex);
 
@@ -43,7 +40,7 @@ public:
     if (nWheel > 0) vim.MoveTo({ 0, -1 });
     else if (nWheel < 0) vim.MoveTo({ 0, 1 });
 
-    vim.Process(GameEngine);
+    vim.Process();
 
     if (!vim.bUpdated) return;
     lines = vim.GetLines();
@@ -59,7 +56,7 @@ public:
     olc::vi2d pos = olc::vi2d(absolute.x + vOffset.x, absolute.y + (vim.GetPos().y + 1 - vStartAt.y) * vStep.y + vOffset.y);
     GameEngine->FillRect(pos, { size.x, 8 }, Color::VERY_DARK_GREY);
 
-    vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
+    // vim.Draw(GameEngine, [&](auto pos) { return absolute + (pos - vStartAt) * vStep + vOffset; });
 
     auto nHeight = size.y - vStep.y;
 

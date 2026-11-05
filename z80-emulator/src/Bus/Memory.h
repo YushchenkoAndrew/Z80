@@ -241,29 +241,12 @@ private:
   // }
 
 public:
-  // template<int32_t T>
-  // inline void Command(Int2Type<T>) {}
-
-  // { Int2Type<olc::Key::I>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::A>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::O>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-  // { Int2Type<olc::Key::X>(), [](void* self, auto... keys) { return static_cast<Memory<SizeT>*>(self)->Process(keys...); } },
-
   ::Window::StrokeAction Process(Int2Type<olc::Key::X>) { memory[index()] = 0x00; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::E>) { Process(Int2Type<olc::Key::B>()); return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::K0>) { pos.x = 0; return nullptr; }
 
   // ::Window::StrokeAction Process(Int2Type<olc::Key::A>) { Process(Int2Type<olc::Key::W>()); Process(Int2Type<olc::Key::I>()); return nullptr; }
   // ::Window::StrokeAction Process(Int2Type<olc::Key::C>) { Process(Int2Type<olc::Key::D>()); Process(Int2Type<olc::Key::I>()); return nullptr; }
-  // ::Window::StrokeAction Process(Int2Type<olc::Key::R>) { mode = REPLACE; Process(Int2Type<olc::Key::X>()); return nullptr; }
   // inline void Command(Int2Type<Editor::VimT::CMD_yy>) { buffer = { memory[index()] }; }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::G>)  { pos.y = pos.x = vStartAt.y = 0; return nullptr; }
@@ -271,6 +254,15 @@ public:
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>)  { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::C>)  { mode = mode == NORMAL ? CHARACTER   : NORMAL; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::D>)  { mode = mode == NORMAL ? DISASSEMBLE : NORMAL; return nullptr;  }
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::R>) {
+    Process(Int2Type<olc::Key::X>());
+
+    return [&](olc::Key k, int32_t i) {
+      int32_t bit = k >= olc::Key::K0 && k <= olc::Key::K9 ? k - olc::Key::K0 : k >= olc::Key::A && k <= olc::Key::F ? k - olc::Key::A + 10 : 0;
+      return memory[index()] = (memory[index()] << 4) | bit, i != 1;
+    };
+  }
 
   // inline void Command(Int2Type<Editor::VimT::CMD_i>) { 
   //   for (int32_t i = memory.size() - 1, size = index() + 1; i >= size; i--) memory[i] = memory[i - 1];
@@ -808,6 +800,7 @@ inline const Window::StrokeT<> Memory::commands = ::Window::StrokeT<>::Init({
   { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Memory*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return static_cast<Memory*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::X>(), [](void* self, auto... keys) { return static_cast<Memory*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::R>(), [](void* self, auto... keys) { return static_cast<Memory*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return static_cast<Memory*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::K0>(),[](void* self, auto... keys) { return static_cast<Memory*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::G>(), {

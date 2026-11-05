@@ -193,7 +193,7 @@ enum Events {
 
   KEYBOARD_EVENT_SUBSCRIBE, KEYBOARD_EVENT_UNSUBSCRIBE,
 
-  EDITOR_SELECT_CALLBACK, EDITOR_SELECT_LINE_CALLBACK, MEMORY_SELECT_CALLBACK, PANEL_SELECT_CALLBACK,
+  EDITOR_GOTO_CALLBACK, EDITOR_BREAKPOINT_CALLBACK, MEMORY_SELECT_CALLBACK, PANEL_SELECT_CALLBACK,
   
   CMD_UPDATE_CALLBACK, CMD_EXEC_CALLBACK, PROGRAM_EXIT
 };
@@ -210,8 +210,8 @@ class PixelGameEngine : public olc::PixelGameEngine {
   virtual void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>, void*) = 0;
   virtual void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>, void*) = 0;
 
-  virtual void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d) = 0;
-  virtual void Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>, olc::vi2d) = 0;
+  virtual void Event(Int2Type<EDITOR_GOTO_CALLBACK>, olc::vi2d) = 0;
+  virtual void Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>, olc::vi2d) = 0;
   virtual void Event(Int2Type<PANEL_SELECT_CALLBACK>, int32_t) = 0;
   virtual void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t) = 0;
 

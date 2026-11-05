@@ -1344,7 +1344,7 @@ public:
     return false;
   }
 
-  inline void SetBreakpoint(uint16_t addr) {
+  inline void Breakpoint(uint16_t addr) {
     Utils::Lock l(mutex);
     if (IsBreakpoint(addr)) breakpoints.remove(addr);
     else breakpoints.push_back(addr);

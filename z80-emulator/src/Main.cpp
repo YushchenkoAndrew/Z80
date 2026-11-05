@@ -61,7 +61,7 @@ public:
     if (btn.bReleased || (!btn.bHeld && vKeyCombinationHeld.count((olc::Key)T))) vKeyCombinationHeld.erase((olc::Key)T);
     if (!(btn.bPressed || (btn.bHeld && fStrokeRepeat >= .4f ? fStrokeRepeat -= .04f, true : false))) return;
 
-    if (fnStrokeAction != nullptr) { fnStrokeAction((olc::Key)T), fnStrokeAction = nullptr; return; }
+    if (fnStrokeAction != nullptr) { if (!fnStrokeAction((olc::Key)T, nStrokeIndex++)) fnStrokeAction = nullptr; return; }
 
     // Insert held keys into vector
     for (const auto key : vKeyCombinationHeld) {
@@ -75,7 +75,7 @@ public:
     for (const auto listener : vKeyEventListeners) {
       auto [exist, exec] = listener->Executable(this->vKeyCombination);
 
-      if (exec != nullptr) fnStrokeAction = exec(listener);
+      if (exec != nullptr) fnStrokeAction = exec(listener), nStrokeIndex = 0;
       if (exist && exec == nullptr) return;
     }
 
@@ -187,7 +187,7 @@ public:
   }
 
 
-  void Event(Int2Type<EDITOR_SELECT_CALLBACK>, olc::vi2d cursor) override {
+  void Event(Int2Type<EDITOR_GOTO_CALLBACK>, olc::vi2d cursor) override {
     #ifdef DEBUG_MODE 
     std::cout << "EDITOR_SELECT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
@@ -196,7 +196,7 @@ public:
     if (next.second.second != nullptr) Registry::W27C512->Move2Addr(next.first);
   }
 
-  void Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>, olc::vi2d cursor) override {
+  void Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>, olc::vi2d cursor) override {
     #ifdef DEBUG_MODE 
     std::cout << "EDITOR_SELECT_LINE_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
@@ -205,8 +205,8 @@ public:
     if (next.second.second == nullptr) return;
     std::cout << next.second.second->line << std::endl;
 
-    Registry::Z80->SetBreakpoint((uint16_t)next.first);
-    Registry::Editor->SelectLine((int32_t)next.second.second->line - 1);
+    Registry::Z80->Breakpoint((uint16_t)next.first);
+    Registry::Editor->Breakpoint((int32_t)next.second.second->line - 1);
   }
 
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
@@ -369,7 +369,8 @@ private:
   std::vector<olc::Key> vKeyCombination;
   std::unordered_set<olc::Key> vKeyCombinationHeld;
   std::unordered_set<Window::KeyboardEvent*> vKeyEventListeners;
-  std::function<void(olc::Key)> fnStrokeAction = nullptr;
+  std::function<bool(olc::Key, int32_t)> fnStrokeAction = nullptr;
+  int32_t nStrokeIndex = 0;
 
   std::pair<std::atomic<bool>, std::unique_ptr<std::thread>> sync = std::pair(false, nullptr);
   static inline const std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";

@@ -203,10 +203,11 @@ public:
   Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Q>) { 
     bDrawWindowIndex = true;
 
-    return [&](olc::Key k) {
+    return [&](olc::Key k, int32_t) {
       int32_t digit = k - olc::Key::K0; bDrawWindowIndex = false;
       for (auto& w : windows) if (EXIST(w)) SELECTED(w) = WINDOW(w) == digit;
       for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w)); 
+      return false;
     };
   }
 

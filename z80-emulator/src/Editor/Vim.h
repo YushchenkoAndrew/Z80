@@ -1,9 +1,13 @@
 #pragma once
 
+#include "src/Defs.h"
+#include "src/Interpreter/Lexer.h"
 #include "src/Interpreter/Token.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/Base.h"
 #include "src/Window/Event/KeyboardEvent.h"
+#include "src/Window/Window.h"
+#include <algorithm>
 
 namespace Editor {
 
@@ -21,42 +25,73 @@ namespace Editor {
  *  adverb      -> 'dd' | 'cc' | 'yy' | 'p' | 'P'
  *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R' | ' ' | 'u' | 'U'
  */
-class Vim : public Window::KeyboardEvent {
+class Vim : public Window::KeyboardEvent, public Window::Window {
 public:
   enum ModeT { NORMAL, INSERT, REPLACE };
 
-  Vim(PixelGameEngine* engine): Window::Base(engine), Window::KeyboardEvent(engine) {}
+  Vim(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {}
 
-  inline void Lock() { 
-    locked = true;
+  inline void Select(DimensionT dimensions) override {
+    this->absolute = dimensions.first; this->size = dimensions.second; Focus(true);
+  }
 
-    switch (mode) {
-      case NORMAL: break;
-      case INSERT: case REPLACE: mode = NORMAL; break;
+  void Process() override {
+    if ((fBlink += GameEngine->GetElapsedTime()) > 1.2f) fBlink -= 1.2f;
+
+    MoveOffset();
+
+    auto nWheel = GameEngine->GetMouseWheel();
+    if (nWheel > 0) MoveTo({ 0, -1 });
+    else if (nWheel < 0) MoveTo({ 0, 1 });
+
+    if (!GameEngine->GetMouse(0).bPressed) return;
+    const auto mouse = GameEngine->GetMousePos();
+
+    const auto nStartX = absolute.x + vOffset.x;
+    const auto nStartY = absolute.y + vOffset.y;
+
+    const auto nZeroX = nStartX - 3 * vStep.x;
+
+    const auto nEndX = nStartX + size.x;
+    const auto nEndY = nStartY + size.y;
+
+    const auto offset = (mouse - absolute - vOffset) / vStep + this->offset - pos - olc::vi2d(1 , 1);
+
+    if (mouse.x > nStartX && mouse.y > nStartY && mouse.x < nEndX   && mouse.y < nEndY) MoveTo(offset);
+    if (mouse.x > nZeroX  && mouse.y > nStartY && mouse.x < nStartX && mouse.y < nEndY) GameEngine->Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>(), olc::vi2d(std::max(pos.x + offset.x, 0), std::max(pos.y + offset.y, 0))); 
+  }
+
+  void MoveOffset() {
+    const auto vMax = size / vStep;
+    if (pos.y - offset.y + 3 > vMax.y && pos.y < GetLineSize()) offset.y++;
+    if ((pos.y - offset.y - 1 < 0 && pos.y) || (!pos.y && pos.y != offset.y)) offset.y--;
+
+    if (pos.x - offset.x + 3 > vMax.x && pos.x < GetLineSize(pos.y)) offset.x++;
+    if ((pos.x - offset.x - 1 < 0 && pos.x) || (!pos.x && pos.x != offset.x)) offset.x--;
+  }
+
+  void Draw() override {
+    olc::vi2d zero = olc::vi2d(absolute.x + vOffset.x, absolute.y + (pos.y + 1 - offset.y) * vStep.y + vOffset.y);
+    GameEngine->FillRect(zero, { size.x, 8 }, Color::VERY_DARK_GREY);
+
+    DrawCursor(); DrawText(); DrawCommand();
+  }
+    
+  void DrawCursor() {
+    const auto nHeight = size.y - vStep.y;
+    for (int32_t i = 0, max = nHeight / vStep.y; i < max; i++) {
+      auto str = std::to_string(offset.y + i + 1);
+      auto pos = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y + vOffset.y);
+      auto color =
+        IsBreakpoint(offset.y + i) ? Color::RED : 
+        (this->pos.y - offset.y == i ? Color::GREY : Color::DARK_GREY);
+
+      GameEngine->DrawString(pos, str, color);
     }
-  }
 
-  inline void Unlock() { locked = false; }
-
-  void Process(PixelGameEngine* GameEngine) {
-    if ((fBlink += AnyType<-1, float>::GetValue()) > 1.2f) fBlink -= 1.2f;
-
-    bUpdated = false; bReleased = false;
-
-    // switch (mode) {
-    //   case NORMAL:  return Process(Int2Type<NORMAL>(), GameEngine);
-    //   case INSERT:  return Process(Int2Type<INSERT>(), GameEngine);
-    //   case REPLACE: return Process(Int2Type<INSERT>(), GameEngine);
-    // }
-  }
-
-  void Draw(PixelGameEngine* GameEngine, std::function<olc::vi2d(olc::vi2d pos)> lambda) {
     if (fBlink > 0.6f) return;
-
-    bool bSearch = search.bEnabled && cmd.size() - search.nStartAt > 0 && search.vPos != this->pos && (cmd.front() == '/' || cmd.front() == '?');
-
-    auto size = bSearch ? olc::vi2d(cmd.size() - search.nStartAt, 1) : olc::vi2d(1, 1);
-    auto pos = lambda((bSearch ? search.vPos : this->pos) + olc::vi2d(1, 1)) - olc::vi2d(1, 2);
+    auto size = olc::vi2d(1, 1);
+    auto pos = absolute + (this->pos + olc::vi2d(1, 1) - offset) * vStep + vOffset - olc::vi2d(1, 2);
 
     switch (mode) {
       case NORMAL:  size *= olc::vi2d(8, 10); break;
@@ -67,107 +102,133 @@ public:
     GameEngine->FillRect(pos, size, Color::GREY);
   }
 
+  void DrawHighlightedString(olc::vi2d pos, int32_t y, int32_t start, int32_t end) {
+    for (int32_t x = start; x < end; x++) {
+      auto color = lexer.highlights.count(y) && lexer.highlights[y].count(x) ? lexer.highlights[y][x] : olc::GREY;
+      GameEngine->DrawString(pos + olc::vi2d(x * vStep.x, 0), { lines[y][x] }, color);
+    }
+  }
+
+  void DrawText() {
+    const auto nHeight = size.y - vStep.y;
+
+    for (int32_t i = offset.y; i < lines.size(); i++) {
+      olc::vi2d pos = absolute + (olc::vi2d(1, i + 1) - offset) * vStep + vOffset;
+
+      if (pos.x > absolute.x + vOffset.x + size.x + vStep.x) continue;
+      if (pos.y > absolute.y + vOffset.y + nHeight) break;
+
+      auto nWidth = absolute.x + vOffset.x + vStep.x;
+      if (pos.x < nWidth && pos.x + lines[i].size() * vStep.x <= nWidth) continue;
+
+      auto startAt = pos.x < nWidth ? (nWidth - pos.x) / vStep.x : 0;
+      auto adj = pos + olc::vi2d(startAt * vStep.x, 0);
+      nWidth = absolute.x + vOffset.x + size.x + vStep.x;
+
+      if (pos.x < nWidth && pos.x + lines[i].size() * vStep.x > nWidth) {
+        if (startAt > lines[i].size()) continue;
+        DrawHighlightedString(adj, i, startAt, (nWidth - pos.x) / vStep.x - startAt - 1);
+      } else DrawHighlightedString(adj, i, startAt, lines[i].size() - startAt);
+    }
+  }
+
+  void DrawCommand() {
+    const auto nHeight = size.y - vStep.y;
+    auto pos = olc::vi2d(absolute.x, absolute.y + nHeight + vOffset.y);
+    GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, Color::VERY_DARK_GREY);
+    GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), GetMode(), Color::DARK_GREY);
+
+    auto humanizedPos = GetHumanizedPos();
+
+    pos.x = size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
+    GameEngine->DrawString(pos, humanizedPos, Color::DARK_GREY);
+
+    pos.x -= 5 * vStep.x;
+    GameEngine->DrawString(pos, GetCmd(), Color::DARK_GREY);
+  }
+
   void Load(std::vector<std::string>& dst) {
     lines.clear(); lines.insert(lines.end(), dst.begin(), dst.end());
   }
 
   void Load(std::string dst) {
-    lines.clear();
+    lines.clear(); lexer.scan(dst);
 
     size_t start = 0; // Current search offset
     size_t end = 0; // Find from the offset
 
     while ((end = dst.find('\n', start)) != std::string::npos) {
-      // Extract substring between 'start' and 'end'
-      lines.push_back(dst.substr(start, end - start));
-        
-      // Move the offset past the delimiter for the next search
-      start = end + 1;
+      lines.push_back(dst.substr(start, end - start)); // Extract substring between 'start' and 'end'
+      start = end + 1; // Move the offset past the delimiter for the next search
     }
     
-    // Don't forget to grab the very last token after the final delimiter
-    lines.push_back(dst.substr(start));
-  }
-
-  void Load(std::vector<std::shared_ptr<Interpreter::Token>>& dst) {
-    std::string line = ""; lines.clear();
-
-    for (auto& token : dst) {
-      if (token->line == lines.size() + 1) { line += token->lexeme; continue; }
-      lines.push_back(line); line = token->lexeme;
-
-      while (token->line != lines.size() + 1) lines.push_back("");
-    }
-
-    lines.push_back(line);
+    lines.push_back(dst.substr(start)); // Don't forget to grab the very last token after the final delimiter
   }
 
   inline std::vector<std::string>& GetLines() { return lines; }
   inline std::string Text() {
     std::string text = "";
-    for (auto& ln : lines) text += ln + "\n";
+
+    for (size_t i = 0; i < lines.size(); ++i) {
+      text += lines[i];
+      if (i < lines.size() - 1) text += '\n'; 
+    }
+
     return text;
   }
 
   template<int32_t T>
   inline void Command(Int2Type<T>) {}
 
-  Window::StrokeAction Process(Int2Type<olc::Key::I>) { return mode = INSERT, nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::A>) { return mode = INSERT, pos.x++, nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>) { return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::K0>)     { return pos.x = 0, nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>) { return mode = NORMAL, nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::K0>)     { return pos.x = 0, nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::G>) { return pos.x = pos.y = 0, nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>) { return pos.x = startAt(), pos.y = lines.size() - 1, nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::R>) { return mode = REPLACE, nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::I>) { return mode = INSERT, pos.x = startAt(), nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::A>) { return mode = INSERT, pos.x = endAt(),   nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::D>) { GameEngine->Event(Int2Type<EDITOR_GOTO_CALLBACK>(), pos); return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::P>) { GameEngine->Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>(), pos); return nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::G>) { return pos.x = pos.y = 0, nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>) { return pos.x = startAt(), pos.y = lines.size() - 1, nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K6>)    { return pos.x = startAt(), nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K4>)    { return pos.x = endAt(),   nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::MINUS>) { return pos.x = startAt(), nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::D>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_CALLBACK>(), pos); return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::P>) { AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<EDITOR_SELECT_LINE_CALLBACK>(), pos); return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::U>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::K>()); return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::D>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::J>()); return nullptr; }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K6>)    { return pos.x = startAt(), nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K4>)    { return pos.x = endAt(),   nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::MINUS>) { return pos.x = startAt(), nullptr; }
-
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::U>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::K>()); return nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::D>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::J>()); return nullptr; }
-
-  Window::StrokeAction Process(Int2Type<olc::Key::Y>, Int2Type<olc::Key::Y>) { return buffer = { "\n" + line() }, nullptr; }
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::Y>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::Y>, Int2Type<olc::Key::Y>) { return buffer = { "\n" + line() }, nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::Y>) {
     auto length = line().size() - pos.x;
 
     if (!length) return buffer.clear(), nullptr;
     return buffer = { line().substr(pos.x, length) }, nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::C>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::C>) {
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::D>());
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::A>());
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::C>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::C>) {
     Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::I>());
     return nullptr;
   };
 
-  Window::StrokeAction Process(Int2Type<olc::Key::O>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::O>) { 
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::I>());
     lines.insert(lines.begin() + ++pos.y, std::string(pos.x, ' '));
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::O>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::O>) { 
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::I>());
     lines.insert(lines.begin() + pos.y, std::string(pos.x, ' '));
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::D>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::D>) { 
     auto length = line().size() - pos.x;
     if (!length) return buffer.clear(), nullptr;
 
@@ -176,7 +237,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::D>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::D>) { 
     if (!lines.size()) return nullptr;
 
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::Y>());
@@ -184,14 +245,14 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::J>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::J>) {
     // TODO: 
     // Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
     // Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::K>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::K>) {
     // TODO: 
     // Process(Int2Type<olc::Key::K>());
     // Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::D>());
@@ -199,17 +260,18 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::L>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::L>) {
     Process(Int2Type<olc::Key::X>());
     return nullptr;
   }
-  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::H>) { 
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::H>) { 
     Process(Int2Type<olc::Key::H>());
     Process(Int2Type<olc::Key::X>());
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::W>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::W>) { 
     const auto copy = pos;
     Process(Int2Type<olc::Key::W>());
 
@@ -223,13 +285,13 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::W>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::W>) { 
     Process(Int2Type<olc::Key::D>(), Int2Type<olc::Key::W>());
     Process(Int2Type<olc::Key::I>());
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::P>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::P>) { 
     int32_t index = 0;
     for (auto& ln : buffer) {
       if (!index++ && ln.size() && ln.at(0) == '\n') lines.insert(lines.begin() + ++pos.y, ln.substr(1));
@@ -239,7 +301,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::P>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::P>) { 
     if (!buffer.size()) return nullptr;
 
     const auto& ln = buffer.front();
@@ -250,7 +312,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::X>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::X>) { 
     buffer = { { symbol() } };
     line().erase(pos.x, 1);
 
@@ -258,13 +320,53 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::R>) { 
-    return [this](olc::Key k) {
-      line().replace(pos.x, 1, GetKeycode(k)); // FIXME: Think about how to impl shift+ascii ?????
+  ::Window::StrokeAction Process(Int2Type<olc::Key::R>) { 
+    return [this](olc::Key k, int32_t i) {
+      if (k == olc::Key::SHIFT) return true; // FIXME: Think about how to impl spec char like SPACE BACKSPACE etc.
+      return line().replace(pos.x, 1, GetKeycode(k, i > 0)), lexer.scan(Text()), false;
     };
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_3>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::R>) { 
+    mode = REPLACE;
+    return [this](olc::Key k, int32_t i) {
+      if (k == olc::Key::ESCAPE) return mode = NORMAL, false;
+
+      auto keycode = GetKeycode(k); // FIXME: Think about how to impl SHIFT ??
+      if (pos.x >= endAt()) line().insert(pos.x, keycode);
+      else line().replace(pos.x, 1, keycode);
+
+      return lexer.scan(Text()), pos.x++, true; // FIXME: Add recolor on text update
+    };
+  }
+
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::I>) {
+    mode = INSERT;
+    return [this](olc::Key k, int32_t i) {
+      if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x--, false;
+      return line().insert(pos.x++, GetKeycode(k)), lexer.scan(Text()), true; // FIXME: Think about how to impl SHIFT ??
+    };
+  }
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::A>) {
+    mode = INSERT, pos.x++;
+    return [this](olc::Key k, int32_t i) {
+      if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x--, false;
+      return line().insert(pos.x++, GetKeycode(k)), lexer.scan(Text()), true; // FIXME: Think about how to impl SHIFT ??
+    };
+  }
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::I>) {
+    return nullptr; // return mode = INSERT, pos.x = startAt(), nullptr;
+  }
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::A>) {
+    return nullptr; // return mode = INSERT, pos.x = endAt(),   nullptr;
+  }
+
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_3>) { 
     const char& c = symbol();
     line().replace(pos.x, 1, std::string(1, islower(c) ? toupper(c) : tolower(c)));
     Process(Int2Type<olc::Key::L>());
@@ -373,7 +475,7 @@ public:
   //   } else { search.vPrev = search.vPos = this->pos; error("Pattern '" + search.sPhrase + "' not found."); }
   // }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::W>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::W>) {
     const char startAt = Utils::Classify(symbol());
 
     for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
@@ -393,7 +495,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::E>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::E>) {
     const char startAt = Utils::Classify(symbol());
 
     for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
@@ -415,7 +517,7 @@ public:
     return nullptr;
   }
   
-  Window::StrokeAction Process(Int2Type<olc::Key::B>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::B>) {
     const char startAt = Utils::Classify(symbol());
 
     for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
@@ -437,7 +539,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::W>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::W>) {
     const char startAt = Utils::Classify(symbol()) == 0 ? 0 : 1;
 
     for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
@@ -459,7 +561,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::E>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::E>) {
     const char startAt = Utils::Classify(symbol()) == 0 ? 0 : 1;
 
     for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
@@ -479,7 +581,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::B>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::B>) {
     const char startAt = Utils::Classify(symbol()) == 0 ? 0 : 1;
 
     for (bool shouldProceed = true, bFoundGap = false; shouldProceed; ) {
@@ -502,7 +604,7 @@ public:
   }
 
 
-  Window::StrokeAction Process(Int2Type<olc::Key::J>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::J>) {
     if (pos.y + 1 >= lines.size()) return nullptr;
 
     pos.y++; 
@@ -513,7 +615,7 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::K>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::K>) {
     if (pos.y <= 0) return nullptr;
 
     pos.y--;
@@ -524,12 +626,12 @@ public:
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::L>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::L>) {
     if (pos.x < endAt()) pos.x++;
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::H>) {
+  ::Window::StrokeAction Process(Int2Type<olc::Key::H>) {
     if (pos.x > 0) pos.x--;
     return nullptr;
   }
@@ -576,16 +678,15 @@ public:
 
   inline olc::vi2d& vStartAt() { return offset; }
 
-  inline bool IsSelected(int32_t y) { 
-    for (auto& line : lSeleted) if (line == y) return true;
+  inline bool IsBreakpoint(int32_t y) { 
+    for (auto& line : breakpoints) if (line == y) return true;
     return false;
   }
 
-  inline void SelectLine(int32_t line) {
-    if (IsSelected(line)) lSeleted.remove(line);
-    else lSeleted.push_back(line);
+  inline void Breakpoint(int32_t line) {
+    if (IsBreakpoint(line)) breakpoints.remove(line);
+    else breakpoints.push_back(line);
   }
-
 
 private:
   inline int32_t startAt() {
@@ -599,7 +700,7 @@ private:
   inline char& symbol() { return line().at(pos.x); }
 
 public:
-  const Window::StrokeT<>& GetCommands() const override { return Vim::commands; }
+  const ::Window::StrokeT<>& GetCommands() const override { return Vim::commands; }
 
 private:
   ModeT mode = NORMAL;
@@ -620,14 +721,22 @@ private:
   olc::vi2d pos = olc::vi2d(0, 0);
   olc::vi2d offset = olc::vi2d(0, 0);
 
-public:
-  std::vector<std::string> lines;
-  std::list<int32_t> lSeleted;
+private:
+  Interpreter::Lexer lexer;
 
-  static const Window::StrokeT<> commands;
+  std::vector<std::string> lines;
+  std::list<int32_t> breakpoints;
+
+  olc::vi2d size = olc::vi2d(0, 0);
+  olc::vi2d absolute = olc::vi2d(0, 0);
+
+  const olc::vi2d vStep = olc::vi2d(8, 12);
+  const olc::vi2d vOffset = olc::vi2d(24, 16);
+
+  static const ::Window::StrokeT<> commands;
 };
 
-inline const Window::StrokeT<> Vim::commands = Window::StrokeT<>::Init({
+inline const Window::StrokeT<> Vim::commands = ::Window::StrokeT<>::Init({
   { Int2Type<olc::Key::K0>(),     [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
 
