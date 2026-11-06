@@ -12,6 +12,7 @@
 #include <cstdint>
 
 namespace Interpreter {
+  struct Location { std::filesystem::path file; olc::vi2d pos; };
 
 class Interpreter : public Visitor<Bytes> {
 public:
@@ -218,18 +219,53 @@ private:
   }
 
 public:
+  /// original file + cursor -> memory.
+  /// pos.y is the 0-based row (flip the +1 if your editor is 1-based). pos.x is ignored.
+  /// A comment/blank line jumps to the next line in that file that emitted bytes.
+  std::vector<Lookup::Entry> toMemory(std::filesystem::path file, olc::vi2d pos) {
+    file = std::filesystem::path(file).lexically_normal();
+    const int32_t line = pos.y + 1;
+
+    int32_t best = INT32_MAX;
+    std::vector<Lookup::Entry> result;
+
+    // the same file can be included several times, so scan every merged line
+    for (size_t i = 0; i < preprocessor.origins.size(); i++) {
+      const auto& o = preprocessor.origins[i];
+      if (o.file != file || o.line < line || o.line > best) continue;
+
+      auto entries = lookup.atLine(i + 1);
+      if (entries.empty()) continue;
+
+      if (o.line < best) { best = o.line; result.clear(); }
+      result.insert(result.end(), entries.begin(), entries.end());
+    }
+
+    return result;
+  }
+
+  /// memory -> original file + row
+  std::optional<Location> toSource(uint32_t address) {
+    auto e = lookup.atAddress(address);
+    if (!e || e->line < 1 || e->line > (int32_t)preprocessor.origins.size()) return std::nullopt;
+
+    const auto& o = preprocessor.origins[e->line - 1];
+    return Location{ o.file, { 0, o.line - 1 } };
+  }
+
+public:
   Bytes memory;
-  Lookup lookup;
   uint32_t address = 0x0000;
 
   int32_t line = 0;
 
-// private:
+private:
   Preprocessor preprocessor;
   Lexer lexer;
   Parser parser;
   Semantic semantic;
   Layout layout;
+  Lookup lookup;
 };
 
 };

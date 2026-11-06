@@ -1,5 +1,6 @@
 #pragma once
 
+#include "include/Typelist.h"
 #include "src/Bus/Device.h"
 #include "src/Defs.h"
 #include "src/Editor/Vim.h"
@@ -34,7 +35,7 @@ public:
   // Memory(int32_t s): pages(s, 0), bus(nullptr) {}
 
   // Memory(Bus* b): bus(b), Window::Window(nullptr),{}
-  Memory(PixelGameEngine* engine, std::string id, uint32_t size): Window::Base(engine), Window::Window(engine, id), ::Window::KeyboardEvent(engine), memory(size, 0), disassembler(memory), vim(GameEngine) {
+  Memory(PixelGameEngine* engine, std::string id, uint32_t size, bool bAllowGoto = false): Window::Base(engine), Window::Window(engine, id), ::Window::KeyboardEvent(engine), memory(size, 0), disassembler(memory), vim(GameEngine), bAllowGoto(bAllowGoto) {
     vim.bindings = ::Window::StrokeT<>::Init({
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto... keys) { return this->Process(keys...); } }
     });
@@ -49,10 +50,6 @@ public:
   inline uint8_t Read(uint32_t addr, bool) override { return memory[addr & (uint32_t)(memory.size() - 1)]; }
   inline uint8_t Write(uint32_t addr, uint8_t data, bool) override { return (memory[addr & (uint32_t)(memory.size() - 1)] = data); }
 
-  // TODO: Load disassembler here
-  // void Initialize() { 
-  //   // if (type == MemoryT::IMS1423) Command(Int2Type<Editor::VimT::CMD_G>());
-  // }
   void Focus(bool state) override { 
     if (state) {
       if (mode != DISASSEMBLE) ::Window::KeyboardEvent::Focus(true), vim.Focus(false);
@@ -68,7 +65,7 @@ public:
     const int32_t index = this->index();
     pages.x = (int32_t)(1 << (int32_t)std::floor(std::log2f((float)size.x / vStep.x)));
     pages.y = (int32_t)(size.y - vOffset.y) / vStep.y;
-    Index2Pos(index); page.y  = (pos.y / pages.y) * pages.y;
+    Index2Pos(index);
   }
 
   void Process() override {
@@ -84,7 +81,7 @@ public:
 
     if (GameEngine->GetMouse(0).bPressed && mouse.x > absolute.x && mouse.y > absolute.y && mouse.x < absolute.x + nWidth && mouse.y < absolute.y + pages.y * vStep.y) {
       MoveTo((mouse - absolute) / olc::vi2d(mode == CHARACTER ? vStep.y : vStep.x, vStep.y) + page - pos);
-      // Command(Int2Type<Editor::VimT::CMD_gd>());
+      if (bAllowGoto) Process(Int2Type<olc::Key::G>(), Int2Type<olc::Key::D>());
     } 
   }
 
@@ -186,7 +183,11 @@ public:
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>)  { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::C>)  { mode = CHARACTER;   Focus(true); return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::D>)  { mode = DISASSEMBLE; Focus(true); return nullptr; }
-  ::Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>)                        { mode = NORMAL;      Focus(true); return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>                      )  { mode = NORMAL;      Focus(true); return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::D>)  {
+    if (bAllowGoto) GameEngine->Event(Int2Type<MEMORY_GOTO_CALLBACK>(), index());
+    return nullptr;
+  }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::R>) {
     Process(Int2Type<olc::Key::X>());
@@ -205,10 +206,6 @@ public:
   //   // Command(Int2Type<Editor::VimT::CMD_r>()); 
   // }
 
-  // inline void Command(Int2Type<Editor::VimT::CMD_gd>) { 
-  //   if (type != MemoryT::W27C512) return;
-  //   AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<MEMORY_SELECT_CALLBACK>(), index());
-  // }
 
   // inline void Command(Int2Type<Editor::VimT::CMD_SEMICOLON>) {
   //   if (cmd.size() - search.nStartAt <= 0) return;
@@ -581,7 +578,11 @@ public:
 //     }
 //   }
 
-  inline void Move2Addr(uint32_t addr) { Index2Pos(addr & (memory.size() - 1)); }
+  inline void Move2Addr(uint32_t addr) {
+    Index2Pos(addr & (memory.size() - 1));
+    vim.JumpTo(olc::vi2d(0, disassembler.lineAt(addr)));
+  }
+
   inline void MoveTo(olc::vi2d offset) {
     for (int32_t i = 0; i < std::abs(offset.y); i++) {
       if (offset.y > 0) Process(Int2Type<olc::Key::J>());
@@ -681,18 +682,15 @@ private:
   inline int32_t index() { return index(pos.x, pos.y); }
   inline int32_t index(olc::vi2d pos) { return index(pos.x, pos.y); }
   inline int32_t index(int32_t x, int32_t y) { return y * pages.x | x; }
-  inline void Index2Pos(int32_t index) { pos.y = index / pages.x; pos.x = index - (pos.y * pages.x); }
-
-  inline int32_t Line2Index(int32_t line) {
-    // for (auto& addr : dasm.second) if (addr.second == line) return addr.first;
-    // return dasm.second.begin()->first;
-    return 0;
+  inline void Index2Pos(int32_t index) {
+    pos.y = index / pages.x;
+    pos.x = index - (pos.y * pages.x);
+    page.y  = (pos.y / pages.y) * pages.y;
   }
-
-
 
 private:
   ModeT mode = NORMAL;
+  const bool bAllowGoto;
 
   olc::vi2d page = olc::vi2d(0, 0);
   olc::vi2d pages = olc::vi2d(0x10, 0);
@@ -702,15 +700,6 @@ private:
 
   // bool locked = false;
   // std::vector<uint8_t> buffer = { }; 
-
-
-  // Variables defines animation duration
-  // float fStrokeRepeat = 0.f;
-
-  // int32_t LINES_SIZE = 0;
-  // DisassembleT dasm;
-  // Interpreter::Lexer lexer;
-  
 
 
 protected:

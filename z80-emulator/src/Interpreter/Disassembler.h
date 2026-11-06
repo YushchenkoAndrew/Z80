@@ -2,11 +2,13 @@
 
 #include "src/Bus/Defs.h"
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace Interpreter {
+  struct Line { uint32_t address; uint32_t size; };
 
 class Disassembler {
   typedef std::pair<const char*, uint8_t> MetadataT;
@@ -15,11 +17,13 @@ public:
   Disassembler(std::vector<uint8_t>& memory): memory(memory) {}
 
   std::string scan() {
-    std::string src = ""; index = 0;
+    std::string src = ""; index = 0; lines.clear();
 
     while (!isAtEnd()) {
+      const uint32_t start = index;
       auto cmd = GetInstruction(advance());
       src += (cmd.second ? GetCode(cmd.first, cmd.second) : cmd.first) + "\n";
+      lines.push_back({ start, (uint32_t)index - start }); // lines[i] is disassembly line i+1
     }
 
     return std::move(src);
@@ -117,12 +121,30 @@ public:
     return str;
   }
 
+  /// disassembly line (1-based) -> bytes it covers
+  std::optional<Line> atLine(int32_t line) const {
+    if (line < 1 || line > (int32_t)lines.size()) return std::nullopt;
+    return lines[line - 1];
+  }
+
+  /// address -> disassembly line (1-based), 0 if not covered. Any byte of the instruction works.
+  int32_t lineAt(uint32_t address) const {
+    auto it = std::upper_bound(lines.begin(), lines.end(), address,
+      [](uint32_t a, const Line& l) { return a < l.address; });
+    if (it == lines.begin()) return 0;
+  
+    --it;
+    if (address - it->address >= it->size) return 0;
+    return (int32_t)(it - lines.begin()) + 1;
+  }
+
 private:
   inline uint8_t advance() { return memory[index++]; }
   inline bool isAtEnd() { return index >= memory.size(); }
 
 private:
   int32_t index = 0; 
+  std::vector<Line> lines;
   std::vector<uint8_t>& memory;
 
 private:

@@ -192,27 +192,14 @@ public:
 
 
   void Event(Int2Type<EDITOR_GOTO_CALLBACK>, olc::vi2d cursor) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "EDITOR_GOTO_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
-    #endif
-
-    // auto e = Registry::Interpreter->lookup.addressOf(cursor.y);
-    // if (e) {
-    //   printf("%d\n", e->address);
-    // }
-    // for (auto& e : Registry::Interpreter->lookup.atOrAfterLine(cursor.y)) {
-    //   printf("addr: %d %d\n", e.address, e.size);
-    //   Registry::W27C512->Move2Addr(e.address);
-    // }
-
-    for (auto& e : Registry::Interpreter->lookup.byLine) {
-      printf("ln: %d\n", e.first);
+    for (auto& e : Registry::Interpreter->toMemory(Registry::Editor->File(), cursor)) {
+      Registry::W27C512->Move2Addr(e.address);
     }
   }
 
   void Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>, olc::vi2d cursor) override {
     #ifdef DEBUG_MODE 
-    std::cout << "EDITOR_SELECT_LINE_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
+    std::cout << "EDITOR_BREAKPOINT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
     // const RelativeAddr next = Pos2Token(cursor, Registry::Editor->File());
@@ -223,22 +210,13 @@ public:
     // Registry::Editor->Breakpoint((int32_t)next.second.second->line - 1);
   }
 
-  void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
-    #ifdef DEBUG_MODE 
-    std::cout << "MEMORY_SELECT_CALLBACK [Addr " <<  std::setfill('0') << std::setw(5) << std::hex << std::uppercase << index << "]\n";
-    #endif
-
-    // const RelativeAddr next = Addr2Token(index);
-    // if (next.second.second == nullptr) return;
-
-    // Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
+  void Event(Int2Type<MEMORY_GOTO_CALLBACK>, int32_t index) override { 
+    if (auto e = Registry::Interpreter->toSource(index)) {
+      Registry::Editor->Open(e->file)->JumpTo(e->pos);
+    }
   }
 
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "PANEL_SELECT_CALLBACK " << index << "\n" ;
-    #endif
-
     if (index - 1 < 0 || index - 1 >= panels.size()) return;
 
     auto size = panels[nPanel].GetSize();

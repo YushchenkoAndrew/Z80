@@ -635,6 +635,7 @@ public:
   inline int32_t GetLineSize(int32_t i) { return lines.size() > i ? lines[i].size() : 0; }
 
   inline olc::vi2d GetPos() { return olc::vi2d(pos); }
+  inline void JumpTo(olc::vi2d pos) { MoveTo(pos - this->pos); } 
   inline void MoveTo(olc::vi2d offset) {
     auto prev = pos;
 

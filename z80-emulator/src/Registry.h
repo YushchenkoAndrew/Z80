@@ -41,7 +41,7 @@ public:
     windows.insert(KR580VI53 = std::make_shared<Bus::PIT>(engine, "KR580VI53", clock * 8));
 
     windows.insert(MC146818 = std::make_shared<Bus::RTC>   (engine, "MC146818"));
-    windows.insert(W27C512  = std::make_shared<Bus::Memory>(engine, "W27C512", W27C512_SIZE));
+    windows.insert(W27C512  = std::make_shared<Bus::Memory>(engine, "W27C512", W27C512_SIZE, true));
     windows.insert(IMS1423  = std::make_shared<Bus::Memory>(engine, "IMS1423", IMS1423_SIZE));
     windows.insert(HY62256A = std::make_shared<Bus::Memory>(engine, "HY62256A",HY62256A_SIZE));
 

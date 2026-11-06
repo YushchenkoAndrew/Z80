@@ -36,9 +36,9 @@ public:
     if (it == byAddress.begin()) return std::nullopt;
     else --it; 
 
-    const auto bContain = it->second.address >= address && it->second.address - address < it->second.size;
-    if (!bContain) return std::nullopt;
-    return it->second;
+    const auto& e = it->second;
+    if (address < e.address || address - e.address >= e.size) return std::nullopt;
+    return e;
   }
 
   /// code -> memory. Usually one entry; several if a line holds more than one statement.
@@ -50,7 +50,6 @@ public:
 
     for (uint32_t address : it->second) {
       const Entry& e = byAddress.at(address);
-      printf("%d & %d => %d ==== %d \n", line, e.line, e.line == line, e.address);
       if (e.line == line) result.push_back(e); // skip entries overwritten by an overlapping ORG
     }
 
@@ -60,7 +59,6 @@ public:
   /// Same as atLine, but for comment / blank / label lines: uses the next line that emitted bytes.
   std::vector<Entry> atOrAfterLine(int32_t line) const {
     auto it = byLine.lower_bound(line);
-    printf("%d == %d line: %d \n", line, it == byLine.end(), it->first);
     return it == byLine.end() ? std::vector<Entry>{} : atLine(it->first);
   }
 

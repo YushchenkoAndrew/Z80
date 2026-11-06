@@ -17,7 +17,7 @@ public:
 
   void scan(std::filesystem::path file) {
     auto reader = Reader(file);
-    curr = 0; source = reader.source; files = reader.files;
+    curr = 0; source = reader.source; files = reader.files; origins = reader.origins;
 
     while (!isAtEnd()) {
       const int32_t started_at = curr; const char c = advance();
@@ -162,6 +162,7 @@ private:
 
 public:
   std::string source;
+  std::vector<Origin> origins; 
   std::unordered_set<std::filesystem::path> files;
   std::unordered_map<std::string, std::pair<std::list<std::string>, std::string>> macros;
 };

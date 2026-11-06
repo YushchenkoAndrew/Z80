@@ -98,7 +98,7 @@ public:
   }
 
 public:
-  inline void MoveTo(olc::vi2d next) { VIM(files[nFile]).MoveTo(next - VIM(files[nFile]).GetPos()); }
+  inline void JumpTo(olc::vi2d pos) { VIM(files[nFile]).JumpTo(pos); }
   inline std::string GetTabName(FileT& tab, int32_t offset = 0) {
     auto filename = std::filesystem::path(PATH(tab)).filename().string();
     const int32_t nWidth = (vOffset.x + size.x) / (((int32_t)files.size() + offset) * vStep.x);

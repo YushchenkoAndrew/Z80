@@ -1,12 +1,21 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace Interpreter {
+
+struct Origin {
+  int32_t line = 0; 
+  std::filesystem::path file;
+
+  bool operator==(const Origin& o) const { return line == o.line && file == o.file; }
+};
 
 class Reader {
 public:
@@ -19,6 +28,9 @@ public:
     auto dir = path.parent_path();
     source = buffer.str(); files.insert(path);
 
+    const auto count = std::count(source.begin(), source.end(), '\n') + 1;
+    for (int32_t i = 1; i <= count; i++) origins.push_back({ i, path });
+
     while (!isAtEnd()) {
       const int32_t started_at = curr; const char c = advance();
 
@@ -28,10 +40,19 @@ public:
           advance('"'); // find the file path
           const auto filepath = string(advance());
 
+          // row of the merged text this directive sits on (0-based)
+          const auto row = std::count(source.begin(), source.begin() + started_at, '\n');
           source.erase(started_at, curr - started_at);
 
           auto reader = Reader(dir / filepath);
           for (auto& f : reader.files) files.insert(f);
+
+          // swap the directive's line for the included file's lines
+          if (!reader.origins.empty()) {
+            origins.erase(origins.begin() + row);
+            origins.insert(origins.begin() + row, reader.origins.begin(), reader.origins.end());
+          }
+
           source.insert(curr = started_at, reader.source);
           continue;
         }
@@ -70,6 +91,7 @@ private:
 public:
   int32_t curr = 0; // index of the src, which is pointing to the curr char
   std::string source;
+  std::vector<Origin> origins; // origins[i] = where line i+1 of `source` came from
   std::unordered_set<std::filesystem::path> files;
 };
 };
