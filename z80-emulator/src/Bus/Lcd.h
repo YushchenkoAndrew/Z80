@@ -19,9 +19,6 @@ public:
     Instruction(Int2Type<CLEAR>(), 0);
   }
 
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
-
-  void Process() override {}
   void Draw() override {
 
     for (int32_t i = 0; i < buffer.size(); i++) {
@@ -34,8 +31,8 @@ public:
     if (cursor.first) Draw(Int2Type<CURSOR>(), GameEngine);
   }
 
-  uint8_t Read(uint32_t addr, bool) { return 0; }
-  uint8_t Write(uint32_t addr, uint8_t data, bool bDataRegister) {
+  uint8_t Read(uint32_t addr, bool) override { return 0; }
+  uint8_t Write(uint32_t addr, uint8_t data, bool bDataRegister) override {
     if (!bDataRegister) {
       if (IS_BIT(data, 7)) return Instruction(Int2Type<DDRAM>(), data);
       if (IS_BIT(data, 6)) return Instruction(Int2Type<CGRAM>(), data);
@@ -116,9 +113,6 @@ public:
 
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(2, 2);
   const olc::vi2d vOffset = olc::vi2d(2, 2);
 

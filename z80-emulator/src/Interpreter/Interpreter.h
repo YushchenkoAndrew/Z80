@@ -3,6 +3,7 @@
 #include "src/Interpreter/Expression/Expression.h"
 #include "src/Interpreter/Layout.h"
 #include "src/Interpreter/Lexer.h"
+#include "src/Interpreter/Lookup.h"
 #include "src/Interpreter/Parser.h"
 #include "src/Interpreter/Preprocessor.h"
 #include "src/Interpreter/Semantic.h"
@@ -33,7 +34,15 @@ public:
     const auto& err = layout.scan(src);
     if (err.size()) return err;
 
-    for (auto& stmt : parser.stmt) evaluate(stmt.get());
+    memory.clear(); address = 0; lookup.reset();
+
+    for (auto& stmt : parser.stmt) {
+      const auto start = address;
+
+      evaluate(stmt.get());
+      lookup.add(start, address - start, stmt->semantic.token);
+    }
+
     return {};
   }
 
@@ -203,15 +212,19 @@ private:
   }
 
   inline void write(Bytes bytes) {
-    memory.insert(memory.begin() + address, bytes.begin(), bytes.end());
+    if (memory.size() < address + bytes.size()) memory.resize(address + bytes.size());
+    std::copy(bytes.begin(), bytes.end(), memory.begin() + address);
     address += bytes.size();
   }
 
 public:
   Bytes memory;
+  Lookup lookup;
   uint32_t address = 0x0000;
 
-private:
+  int32_t line = 0;
+
+// private:
   Preprocessor preprocessor;
   Lexer lexer;
   Parser parser;

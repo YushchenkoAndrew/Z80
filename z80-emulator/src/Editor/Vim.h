@@ -31,10 +31,6 @@ public:
 
   Vim(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {}
 
-  inline void Select(DimensionT dimensions) override {
-    this->absolute = dimensions.first; this->size = dimensions.second; Focus(true);
-  }
-
   void Process() override {
     if ((fBlink += GameEngine->GetElapsedTime()) > 1.2f) fBlink -= 1.2f;
 
@@ -234,7 +230,7 @@ public:
 
     Process(Int2Type<olc::Key::Y>(), Int2Type<olc::Key::Y>());
     line().erase(pos.x, line().size()); pos.x = endAt();
-    return nullptr;
+    return lexer.scan(Text()), nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::D>) { 
@@ -242,7 +238,7 @@ public:
 
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::Y>());
     lines.erase(lines.begin() + pos.y); pos.x = startAt();
-    return nullptr;
+    return lexer.scan(Text()), nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::J>) {
@@ -261,8 +257,7 @@ public:
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::L>) {
-    Process(Int2Type<olc::Key::X>());
-    return nullptr;
+    return Process(Int2Type<olc::Key::X>());
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::H>) { 
@@ -282,7 +277,7 @@ public:
     if (!length) buffer.clear();
     else { buffer = { line().substr(pos.x, length) }; line().erase(copy.x, length); }
 
-    return nullptr;
+    return lexer.scan(Text()), nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::W>) { 
@@ -317,7 +312,7 @@ public:
     line().erase(pos.x, 1);
 
     pos.x = std::min(pos.x, (int)line().size());
-    return nullptr;
+    return lexer.scan(Text()), nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::R>) { 
@@ -358,11 +353,11 @@ public:
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::I>) {
-    return nullptr; // return mode = INSERT, pos.x = startAt(), nullptr;
+    return pos.x = startAt(), Process(Int2Type<olc::Key::I>());
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::A>) {
-    return nullptr; // return mode = INSERT, pos.x = endAt(),   nullptr;
+    return pos.x = endAt(), Process(Int2Type<olc::Key::A>());
   }
 
 
@@ -726,9 +721,6 @@ private:
 
   std::vector<std::string> lines;
   std::list<int32_t> breakpoints;
-
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
 
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(24, 16);

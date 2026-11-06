@@ -4,7 +4,6 @@
 #include "src/Defs.h"
 #include "src/Window/Base.h"
 #include "src/Window/Event/StrokeAction.h"
-#include <cctype>
 #include <utility>
 
 namespace Window {
@@ -33,16 +32,10 @@ public:
   }
 
   std::pair<bool, StrokeCallback> Executable(const std::vector<olc::Key>& keys) {
-    auto node = &GetCommands();
+    auto result = Executable(&bindings, keys);
+    if (result.first) return result;
 
-    for (auto& key : keys) {
-      auto item = node->children.find(key);
-      if (item != node->children.end()) node = &item->second;
-      else return std::pair(false, nullptr);
-    }
-
-    if (node->func == nullptr) return std::pair(true, nullptr);
-    return std::pair(true, node->func);
+    return Executable(&GetCommands(), keys);
   }
 
   std::vector<std::string> Combinations(const StrokeT<>* node) {
@@ -71,6 +64,18 @@ protected:
   inline void reset(bool exec = true) {
     if (exec) lambda();
     cmd = ""; nStart = nCurr = 0; lambda = []() {}; 
+  }
+
+  template <typename T>
+  inline std::pair<bool, StrokeCallback> Executable(T* node, const std::vector<olc::Key>& keys) {
+    for (auto& key : keys) {
+      auto item = node->children.find(key);
+      if (item != node->children.end()) node = &item->second;
+      else return std::pair(false, nullptr);
+    }
+
+    if (node->func == nullptr) return std::pair(true, nullptr);
+    return std::pair(true, node->func);
   }
 
   virtual void BasicStrokeHandler(olc::Key key, const char lower, const char upper) {
@@ -133,6 +138,8 @@ protected:
 public:
   bool bUpdated = false;
   bool bReleased = false;
+
+  StrokeT<> bindings = ::Window::StrokeT<>::Init({});
 
 private:
   static inline const std::unordered_map<olc::Key, std::pair<const char*, const char*>> keycodes = {

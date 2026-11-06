@@ -56,9 +56,6 @@ public:
 
   inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; cycles = 1; IFF.first = IFF.second = false; }
 
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
-
-  void Process() override {}
   void Draw() override {
     int32_t index = 0;
     olc::vi2d pos = absolute;
@@ -1351,9 +1348,6 @@ public:
   }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(24, 0);
 

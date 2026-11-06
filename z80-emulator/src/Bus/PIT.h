@@ -35,7 +35,6 @@ public:
     if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&PIT::Runtime, this)); 
   }
 
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
   void Process() override {}
   void Draw() override {
@@ -56,7 +55,7 @@ public:
     pos.y += vStep.y;
 
     for (uint8_t i = 0; i < 3; i++) {
-      Utils::Lock l(mutex);
+      // Utils::Lock l(mutex);
 
       uint8_t cs = GetValue(gate, i);
       uint8_t out = GetValue(output, i);
@@ -85,7 +84,7 @@ public:
 
   void Runtime() {
   auto step = [&](const int32_t i) {
-      Utils::Lock l(mutex);
+      // Utils::Lock l(mutex);
       uint16_t& value = GetValue(counter, i);
       uint16_t& out = GetValue(output, i);
       uint16_t enabled = GetValue(gate, i);
@@ -118,8 +117,8 @@ public:
   }
 
 public:
-  uint8_t Read(uint32_t addr, bool) { 
-    Utils::Lock l(mutex);
+  uint8_t Read(uint32_t addr, bool) override { 
+    // Utils::Lock l(mutex);
 
     uint16_t& ctl = GetValue(control, addr);
     const uint16_t value = GetValue(counter, addr);
@@ -136,8 +135,8 @@ public:
     return 0x00;
   }
 
-  uint8_t Write(uint32_t addr, uint8_t data, bool) {
-    Utils::Lock l(mutex);
+  uint8_t Write(uint32_t addr, uint8_t data, bool) override {
+    // Utils::Lock l(mutex);
 
     if ((addr & 0x0F) != 0x03) {
       const uint8_t index = addr & 0x0F;
@@ -195,9 +194,6 @@ private:
   }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
   std::pair<int32_t, int32_t> clock; // nanoseconds, Hz
@@ -205,7 +201,7 @@ private:
   std::atomic<bool> bExec = true;
   std::unique_ptr<std::thread> runtime = nullptr;
 
-  std::mutex mutex;
+  // std::mutex mutex;
   
   RegT copy;
   RegT counter = { 0, 0, 0 };

@@ -19,9 +19,7 @@ public:
   enum { DATA2REG, REG2DATA, PORT2REG, REG2PORT };
 
   PPI(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
-  void Process() override {}
   void Draw() override {
     int32_t index = 0;
     olc::vi2d pos = absolute;
@@ -144,9 +142,6 @@ public:
   inline uint8_t& regC() { return regs[REG::C]; }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(16, 0);
 

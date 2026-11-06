@@ -15,7 +15,7 @@ struct StrokeT {
   // 1. Leaf Constructor (Bakes full compile-time path into the functional call)
   template <int32_t K, typename Func>
   StrokeT(Int2Type<K>, Func&& lambda) : key(static_cast<olc::Key>(K)) {
-    func = [lambda = std::forward<Func>(lambda)](void* instance) {
+    func = [lambda = std::forward<Func>(lambda)](void* instance) mutable {
         // Expands parameters as rvalues alongside the execution instance
         return lambda(instance, Int2Type<static_cast<int>(CompiledKeys)>{}..., Int2Type<K>{});
     };

@@ -25,20 +25,18 @@ using WindowInitT = std::tuple<std::shared_ptr<T>, DimensionT>;
 #define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
 #define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
         
-class Panel : public Window::KeyboardEvent {
+class Panel : public Window::KeyboardEvent, public Window::Window {
   // enum ModeT { NORMAL, COMMAND };
 
 public:
-  Panel(PixelGameEngine* engine): Window::Base(engine), ::Window::KeyboardEvent(engine) {}
+  Panel(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {}
 
   // void Initialize() {
   //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize();
   // }
 
-  void Select(DimensionT dimensions) {
-    Window::KeyboardEvent::Focus(true);
-
-    this->absolute = dimensions.first; this->size = dimensions.second; bFullScreen = false;
+  void Select(DimensionT dimensions) override {
+    ::Window::Window::Select(dimensions); ::Window::KeyboardEvent::Focus(true);
     for (auto& w : windows) if (EXIST(w)) PTR(w)->Select(DIMENSION(w));
   }
 
@@ -46,7 +44,7 @@ public:
   //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Preprocess();
   // }
 
-  void Process() {
+  void Process() override {
     // TODO: For some reason this, is much slower, maybe I'll use it in a future, ha pan not intended
     // std::vector<std::shared_future<void>> vFuture;
 
@@ -54,7 +52,7 @@ public:
     // if (editor.first != nullptr) vFuture.push_back(std::async(&Editor::Editor::Process, editor.first, GameEngine)); 
 
     // for(auto& future : vFuture) future.wait();
-    bUpdated = false; bReleased = false;
+    // bUpdated = false; bReleased = false;
 
     // Process(Int2Type<NORMAL>(), GameEngine);
     // if (mode == COMMAND) { if (!cmd.size() && bReleased) mode = NORMAL; return; }
@@ -70,7 +68,7 @@ public:
     for (auto& w : windows) if (SELECTED(w)) PTR(w)->Process();
   }
 
-  void Draw() {
+  void Draw() override {
     // TODO: For some reason this, is much slower, maybe I'll use it in a future, ha pan not intended
     // std::vector<std::shared_future<void>> vFuture;
 
@@ -110,13 +108,13 @@ public:
   // template<int32_t T>
   // inline void Command(Int2Type<T>) {}
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>) { 
     for (auto& w : windows) if (SELECTED(w)) { bFullScreen = (ZOOMED(w) ^= true); PTR(w)->Select(bFullScreen ? std::pair(absolute, size) : DIMENSION(w)); }
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_2>) { 
-    WindowT<Window::Window>* bindings = nullptr;
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_2>) { 
+    WindowT<::Window::Window>* bindings = nullptr;
     for (auto& w : windows) if (EXIST(w) && PTR(w)->windowId == "bindings") { bindings = &w; break; }
 
     if (bindings == nullptr) return nullptr;
@@ -175,32 +173,32 @@ public:
   //   AnyType<-1, PixelGameEngine*>::GetValue()->Event(Int2Type<CMD_EXEC_CALLBACK>());
   // }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::SPACE>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SPACE>) { 
     GameEngine->Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>()); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SPACE>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SPACE>) { 
     GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::C>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::C>) { 
     GameEngine->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::D>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::D>) { 
     GameEngine->Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>()); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K7>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K7>) { 
     GameEngine->Event(Int2Type<PROGRAM_EXIT>()); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Q>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Q>) { 
     bDrawWindowIndex = true;
 
     return [&](olc::Key k, int32_t) {
@@ -211,27 +209,27 @@ public:
     };
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K1>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K1>) { 
     GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 1); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K2>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K2>) { 
     GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 2); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K3>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K3>) { 
     GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 3); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K4>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K4>) { 
     GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 4); 
     return nullptr;
   }
 
-  Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K5>) { 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::K5>) { 
     GameEngine->Event(Int2Type<PANEL_SELECT_CALLBACK>(), 5); 
     return nullptr;
   }
@@ -321,7 +319,7 @@ public:
   }
 
   // static LuaScript& GetConfig() { static LuaScript config; return config; }
-  const Window::StrokeT<>& GetCommands() const override { return Panel::commands; }
+  const ::Window::StrokeT<>& GetCommands() const override { return Panel::commands; }
 
 private:
   // ModeT mode = NORMAL;
@@ -329,15 +327,12 @@ private:
   bool bFullScreen = false;
   bool bDrawWindowIndex = false;
 
-  olc::vi2d absolute = olc::vi2d(0, 0);
-  olc::vi2d size = olc::vi2d(0, 0);
-
-  std::list<WindowT<Window::Window>> windows;
-  static const Window::StrokeT<> commands;
+  std::list<WindowT<::Window::Window>> windows;
+  static const ::Window::StrokeT<> commands;
 };
 
 
-inline const Window::StrokeT<> Panel::commands = Window::StrokeT<>::Init({
+inline const Window::StrokeT<> Panel::commands = ::Window::StrokeT<>::Init({
   { Int2Type<olc::Key::SPACE>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::CTRL>(), {
     { Int2Type<olc::Key::SPACE>(), {

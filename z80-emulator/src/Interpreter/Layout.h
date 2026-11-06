@@ -15,6 +15,8 @@ public:
     const auto& err = semantic.scan(src);
     if (err.size()) return err;
 
+    address = 0x0000;
+
     for (auto& stmt : parser.stmt) evaluate(stmt.get());
     return {};
   }

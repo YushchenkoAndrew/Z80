@@ -11,9 +11,9 @@ public:
   Popup(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, id), vim(engine) {}
 
   // inline void Preinitialize() { Lock(); }
-  inline void Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
-  }
+  // inline void Select(DimensionT dimensions) {
+  //   this->absolute = dimensions.first; this->size = dimensions.second - vOffset;
+  // }
 
   void Load(std::vector<std::string>& dst) {
     vim.Load(lines = dst); vim.Process(Int2Type<olc::Key::G>(), Int2Type<olc::Key::G>());
@@ -88,9 +88,6 @@ public:
   inline std::string GetBindings() { return "popup"; }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(0, 0);
 

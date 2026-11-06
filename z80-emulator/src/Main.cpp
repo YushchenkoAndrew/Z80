@@ -18,7 +18,7 @@
 
 class App : public PixelGameEngine {
 private:
-  typedef std::pair<uint32_t, Interpreter::RelativeToken> RelativeAddr;
+  // typedef std::pair<uint32_t, Interpreter::RelativeToken> RelativeAddr;
 
 public:
   App(LuaScript lua): lua(std::move(lua)) { sAppName = "Z80 Emulator"; }
@@ -72,7 +72,11 @@ public:
     if (btn.bPressed) { this->vKeyCombination.push_back((olc::Key)T); fStrokeRepeat = .0f; }
     if (btn.bHeld) vKeyCombinationHeld.insert((olc::Key)T);
 
-    for (const auto listener : vKeyEventListeners) {
+    // Use an iterator so callbacks can safely remove listeners from the set while iterating.
+    for (auto it = vKeyEventListeners.begin(); it != vKeyEventListeners.end();) {
+      auto* listener = *it++;
+      if (!listener) continue;
+
       auto [exist, exec] = listener->Executable(this->vKeyCombination);
 
       if (exec != nullptr) fnStrokeAction = exec(listener), nStrokeIndex = 0;
@@ -178,22 +182,32 @@ public:
     if (!Registry::Z80->IsDebug()) return;
     else Registry::Z80->Continue();
 
-    RelativeAddr next = Addr2Token(Registry::Z80->Addr());
-    if (next.second.second == nullptr) return;
+    // RelativeAddr next = Addr2Token(Registry::Z80->Addr());
+    // if (next.second.second == nullptr) return;
 
-    Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
-    Registry::W27C512->Move2Addr(next.first);
-    Registry::IMS1423->Move2Addr(Registry::Z80->Stack());
+    // Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
+    // Registry::W27C512->Move2Addr(next.first);
+    // Registry::IMS1423->Move2Addr(Registry::Z80->Stack());
   }
 
 
   void Event(Int2Type<EDITOR_GOTO_CALLBACK>, olc::vi2d cursor) override {
     #ifdef DEBUG_MODE 
-    std::cout << "EDITOR_SELECT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
+    std::cout << "EDITOR_GOTO_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    const RelativeAddr next = Pos2Token(cursor, Registry::Editor->File());
-    if (next.second.second != nullptr) Registry::W27C512->Move2Addr(next.first);
+    // auto e = Registry::Interpreter->lookup.addressOf(cursor.y);
+    // if (e) {
+    //   printf("%d\n", e->address);
+    // }
+    // for (auto& e : Registry::Interpreter->lookup.atOrAfterLine(cursor.y)) {
+    //   printf("addr: %d %d\n", e.address, e.size);
+    //   Registry::W27C512->Move2Addr(e.address);
+    // }
+
+    for (auto& e : Registry::Interpreter->lookup.byLine) {
+      printf("ln: %d\n", e.first);
+    }
   }
 
   void Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>, olc::vi2d cursor) override {
@@ -201,12 +215,12 @@ public:
     std::cout << "EDITOR_SELECT_LINE_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    const RelativeAddr next = Pos2Token(cursor, Registry::Editor->File());
-    if (next.second.second == nullptr) return;
-    std::cout << next.second.second->line << std::endl;
+    // const RelativeAddr next = Pos2Token(cursor, Registry::Editor->File());
+    // if (next.second.second == nullptr) return;
+    // std::cout << next.second.second->line << std::endl;
 
-    Registry::Z80->Breakpoint((uint16_t)next.first);
-    Registry::Editor->Breakpoint((int32_t)next.second.second->line - 1);
+    // Registry::Z80->Breakpoint((uint16_t)next.first);
+    // Registry::Editor->Breakpoint((int32_t)next.second.second->line - 1);
   }
 
   void Event(Int2Type<MEMORY_SELECT_CALLBACK>, int32_t index) override { 
@@ -214,10 +228,10 @@ public:
     std::cout << "MEMORY_SELECT_CALLBACK [Addr " <<  std::setfill('0') << std::setw(5) << std::hex << std::uppercase << index << "]\n";
     #endif
 
-    const RelativeAddr next = Addr2Token(index);
-    if (next.second.second == nullptr) return;
+    // const RelativeAddr next = Addr2Token(index);
+    // if (next.second.second == nullptr) return;
 
-    Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
+    // Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
   }
 
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
@@ -297,29 +311,29 @@ private:
   }
 
 
-  inline RelativeAddr Addr2Token(uint32_t addr) {
-    RelativeAddr next = std::pair(0, std::pair("", nullptr));
+  // inline RelativeAddr Addr2Token(uint32_t addr) {
+  //   RelativeAddr next = std::pair(0, std::pair("", nullptr));
 
-    // TODO:
-    // for (auto& pos : interpreter.env.tokens) {
-    //   if (pos.first <= addr) next = pos;
-    //   else return next;
-    // }
+  //   // TODO:
+  //   // for (auto& pos : interpreter.env.tokens) {
+  //   //   if (pos.first <= addr) next = pos;
+  //   //   else return next;
+  //   // }
 
-    return next;
-  }
+  //   return next;
+  // }
 
-  inline RelativeAddr Pos2Token(olc::vi2d cursor, std::string filename) {
-    RelativeAddr next = std::pair(0, std::pair(filename, nullptr));
+  // inline RelativeAddr Pos2Token(olc::vi2d cursor, std::string filename) {
+  //   RelativeAddr next = std::pair(0, std::pair(filename, nullptr));
 
-    // TODO:
-    // for (auto& pos : interpreter.env.tokens) {
-    //   if (next.second.first != pos.second.first) continue;
-    //   if (pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1) next = pos;
-    // }
+  //   // TODO:
+  //   // for (auto& pos : interpreter.env.tokens) {
+  //   //   if (next.second.first != pos.second.first) continue;
+  //   //   if (pos.second.second->line <= cursor.y + 1 && pos.second.second->col <= cursor.x + 1) next = pos;
+  //   // }
 
-    return next;
-  }
+  //   return next;
+  // }
 
   // inline bool isAtEnd() { return nCurr >= cmd.size(); }
   // inline const char advance() { return isAtEnd() ? '\0': cmd[nCurr++]; }
@@ -333,7 +347,7 @@ private:
     if (!errors.size()) return Registry::Interpreter->save(std::filesystem::path(filepath).replace_extension("bin"));
 
     #ifdef DEBUG_MODE 
-    // for (auto token : interpreter.parser.lexer.tokens) { token.print(); }
+    // for (auto token : Registry::Interpreter->lexer.tokens) { token.print(); }
     // printf("\n");
 
     for (auto& msg : errors) {

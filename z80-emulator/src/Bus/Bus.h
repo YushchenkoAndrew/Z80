@@ -22,10 +22,6 @@ private:
 public:
   Bus(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
 
-  void Select(DimensionT dimensions) override {}
-  void Process() override {}
-  void Draw() override {}
-
   uint8_t Read(uint32_t addr, bool mreq) override;
   uint8_t Write(uint32_t addr, uint8_t data, bool mreq) override;
 

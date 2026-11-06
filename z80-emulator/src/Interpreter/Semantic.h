@@ -25,7 +25,7 @@ public:
   Semantic(Parser& p): parser(p) {}
 
   std::list<std::string> scan(std::string& src) {
-    errors.clear();
+    errors.clear(); refs.clear(); vars.clear();
 
     const auto& err = parser.scan(src);
     if (err.size()) return err;

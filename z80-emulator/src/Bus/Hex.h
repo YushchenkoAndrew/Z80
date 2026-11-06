@@ -10,9 +10,6 @@ class Hex : public Window::Window, public Device {
 
 public:
   Hex(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
-  
-  void Process() override {}
   void Draw() override {
     olc::vi2d pos = absolute + vOffset;
 
@@ -20,8 +17,8 @@ public:
     Draw(Int2Type<HEX>(), GameEngine, data, pos + olc::vi2d(vStep.x * 2, 0));
   }
 
-  uint8_t Read(uint32_t addr, bool) { return 0; }
-  uint8_t Write(uint32_t addr, uint8_t data, bool) { 
+  uint8_t Read(uint32_t addr, bool) override { return 0; }
+  uint8_t Write(uint32_t addr, uint8_t data, bool) override { 
     if (data & 0x80) return this->data = (this->data & 0x00FF) | (data << 8);
     else return (this->data = (this->data & 0xFF00) | data); 
   }
@@ -51,9 +48,6 @@ private:
   }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(12, 12);
   const olc::vi2d vOffset = olc::vi2d(0, 0);
 

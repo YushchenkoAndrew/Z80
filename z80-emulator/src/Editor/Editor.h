@@ -35,9 +35,7 @@ public:
 
   inline void Focus(bool state) override { VIM(files[nFile]).Focus(state); }
   inline void SelectFile() { VIM(files[nFile]).Select({ absolute, size }); }
-  inline void Select(DimensionT dimensions) override {
-    this->absolute = dimensions.first; this->size = dimensions.second - vOffset; SelectFile();
-  }
+  inline void Select(DimensionT dimensions) override { ::Window::Window::Select({ dimensions.first, dimensions.second - vOffset }); SelectFile(); }
 
   const ::Window::StrokeT<>& GetCommands() const override { return VIM(files[nFile]).GetCommands(); }
     
@@ -113,9 +111,6 @@ public:
   inline void Breakpoint(int32_t line) { VIM(files[nFile]).Breakpoint(line); }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(24, 16);
 

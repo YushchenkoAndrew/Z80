@@ -1,6 +1,7 @@
 #pragma once
 
 #include "include/LuaScript.h"
+#include "include/Typelist.h"
 #include "src/Bus/Cpu.h"
 #include "src/Bus/Defs.h"
 #include "src/Bus/Hex.h"
@@ -48,6 +49,8 @@ public:
     windows.insert(Bindings = std::make_shared<Editor::Popup>(engine, "bindings"));
 
     Interpreter = std::make_shared<Interpreter::Interpreter>();
+
+    IMS1423->Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::G>());
   }
 
   static std::shared_ptr<Window::Window> GetInstance(std::string id) {

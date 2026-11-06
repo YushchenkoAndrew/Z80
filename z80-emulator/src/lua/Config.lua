@@ -14,10 +14,10 @@ SOURCE = "assets/src/DoS/Main.asm";
 
 PANELS = {
   {
-    editor   = { x = 0,               y = 0,                      width = WINDOW.width * 7 // 10, height = WINDOW.height },
-    W27C512  = { x = WIDTH * 7 // 10, y = 0,                      width = WINDOW.width * 3 // 10, height = WINDOW.height * 3 // 4 },
-    IMS1423  = { x = WIDTH * 7 // 10, y = WINDOW.height * 3 // 4, width = WINDOW.width * 3 // 10, height = WINDOW.height * 1 // 4 },
-    bindings = { x = 0,               y = 0,                      width = 0,                      height = 0 },
+    editor   = { x = 0,               y = 0,                         width = WINDOW.width * 7 // 10, height = WINDOW.height },
+    W27C512  = { x = WIDTH * 7 // 10, y = WINDOW.height * 1 // 30,   width = WINDOW.width * 3 // 10, height = WINDOW.height * 7 // 10 },
+    IMS1423  = { x = WIDTH * 7 // 10, y = WINDOW.height * 3 // 4 + 1,width = WINDOW.width * 3 // 10, height = WINDOW.height * 7 // 30},
+    bindings = { x = 0,               y = 0,                         width = 0,                      height = 0 },
   },
   {
     -- bus      = { x = 0,              y = 0,                     width = WINDOW.width * 7 / 10, height = WINDOW.height },

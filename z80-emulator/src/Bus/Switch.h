@@ -8,7 +8,6 @@ namespace Bus {
 class Switch : public Window::Window, public Device {
 public:
   Switch(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
   void Process() override {
     auto mouse = GameEngine->GetMousePos() - vOffset;
@@ -26,13 +25,10 @@ public:
     }
   }
 
-  uint8_t Read(uint32_t addr, bool) { return data; }
-  uint8_t Write(uint32_t addr, uint8_t data, bool) { return 0x00; }
+  uint8_t Read(uint32_t addr, bool) override { return data; }
+  uint8_t Write(uint32_t addr, uint8_t data, bool) override { return 0x00; }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(12, 12);
   const olc::vi2d vOffset = olc::vi2d(0, 0);
 

@@ -9,7 +9,6 @@ namespace Bus {
 class Keyboard : public Window::Window, public Device {
 public:
   Keyboard(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
   void Process() override {
     const auto mouse = GameEngine->GetMousePos();
@@ -85,9 +84,6 @@ public:
   }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(8, 0);
 
   std::atomic<bool> bEnabled = false;

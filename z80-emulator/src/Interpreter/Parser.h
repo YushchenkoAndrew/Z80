@@ -42,10 +42,10 @@ namespace Interpreter {
 class Parser {
 public:
   Parser(Lexer& l): lexer(l) {}
-  ~Parser() { reset(); }
+  ~Parser() { curr = 0; stmt.clear(); errors.clear(); }
 
   std::list<std::string> scan(std::string& src) {
-    reset();
+    curr = 0; stmt.clear(); errors.clear(); 
 
     const auto& err = lexer.scan(src);
     if (err.size()) return err;
@@ -54,8 +54,6 @@ public:
   }
 
 private:
-  inline void reset() { curr = 0; stmt.clear(); errors.clear(); }
-
   inline void program() {
     while (!isAtEnd()) stmt.push_back(declaration());
   }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "src/Bus/Defs.h"
-#include "src/Interpreter/Lexer.h"
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -15,15 +14,15 @@ class Disassembler {
 public:
   Disassembler(std::vector<uint8_t>& memory): memory(memory) {}
 
-  std::list<std::string> scan() {
-    src = ""; index = 0;
+  std::string scan() {
+    std::string src = ""; index = 0;
 
     while (!isAtEnd()) {
       auto cmd = GetInstruction(advance());
       src += (cmd.second ? GetCode(cmd.first, cmd.second) : cmd.first) + "\n";
     }
 
-    return lexer.scan(src);
+    return std::move(src);
   }
 
   std::string GetCode(std::string phrase, uint8_t mask) {
@@ -123,10 +122,7 @@ private:
   inline bool isAtEnd() { return index >= memory.size(); }
 
 private:
-  Lexer lexer;
-
   int32_t index = 0; 
-  std::string src = "";
   std::vector<uint8_t>& memory;
 
 private:
