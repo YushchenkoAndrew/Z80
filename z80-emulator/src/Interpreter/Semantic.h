@@ -25,19 +25,20 @@ public:
   Semantic(Parser& p): parser(p) {}
 
   std::list<std::string> scan(std::string& src) {
-    errors.clear(); refs.clear(); vars.clear();
-
+    errors.clear(); refs.clear(); vars.clear(); fwd.clear();
     const auto& err = parser.scan(src);
     if (err.size()) return err;
 
     for (auto& stmt : parser.stmt) evaluate(stmt.get());
 
-    for (const auto& [label, expr]: refs) {
-      const auto def = vars.find(label);
-
-      if (def != vars.end()) expr->semantic.bytes = def->second->semantic.bytes;
-      else if (label == "$") expr->semantic.bytes = 2;
-      else error("Variable '" + label + "' is not defined.");
+    for (const auto& [label, expr] : refs) {
+      if (label != "$" && !vars.count(label)) error(expr->label, "Variable '" + label + "' is not defined.");
+    }
+    
+    // db/dw forward refs: check width
+    for (const auto& [expr, size] : fwd) {
+      auto it = vars.find(expr->label.lexeme);
+      if (it != vars.end() && it->second->semantic.bytes > size) error(expr->label, "Value does not fit in " + std::to_string(size) + " byte(s).");
     }
 
     return errors;
@@ -92,8 +93,15 @@ public:
     const auto [valid, value] = expr->length.type == TokenT::NUMBER ? Utils::Str2Uint(expr->length.literal) : std::pair(true, expr->bytes);
     if (!valid) return error(expr->label, "Invalid size format.");
 
-    refs[expr->label.lexeme] = expr;
-    return SemanticToken(expr->label, 0, false);
+    const auto& name = expr->label.lexeme;
+    refs[name] = expr;
+
+    uint32_t bytes = value;                    // explicit [n], or the width the instruction expects
+    if (!bytes) {                              // db / dw / EQU: fall back to the definition
+      const auto def = vars.find(name);
+      bytes = name == "$" ? 2 : def != vars.end() ? def->second->semantic.bytes : 0;
+    }
+    return SemanticToken(expr->label, bytes, false);
   }
 
   SemanticToken visitStmtAddress(StatementAddress* stmt) override {
@@ -108,7 +116,12 @@ public:
     uint32_t bytes = 0;
 
     for (auto& it : stmt->data) {
-      bytes += (evaluate(it.get()).bytes << (stmt->size - 1));
+      const auto e = evaluate(it.get());
+      if (auto* v = dynamic_cast<ExpressionVariable*>(it.get()); v && !vars.count(v->label.lexeme)) {
+        fwd.push_back({ v, stmt->size });
+      }
+
+      bytes += e.sequence ? e.bytes * stmt->size : std::max<uint32_t>(e.bytes, stmt->size);
     }
 
     return SemanticToken(stmt->token, bytes, false);
@@ -159,6 +172,7 @@ private:
   Parser& parser;
   std::list<std::string> errors;
   std::unordered_map<std::string, ExpressionVariable*> refs;
+  std::list<std::pair<ExpressionVariable*, uint8_t>> fwd;
 
 public:
   std::unordered_map<std::string, StatementVariable*> vars;

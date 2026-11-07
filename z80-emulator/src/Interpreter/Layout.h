@@ -60,9 +60,10 @@ public:
 
   uint32_t visitExprVariable(ExpressionVariable* expr) override {
     if (expr->label.lexeme == "$") return address;
+    if (!semantic.vars.count(expr->label.lexeme)) return 0;
 
     const auto ref = semantic.vars[expr->label.lexeme];
-    return ref->type == StatementVariable::TypeT::ADDRESS ? 0 : evaluate(ref);
+    return ref->type == StatementVariable::TypeT::ADDRESS ? ref->semantic.address : evaluate(ref);
   }
 
   uint32_t visitStmtAddress(StatementAddress* stmt) override {

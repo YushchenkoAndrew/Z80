@@ -37,7 +37,7 @@ private:
   // inline std::string GetBindings() { return "bus"; }
 
 public:
-  std::list<::Window::Window> windows;
+  // std::list<::Window::Window> windows;
 
   // std::shared_ptr<Led> led;
   // std::shared_ptr<Switch> switches;
@@ -63,6 +63,7 @@ public:
 private:
   // LuaScript& luaConfig;
 
+  uint8_t lcdCtrl = 0;
   std::list<std::pair<olc::vi2d, olc::vi2d>> grid;
 };
 

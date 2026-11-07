@@ -33,9 +33,6 @@ static const olc::Pixel
     WHITE(0xDB, 0xE5, 0xD5),  BLACK(0x14, 0x1A, 0x1F),       BLANK(0, 0, 0, 0);
 };
 
-
-typedef std::pair<olc::vi2d, olc::vi2d> DimensionT;
-
 typedef TypeList<
   Int2Type<olc::Key::SPACE>,TypeList<
   Int2Type<olc::Key::TAB>,  TypeList<

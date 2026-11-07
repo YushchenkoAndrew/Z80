@@ -58,7 +58,7 @@ public:
   }
 
   // TODO: Maybe add ability to set local state with initialization
-  void Select(DimensionT dimensions) override {
+  void Select(::Window::DimensionT dimensions) override {
     ::Window::Window::Select(dimensions);
     vim.Select({ this->absolute, this->size - olc::vi2d(0, 4) });
 
@@ -68,13 +68,16 @@ public:
     Index2Pos(index);
   }
 
-  void Process() override {
-    if (mode == DISASSEMBLE) return vim.Process();
-    page.y = (pos.y / pages.y) * pages.y;
+  void Preprocess() override {
+    if (mode == DISASSEMBLE) return vim.Preprocess();
 
     auto nWheel = GameEngine->GetMouseWheel();
     if (nWheel > 0) MoveTo({ 0, -1 });
     else if (nWheel < 0) MoveTo({ 0, 1 });
+  }
+
+  void Process() override {
+    if (mode == DISASSEMBLE) return vim.Process();
 
     auto mouse = GameEngine->GetMousePos() - vOffset;
     auto nWidth = (mode == CHARACTER ? vStep.y : vStep.x) * pages.x;
@@ -85,6 +88,7 @@ public:
     } 
   }
 
+  inline void UpdateViewRange() { page.y  = (pos.y / pages.y) * pages.y; }
 
   void Draw() override {
     switch (mode) {
@@ -157,7 +161,8 @@ private:
       
       for (int32_t j = 0; j < pages.x; j++) {
         olc::vi2d pos = absolute + olc::vi2d(j, i) * olc::vi2d(vStep.y, vStep.y) + vOffset;
-        GameEngine->DrawString(pos, isprint(memory[index(j, i + page.y)]) ? std::string(1, memory[index(j, i + page.y)]) : ".", Color::WHITE);
+        std::string val = index(j, i + page.y) >= (int32_t)memory.size() ? "-" : isprint(memory[index(j, i + page.y)]) ? std::string(1, memory[index(j, i + page.y)]) : ".";
+        GameEngine->DrawString(pos, val, Color::WHITE);
       }
     }
 
@@ -182,7 +187,7 @@ public:
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K4>) { pos.x = pages.x - 1; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>)  { pos.x = pages.x - 1; pos.y = ((int32_t)memory.size() - 1) / pages.x; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::C>)  { mode = CHARACTER;   Focus(true); return nullptr; }
-  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::D>)  { mode = DISASSEMBLE; Focus(true); return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::D>)  { mode = DISASSEMBLE; Focus(true); return Disassemble(), nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>                      )  { mode = NORMAL;      Focus(true); return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::D>)  {
     if (bAllowGoto) GameEngine->Event(Int2Type<MEMORY_GOTO_CALLBACK>(), index());
@@ -379,10 +384,10 @@ public:
     return Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::K4>()), Process(Int2Type<olc::Key::K>());
   }
 
-  ::Window::StrokeAction Process(Int2Type<olc::Key::K>) { if (pos.y > 0x00) pos.y--; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::H>) { if (pos.x > 0x00) pos.x--; return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::L>) { if (pos.x < (pages.x - 1)) pos.x++; return nullptr; }
-  ::Window::StrokeAction Process(Int2Type<olc::Key::J>) { if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++; return nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::K>) { if (pos.y > 0x00) pos.y--; return UpdateViewRange(), nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::J>) { if (pos.y < ((int32_t)memory.size() - 1) / pages.x) pos.y++; return UpdateViewRange(), nullptr; }
 
   // // TODO: Impl undo/redo !!
   // inline void Command(Int2Type<Editor::VimT::CMD_u>) { }
@@ -685,7 +690,7 @@ private:
   inline void Index2Pos(int32_t index) {
     pos.y = index / pages.x;
     pos.x = index - (pos.y * pages.x);
-    page.y  = (pos.y / pages.y) * pages.y;
+    UpdateViewRange();
   }
 
 private:

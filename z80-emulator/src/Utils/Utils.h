@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iomanip>
+#include <memory>
 #include <mutex>
 #include <sstream>
 #include <string>
@@ -10,6 +11,9 @@
 #include <utility>
 
 namespace Utils {
+
+  template<class T, class U>
+  inline std::shared_ptr<T> Cast(std::shared_ptr<U> ptr) { return std::dynamic_pointer_cast<T>(ptr); }
 
   inline std::string Int2Hex(int32_t i, int32_t width = 2) { 
     std::stringstream ss; ss << std::setfill('0') << std::setw(width) << std::hex << std::uppercase << +i;
@@ -39,10 +43,8 @@ namespace Utils {
   }
 
   inline uint32_t SizeOf(uint32_t value) {
-    if (value == 0) return 1;
-
-    uint32_t size = 0;
-    while(value & ~((uint32_t)0xFF)) { size++; value >>= 8; }
+    uint32_t size = 1;
+    while (value > 0xFF) size++, value >>= 8;
 
     return size;
   }

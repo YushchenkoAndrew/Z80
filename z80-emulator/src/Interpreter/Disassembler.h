@@ -11,7 +11,8 @@ namespace Interpreter {
   struct Line { uint32_t address; uint32_t size; };
 
 class Disassembler {
-  typedef std::pair<const char*, uint8_t> MetadataT;
+  typedef std::pair<const char*, uint16_t> MetadataT;
+  using Table = std::unordered_map<uint8_t, MetadataT>;
 
 public:
   Disassembler(std::vector<uint8_t>& memory): memory(memory) {}
@@ -21,15 +22,14 @@ public:
 
     while (!isAtEnd()) {
       const uint32_t start = index;
-      auto cmd = GetInstruction(advance());
-      src += (cmd.second ? GetCode(cmd.first, cmd.second) : cmd.first) + "\n";
-      lines.push_back({ start, (uint32_t)index - start }); // lines[i] is disassembly line i+1
+      src += GetInstruction(advance()) + "\n";
+      lines.push_back({ start, (uint32_t)index - start });
     }
 
     return std::move(src);
   }
 
-  std::string GetCode(std::string phrase, uint8_t mask) {
+  std::string GetCode(std::string phrase, uint16_t mask) {
     for (int32_t cnt = mask & 0x0F, offset = 1; cnt != 1; offset++) {
       const int32_t bytes = (mask >> (4 * offset)) & 0x0F;
       int32_t word = 0x00; cnt -= bytes;
@@ -43,54 +43,41 @@ public:
     return phrase;
   }
 
-  MetadataT GetInstruction(uint8_t opcode) {
+  std::string GetInstruction(uint8_t opcode) {
     switch (opcode) {
-      case Bus::Z80::MISC_INSTR: {
-        auto opcode = advance();
-        auto it = misc.find(opcode);
-        if (it != misc.end()) return misc.at(opcode);
-        return { sprintf("db 0xED, 0x%02x", opcode).c_str(), 0 };
-      }
-
-      case Bus::Z80::BIT_INSTR: {
-        auto opcode = advance();
-        auto it = bits.find(opcode);
-        if (it != bits.end()) return bits.at(opcode);
-        return { sprintf("db 0xCB, 0x%02x", opcode).c_str(), 0 };
-      }
-
-      case Bus::Z80::IX_INSTR: {
-        auto opcode = advance();
-        if (opcode == Bus::Z80::IxBitInstr) {
-          auto it = ix_bits.find(advance());
-          if (it != ix_bits.end()) return ix_bits.at(opcode);
-          return { sprintf("db 0xDD, 0xCB, 0x%02x", opcode).c_str(), 0 };
-        }
-
-        auto it = ix.find(advance());
-        if (it != ix.end()) return ix.at(opcode);
-        return { sprintf("db 0xDD, 0x%02x", opcode).c_str(), 0 };
-      }
-
-      case Bus::Z80::IY_INSTR: {
-        auto opcode = advance();
-        if (opcode == Bus::Z80::IyBitInstr) {
-          auto it = iy_bits.find(advance());
-          if (it != iy_bits.end()) return iy_bits.at(opcode);
-          return { sprintf("db 0xFD, 0xCB, 0x%02x", opcode).c_str(), 0 };
-        }
-
-        auto it = iy.find(advance());
-        if (it != iy.end()) return iy.at(opcode);
-        return { sprintf("db 0xFD, 0x%02x", opcode).c_str(), 0 };
-      }
-    };
-
-    auto it = instructions.find(opcode);
-    if (it != instructions.end()) return instructions.at(opcode);
-    return { sprintf("db 0x%02x", opcode).c_str(), 0 };
+      case Bus::Z80::MISC_INSTR: return decode(misc, advance(), { 0xED });
+      case Bus::Z80::BIT_INSTR:  return decode(bits, advance(), { 0xCB });
+      case Bus::Z80::IX_INSTR:   return indexed(0xDD, Bus::Z80::IxBitInstr, ix, ix_bits);
+      case Bus::Z80::IY_INSTR:   return indexed(0xFD, Bus::Z80::IyBitInstr, iy, iy_bits);
+      default:                   return decode(instructions, opcode);
+    }
   }
 
+  std::string decode(const Table& table, uint8_t opcode, std::vector<uint8_t> prefix = {}) {
+    auto it = table.find(opcode);
+    if (it == table.end()) { prefix.push_back(opcode); return db(prefix); }
+
+    const auto& [text, mask] = it->second;
+    return mask ? GetCode(text, mask) : text;
+  }
+
+  std::string indexed(uint8_t prefix, uint8_t bitPrefix, const Table& table, const Table& bitTable) {
+    const uint8_t opcode = advance();
+    if (opcode != bitPrefix) return decode(table, opcode, { prefix });
+
+    // DD CB d op: the displacement comes BEFORE the final opcode
+    const uint8_t d = advance(), op = advance();
+    auto it = bitTable.find(op);
+    if (it == bitTable.end()) return db({ prefix, opcode, d, op });
+    return sprintf(it->second.first, d);
+  }
+
+  static std::string db(std::vector<uint8_t> bytes) {
+    std::stringstream ss; ss << "db ";
+    for (size_t i = 0; i < bytes.size(); i++)
+      ss << (i ? ", " : "") << "0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << int(bytes[i]);
+    return ss.str();
+  }
 
   std::string sprintf(std::string str, int32_t byte) {
     for (int32_t i = 0; i < str.size(); i++) {
@@ -139,7 +126,8 @@ public:
   }
 
 private:
-  inline uint8_t advance() { return memory[index++]; }
+  // inline uint8_t advance() { return memory[index++]; }
+  inline uint8_t advance() { return (uint32_t)index < memory.size() ? memory[index++] : (index++, 0); }
   inline bool isAtEnd() { return index >= memory.size(); }
 
 private:

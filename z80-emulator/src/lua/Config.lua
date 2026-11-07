@@ -2,12 +2,12 @@
 WIDTH = 700; HIGHT = 412; PIXELS = 2;
 WINDOW = { width = WIDTH, height = HIGHT - 24 }
 
-CLOCK = 250; -- nano seconds = 4MHz
+CLOCK = 2; -- nano seconds = 4MHz
 SOURCE = "assets/src/DoS/Main.asm";
 -- SOURCE = "assets/test/Test.asm";
 -- src = "assets/test/Timer/Test.asm",
 -- src = "assets/test/RTC/Test.asm",
--- src = "assets/test/LCD/Test.asm",
+-- SOURCE = "assets/test/LCD/Test.asm";
 
 -- step   = { x = 8, y = 12 };
 -- WINDOW = {  }
@@ -17,21 +17,19 @@ PANELS = {
     editor   = { x = 0,               y = 0,                         width = WINDOW.width * 7 // 10, height = WINDOW.height },
     W27C512  = { x = WIDTH * 7 // 10, y = WINDOW.height * 1 // 30,   width = WINDOW.width * 3 // 10, height = WINDOW.height * 7 // 10 },
     IMS1423  = { x = WIDTH * 7 // 10, y = WINDOW.height * 3 // 4 + 1,width = WINDOW.width * 3 // 10, height = WINDOW.height * 7 // 30},
-    bindings = { x = 0,               y = 0,                         width = 0,                      height = 0 },
   },
   {
-    -- bus      = { x = 0,              y = 0,                     width = WINDOW.width * 7 / 10, height = WINDOW.height },
-    led      = { x = 10,             y = 15,                      width = WINDOW.width * 7 // 10, height = 15 },
-    switch   = { x = 10,             y = 30,                      width = WINDOW.width * 7 // 10, height = 15 },
-    hex      = { x = 10,             y = 45,                      width = WINDOW.width * 7 // 10, height = 40 },
-    lcd      = { x = 10,             y = 85,                      width = WINDOW.width * 5 // 10, height = WINDOW.height - 80 },
-    Z80      = { x = WIDTH * 5 // 10, y = 15,                     width = WINDOW.width * 2 // 10, height = 140 },
-    irq      = { x = WIDTH * 5 // 10, y = 155,                    width = WINDOW.width * 2 // 10, height = 39 },
-    keyboard = { x = WIDTH * 5 // 10, y = 194,                    width = WINDOW.width * 2 // 10, height = 22 },
-    KR580VV55= { x = WIDTH * 5 // 10, y = 216,                    width = WINDOW.width * 2 // 10, height = 22 },
-    KR580VI53= { x = WIDTH * 5 // 10, y = 238,                    width = WINDOW.width * 2 // 10, height = 66 },
-    MC146818 = { x = WIDTH * 5 // 10, y = 304,                    width = WINDOW.width * 2 // 10, height = WINDOW.height - 304 },
-    HY62256A = { x = WIDTH * 7 // 10, y = 0,                      width = WINDOW.width * 3 // 10, height = WINDOW.height  },
+    led      = { x = 10,             y = 15,                         width = WINDOW.width * 7 // 10, height = 15 },
+    switch   = { x = 10,             y = 30,                         width = WINDOW.width * 7 // 10, height = 15 },
+    hex      = { x = 10,             y = 45,                         width = WINDOW.width * 7 // 10, height = 40 },
+    lcd      = { x = 10,             y = 85,                         width = WINDOW.width * 5 // 10, height = WINDOW.height - 80 },
+    Z80      = { x = WIDTH * 5 // 10, y = 15,                        width = WINDOW.width * 2 // 10, height = 140 },
+    irq      = { x = WIDTH * 5 // 10, y = 155,                       width = WINDOW.width * 2 // 10, height = 39 },
+    keyboard = { x = WIDTH * 5 // 10, y = 194,                       width = WINDOW.width * 2 // 10, height = 22 },
+    KR580VV55= { x = WIDTH * 5 // 10, y = 216,                       width = WINDOW.width * 2 // 10, height = 22 },
+    KR580VI53= { x = WIDTH * 5 // 10, y = 238,                       width = WINDOW.width * 2 // 10, height = 66 },
+    MC146818 = { x = WIDTH * 5 // 10, y = 304,                       width = WINDOW.width * 2 // 10, height = WINDOW.height - 314 },
+    HY62256A = { x = WIDTH * 7 // 10, y = 4,                         width = WINDOW.width * 3 // 10, height = WINDOW.height - 10 },
 
   --     //   olc::vi2d zero = olc::vi2d(0, 0);
   -- //   olc::vi2d offset = olc::vi2d(4, 8);

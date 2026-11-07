@@ -27,8 +27,9 @@ public:
   bool OnUserCreate() override {
     Registry::Initialize(this, lua);
 
-    Compile(lua.GetOr("SOURCE", ""));
-    Registry::W27C512->Load(Registry::Interpreter->memory); Registry::Z80->Continue();
+    if (const auto success = Compile(lua.GetOr("SOURCE", ""))) {
+      Registry::W27C512->Load(Registry::Interpreter->memory); Registry::Z80->Continue();
+    }
 
     for (auto f : Registry::Interpreter->files()) Registry::Editor->Open(f);
 
@@ -43,7 +44,7 @@ public:
 
         auto instance = Registry::GetInstance(name);
         if (!instance) fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
-        else panels[index].Push(std::tuple(instance, std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
+        else panels[index].Push(std::tuple(instance, true, std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
       }
     }
 
@@ -86,6 +87,7 @@ public:
     this->vKeyCombination.clear();
   }
 
+  bool OnUserDestroy() override { Registry::Shutdown(); return true; }
   bool OnUserUpdate(float fElapsedTime) override {
 	  Clear(Color::BLACK);
     // AnyType<-1, float>::GetValue() = fElapsedTime;
@@ -166,7 +168,7 @@ public:
 
   void Event(Int2Type<PROGRAM_EXIT>)               override { bExec = false; }
   void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>)    override { Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); Event(Int2Type<DEBUG_RESET_CALLBACK>()); }
-  void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Debug(); }
+  void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Debug(); Registry::Z80->Addr(); Registry::Z80->Reset(); }
   void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Normal(); }
   void Event(Int2Type<DEBUG_RESET_CALLBACK>)       override { Registry::Z80->Addr(); Registry::Z80->Reset(); }
 
@@ -182,17 +184,19 @@ public:
     if (!Registry::Z80->IsDebug()) return;
     else Registry::Z80->Continue();
 
-    // RelativeAddr next = Addr2Token(Registry::Z80->Addr());
-    // if (next.second.second == nullptr) return;
+    const auto addr = Registry::Z80->Addr();
+    Registry::W27C512->Move2Addr(addr);
+    Registry::IMS1423->Move2Addr(Registry::Z80->Stack());
 
-    // Registry::Editor->Open(next.second.first)->MoveTo(olc::vi2d(next.second.second->col - 1, next.second.second->line - 1));
-    // Registry::W27C512->Move2Addr(next.first);
-    // Registry::IMS1423->Move2Addr(Registry::Z80->Stack());
+    if (auto e = Registry::Interpreter->toSource(addr)) {
+      Registry::Editor->Open(e->file)->JumpTo(e->pos);
+    }
   }
 
 
   void Event(Int2Type<EDITOR_GOTO_CALLBACK>, olc::vi2d cursor) override {
     for (auto& e : Registry::Interpreter->toMemory(Registry::Editor->File(), cursor)) {
+      printf("%d\n", e.address);
       Registry::W27C512->Move2Addr(e.address);
     }
   }
@@ -202,12 +206,10 @@ public:
     std::cout << "EDITOR_BREAKPOINT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    // const RelativeAddr next = Pos2Token(cursor, Registry::Editor->File());
-    // if (next.second.second == nullptr) return;
-    // std::cout << next.second.second->line << std::endl;
-
-    // Registry::Z80->Breakpoint((uint16_t)next.first);
-    // Registry::Editor->Breakpoint((int32_t)next.second.second->line - 1);
+    for (auto& e : Registry::Interpreter->toMemory(Registry::Editor->File(), cursor)) {
+      Registry::Z80->Breakpoint(e.address);
+      Registry::Editor->Breakpoint(cursor.y);
+    }
   }
 
   void Event(Int2Type<MEMORY_GOTO_CALLBACK>, int32_t index) override { 

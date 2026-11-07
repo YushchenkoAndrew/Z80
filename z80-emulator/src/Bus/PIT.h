@@ -22,7 +22,7 @@ class PIT : public Window::Window, public Device {
 typedef std::tuple<uint16_t, uint16_t, uint16_t> RegT;
 
 public:
-  PIT(PixelGameEngine* engine, std::string id, int32_t c): Window::Base(engine), Window::Window(engine, std::move(id)), clock(std::pair(c, 1.0E9F / c)) {
+  PIT(PixelGameEngine* engine, std::string id, int32_t c): Window::Base(engine), Window::Window(engine, std::move(id)), clock(std::pair(c, 1.0E9F / c)), runtime(std::thread(std::thread(&PIT::Runtime, this))) {
     // olc::SOUND::InitialiseAudio();
     // olc::SOUND::SetUserSynthFunction([&](int nChannel, float fGlobalTime, float) { return Sound(fGlobalTime); });
   }
@@ -31,8 +31,7 @@ public:
     bExec = false;
 
     olc::SOUND::DestroyAudio();
-    if (runtime != nullptr && runtime->joinable()) runtime->join();
-    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&PIT::Runtime, this)); 
+    if (runtime.joinable()) runtime.join();
   }
 
 
@@ -103,7 +102,8 @@ public:
         case 0x00: break; // NOTE: There is not point to create MODE0 it will not be used at all 
         case 0x01: break; // NOTE: There is not point to create MODE1 it will not be used at all 
 
-        case 0x02: case 0x04: case 0x05: value = init; out = ENABLE_OUTPUT; break;
+        case 0x02: case 0x05: value = init; out = ENABLE_OUTPUT; break;
+        case 0x04: if (armed[i]) { out = ENABLE_OUTPUT; armed[i] = false; } break;
         case 0x03: value = init; out = ((out & ENABLE_OUTPUT) ^ ENABLE_OUTPUT) | KEEP_OUTPUT; break;
       }
     };
@@ -117,62 +117,35 @@ public:
   }
 
 public:
-  uint8_t Read(uint32_t addr, bool) override { 
-    // Utils::Lock l(mutex);
+  uint8_t Read(uint32_t addr, bool) override {
+    const uint8_t i = addr & 3; if (i > 2) return 0x00;
+    const uint16_t value = latched[i] ? GetValue(copy, i) : GetValue(counter, i);
+    const uint8_t rw = (GetValue(control, i) >> 4) & 3;
+    const bool high = rw == 2 || (rw == 3 && hi[i]);
 
-    uint16_t& ctl = GetValue(control, addr);
-    const uint16_t value = GetValue(counter, addr);
-    
-    switch ((ctl & 0x0300) >> 8) {
-      case 0x00: return (uint8_t)(value & 0x00FF);
-      case 0x01: return (uint8_t)((value & 0xFF00) >> 8);
-      case 0x02: {
-        ctl = (ctl & 0x00FF);
-        return (uint8_t)(value & 0x00FF);
-      }
-    }
-
-    return 0x00;
+    if (rw == 3) { if (hi[i]) latched[i] = false; hi[i] = !hi[i]; }   // LSB first, then MSB
+    else latched[i] = false;
+    return high ? value >> 8 : value & 0xFF;
   }
 
   uint8_t Write(uint32_t addr, uint8_t data, bool) override {
-    // Utils::Lock l(mutex);
+    const uint8_t i = addr & 3;
+    if (i != 3) {
+      if (i > 2) return data;
+      uint16_t& value = GetValue(counter, i); uint16_t& init = GetValue(initialize, i);
+      const uint8_t rw = (GetValue(control, i) >> 4) & 3;
 
-    if ((addr & 0x0F) != 0x03) {
-      const uint8_t index = addr & 0x0F;
-      uint16_t& ctl = GetValue(control, index);
-      uint16_t& value = GetValue(counter, index);
-      uint16_t& init = GetValue(initialize, index);
+      if (rw == 1) init = (init & 0xFF00) | data;
+      else if (rw == 2) init = (init & 0x00FF) | (uint16_t)data << 8;
+      else if (rw == 3) { init = hi[i] ? (init & 0x00FF) | (uint16_t)data << 8 : (init & 0xFF00) | data; hi[i] = !hi[i]; }
 
-      switch ((ctl & 0x0300) >> 8) {
-        case 0x02: ctl = (ctl & 0x00FF) | (uint16_t)(0x0100);
-        case 0x00: value = (value & 0xFF00) | data; break;
-        case 0x01: value = (value & 0x00FF) | (uint16_t)data << 8; break;
-      }
-
-      switch ((ctl & 0x0E) >> 1) {
-        case 0x02: case 0x03: case 0x05: init = value; break;
-        default: init = 0x00; break;
-      }
-
+      if (rw != 3 || !hi[i]) { value = init; armed[i] = true; }       // counter loads once the count is complete
       return data;
     }
 
-    const uint8_t index = (data & 0xC0) >> 6;
-    uint16_t& ctrl = GetValue(control, index);
-
-    switch ((data & 0x30) >> 4) {
-      case 0x00: {
-        ctrl = (uint16_t)data | (uint16_t)(0x0200);
-        GetValue(copy, index) = GetValue(counter, index); // Copy current state of the reg to the copy reg
-        break;
-      }
-
-      case 0x01: ctrl = (uint16_t)data | (uint16_t)(0x0000); break; // LOW BYTE
-      case 0x02: ctrl = (uint16_t)data | (uint16_t)(0x0100); break; // HIGH BYTE
-      case 0x03: ctrl = (uint16_t)data | (uint16_t)(0x0200); break; // LOW BYTE + HIGH BYTE
-    }
-
+    const uint8_t c = (data & 0xC0) >> 6; if (c > 2) return data;
+    if (((data >> 4) & 3) == 0) { GetValue(copy, c) = GetValue(counter, c); latched[c] = true; return data; }   // latch only
+    GetValue(control, c) = data; hi[c] = latched[c] = false;
     return data;
   }
 
@@ -197,9 +170,10 @@ private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
   std::pair<int32_t, int32_t> clock; // nanoseconds, Hz
+  std::array<bool, 3> hi = {}, latched = {}, armed = {};   // new members
 
   std::atomic<bool> bExec = true;
-  std::unique_ptr<std::thread> runtime = nullptr;
+  std::thread runtime;
 
   // std::mutex mutex;
   

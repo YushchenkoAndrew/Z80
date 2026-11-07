@@ -6,8 +6,6 @@
 #include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 #include <condition_variable>
-#include <cstdio>
-#include <memory>
 #include <string>
 
 namespace Bus {
@@ -50,11 +48,12 @@ public:
 
   CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c), runtime(std::thread(&CPU::Runtime, this)) { Reset(); }
   ~CPU() {
-    bExec = false; sync.second.notify_all();
+    bExec = false;
+    for (auto* p : { &sync, &callback, &halt }) { { std::lock_guard<std::mutex> l(p->first); } p->second.notify_all(); }
     if (runtime.joinable()) runtime.join();
   }
 
-  inline void Reset() { regSP() = 0xFFFF; regPC() = 0x0000; cycles = 1; IFF.first = IFF.second = false; }
+  inline void Reset() { cycles = 1; IFF.first = IFF.second = false; for (auto& r : reg) r = 0; regSP() = 0xFFFF; regPC() = 0x0000; }
 
   void Draw() override {
     int32_t index = 0;
@@ -93,14 +92,16 @@ public:
   // DisassembleT Disassemble();
 
   // void Interrupt() { interrupt.second = true; halt.second.notify_all(); }
-  void Interrupt() { interrupt.second = true; }
+  void Interrupt() { interrupt.second = true; std::lock_guard<std::mutex> l(halt.first); halt.second.notify_all(); }
   
 private:
   void Runtime() {
     Wait();
 
     while (bExec) {
-      if (cycles < 100 && --cycles != 0) continue;
+      std::this_thread::sleep_for(std::chrono::nanoseconds(clock));   // remove the later sleep
+      if (cycles > 1) { --cycles; continue; }
+      else cycles = 1;
 
       if (IFF.first && interrupt.second) {
         interrupt.second = false; IFF.first = IFF.second = false;
@@ -112,22 +113,29 @@ private:
       }
 
       foreach<Instructions, void>::Process(this, Read());
-      std::this_thread::sleep_for(std::chrono::nanoseconds(clock));
+      const bool hit = mode == NORMAL && [&] { Utils::Lock l(mutex); return IsBreakpoint(regPC()); }();
 
+      if (mode == NORMAL && !hit) continue;
+      { std::lock_guard<std::mutex> l(sync.first); frozen = true; resume = false; }  // parked state is visible BEFORE anyone is told
 
-      if (mode == NORMAL) {
-        { Utils::Lock l(mutex); if (!IsBreakpoint(regPC())) continue; }
-        mode = FREEZE; GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
-      }
+      if (hit) { mode = FREEZE; GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); }
+      { std::lock_guard<std::mutex> l(callback.first); stepped = true; }
 
       callback.second.notify_all(); Wait();
+      // if (mode == NORMAL) {
+      //   { Utils::Lock l(mutex); if (!IsBreakpoint(regPC())) continue; }
+      //   mode = FREEZE; GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
+      // }
+
+      // callback.second.notify_all(); Wait();
     }
   }
 
 
 private:
-  inline uint16_t Word() { return Read() | (Read() << 8); }
+  inline uint16_t Word() { const uint8_t lo = Read(); return lo | (Read() << 8); }
   inline uint16_t Word(uint32_t addr) { return Read(addr) | (Read(addr + 1) << 8); }
+  inline uint16_t Index(uint16_t base) { return (uint16_t)(base + (int8_t)Read()); }
 
   uint8_t Read();
   uint8_t Read(uint32_t addr, bool mreq = true) override;
@@ -139,7 +147,7 @@ private:
 
   inline void ImProcess(Int2Type<IM_T::IM0>) { cycles = 4; Read(0x00, false); }
   inline void ImProcess(Int2Type<IM_T::IM1>) { Process(Int2Type<Instruction::RST_38h>()); }
-  inline void ImProcess(Int2Type<IM_T::IM2>) { cycles = 11; Push(regPC()); regPC() = (uint16_t)regI() << 8 | Read(0x00, false); }
+  inline void ImProcess(Int2Type<IM_T::IM2>) { cycles = 11; Push(regPC()); regPC() = regPC() = Word((uint16_t)(regI() << 8 | Read(0x00, false))); }
 
 public:
   template<int32_t T>
@@ -178,26 +186,17 @@ public:
   }
 
 
-  inline void Process(Int2Type<Instruction::BIT_INSTR>)  { foreach<BitInstructions,   void>::Process(this, Read()); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>) { foreach<MiscMInstructions, void>::Process(this, Read()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>)   { foreach<IxInstructions,    void>::Process(this, Read()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>)   { foreach<IyInstructions,    void>::Process(this, Read()); }
+  inline void Process(Int2Type<Instruction::BIT_INSTR>)  { foreach<BitInstructions,   void, Int2Type<Instruction::BIT_INSTR >>::Process(this, Read()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>) { foreach<MiscMInstructions, void, Int2Type<Instruction::MISC_INSTR>>::Process(this, Read()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>)   { foreach<IxInstructions,    void, Int2Type<Instruction::IX_INSTR  >>::Process(this, Read()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>)   { foreach<IyInstructions,    void, Int2Type<Instruction::IY_INSTR  >>::Process(this, Read()); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>) {
-    // FIXME:
-    // AnyType<-1, int32_t>::GetValue() = Read();
-    // foreach<IxBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IX_INSTR>(), Int2Type<IxInstruction::IxBitInstr>()); // FIXME:
-  }
-
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>) {
-    // FIXME:
-    // AnyType<-1, int32_t>::GetValue() = Read();
-    // foreach<IyBitInstructions, CPU>::Key2Process(this, Int2Type<Instruction::IY_INSTR>(), Int2Type<IyInstruction::IyBitInstr>()); // FIXME:
-  }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>) { foreach<IxBitInstructions, void, Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>>::Process(this, Read(regPC() + 1)); regPC()++; }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>) { foreach<IyBitInstructions, void, Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>>::Process(this, Read(regPC() + 1)); regPC()++; }
 
 
   inline void Process(Int2Type<Instruction::NOP>) { cycles = 4; }
-  inline void Process(Int2Type<Instruction::HALT>) { cycles = 1; std::unique_lock<std::mutex> lock(halt.first); halt.second.wait(lock);  }
+  inline void Process(Int2Type<Instruction::HALT>) { cycles = 4; std::unique_lock<std::mutex> lock(halt.first); halt.second.wait(lock, [this] { return (IFF.first && interrupt.second) || !bExec; }); }
   
   inline void Process(Int2Type<Instruction::DI>) { cycles = 1; IFF.first = IFF.second = false; }
   inline void Process(Int2Type<Instruction::EI>) { cycles = 1; IFF.first = IFF.second = true; }
@@ -494,47 +493,15 @@ public:
   inline void Process(Int2Type<Instruction::CCF>) { cycles = 4; flagH(flagC())->flagC(!flagC())->flagN(false); }
 
   inline void Process(Int2Type<Instruction::DAA>) {
-    cycles = 4; uint8_t low = regA() & 0x0F, high = (regA() & 0xF0) >> 4;
+    cycles = 4;
+    const uint8_t a = regA(); const bool n = flagN(), h = flagH(); bool c = flagC();
+    uint8_t adj = 0;
+    if (h || (a & 0x0F) > 9) adj |= 0x06;
+    if (c || a > 0x99) { adj |= 0x60; c = true; }
 
-    if (!flagN()) {
-      if (
-        (high >= 0x0 && high <= 0x8 && low >= 0xA && low <= 0xF && !flagC() && !flagH()) || 
-        (high >= 0x0 && high <= 0x9 && low >= 0x0 && low <= 0x3 && !flagC() &&  flagH())
-        ) {
-        regA((regA() + 0x06) & 0xFF)->flagC(false); return;
-      }
-
-      if (
-        (high >= 0xA && high <= 0xF && low >= 0x0 && low <= 0x9 && !flagC() && !flagH()) ||
-        (high >= 0x0 && high <= 0x2 && low >= 0x0 && low <= 0x9 &&  flagC() && !flagH())
-        ) {
-        regA((regA() + 0x60) & 0xFF)->flagC(true); return;
-      }
-
-      if (
-        (high >= 0x9 && high <= 0xF && low >= 0xA && low <= 0xF && !flagC() && !flagH()) ||
-        (high >= 0xA && high <= 0xF && low >= 0x0 && low <= 0x3 && !flagC() &&  flagH()) ||
-        (high >= 0x0 && high <= 0x2 && low >= 0xA && low <= 0xF &&  flagC() && !flagH()) ||
-        (high >= 0x0 && high <= 0x3 && low >= 0x0 && low <= 0x3 &&  flagC() &&  flagH())
-        ) {
-        regA((regA() + 0x66) & 0xFF)->flagC(true); return;
-      }
-    } else {
-      if ((high >= 0x0 && high <= 0x8 && low >= 0x6 && low <= 0xF && !flagC() &&  flagH())) {
-        regA((regA() + 0xFA) & 0xFF)->flagC(false); return;
-      }
-
-      if ((high >= 0x7 && high <= 0xF && low >= 0x0 && low <= 0x9 &&  flagC() && !flagH())) {
-        regA((regA() + 0xA0) & 0xFF)->flagC(false); return;
-      }
-
-      if ((high >= 0x6 && high <= 0xF && low >= 0x6 && low <= 0xF &&  flagC() &&  flagH())) {
-        regA((regA() + 0x9A) & 0xFF)->flagC(false); return;
-      }
-    }
+    const uint8_t r = n ? a - adj : a + adj;
+    regA(r)->flagS(r & 0x80)->flagZ(!r)->flagPV(IsParity(r))->flagC(c)->flagH(n ? (h && (a & 0x0F) < 6) : (a & 0x0F) > 9);
   }
-
-
 
 
   inline void Process(Int2Type<Instruction::BIT_INSTR>, Int2Type<BitInstruction::BIT_0_A>) { cycles = 8; Bit8(regA(), 0); }
@@ -859,10 +826,10 @@ public:
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::NEG>) { cycles = 2; regA(Sub8(0, regA())); }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_BC>) { cycles = 15; regHL() = Add16(regHL(), regBC(), flagC()); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_DE>) { cycles = 15; regHL() = Add16(regHL(), regDE(), flagC()); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_HL>) { cycles = 15; regHL() = Add16(regHL(), regHL(), flagC()); }
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_SP>) { cycles = 15; regHL() = Add16(regHL(), regSP(), flagC()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_BC>) { cycles = 15; regHL() = Add16(regHL(), regBC(), true); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_DE>) { cycles = 15; regHL() = Add16(regHL(), regDE(), true); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_HL>) { cycles = 15; regHL() = Add16(regHL(), regHL(), true); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::ADC_HL_SP>) { cycles = 15; regHL() = Add16(regHL(), regSP(), true); }
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_BC>) { cycles = 15; regHL() = Sub16(regHL(), regBC(), flagC()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::SBC_HL_DE>) { cycles = 15; regHL() = Sub16(regHL(), regDE(), flagC()); }
@@ -877,28 +844,28 @@ public:
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_nn_BC>) { cycles = 20; Write(Word(), regBC()); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_nn_SP>) { cycles = 20; Write(Word(), regSP()); }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDI>) { cycles = 16; Write(regDE()++, Read(regHL()++)); flagH(false)->flagN(false)->flagPV(!--regBC()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDI>) { cycles = 16; Write(regDE()++, Read(regHL()++)); flagH(false)->flagN(false)->flagPV(--regBC() != 0); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDIR>) {
     Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::LDI>());
     if (regBC() != 0) { cycles = 21; regPC() -= 2; }
   }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDD>) { cycles = 16; Write(regDE()--, Read(regHL()--)); flagH(false)->flagN(false)->flagPV(!--regBC()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDD>) { cycles = 16; Write(regDE()--, Read(regHL()--)); flagH(false)->flagN(false)->flagPV(--regBC() != 0); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LDDR>) {
     Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::LDD>());
     if (regBC() != 0) { cycles = 21; regPC() -= 2; }
   }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPI>) { cycles = 16; auto carry = flagC(); Sub8(regA(), Read(regHL()++)); flagH(false)->flagN(true)->flagPV(!--regBC())->flagC(carry); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPI>) { cycles = 16; auto c = flagC(); Sub8(regA(), Read(regHL()++)); flagN(true)->flagPV(--regBC() != 0)->flagC(c); }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPIR>) { 
     Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::CPI>());
-    if (regBC() != 0 && regA() != Read(regHL())) { cycles = 21; regPC() -= 2; }
+    if (regBC() != 0 && !flagZ()) { cycles = 21; regPC() -= 2; }
   }
 
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPD>) { cycles = 16; auto carry = flagC(); Sub8(regA(), Read(regHL()--)); flagH(false)->flagN(true)->flagPV(!--regBC())->flagC(carry); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPD>) { cycles = 16; auto c = flagC(); Sub8(regA(), Read(regHL()--)); flagN(true)->flagPV(--regBC() != 0)->flagC(c);  }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::CPDR>) {
     Process(Int2Type<Instruction::MISC_INSTR>(), Int2Type<MiscInstruction::CPD>());
-    if (regBC() != 0 && regA() != Read(regHL())) { cycles = 21; regPC() -= 2; }
+    if (regBC() != 0 && !flagZ()) { cycles = 21; regPC() -= 2; } 
   }
 
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::RLD>) {
@@ -955,22 +922,22 @@ public:
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::ADD_IX_SP>) { cycles = 15; regIX() = Add16(regIX(), regSP()); }
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::ADD_IX_IX>) { cycles = 15; regIX() = Add16(regIX(), regIX()); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_A>) { cycles = 19; Write(regIX() + Read(), regA()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_B>) { cycles = 19; Write(regIX() + Read(), regB()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_C>) { cycles = 19; Write(regIX() + Read(), regC()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_D>) { cycles = 19; Write(regIX() + Read(), regD()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_E>) { cycles = 19; Write(regIX() + Read(), regE()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_H>) { cycles = 19; Write(regIX() + Read(), regH()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_L>) { cycles = 19; Write(regIX() + Read(), regL()); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_N>) { cycles = 19; auto addr = regIX() + Read(); Write(addr, Read()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_A>) { cycles = 19; Write(Index(regIX()), regA()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_B>) { cycles = 19; Write(Index(regIX()), regB()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_C>) { cycles = 19; Write(Index(regIX()), regC()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_D>) { cycles = 19; Write(Index(regIX()), regD()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_E>) { cycles = 19; Write(Index(regIX()), regE()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_H>) { cycles = 19; Write(Index(regIX()), regH()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_L>) { cycles = 19; Write(Index(regIX()), regL()); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_ixd_N>) { cycles = 19; auto addr = Index(regIX()); Write(addr, Read()); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_A_ixd>) { cycles = 19; regA(Read(regIX() + Read())); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_B_ixd>) { cycles = 19; regB(Read(regIX() + Read())); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_C_ixd>) { cycles = 19; regC(Read(regIX() + Read())); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_D_ixd>) { cycles = 19; regD(Read(regIX() + Read())); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_E_ixd>) { cycles = 19; regE(Read(regIX() + Read())); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_H_ixd>) { cycles = 19; regH(Read(regIX() + Read())); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_L_ixd>) { cycles = 19; regL(Read(regIX() + Read())); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_A_ixd>) { cycles = 19; regA(Read(Index(regIX()))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_B_ixd>) { cycles = 19; regB(Read(Index(regIX()))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_C_ixd>) { cycles = 19; regC(Read(Index(regIX()))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_D_ixd>) { cycles = 19; regD(Read(Index(regIX()))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_E_ixd>) { cycles = 19; regE(Read(Index(regIX()))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_H_ixd>) { cycles = 19; regH(Read(Index(regIX()))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_L_ixd>) { cycles = 19; regL(Read(Index(regIX()))); }
 
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_IX_NN>) { cycles = 20; regIX() = Word(); }
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::LD_IX_nn>) { cycles = 20; regIX() = Word(Word()); }
@@ -982,56 +949,57 @@ public:
 
   inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::EX_sp_IX>) { cycles = 23; uint16_t word = Word(regSP()); Write(regSP(), regIX()); regIX() = word; }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::INC_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Inc8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::DEC_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Dec8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::INC_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Inc8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::DEC_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Dec8(Read(addr))); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::ADD_A_ixd>) { cycles = 19; regA(Add8(regA(), Read(regIX() + Read()))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::SUB_ixd>)   { cycles = 19; regA(Sub8(regA(), Read(regIX() + Read()))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::CP_ixd>)    { cycles = 19;      Sub8(regA(), Read(regIX() + Read())); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::AND_ixd>)   { cycles = 19; regA(And8(regA(), Read(regIX() + Read()))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::XOR_ixd>)   { cycles = 19; regA(Xor8(regA(), Read(regIX() + Read()))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::ADC_A_ixd>) { cycles = 19; regA(Add8(regA(), Read(regIX() + Read()), true)); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::SBC_A_ixd>) { cycles = 19; regA(Sub8(regA(), Read(regIX() + Read()), true)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::ADD_A_ixd>) { cycles = 19; regA(Add8(regA(), Read(Index(regIX())))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::SUB_ixd>)   { cycles = 19; regA(Sub8(regA(), Read(Index(regIX())))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::CP_ixd>)    { cycles = 19;      Sub8(regA(), Read(Index(regIX()))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::AND_ixd>)   { cycles = 19; regA(And8(regA(), Read(Index(regIX())))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::OR_ixd>)    { cycles = 19; regA( Or8(regA(), Read(Index(regIX())))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::XOR_ixd>)   { cycles = 19; regA(Xor8(regA(), Read(Index(regIX())))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::ADC_A_ixd>) { cycles = 19; regA(Add8(regA(), Read(Index(regIX())), true)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::SBC_A_ixd>) { cycles = 19; regA(Sub8(regA(), Read(Index(regIX())), true)); }
 
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RLC_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Rlc8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RRC_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Rrc8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RLC_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Rlc8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RRC_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Rrc8(Read(addr))); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RL_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Rlc8(Read(addr), true)); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RR_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Rrc8(Read(addr), true)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RL_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Rlc8(Read(addr), true)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RR_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Rrc8(Read(addr), true)); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SLA_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Sla8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SRA_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Sra8(Read(addr), 0x80)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SLA_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Sla8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SRA_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Sra8(Read(addr), 0x80)); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SLL_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Sla8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SRL_ixd>) { cycles = 23; auto addr = regIX() + Read(); Write(addr, Sra8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SLL_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Sla8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SRL_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Sra8(Read(addr))); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_0_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 0); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_1_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 1); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_2_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 2); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_3_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 3); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_4_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 4); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_5_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 5); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_6_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 6); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_7_ixd>) { cycles = 20; Bit8(Read(regIX() + Read()), 7); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_0_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 0); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_1_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 1); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_2_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 2); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_3_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 3); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_4_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 4); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_5_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 5); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_6_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 6); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::BIT_7_ixd>) { cycles = 20; Bit8(Read(Index(regIX())), 7); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_0_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 0); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_1_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 1); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_2_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 2); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_3_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 3); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_4_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 4); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_5_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 5); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_6_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 6); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_7_ixd>) { cycles = 20; Res8(Read(regIX() + Read()), 7); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_0_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 0)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_1_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 1)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_2_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 2)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_3_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 3)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_4_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 4)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_5_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 5)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_6_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 6)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::RES_7_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Res8(Read(addr), 7)); }
 
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_0_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 0); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_1_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 1); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_2_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 2); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_3_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 3); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_4_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 4); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_5_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 5); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_6_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 6); }
-  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_7_ixd>) { cycles = 20; Set8(Read(regIX() + Read()), 7); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_0_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 0)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_1_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 1)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_2_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 2)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_3_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 3)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_4_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 4)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_5_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 5)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_6_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 6)); }
+  inline void Process(Int2Type<Instruction::IX_INSTR>, Int2Type<IxInstruction::IxBitInstr>, Int2Type<IxBitInstruction::SET_7_ixd>) { cycles = 23; auto addr = Index(regIX()); Write(addr, Set8(Read(addr), 7)); }
 
 
 
@@ -1045,22 +1013,22 @@ public:
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::ADD_IY_SP>) { cycles = 15; regIY() = Add16(regIY(), regSP()); }
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::ADD_IY_IY>) { cycles = 15; regIY() = Add16(regIY(), regIY()); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_A>) { cycles = 19; Write(regIY() + Read(), regA()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_B>) { cycles = 19; Write(regIY() + Read(), regB()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_C>) { cycles = 19; Write(regIY() + Read(), regC()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_D>) { cycles = 19; Write(regIY() + Read(), regD()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_E>) { cycles = 19; Write(regIY() + Read(), regE()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_H>) { cycles = 19; Write(regIY() + Read(), regH()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_L>) { cycles = 19; Write(regIY() + Read(), regL()); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_N>) { cycles = 19; auto addr = regIY() + Read(); Write(addr, Read()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_A>) { cycles = 19; Write(Index(regIY()), regA()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_B>) { cycles = 19; Write(Index(regIY()), regB()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_C>) { cycles = 19; Write(Index(regIY()), regC()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_D>) { cycles = 19; Write(Index(regIY()), regD()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_E>) { cycles = 19; Write(Index(regIY()), regE()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_H>) { cycles = 19; Write(Index(regIY()), regH()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_L>) { cycles = 19; Write(Index(regIY()), regL()); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_iyd_N>) { cycles = 19; auto addr = Index(regIY()); Write(addr, Read()); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_A_iyd>) { cycles = 19; regA(Read(regIY() + Read())); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_B_iyd>) { cycles = 19; regB(Read(regIY() + Read())); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_C_iyd>) { cycles = 19; regC(Read(regIY() + Read())); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_D_iyd>) { cycles = 19; regD(Read(regIY() + Read())); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_E_iyd>) { cycles = 19; regE(Read(regIY() + Read())); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_H_iyd>) { cycles = 19; regH(Read(regIY() + Read())); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_L_iyd>) { cycles = 19; regL(Read(regIY() + Read())); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_A_iyd>) { cycles = 19; regA(Read(Index(regIY()))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_B_iyd>) { cycles = 19; regB(Read(Index(regIY()))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_C_iyd>) { cycles = 19; regC(Read(Index(regIY()))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_D_iyd>) { cycles = 19; regD(Read(Index(regIY()))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_E_iyd>) { cycles = 19; regE(Read(Index(regIY()))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_H_iyd>) { cycles = 19; regH(Read(Index(regIY()))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_L_iyd>) { cycles = 19; regL(Read(Index(regIY()))); }
 
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_IY_NN>) { cycles = 20; regIY() = Word(); }
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::LD_IY_nn>) { cycles = 20; regIY() = Word(Word()); }
@@ -1072,124 +1040,154 @@ public:
 
   inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::EX_sp_IY>) { cycles = 23; uint16_t word = Word(regSP()); Write(regSP(), regIY()); regIY() = word; }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::INC_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Inc8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::DEC_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Dec8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::INC_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Inc8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::DEC_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Dec8(Read(addr))); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::ADD_A_iyd>) { cycles = 19; regA(Add8(regA(), Read(regIY() + Read()))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::SUB_iyd>)   { cycles = 19; regA(Sub8(regA(), Read(regIY() + Read()))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::CP_iyd>)    { cycles = 19;      Sub8(regA(), Read(regIY() + Read())); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::AND_iyd>)   { cycles = 19; regA(And8(regA(), Read(regIY() + Read()))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::XOR_iyd>)   { cycles = 19; regA(Xor8(regA(), Read(regIY() + Read()))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::ADC_A_iyd>) { cycles = 19; regA(Add8(regA(), Read(regIY() + Read()), true)); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::SBC_A_iyd>) { cycles = 19; regA(Sub8(regA(), Read(regIY() + Read()), true)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::ADD_A_iyd>) { cycles = 19; regA(Add8(regA(), Read(Index(regIY())))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::SUB_iyd>)   { cycles = 19; regA(Sub8(regA(), Read(Index(regIY())))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::CP_iyd>)    { cycles = 19;      Sub8(regA(), Read(Index(regIY()))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::AND_iyd>)   { cycles = 19; regA(And8(regA(), Read(Index(regIY())))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::OR_iyd>)    { cycles = 19; regA( Or8(regA(), Read(Index(regIY())))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::XOR_iyd>)   { cycles = 19; regA(Xor8(regA(), Read(Index(regIY())))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::ADC_A_iyd>) { cycles = 19; regA(Add8(regA(), Read(Index(regIY())), true)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::SBC_A_iyd>) { cycles = 19; regA(Sub8(regA(), Read(Index(regIY())), true)); }
 
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RLC_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Rlc8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RRC_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Rrc8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RLC_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Rlc8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RRC_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Rrc8(Read(addr))); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RL_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Rlc8(Read(addr), true)); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RR_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Rrc8(Read(addr), true)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RL_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Rlc8(Read(addr), true)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RR_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Rrc8(Read(addr), true)); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SLA_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Sla8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SRA_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Sra8(Read(addr), 0x80)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SLA_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Sla8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SRA_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Sra8(Read(addr), 0x80)); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SLL_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Sla8(Read(addr))); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SRL_iyd>) { cycles = 23; auto addr = regIY() + Read(); Write(addr, Sra8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SLL_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Sla8(Read(addr))); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SRL_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Sra8(Read(addr))); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_0_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 0); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_1_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 1); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_2_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 2); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_3_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 3); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_4_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 4); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_5_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 5); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_6_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 6); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_7_iyd>) { cycles = 20; Bit8(Read(regIY() + Read()), 7); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_0_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 0); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_1_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 1); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_2_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 2); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_3_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 3); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_4_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 4); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_5_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 5); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_6_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 6); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::BIT_7_iyd>) { cycles = 20; Bit8(Read(Index(regIY())), 7); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_0_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 0); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_1_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 1); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_2_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 2); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_3_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 3); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_4_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 4); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_5_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 5); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_6_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 6); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_7_iyd>) { cycles = 20; Res8(Read(regIY() + Read()), 7); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_0_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 0)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_1_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 1)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_2_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 2)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_3_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 3)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_4_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 4)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_5_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 5)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_6_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 6)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::RES_7_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Res8(Read(addr), 7)); }
 
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_0_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 0); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_1_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 1); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_2_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 2); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_3_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 3); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_4_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 4); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_5_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 5); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_6_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 6); }
-  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_7_iyd>) { cycles = 20; Set8(Read(regIY() + Read()), 7); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_0_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 0)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_1_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 1)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_2_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 2)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_3_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 3)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_4_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 4)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_5_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 5)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_6_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 6)); }
+  inline void Process(Int2Type<Instruction::IY_INSTR>, Int2Type<IyInstruction::IyBitInstr>, Int2Type<IyBitInstruction::SET_7_iyd>) { cycles = 23; auto addr = Index(regIY()); Write(addr, Set8(Read(addr), 7)); }
 
 private:
   // std::string sprintf(std::string str, int32_t byte);
 
   inline uint8_t Inc8(uint8_t a) {
-    uint16_t acc = (uint16_t)a + 1;
+    const uint8_t r = a + 1;
 
     // P/V is set if a was 7Fh before operation; otherwise, it is reset
-    flagPV(a == 0x7F)->flagN(false)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagH(((regA() & 0x0F) + 1) & 0xF0);
-    return (uint8_t)(acc & 0xFF);
+    flagPV(a == 0x7F)->flagN(false)->flagS(r & 0x80)->flagZ(!r)->flagH((a & 0x0F) == 0x0F);
+    return (uint8_t)(r & 0xFF);
   }
 
   inline uint8_t Dec8(uint8_t a) {
-    uint16_t acc = (uint16_t)a - 1;
+    const uint8_t r = a - 1;
 
     // P/V is set if a was 80h before operation; otherwise, it is reset.
-    flagPV(a == 0x80)->flagN(true)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagH(((regA() & 0x0F) - 1) & 0xF0);
-    return (uint8_t)(acc & 0xFF);
+    flagPV(a == 0x80)->flagN(true)->flagS(r & 0x80)->flagZ(!r)->flagH((a & 0x0F) == 0x00);
+    return (uint8_t)(r & 0xFF);
   }
+
+  // inline uint8_t Add8(uint8_t a, uint8_t b, bool carry = false) {
+  //   uint16_t acc = (uint16_t)a + b + (carry && flagC());
+
+  //   // When adding operands with similar signs and the result contains a different sign,
+  //   // the Overflow Flag is set
+  //   flagPV(SIGN(a) == SIGN(b) && SIGN(a) != SIGN(acc));
+
+  //   flagN(false)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagC(acc & 0xFF00)->flagH(((a & 0x0F) + (b & 0x0F) + (carry && flagC())) & 0xF0);
+
+  //   return (uint8_t)(acc & 0xFF);
+  // }
+
+  // inline uint16_t Add16(uint16_t a, uint16_t b, bool carry = false) {
+  //   uint32_t acc = (uint32_t)a + b + (uint32_t)(carry && flagC());
+
+  //   if (carry) { 
+  //     // When adding operands with similar signs and the result contains a different sign,
+  //     // the Overflow Flag is set
+  //     flagPV(SIGN(a >> 8) != SIGN(b >> 8) && SIGN(a >> 8) != SIGN(acc >> 8))->flagZ(!(acc & 0xFFFF))->flagS(SIGN(acc >> 8));
+  //   }
+
+  //   flagN(false)->flagC(acc & 0xFF0000)->flagH(((a & 0x0FFF) + (b & 0x0FFF) + (carry && flagC())) & 0xF000);
+
+  //   return (uint16_t)(acc & 0xFFFF);
+  // }
+
+  // inline uint8_t Sub8(uint8_t a, uint8_t b, bool carry = false) {
+  //   uint16_t acc = (uint16_t)a + (b ^ 0xFF) + 1 + (carry && flagC()) * 0xFF;
+
+  //   // When adding operands with similar signs and the result contains a different sign,
+  //   // the Overflow Flag is set
+  //   flagPV(SIGN(a) != SIGN(b) && SIGN(a) != SIGN(acc));
+
+  //   flagN(true)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagC(!(acc & 0xFF00))->flagH(!(((a & 0x0F) + (((b ^ 0xFF) + 1) & 0x0F) + (carry && flagC()) * 0xFF) & 0xF0));
+
+  //   return (uint8_t)(acc & 0xFF);
+  // }
+
+  // inline uint16_t Sub16(uint16_t a, uint16_t b, bool carry = false) {
+  //   uint32_t acc = (uint32_t)a + (uint32_t)(b ^ 0xFFFF) + 1 + (uint32_t)(carry && flagC()) * 0xFFFF;
+
+  //   // When adding operands with similar signs and the result contains a different sign,
+  //   // the Overflow Flag is set
+  //   flagPV(SIGN(a >> 8) != SIGN(b >> 8) && SIGN(a >> 8) != SIGN(acc >> 8));
+
+  //   flagN(true)->flagS(SIGN(acc >> 8))->flagZ(!(acc & 0xFFFF))->flagC(!(acc & 0xFF0000))->flagH(!(((a & 0x0FFF) + (((b ^ 0xFFFF) + 1) & 0x0FFF) + (carry && flagC()) * 0xFFFF) & 0xF000));
+
+  //   return (uint16_t)(acc & 0xFFFF);
+  // }
 
   inline uint8_t Add8(uint8_t a, uint8_t b, bool carry = false) {
-    uint16_t acc = (uint16_t)a + b + (carry && flagC());
-
-    // When adding operands with similar signs and the result contains a different sign,
-    // the Overflow Flag is set
-    flagPV(SIGN(a) == SIGN(b) && SIGN(a) != SIGN(acc));
-
-    flagN(false)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagC(acc & 0xFF00)->flagH(((a & 0x0F) + (b & 0x0F) + (carry && flagC())) & 0xF0);
-
-    return (uint8_t)(acc & 0xFF);
-  }
-
-  inline uint16_t Add16(uint16_t a, uint16_t b, bool carry = false) {
-    uint32_t acc = (uint32_t)a + b + (uint32_t)(carry && flagC());
-
-    if (carry) { 
-      // When adding operands with similar signs and the result contains a different sign,
-      // the Overflow Flag is set
-      flagPV(SIGN(a >> 8) != SIGN(b >> 8) && SIGN(a >> 8) != SIGN(acc >> 8))->flagZ(!(acc & 0xFFFF))->flagS(SIGN(acc >> 8));
-    }
-
-    flagN(false)->flagC(acc & 0xFF0000)->flagH(((a & 0x0FFF) + (b & 0x0FFF) + (carry && flagC())) & 0xF000);
-
-    return (uint16_t)(acc & 0xFFFF);
+    const int c = carry && flagC();                       // read carry-in before touching any flag
+    const int acc = a + b + c; const uint8_t r = acc & 0xFF;
+    flagPV(~(a ^ b) & (a ^ r) & 0x80)->flagN(false)->flagS(r & 0x80)->flagZ(!r)->flagC(acc > 0xFF)->flagH(((a & 0x0F) + (b & 0x0F) + c) > 0x0F);
+    return r;
   }
 
   inline uint8_t Sub8(uint8_t a, uint8_t b, bool carry = false) {
-    uint16_t acc = (uint16_t)a + (b ^ 0xFF) + 1 + (carry && flagC()) * 0xFF;
+    const int c = carry && flagC();
+    const int acc = a - b - c; const uint8_t r = acc & 0xFF;
+    flagPV((a ^ b) & (a ^ r) & 0x80)->flagN(true)->flagS(r & 0x80)->flagZ(!r)->flagC(acc < 0)->flagH(((a & 0x0F) - (b & 0x0F) - c) < 0);
+    return r;
+  }
 
-    // When adding operands with similar signs and the result contains a different sign,
-    // the Overflow Flag is set
-    flagPV(SIGN(a) != SIGN(b) && SIGN(a) != SIGN(acc));
-
-    flagN(true)->flagS(SIGN(acc))->flagZ(!(acc & 0xFF))->flagC(!(acc & 0xFF00))->flagH(!(((a & 0x0F) + (((b ^ 0xFF) + 1) & 0x0F) + (carry && flagC()) * 0xFF) & 0xF0));
-
-    return (uint8_t)(acc & 0xFF);
+  inline uint16_t Add16(uint16_t a, uint16_t b, bool adc = false) {
+    const int c = adc && flagC();
+    const int acc = a + b + c; const uint16_t r = acc & 0xFFFF;
+    if (adc) flagS(r & 0x8000)->flagZ(!r)->flagPV(~(a ^ b) & (a ^ r) & 0x8000);
+    flagN(false)->flagC(acc > 0xFFFF)->flagH(((a & 0x0FFF) + (b & 0x0FFF) + c) > 0x0FFF);
+    return r;
   }
 
   inline uint16_t Sub16(uint16_t a, uint16_t b, bool carry = false) {
-    uint32_t acc = (uint32_t)a + (uint32_t)(b ^ 0xFFFF) + 1 + (uint32_t)(carry && flagC()) * 0xFFFF;
-
-    // When adding operands with similar signs and the result contains a different sign,
-    // the Overflow Flag is set
-    flagPV(SIGN(a >> 8) != SIGN(b >> 8) && SIGN(a >> 8) != SIGN(acc >> 8));
-
-    flagN(true)->flagS(SIGN(acc >> 8))->flagZ(!(acc & 0xFFFF))->flagC(!(acc & 0xFF0000))->flagH(!(((a & 0x0FFF) + (((b ^ 0xFFFF) + 1) & 0x0FFF) + (carry && flagC()) * 0xFFFF) & 0xF000));
-
-    return (uint16_t)(acc & 0xFFFF);
+    const int c = carry && flagC();
+    const int acc = a - b - c; const uint16_t r = acc & 0xFFFF;
+    flagS(r & 0x8000)->flagZ(!r)->flagPV((a ^ b) & (a ^ r) & 0x8000)->flagN(true)->flagC(acc < 0)->flagH(((a & 0x0FFF) - (b & 0x0FFF) - c) < 0);
+    return r;
   }
 
   inline uint8_t Or8(uint8_t a, uint8_t b)  { return BitOperation(a, b, a | b); }
@@ -1318,24 +1316,34 @@ private:
    */
   inline bool IsParity(uint8_t x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (~x) & 1; }
 
-private:
-  inline void Wait() { std::unique_lock<std::mutex> lock(sync.first); sync.second.wait(lock); }
+public:
+  inline void Wait() {
+    std::unique_lock<std::mutex> l(sync.first);
+    sync.second.wait(l, [this] { return resume || !bExec; });
+    resume = frozen = false;
+  }
 
+  inline void Continue() {
+    { std::lock_guard<std::mutex> l(callback.first); stepped = false; }
+    { std::lock_guard<std::mutex> l(sync.first); if (frozen) resume = true; }   // ignored while the CPU is running
+    sync.second.notify_all();
+  }
+
+  inline uint16_t Addr() {
+    std::unique_lock<std::mutex> l(callback.first);
+    callback.second.wait(l, [this] { return stepped || !bExec; });
+    stepped = false;
+    return regPC();
+  }
+  // inline void Continue() { { std::lock_guard<std::mutex> l(sync.first); resume = true; } sync.second.notify_all(); }
+  
 public:
   inline bool IsDebug() { return mode == DEBUG; }
   inline void Debug() { mode = DEBUG; }
   inline void Normal() { mode = NORMAL; Continue(); }
   inline ModeT GetMode() { return mode; }
 
-  inline void Continue() { sync.second.notify_all(); }
   inline uint16_t Stack() { return regSP(); }
-  inline uint16_t Addr() { 
-    std::unique_lock<std::mutex> lock(callback.first);
-    callback.second.wait(lock);
-
-    return regPC();
-  }
-
   inline bool IsBreakpoint(uint16_t addr) {
     for (auto& bp : breakpoints) if (addr == bp) return true;
     return false;
@@ -1361,13 +1369,17 @@ private:
   std::pair<std::mutex, std::condition_variable> halt;
   std::pair<IM_T, std::atomic<bool>> interrupt = std::pair(IM0, false);
 
-  std::thread runtime;
   std::atomic<bool> bExec = true;
-
   std::array<std::atomic<uint16_t>, 13> reg;
-  
+
+  bool frozen = true;    // CPU is parked, or about to park (guarded by sync.first)
+  bool resume = false;   // guarded by sync.first  (keep your atomic if you like)
+  bool stepped = false;  // guarded by callback.first
+
   std::mutex mutex;
   std::list<uint16_t> breakpoints;
+
+  std::thread runtime;
 };
 
 };

@@ -69,10 +69,9 @@ namespace Bus {
       case MUX::IORQ::KEYBOARD_PORT: return Registry::IRQ->SetFlag(IRQ::BIT::KEYBOARD), Registry::Keyboard->Read(addr, true);
       case MUX::IORQ::INT_PORT:      return Registry::IRQ->Read(addr, true);
       case MUX::IORQ::PIT_PORT: {
-        Registry::IRQ->SetFlag(IRQ::BIT::CT1);
-        Registry::IRQ->SetFlag(IRQ::BIT::CT2);
-
-        return Registry::KR580VI53->Read(addr, true);
+        const int ct = addr & 3;                                       // 0..2 counters, 3 control word
+        if (ct == 1 || ct == 2) Registry::IRQ->SetFlag(IRQ::BIT::CT1 - ct + 1);   // same mapping PIT::Interrupt uses
+        return Registry::KR580VI53->Read(addr, true);                  // (and Write in the other mux)
       }
     }
 
@@ -94,18 +93,20 @@ namespace Bus {
       }
       case MUX::IORQ::PPI_PORT: {
         Registry::KR580VV55->Write(addr, data, true);
-        uint8_t ctrl = Registry::KR580VV55->regC(Int2Type<PPI::REG2PORT>());
+        const uint8_t ctrl = Registry::KR580VV55->regC(Int2Type<PPI::REG2PORT>());
+        const uint8_t prev = lcdCtrl; lcdCtrl = ctrl;
 
         Registry::KR580VI53->SetGate(0, BIT(ctrl, MUX::PPI_CS::CS0));
         Registry::KR580VI53->SetGate(1, BIT(ctrl, MUX::PPI_CS::CS1));
 
-        switch ((ctrl >> MUX::PPI_CS::CS3) & 7) {
-          case MUX::PPI_IO::LCD_PORT:
-            if (BIT(ctrl, MUX::PPI_CS::CSW)) Registry::Lcd->Read(addr, BIT(ctrl, MUX::PPI_CS::CSA));
-            else Registry::Lcd->Write(addr, Registry::KR580VV55->regA(Int2Type<PPI::REG2PORT>()), BIT(ctrl, MUX::PPI_CS::CSA));
-            break;
-        }
+        const bool selNow = ((ctrl >> MUX::PPI_CS::CS3) & 7) == MUX::PPI_IO::LCD_PORT;
+        const bool selWas = ((prev >> MUX::PPI_CS::CS3) & 7) == MUX::PPI_IO::LCD_PORT;
 
+        if (selWas && !selNow) {            // RS/RW as they were while the LCD was selected
+          const bool rs = BIT(prev, MUX::PPI_CS::CSA);
+          if (BIT(prev, MUX::PPI_CS::CSW)) Registry::Lcd->Read(addr, rs);
+          else Registry::Lcd->Write(addr, Registry::KR580VV55->regA(Int2Type<PPI::REG2PORT>()), rs);
+        }
         return data;
       }
     }

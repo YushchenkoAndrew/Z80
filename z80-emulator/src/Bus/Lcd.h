@@ -98,10 +98,10 @@ public:
   }
 
   uint8_t Instruction(Int2Type<CURSOR>, uint8_t data) {
-    if (IS_BIT(data, 3)) {
-      for (int32_t i = buffer.size() - 1 ; IS_BIT(data, 2) && i >= cursor.second; i--) buffer[i] = buffer[i - 1];
-      for (int32_t i = 0; !IS_BIT(data, 2) && i < cursor.second; i--) buffer[i] = buffer[i + 1];
-    } else { cursor.second = (cursor.second + (IS_BIT(data, 2) ? 1 : -1)) % buffer.size(); }
+    const bool right = IS_BIT(data, 2);
+    if (!IS_BIT(data, 3)) { cursor.second = (cursor.second + (right ? 1 : buffer.size() - 1)) % buffer.size(); return data; }
+    if (right) { for (size_t i = buffer.size() - 1; i > 0; i--) buffer[i] = buffer[i - 1]; buffer[0] = SegmentT{}; }
+    else       { for (size_t i = 0; i + 1 < buffer.size(); i++) buffer[i] = buffer[i + 1]; buffer.back() = SegmentT{}; }
 
     return data;
   }
@@ -109,7 +109,11 @@ public:
   // TODO: For now this doest make sense to impl
   uint8_t Instruction(Int2Type<FUNCTION>, uint8_t data) { return 0x00; }
   uint8_t Instruction(Int2Type<CGRAM>, uint8_t data) { return 0x00; }
-  uint8_t Instruction(Int2Type<DDRAM>, uint8_t data) { return 0x00; }
+  uint8_t Instruction(Int2Type<DDRAM>, uint8_t data) { 
+    const uint32_t a = data & 0x7F;                           // 16x2 layout: line 1 = 0x00.., line 2 = 0x40..
+    cursor.second = ((a >= 0x40 ? 16 : 0) + (a & 0x3F)) % buffer.size();
+    return data;
+  }
 
 
 private:

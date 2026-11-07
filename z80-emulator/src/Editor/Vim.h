@@ -31,14 +31,14 @@ public:
 
   Vim(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {}
 
-  void Process() override {
-    if ((fBlink += GameEngine->GetElapsedTime()) > 1.2f) fBlink -= 1.2f;
-
-    MoveOffset();
-
+  void Preprocess() override {
     auto nWheel = GameEngine->GetMouseWheel();
     if (nWheel > 0) MoveTo({ 0, -1 });
     else if (nWheel < 0) MoveTo({ 0, 1 });
+  }
+
+  void Process() override {
+    if ((fBlink += GameEngine->GetElapsedTime()) > 1.2f) fBlink -= 1.2f;
 
     if (!GameEngine->GetMouse(0).bPressed) return;
     const auto mouse = GameEngine->GetMousePos();
@@ -57,13 +57,19 @@ public:
     if (mouse.x > nZeroX  && mouse.y > nStartY && mouse.x < nStartX && mouse.y < nEndY) GameEngine->Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>(), olc::vi2d(std::max(pos.x + offset.x, 0), std::max(pos.y + offset.y, 0))); 
   }
 
-  void MoveOffset() {
+  void UpdateViewRange() {
     const auto vMax = size / vStep;
-    if (pos.y - offset.y + 3 > vMax.y && pos.y < GetLineSize()) offset.y++;
-    if ((pos.y - offset.y - 1 < 0 && pos.y) || (!pos.y && pos.y != offset.y)) offset.y--;
 
-    if (pos.x - offset.x + 3 > vMax.x && pos.x < GetLineSize(pos.y)) offset.x++;
-    if ((pos.x - offset.x - 1 < 0 && pos.x) || (!pos.x && pos.x != offset.x)) offset.x--;
+    // Vertical scrolling
+    if (pos.y >= offset.y + vMax.y - 5) offset.y = pos.y - vMax.y + 6;
+    else if (pos.y < offset.y + 3) offset.y = pos.y - 3;
+
+    // Horizontal scrolling
+    if (pos.x >= offset.x + vMax.x - 3) offset.x = pos.x - vMax.x + 4;
+    else if (pos.x < offset.x + 3) offset.x = pos.x - 3;
+
+    offset.x = std::max(0, offset.x);
+    offset.y = std::max(0, offset.y);
   }
 
   void Draw() override {
@@ -607,7 +613,7 @@ public:
     if (!line().size()) pos.x = 0;
     else if (pos.x > endAt()) pos.x = endAt();
 
-    return nullptr;
+    return UpdateViewRange(), nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::K>) {
@@ -618,17 +624,17 @@ public:
     if (!line().size()) pos.x = 0;
     else if (pos.x > endAt()) pos.x = endAt();
 
-    return nullptr;
+    return UpdateViewRange(), nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::L>) {
     if (pos.x < endAt()) pos.x++;
-    return nullptr;
+    return UpdateViewRange(), nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::H>) {
     if (pos.x > 0) pos.x--;
-    return nullptr;
+    return UpdateViewRange(), nullptr;
   }
 
   inline int32_t GetLineSize() { return lines.size(); }

@@ -889,7 +889,7 @@ public:
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
-      auto stmt = addressRegisterComplexOperation(0xCB86, cmd);
+      auto stmt = bitMemoryOperation(0x86, std::move(expr), cmd);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       return stmt;
     }
@@ -940,7 +940,7 @@ public:
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     if (match<1>({ TokenT::LEFT_BRACE })) {
-      auto stmt = addressRegisterComplexOperation(0xCBC6, cmd);
+      auto stmt = bitMemoryOperation(0xC6, std::move(expr), cmd);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
       return stmt;
     }
@@ -1006,6 +1006,34 @@ private:
       case TokenT::REG_HL: return std::make_unique<StatementNoArgCommand>(StatementNoArgCommand(opcode, cmd));
       case TokenT::REG_IX: return std::make_unique<StatementRuntimeCommand>(StatementRuntimeCommand(cmd, offset(1), [command, code](uint32_t arg, uint32_t) -> uint32_t { return (uint32_t)(0xDD000000 | command | code | (arg << 8)); }));
       case TokenT::REG_IY: return std::make_unique<StatementRuntimeCommand>(StatementRuntimeCommand(cmd, offset(1), [command, code](uint32_t arg, uint32_t) -> uint32_t { return (uint32_t)(0xFD000000 | command | code | (arg << 8)); }));
+      default: {}
+    }
+
+    error(peekPrev(), "Expect register to be 'HL' | 'IY+o' | 'IX+o'");
+    return nullptr;
+  }
+
+  // RES / SET / BIT on (HL), (IX+d), (IY+d). `base` is the opcode for bit 0: 0x46 BIT, 0x86 RES, 0xC6 SET.
+  inline std::unique_ptr<Expression> bitMemoryOperation(uint32_t base, std::unique_ptr<Expression> bit, Token& cmd) {
+    const auto reg = advance().type;
+
+    switch (reg) {
+      case TokenT::REG_HL:
+        return std::make_unique<StatementRuntimeCommand>(StatementRuntimeCommand(cmd, std::move(bit),
+          [base](uint32_t b, uint32_t) -> uint32_t {
+            return b > 7 ? 0x00 : (uint32_t)(0xCB00 | base | (b << 3));
+          }));
+
+      case TokenT::REG_IX:
+      case TokenT::REG_IY: {
+        const uint32_t prefix = reg == TokenT::REG_IX ? 0xDD000000 : 0xFD000000;
+
+        return std::make_unique<StatementRuntimeCommand>(StatementRuntimeCommand(cmd, std::move(bit), offset(1),
+          [base, prefix](uint32_t b, uint32_t d) -> uint32_t {
+            return b > 7 ? 0x00 : (uint32_t)(prefix | 0x00CB0000 | ((d & 0xFF) << 8) | base | (b << 3));
+          }));
+      }
+
       default: {}
     }
 

@@ -52,7 +52,7 @@ public:
   void Interrupt();
 
 public:
-  uint8_t Read(uint32_t addr, bool) {
+  uint8_t Read(uint32_t addr, bool) override {
     Utils::Lock l(mutex);
 
     uint8_t code = buffer.size() ? buffer.front() : '\0';
@@ -61,7 +61,7 @@ public:
     return code;
   }
 
-  uint8_t Write(uint32_t addr, uint8_t data, bool) { return 0x00; }
+  uint8_t Write(uint32_t addr, uint8_t data, bool) override { return 0x00; }
 
 public:
   template<int32_t T, int32_t U>

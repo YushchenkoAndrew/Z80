@@ -22,8 +22,8 @@
 // 	}
 // };
 
-template<class T, class U> 
-struct foreach;
+// template<class T, class U> 
+// struct foreach;
 
 // template<int32_t T, class V, class U, class F>
 // struct foreach<TypeList<AnyType<T, V>, U>, F> {
@@ -159,30 +159,29 @@ struct foreach;
 // };
 
 
-template<int32_t T, class U, class R>
-struct foreach<TypeList<Int2Type<T>, U>, R> {
-	template<class Y>
-	static inline void Process(Y* ref) {
-    foreach<U, R>::Process(ref);
-		ref->Process(Int2Type<T>());
-	}
+// template<int32_t T, class U, class R>
+// struct foreach<TypeList<Int2Type<T>, U>, R> {
+// 	template<class Y>
+// 	static inline void Process(Y* ref) {
+//     foreach<U, R>::Process(ref);
+// 		ref->Process(Int2Type<T>());
+// 	}
 
-	template<class Y>
-	static inline R Process(Y* ref, int32_t val) {
-		if (+T == val) return ref->Process(Int2Type<T>());
-		return foreach<U, R>::Process(ref, val);
-	}
-};
+// 	template<class Y>
+// 	static inline R Process(Y* ref, int32_t val) {
+// 		if (+T == val) return ref->Process(Int2Type<T>());
+// 		return foreach<U, R>::Process(ref, val);
+// 	}
+// };
 
+// template<class R>
+// struct foreach<NullType, R> {
+// 	template<class Y>
+// 	static inline R Process(Y* ref) {}
 
-template<class R>
-struct foreach<NullType, R> {
-	template<class Y>
-	static inline R Process(Y* ref) {}
-
-	template<class Y>
-	static inline R Process(Y*, int32_t) { return R(); }
-};
+// 	template<class Y>
+// 	static inline R Process(Y*, int32_t) { return R(); }
+// };
 
 // template<class R>
 // struct foreach<NullType, R> {
@@ -205,6 +204,35 @@ struct foreach<NullType, R> {
 // 	// 	return false;
 // 	// }
 // };
+
+template<class List, class R, class... Prefix>
+struct foreach;
+
+template<int32_t T, class U, class R, class... Prefix>
+struct foreach<TypeList<Int2Type<T>, U>, R, Prefix...> {
+  // call every handler in the list (same order as your original)
+  template<class Y>
+  static inline void Process(Y* ref) {
+    foreach<U, R, Prefix...>::Process(ref);
+    ref->Process(Prefix()..., Int2Type<T>());
+  }
+
+  // call the handler matching `val`
+  template<class Y>
+  static inline R Process(Y* ref, int32_t val) {
+    if (+T == val) return ref->Process(Prefix()..., Int2Type<T>());
+    return foreach<U, R, Prefix...>::Process(ref, val);
+  }
+};
+
+template<class R, class... Prefix>
+struct foreach<NullType, R, Prefix...> {
+  template<class Y>
+  static inline void Process(Y*) {}
+
+  template<class Y>
+  static inline R Process(Y*, int32_t) { return R(); }
+};
 
 
 // template <class T, class U, class R>

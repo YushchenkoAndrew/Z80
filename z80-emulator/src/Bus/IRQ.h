@@ -14,7 +14,6 @@ public:
   };
 
   IRQ(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
-  void Select(DimensionT dimensions) override { this->absolute = dimensions.first; this->size = dimensions.second; }
 
   void Process() override {}
   void Draw() override {
@@ -31,17 +30,14 @@ public:
 
   void Interrupt();
 
-  uint8_t Read(uint32_t, bool) { return state; }
-  uint8_t Write(uint32_t, uint8_t data, bool) { return enabled = data; }
+  uint8_t Read(uint32_t, bool) override { return state; }
+  uint8_t Write(uint32_t, uint8_t data, bool) override { return enabled = data; }
 
 
   inline void SetFlag(uint8_t flag) { state |= (uint8_t)(1 << flag); }
   inline void ResetFlag(uint8_t flag) { state &= ~(uint8_t)(enabled & (1 << flag)); Interrupt(); }
 
 private:
-  olc::vi2d size = olc::vi2d(0, 0);
-  olc::vi2d absolute = olc::vi2d(0, 0);
-
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(16, 0);
 

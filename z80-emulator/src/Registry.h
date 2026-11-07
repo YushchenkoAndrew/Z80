@@ -16,7 +16,6 @@
 #include "src/Bus/Switch.h"
 #include "src/Defs.h"
 #include "src/Editor/Editor.h"
-#include "src/Editor/Popup.h"
 #include "src/Interpreter/Interpreter.h"
 #include "src/Window/Window.h"
 #include <memory>
@@ -46,7 +45,7 @@ public:
     windows.insert(HY62256A = std::make_shared<Bus::Memory>(engine, "HY62256A",HY62256A_SIZE));
 
     windows.insert(Editor = std::make_shared<Editor::Editor>(engine, "editor"));
-    windows.insert(Bindings = std::make_shared<Editor::Popup>(engine, "bindings"));
+    // windows.insert(Bindings = std::make_shared<Window::Popup>(engine, "bindings"));
 
     Interpreter = std::make_shared<Interpreter::Interpreter>();
 
@@ -59,6 +58,13 @@ public:
     }
 
     return nullptr;
+  }
+
+  static void Shutdown() {
+    windows.clear();     // drop the set's references
+    Z80.reset();         // ~CPU() joins its thread; every device is still alive
+    KR580VI53.reset();   // PIT thread calls IRQ
+    MC146818.reset();    // RTC thread calls IRQ
   }
 
 public:
@@ -79,7 +85,7 @@ public:
   inline static std::shared_ptr<Bus::Memory>       IMS1423;
   inline static std::shared_ptr<Bus::Memory>      HY62256A;
 
-  inline static std::shared_ptr<Editor::Popup>   Bindings;
+  // inline static std::shared_ptr<Editor::Popup>   Bindings;
   inline static std::shared_ptr<Editor::Editor>  Editor;
 
   inline static std::shared_ptr<Interpreter::Interpreter> Interpreter;

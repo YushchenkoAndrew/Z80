@@ -29,10 +29,10 @@ public:
 
 public:
   Token token;
-  bool strict;
-  bool sequence;
-  uint32_t bytes;
-  uint32_t address;
+  bool strict = false;
+  bool sequence = false;
+  uint32_t bytes = 0;
+  uint32_t address = 0;
 };
 
 

@@ -55,20 +55,20 @@ public:
       memory[ADDR::REG::A] |= MASK(FLAG::REG_A::UIP);
       memory[ADDR::REG::C] &= ~(MASK(FLAG::REG_C::UF) | MASK(FLAG::REG_C::IRQF));
 
-      if (bBIN) {
-        memory[ADDR::CLOCK::SECONDS] = time % 60;
-        memory[ADDR::CLOCK::MINUTES] = (time / 60) % 60;
-        memory[ADDR::CLOCK::HOURS]   = (time / 3600) % iHour;
-      } else {
-        memory[ADDR::CLOCK::SECONDS] = (time % 10) | (((time % 60) / 10) << 4);
-        memory[ADDR::CLOCK::MINUTES] = ((time / 60) % 10) | ((((time / 60) % 60) / 10) << 4);
-        memory[ADDR::CLOCK::HOURS]   = ((time / 3600) % 10) | ((((time / 3600) % iHour) / 10) << 4);
-      }
+      auto get = [&](int r) -> uint8_t { return bBIN ? memory[r] : FromBCD(memory[r]); };
+      auto set = [&](int r, uint8_t v)  { memory[r] = bBIN ? v : ToBCD(v); };
 
-      memory[ADDR::CALENDAR::DAY_OF_WEEK] = (memory[ADDR::CALENDAR::DAY_OF_WEEK] + time / 3600 / 24) % 7;
-      memory[ADDR::CALENDAR::DATE_OF_MONTH] += time / 3600 / 24;
-      memory[ADDR::CALENDAR::MONTH] += time / 3600 / 24 / 30;
-      memory[ADDR::CALENDAR::YEAR] += time / 3600 / 24 / 356;
+      set(ADDR::CLOCK::SECONDS, time % 60);
+      set(ADDR::CLOCK::MINUTES, (time / 60) % 60);
+      set(ADDR::CLOCK::HOURS,   (time / 3600) % iHour); // wrap first, then split into digits
+
+      // midnight: once per day
+      if (time % 86400 == 0) {                                     
+        set(ADDR::CALENDAR::DAY_OF_WEEK, get(ADDR::CALENDAR::DAY_OF_WEEK) % 7 + 1);
+        uint8_t date = get(ADDR::CALENDAR::DATE_OF_MONTH) + 1, month = get(ADDR::CALENDAR::MONTH), year = get(ADDR::CALENDAR::YEAR);
+        if (date > DaysIn(month, year)) { date = 1; if (++month > 12) { month = 1; year = (year + 1) % 100; } }
+        set(ADDR::CALENDAR::DATE_OF_MONTH, date); set(ADDR::CALENDAR::MONTH, month); set(ADDR::CALENDAR::YEAR, year);
+      }
 
       memory[ADDR::REG::A] &= ~MASK(FLAG::REG_A::UIP);
 
@@ -90,19 +90,28 @@ public:
     }
   }
 
-  uint8_t Write(uint32_t addr, uint8_t data, bool) {
-    switch (addr & 0xFF) {
+  uint8_t Write(uint32_t addr, uint8_t data, bool) override {
+    addr &= memory.size() - 1;
+    const bool bin = memory[ADDR::REG::B] & MASK(FLAG::REG_B::DM);
+    const uint64_t v = bin ? data : FromBCD(data);
+
+    switch (addr) {
       case ADDR::REG::C: return Memory::Write(addr, data & 0xF0, false);
       case ADDR::REG::D: return Memory::Write(addr, data & 0x10, false);
-
-      case ADDR::CLOCK::SECONDS: time = (time / 60) * 60 + data; break;
-      case ADDR::CLOCK::MINUTES: time = (time / 3600) * 3600 + data * 60 + time % 60; break;
-      case ADDR::CLOCK::HOURS:   time = (time / 86400) * 86400 + data * 86400 + time % 3600; break;
+      case ADDR::CLOCK::SECONDS: time = (time / 60) * 60 + v; break;
+      case ADDR::CLOCK::MINUTES: time = (time / 3600) * 3600 + v * 60 + time % 60; break;
+      case ADDR::CLOCK::HOURS:   time = (time / 86400) * 86400 + v * 3600 + time % 3600; break;
     }
-
     return Memory::Write(addr, data, false);
   }
 
+private:
+  static uint8_t FromBCD(uint8_t v) { return (v >> 4) * 10 + (v & 0x0F); }
+  static uint8_t ToBCD(uint8_t v)   { return ((v / 10) << 4) | (v % 10); }
+  static uint8_t DaysIn(uint8_t m, uint8_t y) {
+    static const uint8_t d[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
+    return (m == 2 && y % 4 == 0) ? 29 : d[(m + 11) % 12];
+  }
 
 private:
   std::atomic<bool> bExec = true;

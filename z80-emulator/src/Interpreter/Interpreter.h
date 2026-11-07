@@ -39,8 +39,9 @@ public:
 
     for (auto& stmt : parser.stmt) {
       const auto start = address;
-
       evaluate(stmt.get());
+
+      if (dynamic_cast<StatementAddress*>(stmt.get())) continue;
       lookup.add(start, address - start, stmt->semantic.token);
     }
 
@@ -117,8 +118,8 @@ public:
   }
 
   Bytes visitExprVariable(ExpressionVariable* expr) override {
-    if (expr->label.lexeme == "$") return Int2Bytes(address);
-    return evaluate(semantic.vars[expr->label.lexeme]);
+    const Bytes raw = expr->label.lexeme == "$" ? Int2Bytes(address) : evaluate(semantic.vars[expr->label.lexeme]);
+    return Int2Bytes(Bytes2Int(raw), expr->semantic.bytes);
   }
 
   Bytes visitStmtAddress(StatementAddress* stmt) override {
@@ -180,9 +181,6 @@ public:
   }
 
 private:
-//   inline void lock() { if (vars) vars->first = true; }
-//   inline void unlock() { if (vars) { vars->first = false; vars->second.clear(); } }
-
   inline Bytes Int2Bytes(uint32_t val, int32_t size = 0) {
     if (val == 0x00) return Bytes(size ? size : 1, 0x00);
 

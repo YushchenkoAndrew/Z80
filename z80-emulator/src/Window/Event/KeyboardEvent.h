@@ -119,7 +119,10 @@ protected:
 
   void error(std::string message) { err = "Error " + message + "\n"; }
 
-  virtual const StrokeT<>& GetCommands() const {};
+  virtual const StrokeT<>& GetCommands() const {
+    static const StrokeT<> empty = ::Window::StrokeT<>::Init({});
+    return empty;
+  };
 
 protected:
   int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme

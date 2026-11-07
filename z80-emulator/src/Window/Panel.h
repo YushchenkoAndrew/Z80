@@ -1,19 +1,23 @@
 #pragma once
 
+#include "include/Typelist.h"
 #include "src/Defs.h"
-#include "src/Editor/Popup.h"
+#include "src/Editor/Vim.h"
+#include "src/Utils/Utils.h"
+#include "src/Window/Popup.h"
 #include "src/Window/Window.h"
 #include "src/Window/Event/KeyboardEvent.h"
 #include <memory>
+#include <utility>
 
 template <class T>
-using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, DimensionT, int32_t>;
+using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, ::Window::DimensionT, int32_t>;
 
 template <class T>
-using WindowInitT = std::tuple<std::shared_ptr<T>, DimensionT>;
+using WindowInitT = std::tuple<std::shared_ptr<T>, bool, ::Window::DimensionT>;
 
 #define SELECTED(p)  std::get<0>(p)
-#define ZOOMED(p)    std::get<1>(p)
+#define DISPLAYED(p) std::get<1>(p)
 #define PTR(p)       std::get<2>(p)
 #define DIMENSION(p) std::get<3>(p)
 #define WINDOW(p)    std::get<4>(p)
@@ -22,20 +26,27 @@ using WindowInitT = std::tuple<std::shared_ptr<T>, DimensionT>;
 #define SIZE(p) DIMENSION(p).second
 #define EXIST(p) PTR(p) != nullptr
 #define IS_NULL(p) PTR(p) == nullptr
-#define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
+// #define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
 #define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
         
 class Panel : public Window::KeyboardEvent, public Window::Window {
   // enum ModeT { NORMAL, COMMAND };
 
 public:
-  Panel(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {}
+  Panel(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {
+    auto popup = std::make_shared<::Window::Popup>(engine, "bindings", std::move(std::make_shared<Editor::Vim>(engine)));
+    popup->bindings = ::Window::StrokeT<>::Init({
+      { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto...) { return this->Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::OEM_2>()); } }
+    });
+
+    Push(std::tuple(std::move(popup), false, std::pair(olc::vi2d(0, 0), olc::vi2d(engine->ScreenWidth(), engine->ScreenHeight()))));
+  }
 
   // void Initialize() {
   //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize();
   // }
 
-  void Select(DimensionT dimensions) override {
+  void Select(::Window::DimensionT dimensions) override {
     ::Window::Window::Select(dimensions); ::Window::KeyboardEvent::Focus(true);
     for (auto& w : windows) if (EXIST(w)) PTR(w)->Select(DIMENSION(w));
   }
@@ -56,16 +67,20 @@ public:
 
     // Process(Int2Type<NORMAL>(), GameEngine);
     // if (mode == COMMAND) { if (!cmd.size() && bReleased) mode = NORMAL; return; }
+    const auto mouse = GameEngine->GetMousePos();
+    const auto bPressed = GameEngine->GetMouse(0).bPressed;
 
-    if (GameEngine->GetMouse(0).bPressed) {
-      auto mouse = GameEngine->GetMousePos();
-      if (mouse.y - size.y > 0) return;
+    for (auto& w : windows) if (!bFullScreen && EXIST(w) && DISPLAYED(w) && IS_INSIDE(w, mouse)) PTR(w)->Preprocess();
 
-      for (auto& w : windows) if (!bFullScreen && EXIST(w)) SELECTED(w) = IS_INSIDE(w, mouse);
-      for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w)); 
+    if (bPressed && mouse.y - size.y <= 0) {
+      for (auto& w : windows) {
+        if (!(EXIST(w) && DISPLAYED(w))) continue;
+
+        if (!bFullScreen) PTR(w)->Focus(SELECTED(w) = IS_INSIDE(w, mouse));
+        if (SELECTED(w)) PTR(w)->Process();
+      }
     }
 
-    for (auto& w : windows) if (SELECTED(w)) PTR(w)->Process();
   }
 
   void Draw() override {
@@ -77,7 +92,7 @@ public:
 
     // for(auto& future : vFuture) future.wait();
 
-    for (auto& w : windows) if (EXIST(w) && SHOULD_DRAW(bFullScreen, w)) PTR(w)->Draw();
+    for (auto& w : windows) if (EXIST(w) && DISPLAYED(w)) PTR(w)->Draw();
 
     // if (mode == NORMAL) return;
     // if (cmd.size() && cmd.back() == 'q' && !search.bEnabled)
@@ -109,27 +124,28 @@ public:
   // inline void Command(Int2Type<T>) {}
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>) { 
-    for (auto& w : windows) if (SELECTED(w)) { bFullScreen = (ZOOMED(w) ^= true); PTR(w)->Select(bFullScreen ? std::pair(absolute, size) : DIMENSION(w)); }
+    // FIXME: Impl this ....
+    // for (auto& w : windows) if (EXIST(w) && SELECTED(w)) { bFullScreen = (ZOOMED(w) ^= true); PTR(w)->Select(bFullScreen ? std::pair(absolute, size) : DIMENSION(w)); }
     return nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_2>) { 
-    WindowT<::Window::Window>* bindings = nullptr;
-    for (auto& w : windows) if (EXIST(w) && PTR(w)->windowId == "bindings") { bindings = &w; break; }
+    // WindowT<::Window::Window>* bindings = nullptr;
+    // for (auto& w : windows) if (EXIST(w) && PTR(w)->windowId == "bindings") { bindings = &w; break; }
+    // if (bindings == nullptr) return nullptr;
+    auto window = Find("bindings");
+    if (window == nullptr) return nullptr;
 
-    if (bindings == nullptr) return nullptr;
+    printf("HERE\n");
 
+    // int32_t selected = 0;
+    // auto popup = std::dynamic_pointer_cast<>(PTR(*bindings));
 
-    int32_t selected = 0;
-    std::vector<std::string> commands = this->Combinations(&GetCommands());
-    auto vim = std::dynamic_pointer_cast<Editor::Popup>(PTR(*bindings));
+    if (SELECTED(*window)) {
 
-    if (SELECTED(*bindings)) {
-      vim->Load(commands);
-      Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
-
-      SELECTED(*bindings) = false;
-      // cmd.push_back(popup->window + '0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
+      // NOTE: Temp solution
+      // Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
+      PTR(*window)->Focus(DISPLAYED(*window) = SELECTED(*window) = false);
       return nullptr;
     }
 
@@ -143,24 +159,30 @@ public:
     // };
 
     // for (auto& w : windows) if (SELECTED(w)) { bindings = GetBindings(PTR(w)->GetBindings().c_str()); selected = WINDOW(w); }
-    for (auto& w : windows) {
-      if (!SELECTED(w)) continue;
-      auto combinations = this->Combinations(&PTR(w)->GetCommands());
-      commands.insert(commands.end(), combinations.begin(), combinations.end());
+    std::vector<std::string> commands = this->Combinations(&GetCommands());
 
-      selected = WINDOW(w);
+    for (auto& w : windows) {
+      if (!SELECTED(w)) { DISPLAYED(w) = false; continue; }
+      else PTR(w)->Focus(DISPLAYED(w) = SELECTED(w) = false);
+
+      const auto combinations = this->Combinations(&PTR(w)->GetCommands());
+      commands.insert(commands.end(), combinations.begin(), combinations.end());
     }
     // cmd.push_back('0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
 
     // auto panel = GetBindings("panel");
     // bindings.insert(bindings.end(), panel.begin(), panel.end());
 
+    
+    auto popup = Utils::Cast<::Window::Popup>(PTR(*window));
+    auto vim = Utils::Cast<Editor::Vim>(popup->window);
 
-    vim->Load(commands); vim->window = selected; SELECTED(*bindings) = true;
-    Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
+    vim->Load(commands); popup->Focus(DISPLAYED(*window) = SELECTED(*window) = true);
+    
+    // NOTE: Temp solution
+    // Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
 
     // TODO: Impl POPUP logic HERE
-    // for (auto& t : bindings) printf("%s\n", t.c_str());
     return nullptr;
   }
 
@@ -203,8 +225,7 @@ public:
 
     return [&](olc::Key k, int32_t) {
       int32_t digit = k - olc::Key::K0; bDrawWindowIndex = false;
-      for (auto& w : windows) if (EXIST(w)) SELECTED(w) = WINDOW(w) == digit;
-      for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w)); 
+      for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w) = WINDOW(w) == digit);
       return false;
     };
   }
@@ -297,17 +318,18 @@ public:
 //   }
 
 public:
-  // template<class T>
-  // std::shared_ptr<T> Find(Type2Type<T> type) { return std::dynamic_pointer_cast<T>(PTR(Window(type))); }
+  WindowT<::Window::Window>* Find(std::string id) {
+    for (auto& w : windows) if (EXIST(w) && PTR(w)->windowId == id) return &w;
+    return nullptr;
+  }
 
-// private:
   template<typename T, typename... Args>
   inline void Push(T ref, Args ...args) { Push(ref); Push(args...); }
 
   inline void Push() {}
   
   template<class T>
-  inline void Push(WindowInitT<T> b) { windows.push_back(std::tuple_cat(std::make_tuple(nWindows == 1, false), b, std::make_tuple(++nWindows))); }
+  inline void Push(WindowInitT<T> b) { windows.push_back(WindowT<::Window::Window>(nWindows == 1, std::get<1>(b), std::get<0>(b), std::get<2>(b), ++nWindows)); }
 
 public:
   // inline bool IsActive() { return mode == COMMAND; }
@@ -359,7 +381,7 @@ inline const Window::StrokeT<> Panel::commands = ::Window::StrokeT<>::Init({
 
 
 #undef SELECTED
-#undef ZOOMED
+#undef DISPLAYED
 #undef PTR
 #undef DIMENSION
 #undef WINDOW
