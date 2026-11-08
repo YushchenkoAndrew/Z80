@@ -174,10 +174,12 @@ RST_INIT:
 ;;   reg HL -- unaffected
 _INTR_LOCK:
   DI         ; Disable interrupt programly
+  PUSH AF    ; Save Acc and Flags in stack
   PUSH HL    ; Save reg HL in stack
   LD HL, PTR_INTR_LOCK; Load ptr to the interrupt lock
   INC (HL)   ; Incr lock counter, aka shows how many times need to run unlock
   POP HL     ; Restore reg HL
+  POP AF     ; Restore Acc and Flags
   RET
 
 ;; Example:
@@ -189,6 +191,7 @@ _INTR_LOCK:
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 _INTR_UNLOCK:
+  PUSH AF    ; Save Acc and Flags in stack
   PUSH HL    ; Save reg HL in stack
   LD HL, PTR_INTR_LOCK; Load ptr to the interrupt lock
   DEC (HL)   ; Decr lock counter, aka shows how many times need to run unlock
@@ -197,6 +200,7 @@ _INTR_UNLOCK:
 
 _INTR_UNLOCK_end:
   POP HL     ; Restore reg HL
+  POP AF     ; Restore Acc and Flags
   RET
 
 ;;

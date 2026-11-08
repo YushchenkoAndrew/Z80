@@ -47,6 +47,7 @@ public:
     windows.insert(Editor = std::make_shared<Editor::Editor>(engine, "editor"));
     // windows.insert(Bindings = std::make_shared<Window::Popup>(engine, "bindings"));
 
+    // Syntax = std::make_shared<Interpreter::Interpreter>();
     Interpreter = std::make_shared<Interpreter::Interpreter>();
 
     IMS1423->Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::G>());
@@ -88,6 +89,7 @@ public:
   // inline static std::shared_ptr<Editor::Popup>   Bindings;
   inline static std::shared_ptr<Editor::Editor>  Editor;
 
+  // inline static std::shared_ptr<Interpreter::Interpreter> Syntax;
   inline static std::shared_ptr<Interpreter::Interpreter> Interpreter;
 
 private:

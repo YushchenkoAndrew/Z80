@@ -61,22 +61,28 @@ public:
           source.insert(curr = started_at, reader.source);
           continue;
         }
-        
-        if (match("macro")) {
-          whitespace(); const auto name = identifier();
-          if (name != "end_macro") { position.push_back(started_at); continue; }
+
+        if (match("macro")) { position.push_back(started_at); continue; }
+        if (match("end_macro")) {
           if (position.empty()) continue;
 
-          const int32_t end_at = started_at;
-          const int32_t started_at = position.back(); position.pop_back();
-          const int32_t size = curr - started_at; curr = started_at;
+          const int32_t end_at = started_at; // start of '#end_macro'
+          const int32_t begin  = position.back(); position.pop_back();
+          const int32_t finish = curr;  // right after '#end_macro'
 
-          match("#macro"); // consume #macro
-          whitespace(); const auto macro = identifier();
-          whitespace(); const auto args = arguments();
-          
-          macros[macro] = std::pair(args, source.substr(curr, end_at - curr));
-          source.erase(started_at, size);
+          curr = begin; match("#macro");
+          whitespace(); const auto name = identifier();
+          const auto args = parameters();
+
+          auto body = source.substr(curr, end_at - curr);
+          body.erase(0, body.find_first_not_of("\r\n"));
+          body.erase(body.find_last_not_of(" \t\r\n") + 1);
+          macros[name] = { args, body };
+
+          // keep the line count so `origins` stays aligned
+          const auto lines = std::count(source.begin() + begin, source.begin() + finish, '\n');
+          source.replace(begin, finish - begin, std::string(lines, '\n'));
+          curr = begin + lines;
           continue;
         }
       }
@@ -102,20 +108,22 @@ private:
     return source.substr(started_at, curr - started_at);
   }
 
-  std::list<std::string> arguments() {
+  std::list<std::string> parameters() {
     std::list<std::string> args;
-    if (isAtEnd()) return args;
 
-    // Parse parameters comma by comma
-    while (!isAtEnd()) {
+    while (!isAtEnd() && peek() != '\n' && peek() != ';') {
+      whitespace(); const auto id = identifier();
+      if (!id.empty()) args.push_back(id);
+
       whitespace();
 
-      if (source[curr] == ',') whitespace();
-      args.push_back(identifier());
+      if (peek() == ',') advance();
+      else if (id.empty()) break; // unexpected char: stop instead of spinning
     }
 
     return args;
   }
+
 
   inline bool match(std::string pattern) {
     for (const auto c : pattern) {

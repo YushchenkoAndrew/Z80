@@ -7,6 +7,7 @@
 #include "src/Window/Event/KeyboardEvent.h"
 #include "src/Window/Window.h"
 #include <algorithm>
+#include <optional>
 
 namespace Editor {
 
@@ -103,7 +104,20 @@ public:
     GameEngine->FillRect(pos, size, Color::GREY);
   }
 
-  void DrawHighlightedString(olc::vi2d pos, int32_t y, int32_t start, int32_t end) {
+  const Interpreter::Token* TokenUnderCursor() {
+    for (const auto& t : lexer.tokens) {
+      if (t.line - 1 != pos.y) continue;
+      const int32_t start = t.col - 1;
+      if (pos.x >= start && pos.x < start + (int32_t)t.lexeme.size()) return &t;
+    }
+
+    return nullptr;
+  }
+
+  std::string definitionOf(const std::string& name);
+  std::optional<LocationT> definitionLocation(const std::string& name);
+
+  void DrawSegment(olc::vi2d pos, int32_t y, int32_t start, int32_t end) {
     for (int32_t x = start; x < end; x++) {
       auto color = lexer.highlights.count(y) && lexer.highlights[y].count(x) ? lexer.highlights[y][x] : olc::GREY;
       GameEngine->DrawString(pos + olc::vi2d(x * vStep.x, 0), { lines[y][x] }, color);
@@ -112,6 +126,9 @@ public:
 
   void DrawText() {
     const auto nHeight = size.y - vStep.y;
+
+    hover.clear();
+    if (const auto* t = TokenUnderCursor()) { hover = definitionOf(t->lexeme); hoverAt = { t->col - 1, t->line - 1 }; }
 
     for (int32_t i = offset.y; i < lines.size(); i++) {
       olc::vi2d pos = absolute + (olc::vi2d(1, i + 1) - offset) * vStep + vOffset;
@@ -128,8 +145,15 @@ public:
 
       if (pos.x < nWidth && pos.x + lines[i].size() * vStep.x > nWidth) {
         if (startAt > lines[i].size()) continue;
-        DrawHighlightedString(adj, i, startAt, (nWidth - pos.x) / vStep.x - startAt - 1);
-      } else DrawHighlightedString(adj, i, startAt, lines[i].size() - startAt);
+        DrawSegment(adj, i, startAt, (nWidth - pos.x) / vStep.x - startAt - 1);
+      } else DrawSegment(adj, i, startAt, lines[i].size() - startAt);
+    }
+
+    if (hover.size() && hoverAt.y >= offset.y) {
+      const auto at = absolute + (olc::vi2d(1 + hoverAt.x, hoverAt.y + 1) - offset) * vStep + vOffset - olc::vi2d(1, vStep.y + 2);
+      GameEngine->FillRect(at, { (int32_t)hover.size() * vStep.x + 1, vStep.y }, Color::BLACK);
+      GameEngine->DrawRect(at, { (int32_t)hover.size() * vStep.x + 1, vStep.y }, Color::VERY_DARK_GREY);
+      GameEngine->DrawString(at + olc::vi2d(2, 3), hover, Color::DARK_RED);
     }
   }
 
@@ -187,8 +211,8 @@ public:
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::G>) { return pos.x = pos.y = 0, nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::G>) { return pos.x = startAt(), pos.y = lines.size() - 1, nullptr; }
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K>) { GameEngine->Event(Int2Type<EDITOR_GOTO_CALLBACK>(), pos); return nullptr; }
 
-  ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::D>) { GameEngine->Event(Int2Type<EDITOR_GOTO_CALLBACK>(), pos); return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::G>,     Int2Type<olc::Key::P>) { GameEngine->Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>(), pos); return nullptr; }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::K6>)    { return pos.x = startAt(), nullptr; }
@@ -197,6 +221,14 @@ public:
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::U>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::K>()); return nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::D>) { for (uint8_t i = 0; i < 5; i++) Process(Int2Type<olc::Key::J>()); return nullptr; }
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::G>,    Int2Type<olc::Key::D>) {
+    const auto* t = TokenUnderCursor();
+    if (!t || t->type != Interpreter::TokenT::IDENTIFIER) return nullptr;
+
+    if (const auto loc = definitionLocation(t->lexeme)) GameEngine->Event(Int2Type<EDITOR_DEFINE_CALLBACK>(), *loc);
+    return nullptr;
+  }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::Y>, Int2Type<olc::Key::Y>) { return buffer = { "\n" + line() }, nullptr; }
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::Y>) {
@@ -725,6 +757,9 @@ private:
   float fBlink = 0.f;
   float fStrokeRepeat = 0.f;
 
+  std::string hover;
+  olc::vi2d hoverAt;
+
   // int32_t nLastX = 0; // Used for saving max x pos, when moving from line to line
 
   olc::vi2d pos = olc::vi2d(0, 0);
@@ -780,6 +815,7 @@ inline const Window::StrokeT<> Vim::commands = ::Window::StrokeT<>::Init({
     { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::SHIFT>(), {
+    { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::I>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
     { Int2Type<olc::Key::A>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },

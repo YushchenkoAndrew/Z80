@@ -55,13 +55,15 @@ _SCAN_CODE_INIT_lp:
   LD BC, SCAN_CODE_ASCII_VEC_SIZE; Get vector size
   LD HL, .SCAN_CODE_ASCII_VEC_ST
   PUSH HL     ; Save scan code vector ptr
-  CPIR        ; Find index in SCAN_CODE_ASCII
+  CPIR        ; Find index in SCAN_CODE_ASCII, Z = found
   POP BC      ; Restore scan code vector ptr to reg BC
-  JP PO, @SCAN_CODE_ASCII_bg
+  ; JP PO, @SCAN_CODE_ASCII_bg
+  JR Z, @SCAN_CODE_ASCII_bg-$
   XOR A       ; Reset Acc
   JR @SCAN_CODE_ASCII_esc-$
 
 @SCAN_CODE_ASCII_bg:
+  DEC HL      ; CPIR leaves HL one past the match
   XOR A       ; Reset Acc & flags
   SBC HL, BC  ; Get offset from the start of vector
   LD BC, .SCAN_CODE_ASCII_VEC_ED

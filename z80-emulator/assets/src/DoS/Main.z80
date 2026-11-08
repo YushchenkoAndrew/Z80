@@ -7,12 +7,6 @@
 #include "../../lib/Init.z80"
 ALLOWED_INTERUPTS EQU IM_KEYBOARD
 
-; #macro WAIT_FRAMES frames, b
-;     ld b, frames
-; .wait_loop:
-;     halt
-;     djnz .wait_loop
-; #macro end_macro
 
 
   ; ###################################################

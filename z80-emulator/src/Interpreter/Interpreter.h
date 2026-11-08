@@ -10,10 +10,9 @@
 #include "src/Utils/Utils.h"
 #include <array>
 #include <cstdint>
+#include <string>
 
 namespace Interpreter {
-  struct Location { std::filesystem::path file; olc::vi2d pos; };
-
 class Interpreter : public Visitor<Bytes> {
 public:
   Interpreter(): parser(lexer), semantic(parser), layout(parser, semantic) {}
@@ -243,19 +242,37 @@ public:
   }
 
   /// memory -> original file + row
-  std::optional<Location> toSource(uint32_t address) {
+  std::optional<LocationT> toSource(uint32_t address) {
     auto e = lookup.atAddress(address);
     if (!e || e->line < 1 || e->line > (int32_t)preprocessor.origins.size()) return std::nullopt;
 
     const auto& o = preprocessor.origins[e->line - 1];
-    return Location{ o.file, { 0, o.line - 1 } };
+    return LocationT{ o.file, { 0, o.line - 1 } };
+  }
+
+  std::optional<LocationT> definitionLocation(const std::string& name) {
+    const auto it = semantic.vars.find(name);
+    if (it == semantic.vars.end()) return std::nullopt;
+
+    const auto& label = it->second->label;                 // 1-based, merged text
+    if (label.line < 1 || label.line > (int32_t)preprocessor.origins.size()) return std::nullopt;
+
+    const auto& o = preprocessor.origins[label.line - 1];
+    return LocationT{ o.file, { label.col - 1, o.line - 1 } };
+  }
+
+  std::string definitionOf(const std::string& name) {      // hex is more useful than decimal in asm
+    const auto it = semantic.vars.find(name);
+    if (it == semantic.vars.end()) return "";
+
+    const auto v = Bytes2Int(evaluate(it->second));
+    char buf[32]; std::snprintf(buf, sizeof buf,v < 0xFF ? "0x%02X (%u)" : "0x%04X (%u)", v, v);
+    return buf;
   }
 
 public:
   Bytes memory;
   uint32_t address = 0x0000;
-
-  int32_t line = 0;
 
 private:
   Preprocessor preprocessor;

@@ -3,11 +3,11 @@ WIDTH = 700; HIGHT = 412; PIXELS = 2;
 WINDOW = { width = WIDTH, height = HIGHT - 24 }
 
 CLOCK = 2; -- nano seconds = 4MHz
--- SOURCE = "assets/src/DoS/Main.z80";
+SOURCE = "assets/src/DoS/Main.z80";
 -- SOURCE = "assets/test/Test.z80";
 -- src = "assets/test/Timer/Test.z80",
 -- src = "assets/test/RTC/Test.z80",
-SOURCE = "assets/test/LCD/Test.z80";
+-- SOURCE = "assets/test/LCD/Test.z80";
 
 -- step   = { x = 8, y = 12 };
 -- WINDOW = {  }
