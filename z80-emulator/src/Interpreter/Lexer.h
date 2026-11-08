@@ -64,10 +64,7 @@ public:
 
         case '\n': line++; col = 0; break;
         case ' ': case '\r': case '\t': break; // Ignore whitespace.
-        case '#':
-          if (peekNext() != ' ') identifier();
-          else error("Unexpected character."); 
-          break;
+        case '#': error("Unexpected character."); break;
 
         default:
           if (Utils::IsDigit(c)) number();

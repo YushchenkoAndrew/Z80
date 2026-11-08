@@ -266,7 +266,7 @@ public:
     if (it == semantic.vars.end()) return "";
 
     const auto v = Bytes2Int(evaluate(it->second));
-    char buf[32]; std::snprintf(buf, sizeof buf,v < 0xFF ? "0x%02X (%u)" : "0x%04X (%u)", v, v);
+    char buf[32]; std::snprintf(buf, sizeof(buf), "0x%04X (%u)", v, v);
     return buf;
   }
 

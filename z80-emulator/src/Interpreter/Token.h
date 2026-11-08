@@ -51,8 +51,11 @@ public:
 private:
 static inline const std::unordered_map<TokenT, MetadataT> metadata = {
     { TokenT::NONE,       { "",         Color::WHITE } },
-    { TokenT::OP_INCLUDE, { "#INCLUDE", Color::BLUE } },
-    { TokenT::OP_DEFINE,  { "#DEFINE",  Color::BLUE } },
+    { TokenT::OP_INCLUDE, { "INCLUDE",  Color::BLUE } },
+    { TokenT::OP_DEFINE,  { "DEFINE",   Color::BLUE } },
+    { TokenT::OP_UNDEFINE,{ "UNDEFINE", Color::BLUE } },
+    { TokenT::OP_MACRO,   { "MACRO",    Color::BLUE } },
+    { TokenT::OP_ENDM,    { "ENDM",     Color::BLUE } },
 
     { TokenT::OP_ORG, { "ORG", Color::CYAN } },
     { TokenT::OP_DB,  { "DB",  Color::CYAN } },

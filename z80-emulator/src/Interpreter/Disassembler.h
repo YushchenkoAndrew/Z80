@@ -122,7 +122,7 @@ public:
   
     --it;
     if (address - it->address >= it->size) return 0;
-    return (int32_t)(it - lines.begin()) + 1;
+    return (int32_t)(it - lines.begin());
   }
 
 private:

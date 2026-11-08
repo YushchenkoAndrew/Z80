@@ -1,4 +1,4 @@
-#include "Defs.z80"
+INCLUDE "Defs.z80"
 
 ;;
 ;; Example:
@@ -738,10 +738,10 @@ _CMD_EXEC_ESC:
   db "mnt"
 .MOUNT_NAME_ED:
 
-#include "Message.z80"
+INCLUDE "Message.z80"
 
 ;; Variables
 COMMANDS_SIZE        EQU  15
 COMMANDS_PRNT_SIZE   EQU  COMMANDS_SIZE - 1
 
-#include "../lib/FileSystem.z80"
+INCLUDE "../lib/FileSystem.z80"

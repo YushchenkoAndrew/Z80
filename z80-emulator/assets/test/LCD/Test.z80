@@ -71,12 +71,12 @@ MAIN:
   ; JP MAIN
 
 
-#include "../../lib/Hex.z80"
-; #include "../lib/Printf.z80"
-; #include "../lib/Utils.z80"
-; #include "../lib/Keyboard.z80"
-; #include "../lib/Buffer.z80"
-#include "../../lib/Lcd.z80"
+INCLUDE "../../lib/Hex.z80"
+; INCLUDE "../lib/Printf.z80"
+; INCLUDE "../lib/Utils.z80"
+; INCLUDE "../lib/Keyboard.z80"
+; INCLUDE "../lib/Buffer.z80"
+INCLUDE "../../lib/Lcd.z80"
 
 MSG_HELLO:
   db "Hello world :)", 0

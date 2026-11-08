@@ -4,7 +4,7 @@
 ;	DATE: 18.11.24
 ;	AUTHOR: Andrew Yushchenko
 ;####################################################
-#include "../../lib/Init.z80"
+INCLUDE "../../lib/Init.z80"
 ALLOWED_INTERUPTS EQU 0
 
 @SCAN_CODE_IM			EQU RST38_end
@@ -32,9 +32,9 @@ MAIN:
 
 	RET
 
-#include "../../lib/EventLoop.z80"
-#include "../../lib/Timer.z80"
-#include "../../lib/RTC.z80"
-#include "../../lib/Hex.z80"
+INCLUDE "../../lib/EventLoop.z80"
+INCLUDE "../../lib/Timer.z80"
+INCLUDE "../../lib/RTC.z80"
+INCLUDE "../../lib/Hex.z80"
 
-#include "../../lib/utils/Adapter.z80"
+INCLUDE "../../lib/utils/Adapter.z80"

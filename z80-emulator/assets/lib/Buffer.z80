@@ -1,4 +1,4 @@
-#include "Command.z80"
+INCLUDE "Command.z80"
 
 ;;
 ;; Example:

@@ -1,4 +1,4 @@
-#include "Defs.z80"
+INCLUDE "Defs.z80"
 
 ;; NOTE: Inspired by this idea
 ;; https://www.studytonight.com/operating-system/priority-scheduling

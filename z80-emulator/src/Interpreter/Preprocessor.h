@@ -16,12 +16,12 @@ namespace Interpreter {
  * Define a macro with `#macro` and end it with `#end_macro`.
  *
  * @code
- * #macro WAIT n
+ * MACRO WAIT n
  *     LD B, n
  * wait\@:
  *     HALT
  *     DJNZ wait\@-$
- * #end_macro
+ * ENDM
  *
  * WAIT 10
  * @endcode

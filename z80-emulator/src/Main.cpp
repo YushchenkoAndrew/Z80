@@ -209,7 +209,9 @@ public:
     std::cout << "EDITOR_BREAKPOINT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    if (!Registry::Z80->IsDebug()) { Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); Registry::Z80->Continue(); }
+    if (!Registry::Z80->IsDebug()) Event(Int2Type<DEBUG_RESET_CALLBACK>());
+    else Registry::Z80->Normal();
+
     for (auto& e : Registry::Interpreter->toMemory(Registry::Editor->File(), cursor)) {
       Registry::Z80->Breakpoint(e.address);
       Registry::Editor->Breakpoint(cursor.y);
