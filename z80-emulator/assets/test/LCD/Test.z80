@@ -11,7 +11,7 @@ ORG 0x0000
 
 ORG 0x0010
 RST10:
-  CALL #LCD_OUT
+  CALL @LCD_OUT
   RET
 
 
@@ -57,7 +57,7 @@ TEMP:
 MAIN:
   IN A, (0x00)
   OUT (0x00), A
-  CALL #HEX
+  CALL @HEX
 
   ; LD HL, KEY_CODE
   ; LD A, (HL)
@@ -71,12 +71,12 @@ MAIN:
   ; JP MAIN
 
 
-#include "../../lib/Hex.asm"
-; #include "../lib/Printf.asm"
-; #include "../lib/Utils.asm"
-; #include "../lib/Keyboard.asm"
-; #include "../lib/Buffer.asm"
-#include "../../lib/Lcd.asm"
+#include "../../lib/Hex.z80"
+; #include "../lib/Printf.z80"
+; #include "../lib/Utils.z80"
+; #include "../lib/Keyboard.z80"
+; #include "../lib/Buffer.z80"
+#include "../../lib/Lcd.z80"
 
 MSG_HELLO:
   db "Hello world :)", 0

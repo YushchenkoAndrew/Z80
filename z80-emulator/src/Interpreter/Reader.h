@@ -1,11 +1,15 @@
 #pragma once
 
+#include "src/Utils/Utils.h"
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <list>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace Interpreter {
@@ -51,9 +55,28 @@ public:
           if (!reader.origins.empty()) {
             origins.erase(origins.begin() + row);
             origins.insert(origins.begin() + row, reader.origins.begin(), reader.origins.end());
+            macros.insert(reader.macros.begin(), reader.macros.end());
           }
 
           source.insert(curr = started_at, reader.source);
+          continue;
+        }
+        
+        if (match("macro")) {
+          whitespace(); const auto name = identifier();
+          if (name != "end_macro") { position.push_back(started_at); continue; }
+          if (position.empty()) continue;
+
+          const int32_t end_at = started_at;
+          const int32_t started_at = position.back(); position.pop_back();
+          const int32_t size = curr - started_at; curr = started_at;
+
+          match("#macro"); // consume #macro
+          whitespace(); const auto macro = identifier();
+          whitespace(); const auto args = arguments();
+          
+          macros[macro] = std::pair(args, source.substr(curr, end_at - curr));
+          source.erase(started_at, size);
           continue;
         }
       }
@@ -71,6 +94,27 @@ private:
     advance(); // closing quote
 
     return source.substr(started_at, curr - started_at - 1);
+  }
+
+  std::string identifier() {
+    const auto started_at = curr;
+    while (!isAtEnd() && Utils::IsAlphaDigit(source[curr])) advance();
+    return source.substr(started_at, curr - started_at);
+  }
+
+  std::list<std::string> arguments() {
+    std::list<std::string> args;
+    if (isAtEnd()) return args;
+
+    // Parse parameters comma by comma
+    while (!isAtEnd()) {
+      whitespace();
+
+      if (source[curr] == ',') whitespace();
+      args.push_back(identifier());
+    }
+
+    return args;
   }
 
   inline bool match(std::string pattern) {
@@ -93,5 +137,9 @@ public:
   std::string source;
   std::vector<Origin> origins; // origins[i] = where line i+1 of `source` came from
   std::unordered_set<std::filesystem::path> files;
+
+  std::list<int32_t> position;
+  std::unordered_map<std::string, std::pair<std::list<std::string>, std::string>> macros;
+
 };
 };

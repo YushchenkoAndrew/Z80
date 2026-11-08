@@ -4,11 +4,11 @@
 ;	DATE: 18.11.24
 ;	AUTHOR: Andrew Yushchenko
 ;####################################################
-#include "../../lib/Init.asm"
+#include "../../lib/Init.z80"
 ALLOWED_INTERUPTS EQU 0
 
-#SCAN_CODE_IM			EQU RST38_end
-#LCD_OUT 					EQU RST38_end
+@SCAN_CODE_IM			EQU RST38_end
+@LCD_OUT 					EQU RST38_end
 
 
   ; ###################################################
@@ -27,14 +27,14 @@ MAIN:
 
   ; RST 0x20
 
-  CALL #REVERSE
-  CALL #HEX
+  CALL @REVERSE
+  CALL @HEX
 
 	RET
 
-#include "../../lib/EventLoop.asm"
-#include "../../lib/Timer.asm"
-#include "../../lib/RTC.asm"
-#include "../../lib/Hex.asm"
+#include "../../lib/EventLoop.z80"
+#include "../../lib/Timer.z80"
+#include "../../lib/RTC.z80"
+#include "../../lib/Hex.z80"
 
-#include "../../lib/utils/Adapter.asm"
+#include "../../lib/utils/Adapter.z80"

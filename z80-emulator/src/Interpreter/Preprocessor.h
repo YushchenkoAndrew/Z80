@@ -17,7 +17,7 @@ public:
 
   void scan(std::filesystem::path file) {
     auto reader = Reader(file);
-    curr = 0; source = reader.source; files = reader.files; origins = reader.origins;
+    curr = 0; source = reader.source; files = reader.files; origins = reader.origins; macros = reader.macros;
 
     while (!isAtEnd()) {
       const int32_t started_at = curr; const char c = advance();

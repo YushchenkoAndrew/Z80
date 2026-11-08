@@ -1,8 +1,8 @@
-#include "Defs.asm"
+#include "Defs.z80"
 
 ;;
 ;; Example:
-;;  CALL #CMD_EXEC_BUF_CALC
+;;  CALL @CMD_EXEC_BUF_CALC
 ;;
 ;; proc CMD_EXEC_BUF_CALC() -> reg B & reb HL;
 ;;   reg A  -- as defined
@@ -10,7 +10,7 @@
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
 ;;
-#CMD_EXEC_BUF_CALC:
+@CMD_EXEC_BUF_CALC:
   LD HL, PTR_TEXT_BUFF_BGN; Get the start of the buf offset
   LD A, (PTR_TEXT_BUFF_END); Get the end of the buf offset
   DEC A       ; FIXME: Bug that first char is ignored
@@ -42,7 +42,7 @@ _CMD_EXEC:
 
 _CMD_EXEC_bgn:
   PUSH BC     ; Save commands counter in Stack
-  CALL #CMD_EXEC_BUF_CALC; Sets value in reg B - amount of chars & reg HL buf start pos
+  CALL @CMD_EXEC_BUF_CALC; Sets value in reg B - amount of chars & reg HL buf start pos
 
 _CMD_EXEC_lp:
   LD A, (DE)  ; Load char from command
@@ -88,7 +88,7 @@ _CMD_EXEC_nxt:
   POP BC      ; Restore commands coutner
   DJNZ _CMD_EXEC_bgn-$
 
-  CALL #CMD_EXEC_BUF_CALC; Sets value in reg B - amount of chars & reg HL buf start pos
+  CALL @CMD_EXEC_BUF_CALC; Sets value in reg B - amount of chars & reg HL buf start pos
   LD A, B     ; Load counter to Acc
   OR A        ; Check of counter is empty
   JR Z, _CMD_EXEC_esc-$; If counter is empty just end execution
@@ -98,7 +98,7 @@ _CMD_EXEC_nxt:
   RST 0x18    ; Print string
   POP HL      ; Restore reg HL
   EX DE, HL   ; Load to reg DE start buf pos
-  CALL #CMD_ECHO_lp; Display command
+  CALL @CMD_ECHO_lp; Display command
   LD A, "'"   ; Print the close single quoute
   RST 0x10    ; Print string
 
@@ -138,7 +138,7 @@ _CMD_EXEC_ESC:
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_ECHO
+;;  CALL @CMD_ECHO
 ;; 
 ;; number:
 ;;  db "echo test"
@@ -149,21 +149,21 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_ECHO:
+@CMD_ECHO:
   OR A        ; Check if remaining chars exist
   RET Z       ; If not then just return
   LD B, A     ; Load counter to reg B
-#CMD_ECHO_lp:
+@CMD_ECHO_lp:
   LD A, (DE)  ; Get buf char
   RST 0x10    ; Output the char
   INC DE      ; Move buf ptr to the next char
-  DJNZ #CMD_ECHO_lp-$
+  DJNZ @CMD_ECHO_lp-$
   RET         ; Return to the addr of _CMD_EXEC_esc 
 
 ;;
 ;; Example:
 ;;  LD DE, number+5
-;;  CALL #CMD_HISTORY
+;;  CALL @CMD_HISTORY
 ;; 
 ;; number:
 ;;  db "history"
@@ -174,20 +174,20 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
 ;;
-#CMD_HISTORY:
+@CMD_HISTORY:
   PUSH DE     ; Buf ptr in stack
   LD A, (PTR_TEXT_BUFF_END); Get the end of the buf offset
   LD DE, TEXT_BUF_MAP;Load addr of text buf start
-  CALL #CMD_ECHO; Print the history
+  CALL @CMD_ECHO; Print the history
   POP DE      ; Restore buf ptr
   LD A, LINE_FEED; Go to then next line
   RST 0x10    ; Print the char
-  JP #MSG_OK
+  JP @MSG_OK
 
 ;;
 ;; Example:
 ;;  LD DE, number+5
-;;  CALL #CMD_CLEAR
+;;  CALL @CMD_CLEAR
 ;; 
 ;; number:
 ;;  db "clear"
@@ -198,7 +198,7 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- unaeffected
 ;;   reg HL -- unaffected
 ;;
-#CMD_CLEAR:
+@CMD_CLEAR:
   LD A, FORM_FEED; Load to Acc char that correspondes to Clear display
   RST 0x10    ; Output the char
   RET         ; Return to the addr of _CMD_EXEC_esc 
@@ -206,7 +206,7 @@ _CMD_EXEC_ESC:
 ;;
 ;; Example:
 ;;  LD DE, number+5
-;;  CALL #CMD_MEM
+;;  CALL @CMD_MEM
 ;; 
 ;; number:
 ;;  db "mem 10.12"
@@ -217,91 +217,91 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
 ;;
-#CMD_MEM:
+@CMD_MEM:
   OR A        ; Check if remaining chars exist
-  JP Z, #MSG_ARG_ERR
+  JP Z, @MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
   LD A, (DE)  ; Get buf char
-  CALL #IS_HEX; Check if the value is hex
-  JP Z, #MSG_NUM_ERR; If char wasn't change that meen that its not correct
+  CALL @IS_HEX; Check if the value is hex
+  JP Z, @MSG_NUM_ERR; If char wasn't change that meen that its not correct
 
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
-  CALL #STR_HEX
+  CALL @STR_HEX
   LD HL, (PTR_TEMP_WORD); Load parsed number as start addr
   LD A, (DE)  ; Load the next char from buf
 
   CP LINE_FEED; Check if only requisted mem block
-  JR NZ, #CMD_MEM_range-$
-  CALL #HEX_ASCII; Display char
-  JR #CMD_MEM_end-$
+  JR NZ, @CMD_MEM_range-$
+  CALL @HEX_ASCII; Display char
+  JR @CMD_MEM_end-$
 
-#CMD_MEM_range:
+@CMD_MEM_range:
   CP "."      ; Check if requisted mem range
-  JR NZ, #CMD_MEM_input-$
+  JR NZ, @CMD_MEM_input-$
 
   INC DE      ; Move buf ptr by one
   LD A, (DE)  ; Load the next char from buf
-  CALL #IS_HEX; Check if the value is hex
-  JP Z, #MSG_NUM_ERR; If char wasn't change that meen that its not correct
+  CALL @IS_HEX; Check if the value is hex
+  JP Z, @MSG_NUM_ERR; If char wasn't change that meen that its not correct
   PUSH HL     ; Save ptr start in stack
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
-  CALL #STR_HEX; Convert buf string to number
+  CALL @STR_HEX; Convert buf string to number
   LD HL, (PTR_TEMP_WORD); Load parsed number as a end addr
   EX DE, HL   ; Load in reg DE end of ptr addr
   EX (SP), HL ; Save in stack buf ptr and load in reg HL ptr start
 
-#CMD_MEM_range_lp:
-  CALL #HEX_ASCII; Display char
+@CMD_MEM_range_lp:
+  CALL @HEX_ASCII; Display char
   PUSH HL     ; Temp save reg HL
   XOR A       ; Reset flag C
   SBC HL, DE  ; Check if start addr reach the end addr
   POP HL      ; Restore reg HL, aka ignore subtraction
-  JR Z, #CMD_MEM_range_end-$
+  JR Z, @CMD_MEM_range_end-$
   INC HL      ; Increment start addr by one
   LD A, " "   ; Add separation by space between values
   RST 0x10    ; Print the char
-  JR #CMD_MEM_range_lp-$
+  JR @CMD_MEM_range_lp-$
 
-#CMD_MEM_range_end:
+@CMD_MEM_range_end:
   POP DE      ; Restore buf ptr from stack
-  JR #CMD_MEM_end-$
+  JR @CMD_MEM_end-$
 
-#CMD_MEM_input:
+@CMD_MEM_input:
   CP " "      ; Check if requisted mem is input
-  JP NZ, #MSG_ARG_ERR
+  JP NZ, @MSG_ARG_ERR
 
-#CMD_MEM_input_lp:
+@CMD_MEM_input_lp:
   PUSH HL     ; Save ptr start in stack
   LD A, (DE)  ; Load the next char from buf
   CP " "      ; Check if another number exist
-  JR NZ, #CMD_MEM_input_end-$
+  JR NZ, @CMD_MEM_input_end-$
   INC DE      ; Move buf ptr by one
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
-  CALL #STR_HEX; Convert buf string to number
+  CALL @STR_HEX; Convert buf string to number
   POP HL      ; Restore reg HL, aka start ptr
-  CALL #HEX_ASCII; Display prev value
+  CALL @HEX_ASCII; Display prev value
   LD A, ARROW_RIGHT; Load char to show next state
   RST 0x10    ; Display char
   LD A, (PTR_TEMP_WORD); Get low byte of the converted number
   LD (HL), A  ; Rewrite memory value with requested one
-  CALL #HEX_ASCII; Display curr value
+  CALL @HEX_ASCII; Display curr value
   LD A, " "   ; Load char to show next state
   RST 0x10    ; Display char
   INC HL      ; Move start ptr by one
-  JR #CMD_MEM_input_lp-$
+  JR @CMD_MEM_input_lp-$
 
-#CMD_MEM_input_end:
+@CMD_MEM_input_end:
   POP HL      ; Restore start ptr, now is usless
 
-#CMD_MEM_end:
+@CMD_MEM_end:
   LD A, LINE_FEED; Go to then next line
   RST 0x10    ; Print the char
-  JP #MSG_OK
+  JP @MSG_OK
 
 ;;
 ;; Example:
 ;;  LD DE, number+5
-;;  CALL #CMD_DEV
+;;  CALL @CMD_DEV
 ;; 
 ;; number:
 ;;  db "dev 0 FF"
@@ -312,44 +312,44 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
 ;;
-#CMD_DEV:
+@CMD_DEV:
   OR A        ; Check if remaining chars exist
-  JP Z, #MSG_ARG_ERR
+  JP Z, @MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
   LD A, (DE)  ; Get buf char
-  CALL #IS_HEX; Check if the value is hex
-  JP Z, #MSG_NUM_ERR; If char wasn't change that meen that its not correct
+  CALL @IS_HEX; Check if the value is hex
+  JP Z, @MSG_NUM_ERR; If char wasn't change that meen that its not correct
 
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
-  CALL #STR_HEX
+  CALL @STR_HEX
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
   LD A, (DE)  ; Load the next char from buf
 
   CP LINE_FEED; Check if only requisted mem block
-  JR NZ, #CMD_DEV_input-$
+  JR NZ, @CMD_DEV_input-$
   LD C, (HL)  ; Load low byte from the parsed word
   INC HL      ; Move ptr to the high byte
   LD B, (HL)  ; Load high byte from the parsed word
   IN A, (C)   ; Load value from the device
   LD (HL), A  ; Overwrite high byte with input val
-  CALL #HEX_ASCII; Display char
-  JR #CMD_DEV_end-$
+  CALL @HEX_ASCII; Display char
+  JR @CMD_DEV_end-$
 
-#CMD_DEV_input:
+@CMD_DEV_input:
   CP " "      ; Check if requisted mem is input
-  JP NZ, #MSG_ARG_ERR
+  JP NZ, @MSG_ARG_ERR
   LD HL, (PTR_TEMP_WORD); Get device addr
 
-#CMD_DEV_input_lp:
+@CMD_DEV_input_lp:
   PUSH HL     ; Save device addr in stack
   LD A, (DE)  ; Load the next char from buf
   CP " "      ; Check if another number exist
-  JR NZ, #CMD_DEV_input_end-$
+  JR NZ, @CMD_DEV_input_end-$
   INC DE      ; Move buf ptr by one
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
-  CALL #STR_HEX; Convert buf string to number
+  CALL @STR_HEX; Convert buf string to number
   LD HL, PTR_TEMP_WORD; Load ptr where result be saved
-  CALL #HEX_ASCII; Display low byte value
+  CALL @HEX_ASCII; Display low byte value
   LD A, " "   ; Load char to show next state
   RST 0x10    ; Display char
   POP HL      ; Restore reg HL, aka device addr
@@ -357,22 +357,22 @@ _CMD_EXEC_ESC:
   LD B, H     ; Load high byte from the parsed word
   LD A, (PTR_TEMP_WORD); Get low byte of the converted number
   OUT (C), A  ; Output value to the device
-  JR #CMD_DEV_input_lp-$
+  JR @CMD_DEV_input_lp-$
 
-#CMD_DEV_input_end:
+@CMD_DEV_input_end:
   POP HL      ; Restore device addr, now is usless
 
-#CMD_DEV_end:
+@CMD_DEV_end:
   LD A, LINE_FEED; Go to then next line
   RST 0x10    ; Print the char
-  JP #MSG_OK
+  JP @MSG_OK
 
 
 
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_HELP
+;;  CALL @CMD_HELP
 ;; 
 ;; number:
 ;;  db "help"
@@ -383,24 +383,24 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_HELP:
+@CMD_HELP:
   LD HL, .COMMANDS_VEC_ST; Load ptr to the start of command
   LD B, COMMANDS_PRNT_SIZE; Load command size
 
-#CMD_HELP_lp:
+@CMD_HELP_lp:
   LD A, (HL)  ; Get curr cmd char
   INC HL      ; Move char ptr by one
   OR A        ; Check if char is \0
-  JR Z, #CMD_HELP_lp_end-$
+  JR Z, @CMD_HELP_lp_end-$
   RST 0x10    ; Print the char
-  JR #CMD_HELP_lp-$
+  JR @CMD_HELP_lp-$
 
-#CMD_HELP_lp_end:
+@CMD_HELP_lp_end:
   LD A, " "   ; Load to Acc ' '
   RST 0x10    ; Print the char
   INC HL      ; Skip cmd high byte addr
   INC HL      ; Skip cmd low byte addr
-  DJNZ #CMD_HELP_lp-$
+  DJNZ @CMD_HELP_lp-$
   RET
 
 
@@ -408,7 +408,7 @@ _CMD_EXEC_ESC:
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_MOUNT
+;;  CALL @CMD_MOUNT
 ;; 
 ;; number:
 ;;  db "mount 55h"
@@ -419,9 +419,9 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_MOUNT:
+@CMD_MOUNT:
   OR A        ; Check if remaining chars exist
-  JP Z, #MSG_ARG_ERR
+  JP Z, @MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
   PUSH DE     ; Save ptr to buf in stack
   ;; TODO: Change this to, because this logic is incorrect
@@ -432,24 +432,24 @@ _CMD_EXEC_ESC:
   PUSH HL     ; Temp save calculated addr 
   POP IX      ; Load this addr in reg IX
   POP DE      ; Restore ptr to buf
-  CALL #STR_HEX
-  JP Z, #MSG_NUM_ERR; If flag Z is set, show error
+  CALL @STR_HEX
+  JP Z, @MSG_NUM_ERR; If flag Z is set, show error
 
   LD BC, FS_MODE_DIR | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
-  CALL #NEW_INODE
+  CALL @NEW_INODE
   
   LD BC, .MOUNT_NAME_ED-.MOUNT_NAME_ST; Load 
   LD DE, .MOUNT_NAME_ST
-  CALL #NEW_FILENAME_BLK
+  CALL @NEW_FILENAME_BLK
 
-  JP #MSG_OK
+  JP @MSG_OK
 
 
 ;;
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_UMOUNT
+;;  CALL @CMD_UMOUNT
 ;; 
 ;; number:
 ;;  db "umount"
@@ -460,15 +460,15 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_UMOUNT:
+@CMD_UMOUNT:
   ; TODO:
-  JP #MSG_OK
+  JP @MSG_OK
 
 ;;
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_MKDIR
+;;  CALL @CMD_MKDIR
 ;; 
 ;; number:
 ;;  db "mkdir test"
@@ -479,30 +479,30 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_MKDIR:
+@CMD_MKDIR:
   OR A        ; Check if buf conter is not empty
-  JP Z, #MSG_ARG_ERR
+  JP Z, @MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
-  CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  CALL @IS_FILENAME_EXIST; Check if such filename already exist
   PUSH HL     ; Temp save inode addr in Stack
   POP IX      ; Load inode addr into reg IX
-  JP NZ, #MSG_OK  ; If so then just end the handler
+  JP NZ, @MSG_OK  ; If so then just end the handler
 
   LD C, B     ; Load counter to reg C
   LD B, 0     ; Reset reg B
   PUSH BC     ; Save buf char counter in stack, reg B
 
   LD BC, FS_MODE_DIR | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
-  CALL #NEW_INODE
+  CALL @NEW_INODE
   
   POP BC      ; Restore buf char counter
-  CALL #NEW_FILENAME_BLK
-  JP #MSG_OK
+  CALL @NEW_FILENAME_BLK
+  JP @MSG_OK
 
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_TOUCH
+;;  CALL @CMD_TOUCH
 ;; 
 ;; number:
 ;;  db "touch test"
@@ -513,30 +513,30 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_TOUCH:
+@CMD_TOUCH:
   OR A        ; Check if buf conter is not empty
-  JP Z, #MSG_ARG_ERR
+  JP Z, @MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
-  CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  CALL @IS_FILENAME_EXIST; Check if such filename already exist
   PUSH HL     ; Temp save inode addr in Stack
   POP IX      ; Load inode addr into reg IX
-  JP NZ, #MSG_OK  ; If so then just end the handler
+  JP NZ, @MSG_OK  ; If so then just end the handler
 
   LD C, B     ; Move counter to the low byte of reg BC
   LD B, 0     ; Reset reg B
   PUSH BC     ; Save buf char counter in stack, reg B
 
   LD BC, FS_MODE_FILE | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
-  CALL #NEW_INODE
+  CALL @NEW_INODE
   
   POP BC      ; Restore buf char counter
-  CALL #NEW_FILENAME_BLK
-  JP #MSG_OK
+  CALL @NEW_FILENAME_BLK
+  JP @MSG_OK
 
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_TOUCH
+;;  CALL @CMD_TOUCH
 ;; 
 ;; number:
 ;;  db "cat test"
@@ -547,24 +547,24 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_CAT:
+@CMD_CAT:
   OR A        ; Check if buf conter is not empty
-  JP Z, #MSG_ARG_ERR
+  JP Z, @MSG_ARG_ERR
   LD B, A     ; Load counter to reg B
-  CALL #IS_FILENAME_EXIST; Check if such filename already exist
+  CALL @IS_FILENAME_EXIST; Check if such filename already exist
   PUSH HL     ; Temp save inode addr in Stack
   POP IX      ; Load inode addr into reg IX
-  JP Z, #MSG_ARG_ERR; If file not exist dipslay the error
+  JP Z, @MSG_ARG_ERR; If file not exist dipslay the error
 
-  LD HL, #CMD_CAT_iter; Save callback func
-  CALL #ITER_FILE_BLK; Iterate data block
-  JP NZ, #MSG_FILE_TYPE_ERR; If type is not file show an error
+  LD HL, @CMD_CAT_iter; Save callback func
+  CALL @ITER_FILE_BLK; Iterate data block
+  JP NZ, @MSG_FILE_TYPE_ERR; If type is not file show an error
 
   LD A, LINE_FEED; Go to the next line
   RST 0x10    ; Display the char
-  JP #MSG_OK
+  JP @MSG_OK
 
-#CMD_CAT_iter:
+@CMD_CAT_iter:
   LD A, (DE)  ; Load in Acc char from data block
   RST 0x10    ; Display char
   RET
@@ -573,7 +573,7 @@ _CMD_EXEC_ESC:
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_TOUCH
+;;  CALL @CMD_TOUCH
 ;; 
 ;; number:
 ;;  db "touch test"
@@ -584,10 +584,10 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_WR:
-  CALL #CMD_TOUCH; Create file
-  JR NZ, #CMD_WR_bg-$; If file already exist then skip initialization
-  CALL #NEXT_DATA_BLK; Calculate next data block addr
+@CMD_WR:
+  CALL @CMD_TOUCH; Create file
+  JR NZ, @CMD_WR_bg-$; If file already exist then skip initialization
+  CALL @NEXT_DATA_BLK; Calculate next data block addr
   LD (IX+FS_INODE_ZONE1),   L; Set data zone 1 addr, low byte
   LD (IX+FS_INODE_ZONE1+1), H; Set data zone 1 addr, high byte
 
@@ -595,15 +595,15 @@ _CMD_EXEC_ESC:
   LD (IX+FS_INODE_ALLOCATED),   L; Set data zone 1 addr, low byte
   LD (IX+FS_INODE_ALLOCATED+1), H; Set data zone 1 addr, high byte
 
-#CMD_WR_bg:
+@CMD_WR_bg:
   LD (PTR_INPUT_FILE), IX; Save inode of file
-  LD HL, #CMD_WR_input; Load input call function
+  LD HL, @CMD_WR_input; Load input call function
   LD (PTR_INPUT_FUNC), HL; Save handler func in memory
   LD A, "|"   ; Set new state
   LD (PTR_INPUT_STATE), A; Save new buf command state
   RET
 
-#CMD_WR_input:
+@CMD_WR_input:
   PUSH HL     ; Save reg HL in stack
   LD HL, TEXT_BUF_MAP; Get ptr to allocated text arae
   LD A, (PTR_TEXT_BUFF_END); Get buf-ptr offset
@@ -611,7 +611,7 @@ _CMD_EXEC_ESC:
   LD A, (HL)  ; Load curr char
 
   CP END_OF_TXT; Check if buf redirect is ended
-  JR Z, #CMD_WR_input_esc-$
+  JR Z, @CMD_WR_input_esc-$
 
   ; TODO: Add ability to allocate other zones
   PUSH HL     ; Save text ptr in stack
@@ -632,14 +632,14 @@ _CMD_EXEC_ESC:
   POP HL      ; Restore text ptr from stack
 
   CP LINE_FEED; Check if curr char is a new line aka '\n'
-  JR NZ, #CMD_WR_input_end-$
+  JR NZ, @CMD_WR_input_end-$
   LD A, (PTR_INPUT_STATE); Print ">" | "|" which means that curr state is cmd mode or input redirected
   RST 0x10    ; Output the char
-#CMD_WR_input_end:
+@CMD_WR_input_end:
   POP HL      ; Restore reg HL
   RET
 
-#CMD_WR_input_esc:
+@CMD_WR_input_esc:
   LD HL, 0    ; Reset reg HL
   LD (PTR_INPUT_FUNC), HL; Reset input handler
   LD A, ">"   ; Set new state, cmd
@@ -654,7 +654,7 @@ _CMD_EXEC_ESC:
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_MKDIR
+;;  CALL @CMD_MKDIR
 ;; 
 ;; number:
 ;;  db "mkdir test"
@@ -665,14 +665,14 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_LS:
-  LD HL, #CMD_LS_iter; Load handler func for iter to call
-  CALL #ITER_INODE; Iterate throgh inodes
+@CMD_LS:
+  LD HL, @CMD_LS_iter; Load handler func for iter to call
+  CALL @ITER_INODE; Iterate throgh inodes
   LD A, LINE_FEED; Go to the next line
   RST 0x10    ; Display the char
-  JP #MSG_OK
+  JP @MSG_OK
 
-#CMD_LS_iter:
+@CMD_LS_iter:
   PUSH HL     ; Save reg HL in stack
   LD L, (IX+FS_INODE_ZONE0); Set directory data zone0, low byte
   LD H, (IX+FS_INODE_ZONE0+1); Set directory data zone0, high byte
@@ -689,7 +689,7 @@ _CMD_EXEC_ESC:
 ;; Example:
 ;;  LD B, 0
 ;;  LD DE, number+5
-;;  CALL #CMD_MKDIR
+;;  CALL @CMD_MKDIR
 ;; 
 ;; number:
 ;;  db "mkdir test"
@@ -700,14 +700,14 @@ _CMD_EXEC_ESC:
 ;;   reg DE -- as defined
 ;;   reg HL -- unaffected
 ;;
-#CMD_LL:
-  LD HL, #CMD_LL_iter; Load handler func for iter to call
-  CALL #ITER_INODE; Iterate throgh inodes
-  JP #MSG_OK
+@CMD_LL:
+  LD HL, @CMD_LL_iter; Load handler func for iter to call
+  CALL @ITER_INODE; Iterate throgh inodes
+  JP @MSG_OK
 
-#CMD_LL_iter:
+@CMD_LL_iter:
   PUSH HL     ; Save reg HL in stack
-  CALL #PRINT_INODE; Print info about curr inode
+  CALL @PRINT_INODE; Print info about curr inode
   LD A, LINE_FEED; Go to the next line
   RST 0x10    ; Display the char
   POP HL      ; Restore reg HL
@@ -716,32 +716,32 @@ _CMD_EXEC_ESC:
 
 ; TODO: Treat each command as different task
 .COMMANDS_VEC_ST:
-  db "echo",    0 dw #CMD_ECHO
-  db "clear",   0 dw #CMD_CLEAR
-  db "mount",   0 dw #CMD_MOUNT
-  db "umount",  0 dw #CMD_UMOUNT
-  db "mkdir",   0 dw #CMD_MKDIR
-  db "touch",   0 dw #CMD_TOUCH
-  db "cat",     0 dw #CMD_CAT
-  db "wr",      0 dw #CMD_WR
-  db "ll",      0 dw #CMD_LL
-  db "ls",      0 dw #CMD_LS
-  db "mem",     0 dw #CMD_MEM
-  db "dev",     0 dw #CMD_DEV
-  db "help",    0 dw #CMD_HELP
-  db "history", 0 dw #CMD_HISTORY
+  db "echo",    0 dw @CMD_ECHO
+  db "clear",   0 dw @CMD_CLEAR
+  db "mount",   0 dw @CMD_MOUNT
+  db "umount",  0 dw @CMD_UMOUNT
+  db "mkdir",   0 dw @CMD_MKDIR
+  db "touch",   0 dw @CMD_TOUCH
+  db "cat",     0 dw @CMD_CAT
+  db "wr",      0 dw @CMD_WR
+  db "ll",      0 dw @CMD_LL
+  db "ls",      0 dw @CMD_LS
+  db "mem",     0 dw @CMD_MEM
+  db "dev",     0 dw @CMD_DEV
+  db "help",    0 dw @CMD_HELP
+  db "history", 0 dw @CMD_HISTORY
 
-  db FORM_FEED, 0, #CMD_CLEAR
+  db FORM_FEED, 0, @CMD_CLEAR
 .COMMANDS_VEC_ED:
 
 .MOUNT_NAME_ST:
   db "mnt"
 .MOUNT_NAME_ED:
 
-#include "Message.asm"
+#include "Message.z80"
 
 ;; Variables
 COMMANDS_SIZE        EQU  15
 COMMANDS_PRNT_SIZE   EQU  COMMANDS_SIZE - 1
 
-#include "../lib/FileSystem.asm"
+#include "../lib/FileSystem.z80"

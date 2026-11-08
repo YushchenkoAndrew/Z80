@@ -45,4 +45,4 @@ elseJP:
 	JP main
 
   org 0x1000
-#include "TestInclude.asm"
+#include "TestInclude.z80"

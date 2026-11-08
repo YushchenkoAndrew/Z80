@@ -1,4 +1,4 @@
-; #include "Utils.asm"
+; #include "Utils.z80"
 
 ;;
 ;; Example:
@@ -45,7 +45,7 @@ _PRINTF_lp:
   JR Z, _PRINTF_chg-$
 _PRINTF_out:
   OUT (C), A ;; Display char
-  CALL #PRINTF_LEN_ADD1
+  CALL @PRINTF_LEN_ADD1
   JR _PRINTF_lp-$
 
 _PRINTF_chg:
@@ -58,7 +58,7 @@ _PRINTF_chg_c:
   JR NZ, _PRINTF_chg_s-$ 
   LD A, (HL) ;; Get char from a ptr
   OUT (C), A ;; Display char
-  CALL #PRINTF_LEN_ADD1
+  CALL @PRINTF_LEN_ADD1
   INC HL     ;; Move ptr by 1 byte
   JR _PRINTF_chg_esc-$
 
@@ -66,8 +66,8 @@ _PRINTF_chg_s:
   CP "s"     ;; Check if parm is string
   JR NZ, _PRINTF_chg_d-$
   ; PUSH HL    ;; Save curr str addr
-  CALL #PRINT;; Print string
-  ; TODO: CALL #PRINTF_LEN_ADD1
+  CALL @PRINT;; Print string
+  ; TODO: CALL @PRINTF_LEN_ADD1
 
 _PRINTF_chg_s_lp:
   LD A, (HL) ;; Get curr char
@@ -75,17 +75,17 @@ _PRINTF_chg_s_lp:
   OR A       ;; Check if line is ended (Set flag Z)
   JR Z, _PRINTF_chg_esc-$
   OUT (C), A ;; Display char
-  CALL #PRINTF_LEN_ADD1
+  CALL @PRINTF_LEN_ADD1
   JR _PRINTF_chg_s_lp-$
 
 _PRINTF_chg_d:
   CP "d"     ;; Check if parm is decimal
   JR NZ, _PRINTF_chg_X-$
   LD A, (HL) ;; Load to Acc byte which will be converted to BCD
-  CALL #BIN_BCD
+  CALL @BIN_BCD
   LD (HL), A ;; Save in ptr result of BCD
-  CALL #HEX_ASCII
-  CALL #PRINTF_LEN_ADD2
+  CALL @HEX_ASCII
+  CALL @PRINTF_LEN_ADD2
   INC HL     ;; Move ptr by 1 byte
   JR _PRINTF_chg_esc-$
 
@@ -101,8 +101,8 @@ _PRINTF_chg_x:
   LD B, 0x01 ;; Total amount of bytes to display
 _PRINTF_chg_x_lp:
   PUSH BC    ;; Save curr reg B index (aka how much bytes to display)
-  CALL #HEX_ASCII
-  CALL #PRINTF_LEN_ADD2
+  CALL @HEX_ASCII
+  CALL @PRINTF_LEN_ADD2
 _PRINTF_chg_x_lp_esc:
   INC HL     ;; Get next byte
   POP BC     ;; Restore reg B total loop cnt
@@ -115,12 +115,12 @@ _PRINTF_chg_esc:
   JR _PRINTF_lp-$
 
 
-#PRINTF_LEN_ADD1:
+@PRINTF_LEN_ADD1:
   LD B, 0x01
-  JR #PRINTF_LEN-$
-#PRINTF_LEN_ADD2:
+  JR @PRINTF_LEN-$
+@PRINTF_LEN_ADD2:
   LD B, 0x02
-#PRINTF_LEN:
+@PRINTF_LEN:
   LD A, (PTR_PRINTF_RET) ;; Get length of the string
   ADD A, B
   LD (PTR_PRINTF_RET), A ;; Save length

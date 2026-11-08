@@ -1,4 +1,4 @@
-#include "Defs.asm"
+#include "Defs.z80"
 
 ;;
 ;; Example:
@@ -47,27 +47,27 @@ _RTC_INIT:
 ;;  LD A, 32   ; Seconds 0-59
 ;;  LD B, 50   ; Minutes 0-59
 ;;  LD C, 12   ; Hours   0-23
-;;  CALL #RTC_SET_TIME; Set RTC time, 12:50:32
+;;  CALL @RTC_SET_TIME; Set RTC time, 12:50:32
 ;;
-;; func #RTC_SET_TIME() -> void;
+;; func @RTC_SET_TIME() -> void;
 ;;   reg A  -- as defined
 ;;   reg BC -- as defined
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
-#RTC_SET_TIME:
+@RTC_SET_TIME:
   PUSH DE    ; Save reg DE in stack
 
   LD E, A    ; Move seconds value to the reg E 
   LD (RTC_REG_B), A ; Load initial settings byte to the RTC's reg B
   LD D, A    ; Load the original value of RTC's reg B
   AND RTC_REG_B_SET ; Check if update cycle in RTC has already stoped
-  JR NZ, #RTC_SET_TIME_bgn-$
+  JR NZ, @RTC_SET_TIME_bgn-$
 
   LD A, D    ; Load into reg A RTC's reg B
   OR RTC_REG_B_SET ; Temporary stop update cycle in RTC
   LD (RTC_REG_B), A ; Load modified RTC's reg B, aka temporary stop update cycle
 
-#RTC_SET_TIME_bgn:
+@RTC_SET_TIME_bgn:
   LD A, E    ; Load amount of seconds to Acc
   LD (RTC_SECONDS), A ; Intialize second value
 
@@ -85,14 +85,14 @@ _RTC_INIT:
 
 ;;
 ;; Example:
-;;  CALL #RTC_CURRENT_TIME; Get RTC current time in seconds
+;;  CALL @RTC_CURRENT_TIME; Get RTC current time in seconds
 ;;
-;; proc #RTC_CURRENT_TIME() -> reg A & reg HL (aka 24 bit);
+;; proc @RTC_CURRENT_TIME() -> reg A & reg HL (aka 24 bit);
 ;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
-#RTC_CURRENT_TIME:
+@RTC_CURRENT_TIME:
   PUSH DE    ; Save reg DE in stack
 
   LD A, (RTC_SECONDS) ; Get current seconds value
@@ -101,13 +101,13 @@ _RTC_INIT:
 
   LD A, (RTC_MINUTES) ; Get current minutes value
   LD HL, 60  ; Load amount of seconds in 1 minute
-  CALL #MUL16x8; Multiply current amount of minutes by 60
+  CALL @MUL16x8; Multiply current amount of minutes by 60
   ADD HL, DE ; Get total value of seconds and minutes in seconds
   EX DE, HL  ; Save value of seconds and minutes in seconds to reg DE
 
   LD A, (RTC_HOUR) ; Get current hours value
   LD HL, 3600  ; Load amount of seconds in 1 hour
-  CALL #MUL16x8; Multiply current amount of hours by 60
+  CALL @MUL16x8; Multiply current amount of hours by 60
   ADD HL, DE ; Get current time in reg HL
   LD E, 0    ; Reset reg E
   ADC A, E   ; Add carry bit to reg A
@@ -118,52 +118,52 @@ _RTC_INIT:
 ;;
 ;; Example:
 ;;  LD HL, 3502; Create a delay in seconds
-;;  CALL #RTC_SET_ALARM; Set RTC alarm time to 00:58:22 + <current_time>
+;;  CALL @RTC_SET_ALARM; Set RTC alarm time to 00:58:22 + <current_time>
 ;;
-;; func #RTC_SET_ALARM() -> void;
+;; func @RTC_SET_ALARM() -> void;
 ;;   reg A  -- unaffected
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
-#RTC_SET_ALARM:
+@RTC_SET_ALARM:
   PUSH BC    ; Save reg BC in stack
   PUSH DE    ; Save reg DE in stack
 
   LD (RTC_REG_B), A ; Load initial settings byte to the RTC's reg B
   LD B, A    ; Load the original value of RTC's reg B
   AND RTC_REG_B_SET ; Check if update cycle in RTC has already stoped
-  JR NZ, #RTC_SET_ALARM_bgn-$
+  JR NZ, @RTC_SET_ALARM_bgn-$
 
   LD A, B    ; Load into reg A RTC's reg B
   OR RTC_REG_B_SET ; Temporary stop update cycle in RTC
   LD (RTC_REG_B), A ; Load modified RTC's reg B, aka temporary stop update cycle
 
-#RTC_SET_ALARM_bgn:
+@RTC_SET_ALARM_bgn:
   EX DE, HL  ; Load in reg DE offset in seconds
-  CALL #RTC_CURRENT_TIME ; Get current time in reg HL
+  CALL @RTC_CURRENT_TIME ; Get current time in reg HL
   ADD HL, DE ; Calc next alarm time in seconds
   LD E, 0    ; Reset reg E
   ADC A, E   ; Add carry bit to the reg A
   PUSH AF    ; Save reg A from A:HL (24 bits) in stack
 
   LD A, 60   ; Load divisior value, aka get amount of seconds
-  CALL #DIV16x8; Divide reg HL / 60 => reg A - seconds & reg HL - minutes
+  CALL @DIV16x8; Divide reg HL / 60 => reg A - seconds & reg HL - minutes
   LD (RTC_ALARM_SECONDS), A ; Set amount of seconds
 
   LD A, 60   ; Load divisior value, aka get amount of minutes
-  CALL #DIV16x8; Divide reg HL / 60 => reg A - minutes & reg HL - hours
+  CALL @DIV16x8; Divide reg HL / 60 => reg A - minutes & reg HL - hours
   LD (RTC_ALARM_MINUTES), A ; Set amount of minutes
 
   POP AF     ; Restore reg A value from 24 bits of current time
   OR A       ; Check if the reg is empty
   LD A, L    ; Load remaning amount of hours in Acc
-  JR Z, #RTC_SET_ALARM_hour-$; If reg doesn't some value, it means then reg HL was not overflowed with hours
+  JR Z, @RTC_SET_ALARM_hour-$; If reg doesn't some value, it means then reg HL was not overflowed with hours
   ADD A, 18  ; Adjust hours overflow, max hours from (2^16 - 1) is 18
 
-#RTC_SET_ALARM_hour:
+@RTC_SET_ALARM_hour:
   LD D, A    ; Load amount hours to set next alarm
   LD E, 24   ; Load divisior value, aka get amount of hours
-  CALL #DIV8 ; In reg A will return remainder of hours, aka reg D % 24 = reg A
+  CALL @DIV8 ; In reg A will return remainder of hours, aka reg D % 24 = reg A
   LD (RTC_ALARM_HOUR), A ; Set amount of hours
 
   POP DE     ; Restore reg DE from stack
@@ -175,18 +175,18 @@ _RTC_INIT:
 ;;  LD A, 5     ; Hold the sound for 0.5 second
 ;;  LD DE, _SOUND_OFF; Function to run after exec
 ;;  LD HL, 2    ; Set alarm offset to 2 seconds
-;;  CALL #RTC_ALARM_PUSH; Create a interrupt CT1 signal
+;;  CALL @RTC_ALARM_PUSH; Create a interrupt CT1 signal
 ;;
 ;; proc RTC_ALARM_PUSH() -> void;
 ;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
-#RTC_ALARM_PUSH:
-  ; TODO: Impl proc #RTC_ALARM_PUSH 
+@RTC_ALARM_PUSH:
+  ; TODO: Impl proc @RTC_ALARM_PUSH 
   RET
 
-#RTC_ALARM_EXEC:
+@RTC_ALARM_EXEC:
   ; TODO: Write IRQ exec logic
   RET
 

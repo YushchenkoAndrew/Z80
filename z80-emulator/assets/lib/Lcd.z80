@@ -1,9 +1,9 @@
-#include "Defs.asm"
+#include "Defs.z80"
 
 ;;
 ;; Example:
 ;;  LD A, "t"
-;;  CALL #LCD_EXEC
+;;  CALL @LCD_EXEC
 ;; 
 ;; proc LCD_EXEC() -> void;
 ;;   reg A  -- as defined
@@ -11,7 +11,7 @@
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 ;;
-#LCD_EXEC:
+@LCD_EXEC:
   PUSH AF    ; Save reg AF in stack
   PUSH BC    ; Save reg BC in stack
   LD B, A    ; Save reg A in reg B
@@ -34,7 +34,7 @@
 ;;
 ;; Example:
 ;;  LD A, "t"
-;;  CALL #LCD_WR
+;;  CALL @LCD_WR
 ;; 
 ;; proc LCD_WR() -> void;
 ;;   reg A  -- as defined
@@ -42,7 +42,7 @@
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 ;;
-#LCD_WR:
+@LCD_WR:
   PUSH AF    ; Save reg AF in stack
   PUSH BC    ; Save reg BC in stack
   LD B, A    ; Save reg A in reg B
@@ -65,7 +65,7 @@
 ;;
 ;; Example:
 ;;  LD A, 0x01 ; One cycle takes around 20ms
-;;  CALL #LCD_DELAY
+;;  CALL @LCD_DELAY
 ;;
 ;; proc LCD_DELAY() -> void;
 ;;   reg A  -- as defined
@@ -73,17 +73,17 @@
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 ;;
-#LCD_DELAY:
+@LCD_DELAY:
   PUSH BC    ; Save reg BC in stack
-#LCD_DELAY_bg:
+@LCD_DELAY_bg:
   LD B, 0x0F ; Load higher counter byte value
-#LCD_DELAY_lp:
+@LCD_DELAY_lp:
   NOP        ; Make a small pause
   DEC C      ; Decrement lower counter byte
-  JR NZ, #LCD_DELAY_lp-$
-  DJNZ #LCD_DELAY_lp-$
+  JR NZ, @LCD_DELAY_lp-$
+  DJNZ @LCD_DELAY_lp-$
   DEC A      ; Decriment amount of loops
-  JR NZ, #LCD_DELAY_bg-$
+  JR NZ, @LCD_DELAY_bg-$
   POP BC     ; Restore reg BC
   RET 
 
@@ -101,26 +101,26 @@ _LCD_INIT:
   PUSH AF    ; Save reg A in stack
   PUSH BC    ; Save reg BC in stack
   LD A, 0x06 ; Load 3 cycles of delay, should be around 120ms
-  CALL #LCD_DELAY ; Wait before starting initization
+  CALL @LCD_DELAY ; Wait before starting initization
   LD B, 0x03 ; LCD hd44780 requires call of the FUNCTION CMD 3 times
   LD C, LCD_WAIT ; Should be around 60ms
 _LCD_INIT_lp:
   LD A, LCD_DEFAULT_FUNCTION ; Load default LCD FUNCTION CMD
-  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_FUNCTION
+  CALL @LCD_EXEC ; Exec cmd LCD_DEFAULT_FUNCTION
   LD A, C    ; Load default delay amount
-  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
+  CALL @LCD_DELAY ; Wait for a bit until LCD will be ready
   DJNZ _LCD_INIT_lp-$
   LD A, LCD_DEFAULT_DISPLAY ; Load default LCD DISPLAY CMD
-  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_DISPLAY
+  CALL @LCD_EXEC ; Exec cmd LCD_DEFAULT_DISPLAY
   LD A, C    ; Load default delay amount
-  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
+  CALL @LCD_DELAY ; Wait for a bit until LCD will be ready
   CALL _LCD_CLEAR ; Clear the display
   LD A, LCD_DEFAULT_MODE ; Load default LCD MODE CMD
-  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_MODE
+  CALL @LCD_EXEC ; Exec cmd LCD_DEFAULT_MODE
   LD A, C    ; Load default delay amount
-  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
+  CALL @LCD_DELAY ; Wait for a bit until LCD will be ready
   LD A, LCD_DEFAULT_DISPLAY | LCD_DISPLAY_BLINK ; Enable blink
-  CALL #LCD_EXEC ; Exec cmd LCD_DEFAULT_MODE
+  CALL @LCD_EXEC ; Exec cmd LCD_DEFAULT_MODE
   POP BC     ; Restore reg BC
   POP AF     ; Restore reg A & flags
   RET
@@ -138,13 +138,13 @@ _LCD_INIT_lp:
 _LCD_CLEAR:
   PUSH AF    ; Save reg A in stack
   LD A, LCD_CLEAR ;; Load LCD RESET CMD
-  CALL #LCD_EXEC
+  CALL @LCD_EXEC
   LD A, LCD_RETURN ;; Load RESET LCD CURSOR
-  CALL #LCD_EXEC
+  CALL @LCD_EXEC
   XOR A      ; Reset reg A
   LD (PTR_LCD_CURSOR), A; Reset cursor pos to x: 0 y: 0
   LD A, LCD_WAIT ; Should be around 60ms
-  CALL #LCD_DELAY ; Wait for a bit until LCD will be ready
+  CALL @LCD_DELAY ; Wait for a bit until LCD will be ready
   POP AF     ; Restore reg A & flags
   RET
 
@@ -152,7 +152,7 @@ _LCD_CLEAR:
 ;;
 ;; Example:
 ;;  LD A, "t"
-;;  CALL #LCD_OUT
+;;  CALL @LCD_OUT
 ;; 
 ;; proc LCD_OUT() -> void;
 ;;   reg A  -- as defined
@@ -160,7 +160,7 @@ _LCD_CLEAR:
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
 ;;
-#LCD_OUT:
+@LCD_OUT:
   CP BACKSPACE; Check if char is backspace
   JR Z, _LCD_BACKSPACE-$
   CP LINE_FEED; Check if char is "\n"
@@ -174,7 +174,7 @@ _LCD_CLEAR:
   LD HL, PTR_LCD_CURSOR; Load cursor pos ptr
   INC (HL)   ; Move cursor pos to the right by one
   POP HL     ; Restore reg HL
-  JP #LCD_WR ; Output the char
+  JP @LCD_WR ; Output the char
 
 
 ;;
@@ -193,11 +193,11 @@ _LCD_BACKSPACE:
   LD HL, PTR_LCD_CURSOR; Load cursor pos ptr
   DEC (HL)   ; Move cursor pos to the left by one
   LD A, LCD_CURSOR; Move cursor to the left by one
-  CALL #LCD_EXEC
+  CALL @LCD_EXEC
   LD A, " "  ; Manualy make deleted char invisible
-  CALL #LCD_WR
+  CALL @LCD_WR
   LD A, LCD_CURSOR; Move cursor to the left by one, one more time
-  CALL #LCD_EXEC
+  CALL @LCD_EXEC
   POP HL     ; Restore reg HL
   POP AF     ; Restore reg A & flags
   RET
@@ -227,7 +227,7 @@ _LCD_NEW_LINE:
   LD A, " "  ; Manualy make deleted char invisible
 _LCD_NEW_LINE_lp:
   INC (HL)   ; Move cursor pos to the right by one
-  CALL #LCD_WR; Output empty char
+  CALL @LCD_WR; Output empty char
   DJNZ _LCD_NEW_LINE_lp-$
   POP BC     ; Restore reg B
 _LCD_NEW_LINE_end:
@@ -258,7 +258,7 @@ _LCD_LINE_ST:
   LD A, LCD_CURSOR; Move cursor to the left by one
 _LCD_LINE_ST_lp:
   DEC (HL)   ; Move cursor pos to the left by one
-  CALL #LCD_EXEC; Exec shift command
+  CALL @LCD_EXEC; Exec shift command
   DJNZ _LCD_LINE_ST_lp-$
   POP BC     ; Restore reg B
 _LCD_LINE_ST_end:

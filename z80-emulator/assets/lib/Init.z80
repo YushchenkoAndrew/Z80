@@ -1,4 +1,4 @@
-#include "Defs.asm"
+#include "Defs.z80"
 
 ORG 0x0000
   XOR A             ; Reset reg A
@@ -17,7 +17,7 @@ RST08:       ;; Sets enable/disable word for Hardware devices
 ORG 0x0010
 RST10:       ;; aka SHOW CHAR
   ;; TODO: Populate
-  JP #LCD_OUT
+  JP @LCD_OUT
 
 ;; NOTE: This 6 bytes can be used
 
@@ -90,7 +90,7 @@ RST38_end:
 
 ;;
 ;; Example:
-;;  JP #RST_INIT; Initialize hardware to default settings
+;;  JP @RST_INIT; Initialize hardware to default settings
 ;;
 ;; func RST_INIT() -> void;
 ;;   reg A  -- as defined
@@ -121,18 +121,18 @@ RST_INIT:
 
   LD H, A     ; Reset reg H
   LD L, ALLOWED_INTERUPTS; Hardcoded allowed interrupts
-  CALL #INTR_MASK_SET; Send allowed intrrupts to interrupt vector
+  CALL @INTR_MASK_SET; Send allowed intrrupts to interrupt vector
 
   IM 1        ; Use interrupt Mode 1
   CALL _INTR_LOCK; Lock interrupt from happening again
 
   LD A, PIT_PITCH_6 | PIT_NOTE_E; Set note E in 6 pitch to Acc
-  CALL #SOUND_OUT; Produce the sound
+  CALL @SOUND_OUT; Produce the sound
 
   LD A, 2      ; Hold the sound for 0.5 second
   LD DE, _SOUND_OFF; Function to run after exec
   LD HL, PIT_FREQ_10Hz; Set CT1 to freq 10Hz
-  CALL #TIMER_PUSH; Add task to disable sound to timer queue
+  CALL @TIMER_PUSH; Add task to disable sound to timer queue
 
   LD A, EVENT_PRIO_IDLE; Set cmd exec as an idle task
   LD HL, MAIN; Load task to be an entrance point to the program
@@ -141,20 +141,20 @@ RST_INIT:
   CALL _INTR_UNLOCK; Allow interrupt to happen
 
   CALL SETUP  ; Jump to program setup
-  JP #EVENT_LOOP; Jump into task queue execution
+  JP @EVENT_LOOP; Jump into task queue execution
 
 ;;
 ;; Example:
 ;;  LD H, A     ; Reset reg H
 ;;  LD L, ALLOWED_INTERUPTS; Hardcoded allowed interrupts
-;;  CALL #INTR_MASK_SET; Turn off interrupt programly
+;;  CALL @INTR_MASK_SET; Turn off interrupt programly
 ;;
 ;; proc INTR_MASK_SET() -> void;
 ;;   reg A  -- unaffected
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- as defined
-#INTR_MASK_SET:
+@INTR_MASK_SET:
   PUSH AF    ; Save reg AF in stack
   LD A, (PTR_INTR_BYTE); Get current allowed interrupt byte
   AND H      ; Apply mask that will clear flag 
@@ -202,14 +202,14 @@ _INTR_UNLOCK_end:
 ;;
 ;; Example:
 ;;  LD A, 't'
-;;  CALL #SCAN_CODE_ACK; Update STDIN index and 
+;;  CALL @SCAN_CODE_ACK; Update STDIN index and 
 ;;
 ;; proc SCAN_CODE_ACK() -> void;
 ;;   reg A  -- as defined
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
-#SCAN_CODE_ACK:
+@SCAN_CODE_ACK:
   LD A, (PTR_STDIN_BUF_END); Load prev buf offset to Acc
   INC A       ; Inc offset by one
   LD (PTR_STDIN_BUF_END), A; Restore offset value, but incr it by one
@@ -263,12 +263,12 @@ _ACK_STDIN_end:
 
 
 .IM_VEC_ST:
-  db IM_KEYBOARD dw #SCAN_CODE_IM[2]
+  db IM_KEYBOARD dw @SCAN_CODE_IM[2]
   db IM_RxRDY    dw RST38_end[2] ;; FIXME
   db IM_TxRDY    dw RST38_end[2] ;; FIXME
-  db IM_RTC      dw #RTC_ALARM_EXEC[2]
-  db IM_CT1      dw #TIMER_CT1_EXEC[2]
-  db IM_CT2      dw #TIMER_CT2_EXEC[2]
+  db IM_RTC      dw @RTC_ALARM_EXEC[2]
+  db IM_CT1      dw @TIMER_CT1_EXEC[2]
+  db IM_CT2      dw @TIMER_CT2_EXEC[2]
   db IM_NONE1    dw RST38_end[2]
   db IM_NONE2    dw RST38_end[2]
 .IM_VEC_ED:

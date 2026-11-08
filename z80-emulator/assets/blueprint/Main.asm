@@ -4,7 +4,7 @@
 ;  DATE: 30.10.23
 ;  AUTHOR: Andrew Yushchenko
 ;####################################################
-#include "../../lib/Init.asm"
+#include "../../lib/Init.z80"
 ALLOWED_INTERUPTS EQU IM_KEYBOARD
 
 
@@ -87,16 +87,16 @@ MAIN:
 
 
 
-; #include "../lib/Hex.asm"
-; #include "../lib/Printf.asm"
-#include "../../lib/EventLoop.asm"
-#include "../../lib/Keyboard.asm"
-; #include "../../lib/Buffer.asm"
-#include "../../lib/Lcd.asm"
+; #include "../lib/Hex.z80"
+; #include "../lib/Printf.z80"
+#include "../../lib/EventLoop.z80"
+#include "../../lib/Keyboard.z80"
+; #include "../../lib/Buffer.z80"
+#include "../../lib/Lcd.z80"
 
-#include "../../lib/Timer.asm"
-#include "../../lib/Utils.asm"
-#include "../../lib/FileSystem.asm"
-#include "../../lib/utils/Math.asm"
-#include "../../lib/utils/String.asm"
-#include "../../lib/utils/Message.asm"
+#include "../../lib/Timer.z80"
+#include "../../lib/Utils.z80"
+#include "../../lib/FileSystem.z80"
+#include "../../lib/utils/Math.z80"
+#include "../../lib/utils/String.z80"
+#include "../../lib/utils/Message.z80"

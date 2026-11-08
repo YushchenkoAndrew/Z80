@@ -1,21 +1,21 @@
-#include "Defs.asm"
+#include "Defs.z80"
 
 ;; NOTE: Inspired by this idea
 ;; https://www.studytonight.com/operating-system/priority-scheduling
 ;;
 ;; Example:
-;;  CALL #EVENT_LOOP
+;;  CALL @EVENT_LOOP
 ;;
-;; proc #EVENT_LOOP() -> void;
+;; proc @EVENT_LOOP() -> void;
 ;;   reg A  -- as defined
 ;;   reg BC -- as defined
 ;;   reg DE -- as defined
 ;;   reg HL -- as defined
-#EVENT_LOOP:
+@EVENT_LOOP:
   LD HL, TASK_BUF ; Load ptr to the queue start
   LD A, (HL)  ; Load amount of task in queue
   OR A        ; Check if there is no task in queue
-  JR Z, #EVENT_LOOP-$; If nothing happend
+  JR Z, @EVENT_LOOP-$; If nothing happend
   CALL _INTR_LOCK; Lock interrupt from happening again
 
   XOR A       ; Reset Acc
@@ -35,25 +35,25 @@
   PUSH DE     ; Temporary save func addr in stack
   INC HL      ; Move queue ptr to the next 
   LD DE, TASK_BUF+1; Load ptr to the start of the queue
-  JR Z, #EVENT_LOOP_exec-$; Current task is the last one, then jump to exec it
+  JR Z, @EVENT_LOOP_exec-$; Current task is the last one, then jump to exec it
   LDIR        ; Shift all tasks by one addr
 
-#EVENT_LOOP_exec:
+@EVENT_LOOP_exec:
   CALL _INTR_UNLOCK; Allow interrupt to happen
-  LD HL, #EVENT_LOOP_end; Load custom return addr
+  LD HL, @EVENT_LOOP_end; Load custom return addr
   EX (SP), HL ; Manually create CALL and load in reg HL func addr
   CP EVENT_PRIO_IDLE; Check if current task is an idle
   CALL Z, _EVENT_PUSH; If so then add it back to the task queue
   JP (HL)     ; Jump to the func execution
 
-#EVENT_LOOP_end:
-  JR #EVENT_LOOP-$
+@EVENT_LOOP_end:
+  JR @EVENT_LOOP-$
 
 
 ;;
 ;; Example:
 ;;  LD A, 0     ; Load task priority
-;;  LD HL, #ACK_BUFFERS; Load task addr
+;;  LD HL, @ACK_BUFFERS; Load task addr
 ;;  CALL _EVENT_PUSH
 ;;
 ;; func _EVENT_PUSH() -> void;

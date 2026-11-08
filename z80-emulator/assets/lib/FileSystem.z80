@@ -1,4 +1,4 @@
-; #include "Utils.asm"
+; #include "Utils.z80"
 
 ;; NOTE: Inspired by this article
 ;; http://ohm.hgesser.de/sp-ss2012/Intro-MinixFS.pdf
@@ -8,9 +8,9 @@
 ;; Example:
 ;;  LD B, 5   ; String length
 ;;  LD DE, .STRING  ; Load ptr to the string in reg DE
-;;  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+;;  CALL @FIND_FILE; Will return reg IX which will point to the found INODE or 0
 ;; 
-;; #TEMP:
+;; @TEMP:
 ;;  RET
 ;; 
 ;; proc FIND_FILE() -> reg IX;
@@ -20,14 +20,14 @@
 ;;   reg HL -- unaffected
 ;;   reg IX -- as defined
 ;;
-#FIND_FILE:
+@FIND_FILE:
   PUSH AF     ; Save reg AF in stack
   PUSH HL     ; Save reg HL in stack
 
   PUSH DE     ; Temp save string pointer in reg HL
   LD HL, (PTR_DIR_INODE); Get current dirrectory inode ptr
   LD A, FS_SZ_INODE; Load inode size
-  CALL #MUL16x8; Calc inode address offset
+  CALL @MUL16x8; Calc inode address offset
   PUSH HL     ; Temp save inode addr offset in stack
   POP IX      ; Get inode addr offset in reg IX
   LD DE, INODE_MAP; Load inode addr start
@@ -36,43 +36,43 @@
   LD A, FS_SZ_ZONE_BLK; Load zone size
   LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
   LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
-  CALL #DIV16x8; Calc index offset to the last zone
+  CALL @DIV16x8; Calc index offset to the last zone
   LD A, 2     ; Load size of the word, convert index to bytes offset
-  CALL #MUL16x8; Calc offset to the last zone
+  CALL @MUL16x8; Calc offset to the last zone
   EX DE, HL   ; Load into reg DE offset
 
   LD A, FS_SZ_DIR_ENTITY; Load dir entity size
   LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
   LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
-  CALL #DIV16x8; Calc amount of inodes in current directory
+  CALL @DIV16x8; Calc amount of inodes in current directory
 
   ADD IX, DE  ; Make the offset to the last zone
   POP DE      ; Restore string pointer in reg DE
   PUSH HL     ; Save amount of inodes in curr dir in stack
 
-#FIND_FILE_lp_zone:
+@FIND_FILE_lp_zone:
   LD L, (IX+FS_INODE_ZONE0); Set directory data from the last zone, low byte
   LD H, (IX+FS_INODE_ZONE0+1); Set directory data from the last zone, high byte
 
-#FIND_FILE_nxt:
+@FIND_FILE_nxt:
   PUSH DE     ; Save ptr to the string in stack
   PUSH HL     ; Save ptr to directory inode in stack
   PUSH BC     ; Save reg BC in stack
   INC HL      ; Move ptr to the byte before of file name start
   INC HL      ; Move ptr to the start of the name
 
-#FIND_FILE_lp:
+@FIND_FILE_lp:
   LD A, (DE)  ; Load filename char from text buf
   CP (HL)     ; Check if chars are equal to inode
-  JR NZ, #FIND_FILE_lp_end-$
+  JR NZ, @FIND_FILE_lp_end-$
   INC HL      ; Move buf ptr by one
   INC DE      ; Move cmd ptr by one
-  DJNZ #FIND_FILE_lp-$
+  DJNZ @FIND_FILE_lp-$
   LD A, (HL)  ; Check if filename is ended
   OR A        ; Check if this char is 0, aka end of the word
-  JR Z, #FIND_FILE_end-$; If buf counter is ended, aka buf word is less then cmd
+  JR Z, @FIND_FILE_end-$; If buf counter is ended, aka buf word is less then cmd
 
-#FIND_FILE_lp_end:
+@FIND_FILE_lp_end:
   POP BC      ; Restore string length in reg B
   POP HL      ; Restore ptr to the dir inode
   LD DE, FS_SZ_DIR_ENTITY; Load entity size 
@@ -83,21 +83,21 @@
   LD A, FS_SZ_ZONE_BLK-1; Load allocated size for zone
   AND L       ; Check if zone is ended 
   EX (SP), HL ; Get ptr to the dir inode
-  JR NZ, #FIND_FILE_nxt-$; If reminder is not empty, then get the another dir entity
+  JR NZ, @FIND_FILE_nxt-$; If reminder is not empty, then get the another dir entity
 
   DEC IX      ; Move inode pointer to the prev zone
   DEC IX      ; Move inode pointer to the prev zone
   LD A, FS_SZ_ZONE_BLK; Load allocated size for zone
   POP HL      ; Get the amount of dir entity
-  CALL #DIV16x8; Check if there are any zones remaning
+  CALL @DIV16x8; Check if there are any zones remaning
   OR L        ; Check if the low byte of  is empty
   OR H        ; Check if the high byte is empty
-  JR NZ, #FIND_FILE_lp_zone; If there are still additional zones, then check them
+  JR NZ, @FIND_FILE_lp_zone; If there are still additional zones, then check them
 
   LD IX, 0    ; Reset reg HL
-  JR #FIND_FILE_esc-$
+  JR @FIND_FILE_esc-$
 
-#FIND_FILE_end:
+@FIND_FILE_end:
   POP BC      ; Restore string length in reg B
   POP HL      ; Get ptr to the inode
   LD E, (HL)  ; Load the low byte of the inode addr
@@ -105,20 +105,20 @@
   LD D, (HL)  ; Load the high byte of the inode addr
   EX DE, HL   ; Move inode index to the reg HL
   LD A, FS_SZ_INODE; Load inode size
-  CALL #MUL16x8; Calc inode address offset
+  CALL @MUL16x8; Calc inode address offset
   PUSH HL     ; Temp save inode addr offset in stack
   POP IX      ; Get inode addr offset in reg IX
   LD DE, INODE_MAP; Load inode addr start
   XOR A       ; Reset Acc
   OR L        ; Check if offset of inode is 0
   OR H        ; Check if offset of inode is 0
-  JR Z, #FIND_FILE_archived-$; If it zero that means that it's deleted inode, so just skip it
+  JR Z, @FIND_FILE_archived-$; If it zero that means that it's deleted inode, so just skip it
   ADD IX, DE  ; Find current directory inode addr
-#FIND_FILE_archived:
+@FIND_FILE_archived:
   POP DE      ; Restore ptr to the string
   POP HL      ; Restore amount of inodes in curr dir
 
-#FIND_FILE_esc:
+@FIND_FILE_esc:
   POP HL      ; Restore reg HL
   POP AF      ; Restore reg AF
   RET
@@ -126,7 +126,7 @@
 ;;
 ;; Example:
 ;;  LD IX, 5
-;;  CALL #HAS_INODE
+;;  CALL @HAS_INODE
 ;; 
 ;; proc HAS_INODE() -> reg F(Z);
 ;;   reg A  -- as defined
@@ -135,7 +135,7 @@
 ;;   reg HL -- unaffected
 ;;   reg IX -- unaffected
 ;;
-#HAS_INODE:
+@HAS_INODE:
   PUSH HL     ; Save reg HL in stack
   PUSH IX     ; Temp save INODE ptr in stack
   POP HL      ; Load INODE ptr to the reg HL
@@ -149,7 +149,7 @@
 ;;
 ;; Example:
 ;;  LD IX, 5
-;;  CALL #EXEC_FILE
+;;  CALL @EXEC_FILE
 ;; 
 ;; proc EXEC_FILE() -> void;
 ;;   reg A  -- as defined
@@ -158,28 +158,28 @@
 ;;   reg HL -- unaffected
 ;;   reg IX -- unaffected
 ;;
-#EXEC_FILE:
+@EXEC_FILE:
   LD A, FS_SZ_ZONE_BLK; Load zone size
   LD L, (IX+FS_INODE_SIZE); Set current directory inode, low byte
   LD H, (IX+FS_INODE_SIZE+1); Set current directory inode, high byte
-  CALL #DIV16x8; Calc index offset to the last zone
+  CALL @DIV16x8; Calc index offset to the last zone
   LD H, A     ; Load the remainder to the reg H
 
   LD DE, RAM_ADDR; FIXME: the dynamic stuf here
   PUSH DE     ; Save start of the program in stack
 
-#EXEC_FILE_lp:
+@EXEC_FILE_lp:
   XOR A       ; Reset reg A
   OR L        ; Check if index is located at the last zone
-  JR NZ, #EXEC_FILE_lp_step-$
+  JR NZ, @EXEC_FILE_lp_step-$
   LD B, A     ; Reset reg B
   LD C, H     ; Load the remainder to the reg BC
-  JR #EXEC_FILE_lp_bgn-$
+  JR @EXEC_FILE_lp_bgn-$
 
-#EXEC_FILE_lp_step:
+@EXEC_FILE_lp_step:
   LD BC, FS_SZ_ZONE_BLK; Load the whole zone size
 
-#EXEC_FILE_lp_bgn:
+@EXEC_FILE_lp_bgn:
   PUSH HL     ; Save the remainder & left amount of zone in stack
   LD L, (IX+FS_INODE_ZONE0); Set directory data from the last zone, low byte
   LD H, (IX+FS_INODE_ZONE0+1); Set directory data from the last zone, high byte
@@ -191,18 +191,18 @@
   DEC L       ; Decriment the remainging zones to copy
   LD A, 0xFF  ; Load the 0xFF in Acc
   XOR L       ; Check if left amount of zones reached 0
-  JR NZ, #EXEC_FILE_lp-$
+  JR NZ, @EXEC_FILE_lp-$
 
   POP HL      ; Restore the start of the program from stack
   JP (HL)     ; Start exec of the program
 
 ;;
 ;; Example:
-;;  LD DE, 0x2000 ; Reg DE can be used inside #TEMP func
-;;  LD HL, #TEMP
-;;  CALL #ITER_INODE
+;;  LD DE, 0x2000 ; Reg DE can be used inside @TEMP func
+;;  LD HL, @TEMP
+;;  CALL @ITER_INODE
 ;; 
-;; #TEMP:
+;; @TEMP:
 ;;  RET
 ;; 
 ;; proc ITER_INODE() -> callback;
@@ -212,7 +212,7 @@
 ;;   reg HL -- as defined
 ;;   reg IX -- as defined
 ;;
-#ITER_INODE:
+@ITER_INODE:
   PUSH DE     ; Temp save reg DE in stack
   PUSH HL     ; Temp save function addr
   LD DE, INODE_MAP; Load addr to first inode map
@@ -223,23 +223,23 @@
   POP HL      ; Restore func addr
 
   INC DE      ; Inc DE by, need to check if reg is 0
-#ITER_INODE_offset:
+@ITER_INODE_offset:
   DEC DE      ; Decrement counter
   XOR A       ; Reset Acc
   OR D        ; Check if counter DE is empty
   OR E        ; Check if counter DE is empty
-  JR Z, #ITER_INODE_end-$
+  JR Z, @ITER_INODE_end-$
 
   EX DE, HL   ; Swap reg DE & HL, only need for `EX (SP), HL`
   EX (SP), HL ; Swap prev DE with curr aka inode counter
   EX DE, HL   ; Restore reg HL & DE = prev value
 
   PUSH HL     ;  Temp save function addr
-  LD HL, #ITER_INODE_ret
+  LD HL, @ITER_INODE_ret
   EX (SP), HL ; Save return addr & get addr for manual call
   JP (HL)     ; Manual call to the func
 
-#ITER_INODE_ret:
+@ITER_INODE_ret:
   EX DE, HL   ; Swap reg DE & HL, only need for `EX (SP), HL`
   EX (SP), HL ; Swap prev DE with curr aka inode counter
   EX DE, HL   ; Restore reg HL & DE = inode counter
@@ -248,9 +248,9 @@
   LD BC, FS_SZ_INODE; Load byte offset of inode
   ADD IX, BC  ; Find next inode addr of zone 0
   POP BC      ; Restore reg BC after calculation
-  JR #ITER_INODE_offset-$
+  JR @ITER_INODE_offset-$
 
-#ITER_INODE_end:
+@ITER_INODE_end:
   POP DE      ; Restore reg DE
   RET
 
@@ -258,7 +258,7 @@
 ;;
 ;; Example:
 ;;  LD BC, FS_MODE_DIR | FS_MODE_USR_R | FS_MODE_USR_W; Load mount mode
-;;  CALL #NEW_INODE
+;;  CALL @NEW_INODE
 ;; 
 ;; proc NEW_INODE() -> reg HL & IX;
 ;;   reg A  -- as defined
@@ -267,15 +267,15 @@
 ;;   reg HL -- as defined
 ;;   reg IX -- as defined
 ;;
-#NEW_INODE:
+@NEW_INODE:
   PUSH DE     ; Save reg DE in stack
 
-  LD HL, #NEW_INODE_iter; Load handler func for iter to call
-  CALL #ITER_INODE; Get the next inode addr in IX
+  LD HL, @NEW_INODE_iter; Load handler func for iter to call
+  CALL @ITER_INODE; Get the next inode addr in IX
 
   LD (IX+FS_INODE_MODE),   C; Set inode mode low byte
   LD (IX+FS_INODE_MODE+1), B; Set inode mode high byte
-  CALL #NEXT_DATA_BLK; Calc next data block
+  CALL @NEXT_DATA_BLK; Calc next data block
 
   PUSH IX     ; Temp save addr of curr inode
   LD IX, SUPER_BLOCK_MAP; Load ptr to start of super block
@@ -291,7 +291,7 @@
   POP DE      ; Restore reg DE
   RET
 
-#NEW_INODE_iter:
+@NEW_INODE_iter:
   RET
 
 
@@ -299,7 +299,7 @@
 ;; Example:
 ;;  LD BC, 5
 ;;  LD DE, mount_name
-;;  CALL #NEW_FILENAME_BLK
+;;  CALL @NEW_FILENAME_BLK
 ;; 
 ;; mount_name:
 ;;   db "mount"
@@ -311,7 +311,7 @@
 ;;   reg HL -- as defined
 ;;   reg IX -- unaffected
 ;;
-#NEXT_DATA_BLK:
+@NEXT_DATA_BLK:
   PUSH IX     ; Save reg IX in reg
   PUSH DE     ; Save reg DE in reg
   PUSH BC     ; Save reg BC in reg
@@ -325,20 +325,20 @@
   LD IX, INODE_MAP; Load addr to first inode map
   INC BC      ; Add small adjustment to inlcude first inode
 
-#NEXT_DATA_BLK_lp:
+@NEXT_DATA_BLK_lp:
   DEC BC      ; Decrement conter
   XOR A       ; Reset Acc
   OR B        ; Check if reg BC is empty
   OR C        ; Check if reg BC is empty
-  JR Z, #NEXT_DATA_BLK_end-$
+  JR Z, @NEXT_DATA_BLK_end-$
   LD E, (IX+FS_INODE_ALLOCATED); Get low byte of inodes size
   LD D, (IX+FS_INODE_ALLOCATED+1); Get high byte of inodes size
   ADD HL, DE  ; Calc next data block addr
   LD DE, FS_SZ_INODE; Load byte offset of inode
   ADD IX, DE  ; Calc next inode addr
-  JR #NEXT_DATA_BLK_lp-$
+  JR @NEXT_DATA_BLK_lp-$
 
-#NEXT_DATA_BLK_end:
+@NEXT_DATA_BLK_end:
   POP BC      ; Restore reg BC
   POP DE      ; Restore reg DE
   POP IX      ; Restore reg IX
@@ -349,7 +349,7 @@
 ;; Example:
 ;;  LD BC, 5
 ;;  LD DE, mount_name
-;;  CALL #NEW_FILENAME_BLK
+;;  CALL @NEW_FILENAME_BLK
 ;; 
 ;; mount_name:
 ;;   db "mount"
@@ -361,7 +361,7 @@
 ;;   reg HL -- as defined
 ;;   reg IX -- as defined
 ;;
-#NEW_FILENAME_BLK:
+@NEW_FILENAME_BLK:
   PUSH IX     ; Save inode addr in stack
   PUSH HL     ; Save addr to data blk in stack
   PUSH BC     ; Save string counter in stack
@@ -394,10 +394,10 @@
 
 ;;
 ;; Example:
-;;  LD HL, #TEMP
-;;  CALL #ITER_INODE
+;;  LD HL, @TEMP
+;;  CALL @ITER_INODE
 ;; 
-;; #TEMP:
+;; @TEMP:
 ;;  RET
 ;; 
 ;; proc ITER_FILE_BLK() -> callback;
@@ -407,7 +407,7 @@
 ;;   reg HL -- as defined
 ;;   reg IX -- as defined
 ;;
-#ITER_FILE_BLK:
+@ITER_FILE_BLK:
   LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
   AND FS_MODE_MASK; Get only file types
   CP FS_MODE_FILE_MASK; Check if node is a dir
@@ -432,19 +432,19 @@
 
   DEC DE      ; Dec DE by, need just for adjustmens
   INC BC      ; Inc BC by, need to check if reg is 0
-#ITER_FILE_BLK_lp:
+@ITER_FILE_BLK_lp:
   INC DE      ; Move data block ptr by one
   DEC BC      ; Decrement counter
   XOR A       ; Reset Acc
   OR C        ; Check if counter DE is empty
   OR B        ; Check if counter DE is empty
-  JR Z, #ITER_FILE_BLK_end-$
+  JR Z, @ITER_FILE_BLK_end-$
   PUSH HL     ; Temp save func addr in stack
-  LD HL, #ITER_FILE_BLK_lp; Load return addr
+  LD HL, @ITER_FILE_BLK_lp; Load return addr
   EX (SP), HL ; Save return addr in stack & get in HL func addr
   JP (HL)     ; Manual call
 
-#ITER_FILE_BLK_end:
+@ITER_FILE_BLK_end:
   POP BC      ; Restore reg BC
   POP DE      ; Restore reg DE
   RET
@@ -453,7 +453,7 @@
 ;; Example:
 ;;  LD BC, 5
 ;;  LD DE, mount_name
-;;  CALL #PRINT_INODE
+;;  CALL @PRINT_INODE
 ;; 
 ;; PRINT_INODE:
 ;;   db "mount"
@@ -474,7 +474,7 @@ _FS_EXEC:
   ; TODO: 
   ; LD B, 8
   ; LD DE, .FILE_TEST
-  ; CALL #FIND_FILE
+  ; CALL @FIND_FILE
 
   LD HL, PTR_STDIN_BUF_BGN; Load ptr to the start offset of STDIN
   LD A, (PTR_STDIN_BUF_END); Load the position of the last byte in stdin
@@ -501,29 +501,29 @@ _FS_EXEC_lp_esc:
   LD B, C    ; Load file name string size
   POP DE     ; Restore the start of the string
 
-  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
-  CALL #HAS_INODE; Check if the file was founded
-  JP NZ, #EXEC_FILE; Exec file if it was found
+  CALL @FIND_FILE; Will return reg IX which will point to the found INODE or 0
+  CALL @HAS_INODE; Check if the file was founded
+  JP NZ, @EXEC_FILE; Exec file if it was found
 
   LD HL, .MSG_FILE_NOT_FOUND; Load ptr to the string
-  JP #STR_PRINT; If file is not found then display an error
+  JP @STR_PRINT; If file is not found then display an error
 
   ; LD HL, .MSG_OK; Load ptr to the string
-  ; JP #STR_PRINT; If file is not found then display an error
+  ; JP @STR_PRINT; If file is not found then display an error
 
 
 
-;   CALL #STR_STRIP; Strip the STDIN string
+;   CALL @STR_STRIP; Strip the STDIN string
 ;   XOR A      ; Reset Acc
 ;   OR B       ; Check if reg B reached the end
   
 ;   ; TODO: Think how to do this !!!
-;   ; JP Z, #MSG_FILE_NOT_FOUND; If for some reason it reached the end, display an error
+;   ; JP Z, @MSG_FILE_NOT_FOUND; If for some reason it reached the end, display an error
 ;   PUSH DE    ; Save ptr to the STDIN in stack
 
 ; ;;  LD B, 5   ; String length
 ; ;;  LD DE, .STRING  ; Load ptr to the string in reg DE
-; ;;  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+; ;;  CALL @FIND_FILE; Will return reg IX which will point to the found INODE or 0
 
 ; _FS_EXEC_lp:
 ;   LD A, (DE) ; Load current ASCII char
@@ -547,18 +547,18 @@ _FS_EXEC_lp_esc:
 ;   DEC B      ; Remove from string size '\n'
 ;   RET Z      ; If string length is 0, then skip file searching
 
-;   CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
-;   CALL #HAS_INODE; Check if the file was founded
+;   CALL @FIND_FILE; Will return reg IX which will point to the found INODE or 0
+;   CALL @HAS_INODE; Check if the file was founded
   
 ;   LD HL, .MSG_FILE_NOT_FOUND; Load ptr to the string
-;   JP Z, #STR_PRINT; If file is not found then display an error
+;   JP Z, @STR_PRINT; If file is not found then display an error
 
 ;;  LD B, 5   ; String length
 ;;  LD DE, .STRING  ; Load ptr to the string in reg DE
-;;  CALL #FIND_FILE; Will return reg IX which will point to the found INODE or 0
+;;  CALL @FIND_FILE; Will return reg IX which will point to the found INODE or 0
 
 
-#TTTTTTTTTTTTTTT:
+@TTTTTTTTTTTTTTT:
   LD HL, .MSG_FILE_NOT_FOUND
   RST 0x18    ; Print string
   RET
@@ -567,7 +567,7 @@ _FS_EXEC_lp_esc:
 ;; Example:
 ;;  LD BC, 5
 ;;  LD DE, mount_name
-;;  CALL #PRINT_INODE
+;;  CALL @PRINT_INODE
 ;; 
 ;; PRINT_INODE:
 ;;   db "mount"
@@ -579,24 +579,24 @@ _FS_EXEC_lp_esc:
 ;;   reg HL -- as defined
 ;;   reg IX -- as defined
 ;;
-#PRINT_INODE:
+@PRINT_INODE:
   LD A, (IX+FS_INODE_MODE+1); Load file mask into to Acc
   AND FS_MODE_MASK; Get only file type
   CP FS_MODE_SOKET_MASK; Check if node is a socket
   LD C, "s"   ; Load "s" char into reg C
-  JR Z, #PRINT_INODE_size-$
+  JR Z, @PRINT_INODE_size-$
   CP FS_MODE_SLINK_MASK; Check if node is a dir
   LD C, "l"   ; Load "l" char into reg C
-  JR Z, #PRINT_INODE_size-$
+  JR Z, @PRINT_INODE_size-$
   CP FS_MODE_BLOCK_MASK; Check if node is a block
   LD C, "b"   ; Load "b" char into reg C
-  JR Z, #PRINT_INODE_size-$
+  JR Z, @PRINT_INODE_size-$
   CP FS_MODE_DIR_MASK; Check if node is a dir
   LD C, "d"   ; Load "d" char into reg C
-  JR Z, #PRINT_INODE_size-$
+  JR Z, @PRINT_INODE_size-$
   LD C, "f"   ; Load "f" char into reg C
 
-#PRINT_INODE_size:
+@PRINT_INODE_size:
   LD A, C     ; Load char into Acc
   RST 0x10    ; Print the char
   LD A, " "   ; Make a break between prev value
@@ -606,21 +606,21 @@ _FS_EXEC_lp_esc:
   LD HL, 0      ; Load ptr to the temp val
   PUSH IX     ; Temp save ptr to the curr inode
 
-#PRINT_INODE_size_lp:
+@PRINT_INODE_size_lp:
   LD A, (IX+FS_INODE_SIZE+1); Load file mask into to Acc
   OR A        ; Check if Acc is empty
-  JR NZ, #PRINT_INODE_size_lp_print-$
+  JR NZ, @PRINT_INODE_size_lp_print-$
   OR C        ; Check we reach to non zero number and we cant ignore it now
-  JR Z, #PRINT_INODE_size_lp_end-$
-#PRINT_INODE_size_lp_print:
+  JR Z, @PRINT_INODE_size_lp_end-$
+@PRINT_INODE_size_lp_print:
   LD C, B     ; Save random value to reg C, shoud be not null
   LD (HL), A  ; Copy size byte into temp ptr
   PUSH BC     ; Save curr loop counter
-  CALL #HEX_ASCII; Display first byte
+  CALL @HEX_ASCII; Display first byte
   POP BC      ; Restore curr loop counter
-#PRINT_INODE_size_lp_end:
+@PRINT_INODE_size_lp_end:
   DEC IX      ; Move inode ptr back to one
-  DJNZ #PRINT_INODE_size_lp-$
+  DJNZ @PRINT_INODE_size_lp-$
   POP IX      ; Restore ptr to the start of curr inode
 
   LD A, "h"   ; Show that size displaied in hex
@@ -760,7 +760,7 @@ FS_DIR_TYPE       EQU FS_MODE_DIR  | FS_MODE_USR_R | FS_MODE_USR_W
   dw  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
   ;; ====================================================================
   ;;   MODE           UID     SIZE       ALLOCATED   CREATED  UPDATED   GID|LINKS     ZONE0
-  dw  FS_FILE_TYPE,   0x00,  0x0005,   FS_SZ_ZONE_BLK,     0x00,     0x00,     0x00,    #TTTTTTTTTTTTTTT
+  dw  FS_FILE_TYPE,   0x00,  0x0005,   FS_SZ_ZONE_BLK,     0x00,     0x00,     0x00,    @TTTTTTTTTTTTTTT
   
   ;;  ZONE1  ZONE2  ZONE3  ZONE4  ZONE5  ZONE6  ZONE7  ZONE8
   dw  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00
