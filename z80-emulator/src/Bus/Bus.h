@@ -31,39 +31,8 @@ private:
   uint8_t mux(Int2Type<IORQ>, uint32_t addr);
   uint8_t mux(Int2Type<IORQ>, uint32_t addr, uint8_t data);
 
-// public:
-  // inline std::string GetId() { return typeid(this).name(); }
-  // inline std::string GetName() { return "bus"; }
-  // inline std::string GetBindings() { return "bus"; }
-
-public:
-  // std::list<::Window::Window> windows;
-
-  // std::shared_ptr<Led> led;
-  // std::shared_ptr<Switch> switches;
-  // std::shared_ptr<HexDisplay> hexDisplay;
-  // std::shared_ptr<LCD> lcd;
-  // std::shared_ptr<Keyboard> keyboard;
-
-  // std::shared_ptr<PPI> KR580VV55; // PPI КР580ВВ55А
-  // std::shared_ptr<PIT> KR580VI53; // Counter КР580ВИ53
-  // std::shared_ptr<RTC> MC146818;
-
-  // std::shared_ptr<IRQ> interrupt;
-
-  // std::shared_ptr<Z80::CPU> Z80;
-  // std::shared_ptr<W27C512_T> W27C512;
-  // std::shared_ptr<IMS1423_T> IMS1423;
-  // std::shared_ptr<HY62256A_T> HY62256A;
-
-  // TODO: RAM HY62256A A14 = 0 A15 = 1 
-  // TODO: ROM KM28C17-20 A14 = 1 A15 = 1
-
-
 private:
-  // LuaScript& luaConfig;
-
-  uint8_t lcdCtrl = 0;
+  uint8_t ctrl = 0;
   std::list<std::pair<olc::vi2d, olc::vi2d>> grid;
 };
 

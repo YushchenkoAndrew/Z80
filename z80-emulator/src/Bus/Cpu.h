@@ -53,7 +53,7 @@ public:
     if (runtime.joinable()) runtime.join();
   }
 
-  inline void Reset() { cycles = 1; IFF.first = IFF.second = false; for (auto& r : reg) r = 0; regSP() = 0xFFFF; regPC() = 0x0000; }
+  inline void Reset() { cycles = 1; interrupt.first = IM0; interrupt.second = false; for (auto& r : reg) r = 0; regSP() = 0xFFFF; regPC() = 0x0000; }
 
   void Draw() override {
     int32_t index = 0;
@@ -89,10 +89,11 @@ public:
     DrawFlag("H", flagH()); DrawFlag("Z", flagZ()); DrawFlag("S", flagS());
   }
 
-  // DisassembleT Disassemble();
-
-  // void Interrupt() { interrupt.second = true; halt.second.notify_all(); }
-  void Interrupt() { interrupt.second = true; std::lock_guard<std::mutex> l(halt.first); halt.second.notify_all(); }
+  uint8_t Acknowledge();
+  void Interrupt(bool level) {
+    if (interrupt.second.exchange(level) == level) return; // no change: no mutex, no wake-up (PIT calls this constantly)
+    if (level) { std::lock_guard<std::mutex> l(halt.first); halt.second.notify_all(); }
+  }
   
 private:
   void Runtime() {
@@ -104,7 +105,7 @@ private:
       else cycles = 1;
 
       if (IFF.first && interrupt.second) {
-        interrupt.second = false; IFF.first = IFF.second = false;
+        IFF.first = IFF.second = false; 
         switch (interrupt.first) {
           case IM_T::IM0: ImProcess(Int2Type<IM_T::IM0>()); continue;
           case IM_T::IM1: ImProcess(Int2Type<IM_T::IM1>()); continue;
@@ -145,9 +146,9 @@ private:
     return data;
   }
 
-  inline void ImProcess(Int2Type<IM_T::IM0>) { cycles = 4; Read(0x00, false); }
+  inline void ImProcess(Int2Type<IM_T::IM0>) { const uint8_t n = Acknowledge() / 2; foreach<Instructions, void>::Process(this, 0xC7 | (n << 3)); cycles = 13; } // RST n*
   inline void ImProcess(Int2Type<IM_T::IM1>) { Process(Int2Type<Instruction::RST_38h>()); }
-  inline void ImProcess(Int2Type<IM_T::IM2>) { cycles = 11; Push(regPC()); regPC() = regPC() = Word((uint16_t)(regI() << 8 | Read(0x00, false))); }
+  inline void ImProcess(Int2Type<IM_T::IM2>) { cycles = 19; Push(regPC()); regPC() = Word((uint16_t)(regI() << 8 | Acknowledge())); }
 
 public:
   template<int32_t T>
@@ -196,7 +197,7 @@ public:
 
 
   inline void Process(Int2Type<Instruction::NOP>) { cycles = 4; }
-  inline void Process(Int2Type<Instruction::HALT>) { cycles = 4; std::unique_lock<std::mutex> lock(halt.first); halt.second.wait(lock, [this] { return (IFF.first && interrupt.second) || !bExec; }); }
+  inline void Process(Int2Type<Instruction::HALT>) { cycles = 4; std::unique_lock<std::mutex> lock(halt.first); halt.second.wait(lock, [this] { return (IFF.first && interrupt.second) || mode != NORMAL || !bExec; }); }
   
   inline void Process(Int2Type<Instruction::DI>) { cycles = 1; IFF.first = IFF.second = false; }
   inline void Process(Int2Type<Instruction::EI>) { cycles = 1; IFF.first = IFF.second = true; }
@@ -887,8 +888,11 @@ public:
   }
 
   // TODO:
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_A_I>) {}
-  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_I_A>) {}
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_I_A>) { cycles = 9; regI(regA()); }
+  inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_A_I>) {
+    cycles = 9; const uint8_t v = regI();
+    regA(v)->flagS(SIGN(v))->flagZ(!v)->flagH(false)->flagN(false)->flagPV(IFF.second);
+  }
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_R_A>) {}
   inline void Process(Int2Type<Instruction::MISC_INSTR>, Int2Type<MiscInstruction::LD_A_R>) {}
 
@@ -1339,7 +1343,7 @@ public:
   
 public:
   inline bool IsDebug() { return mode == DEBUG; }
-  inline void Debug() { mode = DEBUG; }
+  inline void Debug() { { std::lock_guard<std::mutex> lock(halt.first); mode = DEBUG; } halt.second.notify_all(); }
   inline void Normal() { mode = NORMAL; Continue(); }
   inline ModeT GetMode() { return mode; }
 

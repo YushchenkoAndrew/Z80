@@ -147,43 +147,6 @@ typedef ListT<
 >::type TestT;
 
 
-class Defs {
-
-public:
-  static void Init() {}
-
-  // static void Load(LuaScript* luaConfig) {
-  static void Load(void* luaConfig) {
-    // TODO: Update colors
-    // luaConfig->GetTableValue<bool>(nullptr, "sColors");
-
-    // // printf("%d\n", luaConfig->Size());
-    // luaConfig->Iterate(nullptr, [&]() {
-    //   AnyType<-1, std::string>::GetValue() = luaConfig->GetValue(Type2Type<const char *>());
-    //   int32_t index = foreach<ColorNames, AnyType<-1, std::string>>::Value2Key();
-    //   luaConfig->Pop();
-
-    //   printf("%s\n", AnyType<-1, std::string>::GetValue().c_str());
-
-    //   // AnyType<-1, int32_t>::GetValue() = index;
-    //   // auto t = foreach<ColorList, AnyType<-1, int32_t>>::Key2Value();
-    //   // t.g = 255;
-    //   AnyType<RED, olc::Pixel>::GetValue() = olc::Pixel(245, 100, 100);
-
-    //   // printf("%d %d %d\n", t.b, t.g, t.r);
-
-    //   luaConfig->Pop();
-    // });
-
-    // luaConfig->Pop();
-
-    // const int32_t nScreenWidth = luaConfig.GetTableValue<int32_t>(nullptr, "nScreenWidth");
-    // const int32_t nScreenHeight = luaConfig.GetTableValue<int32_t>(nullptr, "nScreenHeight");
-    // const int32_t nPixel = luaConfig.GetTableValue<int32_t>(nullptr, "nPixel");
-
-  }
-};
-
 enum Events {
   NEW_DEBUG_MODE_CALLBACK, ATTACH_DEBUG_MODE_CALLBACK, DETACH_DEBUG_MODE_CALLBACK,
   NEXT_DEBUG_STEP_CALLBACK, DEBUG_RESET_CALLBACK,
@@ -218,7 +181,7 @@ class PixelGameEngine : public olc::PixelGameEngine {
 
   virtual uint32_t GetMode() = 0;
 
-  void FillRectDither(olc::vi2d pos, olc::vi2d size, olc::Pixel color = olc::WHITE, int32_t scale = 1, int32_t flag = 0) {
+  void FillDither(olc::vi2d pos, olc::vi2d size, olc::Pixel color = olc::WHITE, int32_t scale = 1, int32_t flag = 0) {
     for (int32_t i = 0, k = flag; i < size.y; i += scale, k ^= 1) {
       for (int32_t j = k * scale; j < size.x; j += scale << 1) {
         FillRect(pos + olc::vi2d(j, i), olc::vi2d(scale, scale), color);

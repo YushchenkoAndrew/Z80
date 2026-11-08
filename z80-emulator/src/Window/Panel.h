@@ -47,40 +47,22 @@ public:
   // }
 
   void Select(::Window::DimensionT dimensions) override {
-    ::Window::Window::Select(dimensions); ::Window::KeyboardEvent::Focus(true);
+    ::Window::Window::Select(dimensions);
     for (auto& w : windows) if (EXIST(w)) PTR(w)->Select(DIMENSION(w));
   }
 
-  // void Preprocess() {
-  //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Preprocess();
-  // }
-
   void Process() override {
-    // TODO: For some reason this, is much slower, maybe I'll use it in a future, ha pan not intended
-    // std::vector<std::shared_future<void>> vFuture;
-
-    // if (rom.first != nullptr) vFuture.push_back(std::async(&Bus::Rom::Process, rom.first, GameEngine));
-    // if (editor.first != nullptr) vFuture.push_back(std::async(&Editor::Editor::Process, editor.first, GameEngine)); 
-
-    // for(auto& future : vFuture) future.wait();
-    // bUpdated = false; bReleased = false;
-
-    // Process(Int2Type<NORMAL>(), GameEngine);
-    // if (mode == COMMAND) { if (!cmd.size() && bReleased) mode = NORMAL; return; }
     const auto mouse = GameEngine->GetMousePos();
     const auto bPressed = GameEngine->GetMouse(0).bPressed;
 
-    for (auto& w : windows) if (!bFullScreen && EXIST(w) && DISPLAYED(w) && IS_INSIDE(w, mouse)) PTR(w)->Preprocess();
+    for (auto& w : windows) {
+      if (!(EXIST(w) && DISPLAYED(w))) continue;
 
-    if (bPressed && mouse.y - size.y <= 0) {
-      for (auto& w : windows) {
-        if (!(EXIST(w) && DISPLAYED(w))) continue;
-
-        if (!bFullScreen) PTR(w)->Focus(SELECTED(w) = IS_INSIDE(w, mouse));
-        if (SELECTED(w)) PTR(w)->Process();
-      }
+      if (!bFullScreen && bPressed) { const bool selected = IS_INSIDE(w, mouse); PTR(w)->Focus(SELECTED(w) = selected); }
+      if (SELECTED(w)) PTR(w)->Process();
     }
 
+    for (auto& w : windows) if (EXIST(w) && DISPLAYED(w) && IS_INSIDE(w, mouse)) PTR(w)->Preprocess();
   }
 
   void Draw() override {
@@ -329,7 +311,7 @@ public:
   inline void Push() {}
   
   template<class T>
-  inline void Push(WindowInitT<T> b) { windows.push_back(WindowT<::Window::Window>(nWindows == 1, std::get<1>(b), std::get<0>(b), std::get<2>(b), ++nWindows)); }
+  inline void Push(WindowInitT<T> b) { windows.push_back(WindowT<::Window::Window>(false, std::get<1>(b), std::get<0>(b), std::get<2>(b), ++nWindows)); }
 
 public:
   // inline bool IsActive() { return mode == COMMAND; }

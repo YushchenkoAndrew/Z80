@@ -57,11 +57,7 @@ TEMP:
 MAIN:
   IN A, (0x00)
   OUT (0x00), A
-
-  LD HL, PTR_TEMP_WORD
-  LD (HL), A
-  PUSH HL
-  CALL _HEX
+  CALL #HEX
 
   ; LD HL, KEY_CODE
   ; LD A, (HL)

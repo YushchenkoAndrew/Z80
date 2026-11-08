@@ -2,7 +2,6 @@
 
 #include "src/Defs.h"
 #include "src/Interpreter/Lexer.h"
-#include "src/Interpreter/Token.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/Base.h"
 #include "src/Window/Event/KeyboardEvent.h"
@@ -38,7 +37,7 @@ public:
   }
 
   void Process() override {
-    if ((fBlink += GameEngine->GetElapsedTime()) > 1.2f) fBlink -= 1.2f;
+    fBlink = std::fmod(fBlink + GameEngine->GetElapsedTime(), 1.2f);
 
     if (!GameEngine->GetMouse(0).bPressed) return;
     const auto mouse = GameEngine->GetMousePos();
@@ -83,7 +82,7 @@ public:
     const auto nHeight = size.y - vStep.y;
     for (int32_t i = 0, max = nHeight / vStep.y; i < max; i++) {
       auto str = std::to_string(offset.y + i + 1);
-      auto pos = olc::vi2d(absolute.x + vOffset.x - str.size() * vStep.x, (i + 1) * vStep.y + vOffset.y);
+      auto pos = olc::vi2d(absolute.x + vOffset.x - (int32_t)str.size() * vStep.x, absolute.y + (i + 1) * vStep.y + vOffset.y);
       auto color =
         IsBreakpoint(offset.y + i) ? Color::RED : 
         (this->pos.y - offset.y == i ? Color::GREY : Color::DARK_GREY);
@@ -142,7 +141,8 @@ public:
 
     auto humanizedPos = GetHumanizedPos();
 
-    pos.x = size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
+    // pos.x = size.x + vOffset.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
+    pos.x = absolute.x + size.x - ((int32_t)humanizedPos.size() + 1) * vStep.x;
     GameEngine->DrawString(pos, humanizedPos, Color::DARK_GREY);
 
     pos.x -= 5 * vStep.x;
@@ -219,9 +219,8 @@ public:
   };
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::O>) { 
-    Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::I>());
-    lines.insert(lines.begin() + ++pos.y, std::string(pos.x, ' '));
-    return nullptr;
+     ++pos.y; lines.insert(lines.begin() + pos.y, std::string(pos.x, ' '));
+    return Process(Int2Type<olc::Key::I>());
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::O>) { 
@@ -243,7 +242,11 @@ public:
     if (!lines.size()) return nullptr;
 
     Process(Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::Y>());
-    lines.erase(lines.begin() + pos.y); pos.x = startAt();
+    lines.erase(lines.begin() + pos.y);
+
+    if (lines.empty()) lines.emplace_back();
+
+    pos.y = std::min(pos.y, static_cast<int32_t>(lines.size()) - 1); pos.x = startAt();
     return lexer.scan(Text()), nullptr;
   }
 
@@ -345,15 +348,15 @@ public:
   ::Window::StrokeAction Process(Int2Type<olc::Key::I>) {
     mode = INSERT;
     return [this](olc::Key k, int32_t i) {
-      if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x--, false;
+      if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x = std::max(0, pos.x - 1), false;
       return line().insert(pos.x++, GetKeycode(k)), lexer.scan(Text()), true; // FIXME: Think about how to impl SHIFT ??
     };
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::A>) {
-    mode = INSERT, pos.x++;
+    mode = INSERT, pos.x = std::min(pos.x + 1, (int32_t)line().size());
     return [this](olc::Key k, int32_t i) {
-      if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x--, false;
+      if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x = std::max(0, pos.x - 1), false;
       return line().insert(pos.x++, GetKeycode(k)), lexer.scan(Text()), true; // FIXME: Think about how to impl SHIFT ??
     };
   }
@@ -692,14 +695,18 @@ public:
 
 private:
   inline int32_t startAt() {
-    int32_t startAt = 0;
-    while (line().at(startAt) == ' ') startAt++;
-    return startAt;
+    const auto& ln = line();
+
+    auto it = std::find_if(ln.begin(), ln.end(), [](unsigned char c) { return c != ' '; });
+    return static_cast<int32_t>(it - ln.begin());
   }
+
+  inline bool hasLine() const { return pos.y >= 0 && pos.y < static_cast<int32_t>(lines.size()); }
+  inline bool hasCharacter() const { return hasLine() && pos.x >= 0 && pos.x < static_cast<int32_t>(lines[pos.y].size()); }
 
   inline int32_t endAt() { return std::max((int32_t)line().size() - 1, 0); }
   inline std::string& line() { return lines[pos.y]; }
-  inline char& symbol() { return line().at(pos.x); }
+  inline char symbol() const { return hasCharacter() ? lines[pos.y][pos.x] : '\0'; }
 
 public:
   const ::Window::StrokeT<>& GetCommands() const override { return Vim::commands; }

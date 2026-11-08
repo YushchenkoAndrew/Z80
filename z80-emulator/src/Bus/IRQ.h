@@ -15,7 +15,6 @@ public:
 
   IRQ(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
 
-  void Process() override {}
   void Draw() override {
     olc::vi2d pos = absolute;
     const olc::vi2d vOffset = olc::vi2d(3 * 8 + vStep.x, 0);
@@ -31,18 +30,24 @@ public:
   void Interrupt();
 
   uint8_t Read(uint32_t, bool) override { return state; }
-  uint8_t Write(uint32_t, uint8_t data, bool) override { return enabled = data; }
+  // uint8_t Write(uint32_t, uint8_t data, bool) override { return enabled = data; }
+  uint8_t Write(uint32_t, uint8_t data, bool) override { enabled = data; Interrupt(); return data; }
 
 
-  inline void SetFlag(uint8_t flag) { state |= (uint8_t)(1 << flag); }
-  inline void ResetFlag(uint8_t flag) { state &= ~(uint8_t)(enabled & (1 << flag)); Interrupt(); }
+  inline uint8_t Pending() const { return (uint8_t)(~state & enabled); }
+  inline uint8_t Vector() const { for (int n = 7; n >= 0; n--) if (Pending() & (1 << n)) return n * 2; return 0; }
+
+  inline void SetFlag(uint8_t flag)   { state |= (uint8_t)(1 << flag);  Interrupt(); }   // acknowledge
+  inline void ResetFlag(uint8_t flag) { state &= (uint8_t)~(1 << flag); Interrupt(); }   // request (latched even if masked)
+  // inline void SetFlag(uint8_t flag) { state |= (uint8_t)(1 << flag); }
+  // inline void ResetFlag(uint8_t flag) { state &= ~(uint8_t)(enabled & (1 << flag)); Interrupt(); }
 
 private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(16, 0);
 
-  uint8_t state   = 0xff;
-  uint8_t enabled = 0x00;
+  std::atomic<uint8_t> state = 0xFF;      // 4 threads touch these (CPU, UI, RTC, PIT): they must be atomic
+  std::atomic<uint8_t> enabled = 0x00;    // use state.load() where a function needs a plain uint8_t (Int2Bin)
 
   // std::array<uint8_t, 3> regs;
   // std::array<std::pair<ModeT, bool>, 4> options;

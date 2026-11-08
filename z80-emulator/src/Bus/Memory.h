@@ -142,7 +142,7 @@ private:
 
     olc::vi2d cursor = absolute + (pos - page) * vStep + vOffset;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 18, 12 }, Color::GREY);
-    GameEngine->DrawString(cursor, Utils::Int2Hex(memory[index(pos)]), Color::BLACK);
+    GameEngine->DrawString(cursor, Utils::Int2Hex(Byte(index(pos))), Color::BLACK);
   }
 
   void Draw(Int2Type<CHARACTER>) {
@@ -171,7 +171,7 @@ private:
 
     olc::vi2d cursor = absolute + (pos - page) * olc::vi2d(vStep.y, vStep.y) + vOffset;
     GameEngine->FillRect(cursor - olc::vi2d(1, 2), { 12, 12 }, Color::GREY);
-    GameEngine->DrawString(cursor, isprint(memory[index(pos)]) ? std::string(1, memory[index(pos)]) : ".", Color::BLACK);
+    GameEngine->DrawString(cursor, isprint(Byte(index(pos))) ? std::string(1, Byte(index(pos))) : ".", Color::BLACK);
   }
 
 public:
@@ -585,7 +585,7 @@ public:
 
   inline void Move2Addr(uint32_t addr) {
     Index2Pos(addr & (memory.size() - 1));
-    vim.JumpTo(olc::vi2d(0, disassembler.lineAt(addr)));
+    if (vim.GetLineSize()) vim.JumpTo(olc::vi2d(0, disassembler.lineAt(addr)));
   }
 
   inline void MoveTo(olc::vi2d offset) {
@@ -683,6 +683,9 @@ private:
   //   auto prev = lambda;
   //   lambda = [=]() { for (int32_t i = 0; i < len; i++) { if (i) Command(val); prev(); } };
   // }
+
+  inline bool InRange(int32_t i) const { return i >= 0 && i < (int32_t)memory.size(); }
+  inline uint8_t Byte(int32_t i) const { return InRange(i) ? memory[i] : 0x00; }
 
   inline int32_t index() { return index(pos.x, pos.y); }
   inline int32_t index(olc::vi2d pos) { return index(pos.x, pos.y); }

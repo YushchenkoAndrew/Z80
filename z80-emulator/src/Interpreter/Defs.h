@@ -123,10 +123,4 @@ typedef TypeList<
   Int2Type<TokenT::CMD_SUB>,  TypeList<
   Int2Type<TokenT::CMD_XOR>,  NullType>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    Commands;
-
-class Defs {
-
-public:
-  static void Init() {}
-};
 }

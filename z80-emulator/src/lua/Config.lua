@@ -7,7 +7,7 @@ SOURCE = "assets/src/DoS/Main.asm";
 -- SOURCE = "assets/test/Test.asm";
 -- src = "assets/test/Timer/Test.asm",
 -- src = "assets/test/RTC/Test.asm",
--- SOURCE = "assets/test/LCD/Test.asm";
+SOURCE = "assets/test/LCD/Test.asm";
 
 -- step   = { x = 8, y = 12 };
 -- WINDOW = {  }

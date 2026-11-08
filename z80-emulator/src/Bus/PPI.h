@@ -120,10 +120,8 @@ public:
   inline uint8_t regC(Int2Type<REG2DATA>) { return regC(); }
   inline uint8_t regC(Int2Type<DATA2REG>, uint8_t v) { return (regC() = v); }
   inline uint8_t regC(Int2Type<PORT2REG>, uint8_t v) {
-    if (options[REG::B].first != MODE0) return 0x00;
-
-    if (options[REG::CH].second) regs[REG::C] = (regs[REG::C] & 0x0F) | (v & 0xF0);
-    if (options[REG::CL].second) regs[REG::C] = (regs[REG::C] & 0xF0) | (v & 0x0F);
+    if (options[REG::A].first == MODE0 && options[REG::CH].second) regs[REG::C] = (regs[REG::C] & 0x0F) | (v & 0xF0);
+    if (options[REG::B].first == MODE0 && options[REG::CL].second) regs[REG::C] = (regs[REG::C] & 0xF0) | (v & 0x0F);
     return regs[REG::C];
   }
 
@@ -140,6 +138,8 @@ public:
   inline uint8_t& regA() { return regs[REG::A]; }
   inline uint8_t& regB() { return regs[REG::B]; }
   inline uint8_t& regC() { return regs[REG::C]; }
+
+  inline uint8_t pinsB() const { return options[REG::B].second ? 0x00 : regs[REG::B]; }
 
 private:
   const olc::vi2d vStep = olc::vi2d(8, 12);

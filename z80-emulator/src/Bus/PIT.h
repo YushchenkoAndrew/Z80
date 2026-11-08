@@ -82,8 +82,7 @@ public:
   }
 
   void Runtime() {
-  auto step = [&](const int32_t i) {
-      // Utils::Lock l(mutex);
+    auto step = [&](const int32_t i) {
       uint16_t& value = GetValue(counter, i);
       uint16_t& out = GetValue(output, i);
       uint16_t enabled = GetValue(gate, i);
@@ -109,7 +108,7 @@ public:
     };
 
     while (bExec) {
-      // std::this_thread::sleep_for(std::chrono::nanoseconds(clock.first));
+      std::this_thread::sleep_for(std::chrono::nanoseconds(clock.first));
 
       // NOTE: Because run of this loop takes around 60ms, note generations (CT0) was moved to the func Sound 
       step(1); step(2);
@@ -169,13 +168,9 @@ private:
 private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
+  std::atomic<bool> bExec = true;
   std::pair<int32_t, int32_t> clock; // nanoseconds, Hz
   std::array<bool, 3> hi = {}, latched = {}, armed = {};   // new members
-
-  std::atomic<bool> bExec = true;
-  std::thread runtime;
-
-  // std::mutex mutex;
   
   RegT copy;
   RegT counter = { 0, 0, 0 };
@@ -185,6 +180,8 @@ private:
 
   RegT gate = { 0x00, 0x00, 0x00 };
   RegT output = { 0x01, 0x01, 0x01 };
+
+  std::thread runtime;
 };
 
 #undef CT0

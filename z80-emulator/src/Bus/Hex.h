@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/Bus/Device.h"
+#include "src/Defs.h"
 #include "src/Window/Window.h"
 
 namespace Bus {
@@ -25,26 +26,13 @@ public:
 
 private:
   void Draw(Int2Type<HEX>, PixelGameEngine* GameEngine, uint8_t data, olc::vi2d pos) {
-    if (data & 0x01) GameEngine->FillRectDither(pos, olc::vi2d(vStep.x, 2), Color::DARK_GREY);
-    else GameEngine->FillRectDither(pos, olc::vi2d(vStep.x, 2), Color::WHITE);
-
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, 0), olc::vi2d(2, vStep.y), Color::DARK_GREY);
-    else GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, 0), olc::vi2d(2, vStep.y), Color::WHITE);
-
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, vStep.y), olc::vi2d(2, vStep.y), Color::DARK_GREY);
-    else GameEngine->FillRectDither(pos + olc::vi2d(vStep.x, vStep.y), olc::vi2d(2, vStep.y), Color::WHITE);
-
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y << 1), olc::vi2d(vStep.x, 2), Color::DARK_GREY);
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y << 1), olc::vi2d(vStep.x, 2), Color::WHITE);
-
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(2, vStep.y), Color::DARK_GREY);
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(2, vStep.y), Color::WHITE);
-
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, 0), olc::vi2d(2, vStep.y), Color::DARK_GREY);
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, 0), olc::vi2d(2, vStep.y), Color::WHITE);
-
-    if ((data = data >> 1) & 0x01) GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(vStep.x, 2), Color::DARK_GREY);
-    else GameEngine->FillRectDither(pos + olc::vi2d(0, vStep.y), olc::vi2d(vStep.x, 2), Color::WHITE);
+    GameEngine->FillDither(pos,                                            olc::vi2d(vStep.x, 2),       data & 0x01               ? Color::DARK_GREY : Color::WHITE);
+    GameEngine->FillDither(pos + olc::vi2d(vStep.x, 0),           olc::vi2d(2,      vStep.y), (data = data >> 1) & 0x01 ? Color::DARK_GREY : Color::WHITE);
+    GameEngine->FillDither(pos + olc::vi2d(vStep.x, vStep.y),     olc::vi2d(2,      vStep.y), (data = data >> 1) & 0x01 ? Color::DARK_GREY : Color::WHITE);
+    GameEngine->FillDither(pos + olc::vi2d(0,       vStep.y << 1),olc::vi2d(vStep.x,2),       (data = data >> 1) & 0x01 ? Color::DARK_GREY : Color::WHITE);
+    GameEngine->FillDither(pos + olc::vi2d(0,       vStep.y),     olc::vi2d(2,      vStep.y), (data = data >> 1) & 0x01 ? Color::DARK_GREY : Color::WHITE);
+    GameEngine->FillDither(pos + olc::vi2d(0,      0),            olc::vi2d(2,      vStep.y), (data = data >> 1) & 0x01 ? Color::DARK_GREY : Color::WHITE);
+    GameEngine->FillDither(pos + olc::vi2d(0,      vStep.y),      olc::vi2d(vStep.x, 2),      (data = data >> 1) & 0x01 ? Color::DARK_GREY : Color::WHITE);
   }
 
 private:

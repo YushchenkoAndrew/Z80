@@ -136,7 +136,7 @@ private:
   std::vector<uint8_t>& memory;
 
 private:
-static inline const std::unordered_map<uint8_t, MetadataT> instructions = {
+  static inline const std::unordered_map<uint8_t, MetadataT> instructions = {
   { Bus::Z80::NOP,        { "NOP",              0x01 } }, { Bus::Z80::LD_BC_NN,   { "LD BC, 0x%04x",   0x23 } },
   { Bus::Z80::DJNZ_D,     { "DJNZ 0x%02x",      0x12 } }, { Bus::Z80::LD_DE_NN,   { "LD DE, 0x%04x",   0x23 } },
   { Bus::Z80::JR_NZ_D,    { "JR NZ, 0x%02x",    0x12 } }, { Bus::Z80::LD_HL_NN,   { "LD HL, 0x%04x",   0x23 } },

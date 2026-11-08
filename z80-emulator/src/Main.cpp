@@ -1,6 +1,7 @@
 #pragma once
 #include "src/Bus/Cpu.h"
 #include "src/Registry.h"
+#include <cstdint>
 #include <utility>
 #include <vector>
 #define DEBUG_MODE
@@ -8,7 +9,6 @@
 #include "include/LuaScript.h"
 #include "lib/olcPixelGameEngine.h"
 #include "src/Defs.h"
-#include "src/Interpreter/Defs.h"
 #include "src/Window/Panel.h"
 #include <unordered_set>
 
@@ -37,18 +37,19 @@ public:
     for (size_t i = 1; i <= groups; ++i) {
       uint32_t index = panels.size();
       std::string group = "PANELS." + std::to_string(i);
-      panels.push_back(Panel(this));
+      panels.push_back(std::make_unique<Panel>(this));
 
       for (const std::string& name : lua.Keys(group)) {
         const std::string p = group + "." + name; 
 
         auto instance = Registry::GetInstance(name);
         if (!instance) fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
-        else panels[index].Push(std::tuple(instance, true, std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
+        else panels[index]->Push(std::tuple(instance, true, std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
       }
     }
 
-    panels[nPanel].Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
+    panels[panel]->Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
+    panels[panel]->Focus(true);
 
     sync = std::pair(true, std::make_unique<std::thread>([&]() { Registry::W27C512->Disassemble(); sync.first = false; }));
     return true;
@@ -102,7 +103,7 @@ public:
   }
 
   void Process() {
-    panels[nPanel].Process(); 
+    panels[panel]->Process(); 
 
     const auto mouse = GetMousePos();
     const bool bPressed = GetMouse(0).bPressed;
@@ -113,14 +114,14 @@ public:
     if (bPressed && mouse.x > 0 && mouse.y > nHeight - vStep.y && mouse.x < nWidth && mouse.y < nHeight) {
       auto pos = mouse / vStep;
 
-      for (int32_t i = 0, x = 2, length = (int32_t)panels[i].GetName().size() + 2; i < panels.size(); length = (int32_t)panels[i].GetName().size() + (int32_t)std::log10(i++) + 2, x += length + 1) {
+      for (int32_t i = 0, x = 2, length = (int32_t)panels[i]->GetName().size() + 2; i < panels.size(); length = (int32_t)panels[i]->GetName().size() + (int32_t)std::log10(i++) + 2, x += length + 1) {
         if (pos.x >= x && pos.x <= x + length + 1) return Event(Int2Type<PANEL_SELECT_CALLBACK>(), i + 1);
       }
     }
   }
 
   void Draw() {
-    panels[nPanel].Draw(); 
+    panels[panel]->Draw(); 
 
     const auto nWidth = ScreenWidth();
     const auto nHeight = ScreenHeight();
@@ -132,16 +133,16 @@ public:
     const auto& cmd = Command();
     DrawString(pos + olc::vi2d(nWidth - ((int32_t)cmd.size() + 2) * vStep.x, vStep.y), cmd, Color::DARK_GREY);
 
-    auto color = panels[nPanel].IsActive() ? Color::DARK_YELLOW : Color::DARK_GREEN;
+    auto color = panels[panel]->IsActive() ? Color::DARK_YELLOW : Color::DARK_GREEN;
     FillRect(pos - olc::vi2d(0, 2), olc::vi2d(vStep.x * 2, vStep.y - 2), color);
-    DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(nPanel + 1), Color::DARK_GREY);
+    DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(panel + 1), Color::DARK_GREY);
     pos.x += vStep.x * 2;
 
     // const auto nCmd = cmd.size();
     // for (int32_t i = 0; !nCmd && i < panels.size(); i++) {
     for (int32_t i = 0; i < panels.size(); i++) {
-      auto str = std::to_string(i + 1) + " " + panels[i].GetName();
-      auto color = i == nPanel ? Color::GREY : Color::DARK_GREY;
+      auto str = std::to_string(i + 1) + " " + panels[i]->GetName();
+      auto color = i == panel ? Color::GREY : Color::DARK_GREY;
 
       DrawString(pos + olc::vi2d(vStep.x, 0), str, color);
       pos.x += GetTextSize(str).x + vStep.x * 2;
@@ -219,10 +220,12 @@ public:
   }
 
   void Event(Int2Type<PANEL_SELECT_CALLBACK>,  int32_t index) override {
-    if (index - 1 < 0 || index - 1 >= panels.size()) return;
+    if (index < 1 || index > panels.size()) return;
+    for (auto& p : panels) p->Focus(false);
 
-    auto size = panels[nPanel].GetSize();
-    panels[nPanel = index - 1].Select(std::pair(olc::vi2d(0, 0), size));
+    const auto size = panels[panel]->GetSize(); 
+    panels[panel = index - 1]->Select({ olc::vi2d(0, 0), size });
+    panels[panel]->Focus(true);
   }
 
   void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string cmd) override {
@@ -354,9 +357,9 @@ private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
   LuaScript lua;
-  std::vector<Panel> panels;
+  std::vector<std::unique_ptr<Panel>> panels;
 
-  int32_t nPanel = 0;
+  int32_t panel = 0;
   float fStrokeRepeat = .0f;
   std::atomic<bool> bExec = true;
 
@@ -371,8 +374,6 @@ private:
 };
 
 int main() {
-  Defs::Init(); Interpreter::Defs::Init(); Bus::Defs::Init();  // Initialize types
-
   LuaScript lua;
   if (!lua.DoFile("src/lua/Config.lua")) return 0;
   // if (!lua.Has("Config")) return 0;

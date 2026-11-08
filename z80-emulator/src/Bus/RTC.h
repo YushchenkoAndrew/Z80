@@ -25,19 +25,9 @@ class RTC : public Memory {
   };
 
 public:
-  RTC(PixelGameEngine* engine, std::string id): Window::Base(engine), Memory(engine, std::move(id), MC146818_SIZE) {}
+  RTC(PixelGameEngine* engine, std::string id): Window::Base(engine), Memory(engine, std::move(id), MC146818_SIZE), runtime(std::thread(std::thread(&RTC::Runtime, this))) {}
 
-  ~RTC() {
-    bExec = false;
-
-    if (runtime != nullptr && runtime->joinable()) runtime->join();
-  }
-
-  void Preinitialize() {
-    // Memory::Initialize();
-
-    if (runtime == nullptr) runtime = std::make_unique<std::thread>(std::thread(&RTC::Runtime, this));
-  }
+  ~RTC() { bExec = false; if (runtime.joinable()) runtime.join(); }
 
   void Interrupt();
   inline void IRQF() { memory[ADDR::REG::C] |= MASK(FLAG::REG_C::IRQF); }
@@ -90,6 +80,16 @@ public:
     }
   }
 
+  void Acknowledge();
+  uint8_t Read(uint32_t addr, bool) override {
+    addr &= memory.size() - 1;
+    
+    const uint8_t v = Memory::Read(addr, false);
+    if (addr == ADDR::REG::C) { memory[addr] &= 0x0F; Acknowledge(); }
+
+    return v;
+  }
+
   uint8_t Write(uint32_t addr, uint8_t data, bool) override {
     addr &= memory.size() - 1;
     const bool bin = memory[ADDR::REG::B] & MASK(FLAG::REG_B::DM);
@@ -114,10 +114,10 @@ private:
   }
 
 private:
-  std::atomic<bool> bExec = true;
-  std::unique_ptr<std::thread> runtime = nullptr;
-
   std::atomic<uint64_t> time = 0;
+  std::atomic<bool> bExec = true;
+
+  std::thread runtime;
 };
 
 #undef MASK
