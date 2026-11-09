@@ -701,7 +701,7 @@ private:
   const bool bAllowGoto;
 
   olc::vi2d page = olc::vi2d(0, 0);
-  olc::vi2d pages = olc::vi2d(0x10, 0);
+  olc::vi2d pages = olc::vi2d(0x10, 1);
 
   const olc::vi2d vStep = olc::vi2d(20, 12);
   const olc::vi2d vOffset = olc::vi2d(44, 12);

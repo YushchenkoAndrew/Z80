@@ -114,7 +114,7 @@ typedef TypeList<
 
 
 enum Events {
-  NEW_DEBUG_MODE_CALLBACK, ATTACH_DEBUG_MODE_CALLBACK, DETACH_DEBUG_MODE_CALLBACK,
+  NEW_DEBUG_MODE_CALLBACK, DETACH_DEBUG_MODE_CALLBACK,
   NEXT_DEBUG_STEP_CALLBACK, DEBUG_RESET_CALLBACK,
 
   KEYBOARD_EVENT_SUBSCRIBE, KEYBOARD_EVENT_UNSUBSCRIBE,
@@ -130,7 +130,6 @@ struct LocationT { std::filesystem::path file; olc::vi2d pos; };
 class PixelGameEngine : public olc::PixelGameEngine {
   public:
   virtual void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) = 0;
-  virtual void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) = 0;
   virtual void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) = 0;
 
   virtual void Event(Int2Type<DEBUG_RESET_CALLBACK>) = 0;

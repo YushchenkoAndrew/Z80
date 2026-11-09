@@ -7,17 +7,15 @@
 #include "src/Window/Popup.h"
 #include "src/Window/Window.h"
 #include "src/Window/Event/KeyboardEvent.h"
+#include <cstdint>
 #include <memory>
 #include <utility>
 
-template <class T>
-using WindowT = std::tuple<bool, bool, std::shared_ptr<T>, ::Window::DimensionT, int32_t>;
-
-template <class T>
-using WindowInitT = std::tuple<std::shared_ptr<T>, bool, ::Window::DimensionT>;
+using WindowT = std::tuple<bool, uint8_t, std::shared_ptr<::Window::Window>, ::Window::DimensionT, int32_t>;
+using WindowInitT = std::tuple<std::shared_ptr<::Window::Window>, uint8_t, ::Window::DimensionT>;
 
 #define SELECTED(p)  std::get<0>(p)
-#define DISPLAYED(p) std::get<1>(p)
+#define DEPTH(p)     std::get<1>(p)
 #define PTR(p)       std::get<2>(p)
 #define DIMENSION(p) std::get<3>(p)
 #define WINDOW(p)    std::get<4>(p)
@@ -30,7 +28,7 @@ using WindowInitT = std::tuple<std::shared_ptr<T>, bool, ::Window::DimensionT>;
 #define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
         
 class Panel : public Window::KeyboardEvent, public Window::Window {
-  // enum ModeT { NORMAL, COMMAND };
+  enum DepthT { HIDDEN, NORMAL, ZOOMED = 0xFF };
 
 public:
   Panel(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {
@@ -39,7 +37,7 @@ public:
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto...) { return this->Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::OEM_2>()); } }
     });
 
-    Push(std::tuple(std::move(popup), false, std::pair(olc::vi2d(0, 0), olc::vi2d(engine->ScreenWidth(), engine->ScreenHeight()))));
+    Push(WindowInitT(std::move(popup), HIDDEN, std::pair(olc::vi2d(0, 0), olc::vi2d(engine->ScreenWidth(), engine->ScreenHeight()))));
   }
 
   // void Initialize() {
@@ -54,15 +52,17 @@ public:
   void Process() override {
     const auto mouse = GameEngine->GetMousePos();
     const auto bPressed = GameEngine->GetMouse(0).bPressed;
+    std::pair<uint8_t, std::shared_ptr<::Window::Window>> window = std::pair(HIDDEN, nullptr);
 
     for (auto& w : windows) {
-      if (!(EXIST(w) && DISPLAYED(w))) continue;
+      if (!(EXIST(w))) continue;
 
-      if (!bFullScreen && bPressed) { const bool selected = IS_INSIDE(w, mouse); PTR(w)->Focus(SELECTED(w) = selected); }
-      if (SELECTED(w)) PTR(w)->Process();
+      if (IS_INSIDE(w, mouse)) PTR(w)->Preprocess();
+      if (bPressed && DEPTH(w)) PTR(w)->Focus(SELECTED(w) = IS_INSIDE(w, mouse));
+      if (SELECTED(w) && DEPTH(w) >= window.first) window = std::pair(DEPTH(w), PTR(w));
     }
 
-    for (auto& w : windows) if (EXIST(w) && DISPLAYED(w) && IS_INSIDE(w, mouse)) PTR(w)->Preprocess();
+    if (window.second != nullptr) window.second->Process();
   }
 
   void Draw() override {
@@ -73,18 +73,22 @@ public:
     // if (editor.first != nullptr) vFuture.push_back(std::async(&Editor::Editor::Draw, editor.first, GameEngine)); 
 
     // for(auto& future : vFuture) future.wait();
+    windows.sort([](const auto& a, const auto& b) { return DEPTH(a) < DEPTH(b); });
 
-    for (auto& w : windows) if (EXIST(w) && DISPLAYED(w)) PTR(w)->Draw();
+    for (auto& w : windows) {
+      if (!(EXIST(w) && DEPTH(w))) continue;
+      GameEngine->FillRect(PTR(w)->absolute, PTR(w)->size, Color::BLACK);
+      PTR(w)->Draw();
+    }
 
     // if (mode == NORMAL) return;
     // if (cmd.size() && cmd.back() == 'q' && !search.bEnabled)
-    if (bDrawWindowIndex) {
-      for (auto& w : windows) {
-        if (IS_NULL(w) || !SIZE(w).x || !SIZE(w).y) continue;
+    if (!bDrawWindowIndex) return;
+    for (auto& w : windows) {
+      if (IS_NULL(w) || !SIZE(w).x || !SIZE(w).y) continue;
 
-        const auto& color = SELECTED(w) ? Color::BLUE : Color::RED;
-        GameEngine->DrawString(POS(w), std::string(1, '0' + WINDOW(w)), color, 3);
-      }
+      const auto& color = SELECTED(w) ? Color::BLUE : Color::RED;
+      GameEngine->DrawString(POS(w), std::string(1, '0' + WINDOW(w)), color, 3);
     }
     // if (cmd.size() && cmd.back() == 'w' && !search.bEnabled) Highlight(GameEngine);
   }
@@ -106,8 +110,11 @@ public:
   // inline void Command(Int2Type<T>) {}
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>) { 
-    // FIXME: Impl this ....
-    // for (auto& w : windows) if (EXIST(w) && SELECTED(w)) { bFullScreen = (ZOOMED(w) ^= true); PTR(w)->Select(bFullScreen ? std::pair(absolute, size) : DIMENSION(w)); }
+    for (auto& w : windows) {
+      if (!(EXIST(w) && SELECTED(w))) continue;;
+      PTR(w)->Select(DEPTH(w) == ZOOMED ? std::pair(absolute, size) : DIMENSION(w));
+      DEPTH(w) = DEPTH(w) == ZOOMED ? NORMAL : ZOOMED; 
+    }
     return nullptr;
   }
 
@@ -118,16 +125,12 @@ public:
     auto window = Find("bindings");
     if (window == nullptr) return nullptr;
 
-    printf("HERE\n");
-
     // int32_t selected = 0;
     // auto popup = std::dynamic_pointer_cast<>(PTR(*bindings));
 
     if (SELECTED(*window)) {
-
-      // NOTE: Temp solution
-      // Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
-      PTR(*window)->Focus(DISPLAYED(*window) = SELECTED(*window) = false);
+      for (auto& w : windows) if (nWindow == WINDOW(w)) PTR(w)->Focus(SELECTED(w) = true);
+      PTR(*window)->Focus(SELECTED(*window) = false); DEPTH(*window) = HIDDEN;
       return nullptr;
     }
 
@@ -144,8 +147,8 @@ public:
     std::vector<std::string> commands = this->Combinations(&GetCommands());
 
     for (auto& w : windows) {
-      if (!SELECTED(w)) { DISPLAYED(w) = false; continue; }
-      else PTR(w)->Focus(DISPLAYED(w) = SELECTED(w) = false);
+      if (!SELECTED(w)) continue;
+      else nWindow = WINDOW(w), PTR(w)->Focus(SELECTED(w) = false);
 
       const auto combinations = this->Combinations(&PTR(w)->GetCommands());
       commands.insert(commands.end(), combinations.begin(), combinations.end());
@@ -159,7 +162,7 @@ public:
     auto popup = Utils::Cast<::Window::Popup>(PTR(*window));
     auto vim = Utils::Cast<Editor::Vim>(popup->window);
 
-    vim->Load(commands); popup->Focus(DISPLAYED(*window) = SELECTED(*window) = true);
+    vim->Load(commands); popup->Focus(SELECTED(*window) = true); DEPTH(*window) = 2;
     
     // NOTE: Temp solution
     // Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
@@ -183,11 +186,6 @@ public:
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::SPACE>) { 
-    GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); 
-    return nullptr;
-  }
-
-  ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::C>) { 
     GameEngine->Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>()); 
     return nullptr;
   }
@@ -300,7 +298,7 @@ public:
 //   }
 
 public:
-  WindowT<::Window::Window>* Find(std::string id) {
+  WindowT* Find(std::string id) {
     for (auto& w : windows) if (EXIST(w) && PTR(w)->windowId == id) return &w;
     return nullptr;
   }
@@ -310,12 +308,11 @@ public:
 
   inline void Push() {}
   
-  template<class T>
-  inline void Push(WindowInitT<T> b) { windows.push_back(WindowT<::Window::Window>(false, std::get<1>(b), std::get<0>(b), std::get<2>(b), ++nWindows)); }
+  inline void Push(WindowInitT b) { windows.push_back(WindowT(false, std::get<1>(b), std::get<0>(b), std::get<2>(b), windows.size() + 1)); }
 
 public:
   // inline bool IsActive() { return mode == COMMAND; }
-  inline bool IsActive() { return false; } // FIXME:?????????
+  // inline bool IsActive() { return false; } // FIXME:?????????
   inline olc::vi2d GetSize() { return olc::vi2d(size.x, size.y); }
   inline std::string GetName() {
     for (const auto& w: windows) if (EXIST(w) && SELECTED(w)) return PTR(w)->windowId;
@@ -326,12 +323,10 @@ public:
   const ::Window::StrokeT<>& GetCommands() const override { return Panel::commands; }
 
 private:
-  // ModeT mode = NORMAL;
-  int32_t nWindows = 0;
-  bool bFullScreen = false;
   bool bDrawWindowIndex = false;
 
-  std::list<WindowT<::Window::Window>> windows;
+  int32_t nWindow = 0;
+  std::list<WindowT> windows;
   static const ::Window::StrokeT<> commands;
 };
 
@@ -347,8 +342,6 @@ inline const Window::StrokeT<> Panel::commands = ::Window::StrokeT<>::Init({
       { Int2Type<olc::Key::K5>(), [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
 
       { Int2Type<olc::Key::SPACE>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
-      // { Int2Type<olc::Key::A>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
-      { Int2Type<olc::Key::C>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
       { Int2Type<olc::Key::D>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
       { Int2Type<olc::Key::Q>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },
       { Int2Type<olc::Key::Z>(),  [](void* self, auto... keys) { return static_cast<Panel*>(self)->Process(keys...); } },

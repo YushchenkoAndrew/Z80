@@ -22,7 +22,7 @@ private:
 
 public:
   App(LuaScript lua): lua(std::move(lua)) { sAppName = "Z80 Emulator"; }
-  ~App() { if (sync.second != nullptr && sync.second->joinable()) sync.second->join(); }
+  ~App() { if (sync.second != nullptr && sync.second->joinable()) sync.second->join(); Registry::Shutdown(); }
 
   bool OnUserCreate() override {
     Registry::Initialize(this, lua);
@@ -44,7 +44,7 @@ public:
 
         auto instance = Registry::GetInstance(name);
         if (!instance) fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
-        else panels[index]->Push(std::tuple(instance, true, std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
+        else panels[index]->Push(WindowInitT(instance, lua.GetOr(p + ".depth", 1), std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
       }
     }
 
@@ -88,9 +88,7 @@ public:
     this->vKeyCombination.clear();
   }
 
-  bool OnUserDestroy() override { Registry::Shutdown(); return true; }
   bool OnUserUpdate(float fElapsedTime) override {
-	  Clear(Color::BLACK);
     // AnyType<-1, float>::GetValue() = fElapsedTime;
 
     foreach<KeyEvent, void>::Process(this);
@@ -114,14 +112,17 @@ public:
     if (bPressed && mouse.x > 0 && mouse.y > nHeight - vStep.y && mouse.x < nWidth && mouse.y < nHeight) {
       auto pos = mouse / vStep;
 
-      for (int32_t i = 0, x = 2, length = (int32_t)panels[i]->GetName().size() + 2; i < panels.size(); length = (int32_t)panels[i]->GetName().size() + (int32_t)std::log10(i++) + 2, x += length + 1) {
-        if (pos.x >= x && pos.x <= x + length + 1) return Event(Int2Type<PANEL_SELECT_CALLBACK>(), i + 1);
+      int32_t x = vStep.x * 2;
+      for (int32_t i = 0; i < (int32_t)panels.size(); i++) {
+        const auto w = GetTextSize(std::to_string(i + 1) + " " + panels[i]->GetName()).x;
+        if (mouse.x >= x && mouse.x < x + w + vStep.x * 2) return Event(Int2Type<PANEL_SELECT_CALLBACK>(), i + 1);
+        x += w + vStep.x * 2;
       }
     }
   }
 
   void Draw() {
-    panels[panel]->Draw(); 
+    Clear(Color::BLACK); panels[panel]->Draw(); 
 
     const auto nWidth = ScreenWidth();
     const auto nHeight = ScreenHeight();
@@ -133,7 +134,7 @@ public:
     const auto& cmd = Command();
     DrawString(pos + olc::vi2d(nWidth - ((int32_t)cmd.size() + 2) * vStep.x, vStep.y), cmd, Color::DARK_GREY);
 
-    auto color = panels[panel]->IsActive() ? Color::DARK_YELLOW : Color::DARK_GREEN;
+    auto color = vKeyCombination.size() || fnStrokeAction != nullptr ? Color::DARK_YELLOW : Color::DARK_GREEN;
     FillRect(pos - olc::vi2d(0, 2), olc::vi2d(vStep.x * 2, vStep.y - 2), color);
     DrawString(pos + olc::vi2d(vStep.x / 2, 0), std::to_string(panel + 1), Color::DARK_GREY);
     pos.x += vStep.x * 2;
@@ -168,10 +169,9 @@ public:
 
 
   void Event(Int2Type<PROGRAM_EXIT>)               override { bExec = false; }
-  void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>)    override { Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); Event(Int2Type<DEBUG_RESET_CALLBACK>()); }
-  void Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Debug(); Registry::Z80->Addr(); Registry::Z80->Reset(); }
+  void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>)    override { Event(Int2Type<DEBUG_RESET_CALLBACK>()); }
   void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Normal(); }
-  void Event(Int2Type<DEBUG_RESET_CALLBACK>)       override { Registry::Z80->Addr(); Registry::Z80->Reset(); }
+  void Event(Int2Type<DEBUG_RESET_CALLBACK>)       override { Registry::Z80->Restart(Bus::Z80::CPU::DEBUG);  }
 
   void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override { this->vKeyEventListeners.insert(static_cast<Window::KeyboardEvent*>(ptr)); }
   void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,void* ptr) override { this->vKeyEventListeners.erase(static_cast<Window::KeyboardEvent*>(ptr)); }
@@ -181,9 +181,7 @@ public:
     std::cout << "NEXT_DEBUG_STEP_CALLBACK\n";
     #endif
 
-    // if (!Registry::Z80->IsRunning()) return;
-    if (!Registry::Z80->IsDebug()) return;
-    else Registry::Z80->Continue();
+    if (Registry::Z80->IsDebug()) Registry::Z80->Continue(); 
 
     const auto addr = Registry::Z80->Addr();
     Registry::W27C512->Move2Addr(addr);
@@ -209,13 +207,21 @@ public:
     std::cout << "EDITOR_BREAKPOINT_CALLBACK [Ln " << cursor.y << ", Col " << cursor.x << "]\n";
     #endif
 
-    if (!Registry::Z80->IsDebug()) Event(Int2Type<DEBUG_RESET_CALLBACK>());
-    else Registry::Z80->Normal();
+    const auto entries = Registry::Interpreter->toMemory(Registry::Editor->File(), cursor);
+    if (entries.empty()) return;
 
-    for (auto& e : Registry::Interpreter->toMemory(Registry::Editor->File(), cursor)) {
-      Registry::Z80->Breakpoint(e.address);
-      Registry::Editor->Breakpoint(cursor.y);
-    }
+    uint32_t addr = entries.front().address; // lowest one: a macro call expands to many entries
+    for (const auto& e : entries) addr = std::min<uint32_t>(addr, e.address);
+
+    const auto src = Registry::Interpreter->toSource(addr);
+    const bool bHasBreakpoint = Registry::Z80->HasBreakpoint(addr);
+
+    Registry::Z80->Breakpoint(addr);
+    Registry::Editor->Breakpoint(src ? src->pos.y : cursor.y);
+    if (bHasBreakpoint) return;
+
+    if (Registry::Z80->IsDebug()) Registry::Z80->Normal(); // run on to the new breakpoint
+    else Registry::Z80->Restart(); // start over and run to it
   }
 
   void Event(Int2Type<MEMORY_GOTO_CALLBACK>, int32_t index) override { 
@@ -389,9 +395,9 @@ int main() {
   // TODO: Create defs to load colors from lua
   // Defs::Load(&luaConfig);
 
-  const int32_t width  = lua.GetOr("WIDTH", 700);
-  const int32_t height  = lua.GetOr("HIGHT", 412);
-  const int32_t px = lua.GetOr("PIXELS", 2);
+  const int32_t width   = lua.GetOr("WIDTH",  700);
+  const int32_t height  = lua.GetOr("HEIGHT", 412);
+  const int32_t px      = lua.GetOr("PIXELS", 2);
 
   App app(std::move(lua));
   if (app.Construct(width, height, px, px)) app.Start();

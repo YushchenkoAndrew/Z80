@@ -100,9 +100,15 @@ private:
     Wait();
 
     while (bExec) {
-      std::this_thread::sleep_for(std::chrono::nanoseconds(clock));   // remove the later sleep
+      if (restart.exchange(false)) {
+        Reset();
+        const bool hit = mode == NORMAL && HasBreakpoint(regPC());   // a breakpoint on 0x0000 works too
+        if (mode != NORMAL || hit) { Park(hit); continue; }
+      }
+
+      std::this_thread::sleep_for(std::chrono::nanoseconds(clock));
       if (cycles > 1) { --cycles; continue; }
-      else cycles = 1;
+      cycles = 1;
 
       if (IFF.first && interrupt.second) {
         IFF.first = IFF.second = false; 
@@ -114,24 +120,18 @@ private:
       }
 
       foreach<Instructions, void>::Process(this, Read());
-      const bool hit = mode == NORMAL && [&] { Utils::Lock l(mutex); return IsBreakpoint(regPC()); }();
+      if (restart) continue; // handle it at the top, don't park first
 
-      if (mode == NORMAL && !hit) continue;
-      { std::lock_guard<std::mutex> l(sync.first); frozen = true; resume = false; }  // parked state is visible BEFORE anyone is told
-
-      if (hit) { mode = FREEZE; GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>()); }
-      { std::lock_guard<std::mutex> l(callback.first); stepped = true; }
-
-      callback.second.notify_all(); Wait();
-      // if (mode == NORMAL) {
-      //   { Utils::Lock l(mutex); if (!IsBreakpoint(regPC())) continue; }
-      //   mode = FREEZE; GameEngine->Event(Int2Type<ATTACH_DEBUG_MODE_CALLBACK>());
-      // }
-
-      // callback.second.notify_all(); Wait();
+      const bool hit = mode == NORMAL && HasBreakpoint(regPC());
+      if (mode != NORMAL || hit) Park(hit); 
     }
   }
 
+  void Park(bool hit) {
+    { std::lock_guard<std::mutex> l(sync.first); frozen = true; resume = false; } // visible BEFORE anyone is told
+    if (hit) mode = DEBUG; // FREEZE is no longer needed
+    stopped = true; Wait();
+  }
 
 private:
   inline uint16_t Word() { const uint8_t lo = Read(); return lo | (Read() << 8); }
@@ -197,7 +197,7 @@ public:
 
 
   inline void Process(Int2Type<Instruction::NOP>) { cycles = 4; }
-  inline void Process(Int2Type<Instruction::HALT>) { cycles = 4; std::unique_lock<std::mutex> lock(halt.first); halt.second.wait(lock, [this] { return (IFF.first && interrupt.second) || mode != NORMAL || !bExec; }); }
+  inline void Process(Int2Type<Instruction::HALT>) { cycles = 4; std::unique_lock<std::mutex> lock(halt.first); halt.second.wait(lock, [this] { return (IFF.first && interrupt.second) || mode != NORMAL || restart || !bExec; }); }
   
   inline void Process(Int2Type<Instruction::DI>) { cycles = 1; IFF.first = IFF.second = false; }
   inline void Process(Int2Type<Instruction::EI>) { cycles = 1; IFF.first = IFF.second = true; }
@@ -1320,44 +1320,40 @@ private:
    */
   inline bool IsParity(uint8_t x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (~x) & 1; }
 
+  inline bool IsBreakpoint(uint16_t addr) {
+    for (auto& bp : breakpoints) if (addr == bp) return true;
+    return false;
+  }
+
 public:
+  inline void Restart(ModeT m = NORMAL) {
+    { std::lock_guard<std::mutex> l(halt.first); restart = true; mode = m; }
+    halt.second.notify_all(); // wake HALT
+    Continue(); // wake a parked CPU
+  }
+
+  inline bool HasBreakpoint(uint16_t addr) { Utils::Lock l(mutex); return IsBreakpoint(addr); }
+  inline void Breakpoint(uint16_t addr) {
+    Utils::Lock l(mutex);
+    if (IsBreakpoint(addr)) breakpoints.remove(addr);
+    else breakpoints.push_back(addr);
+  }
+
   inline void Wait() {
     std::unique_lock<std::mutex> l(sync.first);
     sync.second.wait(l, [this] { return resume || !bExec; });
     resume = frozen = false;
   }
 
-  inline void Continue() {
-    { std::lock_guard<std::mutex> l(callback.first); stepped = false; }
-    { std::lock_guard<std::mutex> l(sync.first); if (frozen) resume = true; }   // ignored while the CPU is running
-    sync.second.notify_all();
-  }
-
-  inline uint16_t Addr() {
-    std::unique_lock<std::mutex> l(callback.first);
-    callback.second.wait(l, [this] { return stepped || !bExec; });
-    stepped = false;
-    return regPC();
-  }
-  // inline void Continue() { { std::lock_guard<std::mutex> l(sync.first); resume = true; } sync.second.notify_all(); }
-  
 public:
   inline bool IsDebug() { return mode == DEBUG; }
-  inline void Debug() { { std::lock_guard<std::mutex> lock(halt.first); mode = DEBUG; } halt.second.notify_all(); }
+  inline void Continue() { { std::lock_guard<std::mutex> l(sync.first); if (frozen) resume = true; } sync.second.notify_all(); }
+  inline void Debug()  { { std::lock_guard<std::mutex> lock(halt.first); mode = DEBUG; } halt.second.notify_all(); }
   inline void Normal() { mode = NORMAL; Continue(); }
   inline ModeT GetMode() { return mode; }
 
+  inline uint16_t Addr()  { return regPC(); }
   inline uint16_t Stack() { return regSP(); }
-  inline bool IsBreakpoint(uint16_t addr) {
-    for (auto& bp : breakpoints) if (addr == bp) return true;
-    return false;
-  }
-
-  inline void Breakpoint(uint16_t addr) {
-    Utils::Lock l(mutex);
-    if (IsBreakpoint(addr)) breakpoints.remove(addr);
-    else breakpoints.push_back(addr);
-  }
 
 private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
@@ -1376,9 +1372,13 @@ private:
   std::atomic<bool> bExec = true;
   std::array<std::atomic<uint16_t>, 13> reg;
 
-  bool frozen = true;    // CPU is parked, or about to park (guarded by sync.first)
-  bool resume = false;   // guarded by sync.first  (keep your atomic if you like)
-  bool stepped = false;  // guarded by callback.first
+  bool frozen = true;  // CPU is parked, or about to park (guarded by sync.first)
+  bool resume = false; // guarded by sync.first  (keep your atomic if you like)
+
+  // members
+  std::atomic<bool> restart = false;   // UI -> CPU: reset before the next instruction
+  std::atomic<bool> stopped = false;   // CPU -> UI: "I parked", consumed by TakeStop()
+
 
   std::mutex mutex;
   std::list<uint16_t> breakpoints;

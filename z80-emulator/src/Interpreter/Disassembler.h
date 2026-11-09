@@ -37,7 +37,7 @@ public:
         word = word | (advance() << (j * 8));
       }
       
-      phrase = sprintf(phrase, word);
+      phrase = format(phrase, word);
     }
 
     return phrase;
@@ -69,7 +69,7 @@ public:
     const uint8_t d = advance(), op = advance();
     auto it = bitTable.find(op);
     if (it == bitTable.end()) return db({ prefix, opcode, d, op });
-    return sprintf(it->second.first, d);
+    return format(it->second.first, d);
   }
 
   static std::string db(std::vector<uint8_t> bytes) {
@@ -79,33 +79,54 @@ public:
     return ss.str();
   }
 
-  std::string sprintf(std::string str, int32_t byte) {
-    for (int32_t i = 0; i < str.size(); i++) {
-      if (str[i] != '%' && i + 1 < str.size()) continue;
-      std::stringstream ss;
+  // std::string sprintf(std::string str, int32_t byte) {
+  //   for (int32_t i = 0; i < str.size(); i++) {
+  //     if (str[i] != '%' && i + 1 < str.size()) continue;
+  //     std::stringstream ss;
 
-      int32_t size = 2; int32_t startAt = i;
+  //     int32_t size = 2; int32_t startAt = i;
 
-      if (str[i + 1] != 'd' || str[i + 1] != 'c' || str[i + 1] != 'x') {
-        ss << std::setfill(str[++i]); size++;
+  //     if (str[i + 1] != 'd' || str[i + 1] != 'c' || str[i + 1] != 'x') {
+  //       ss << std::setfill(str[++i]); size++;
 
-        if (i + 1 < str.size() && str[i + 1] >= '0' && str[i + 1] <= '9') {
-          ss << std::setw(str[++i] - '0'); size++;
-        }
-      }
+  //       if (i + 1 < str.size() && str[i + 1] >= '0' && str[i + 1] <= '9') {
+  //         ss << std::setw(str[++i] - '0'); size++;
+  //       }
+  //     }
 
-      switch (str[i + 1]) {
-        case 'd': ss << byte; break;
-        case 'c': ss << (char)byte; break;
-        case 'x': ss << std::hex << std::uppercase << byte; break;
-        default: return str;
-      }
+  //     switch (str[i + 1]) {
+  //       case 'd': ss << byte; break;
+  //       case 'c': ss << (char)byte; break;
+  //       case 'x': ss << std::hex << std::uppercase << byte; break;
+  //       default: return str;
+  //     }
       
-      str.replace(startAt, size, ss.str());
-      return str;
+  //     str.replace(startAt, size, ss.str());
+  //     return str;
+  //   }
+
+  //   return str;
+  // }
+
+  static std::string format(std::string str, int32_t value) {
+    const auto at = str.find('%');
+    if (at == std::string::npos) return str;
+
+    size_t end = at + 1; char fill = ' '; int width = 0;
+    if (end < str.size() && str[end] == '0') fill = str[end++];
+
+    while (end < str.size() && isdigit((unsigned char)str[end])) width = width * 10 + (str[end++] - '0');
+    if (end >= str.size()) return str;
+
+    std::stringstream ss; ss << std::setfill(fill) << std::setw(width);
+    switch (str[end]) {
+      case 'd': ss << value; break;
+      case 'c': ss << (char)value; break;
+      case 'x': ss << std::hex << std::uppercase << value; break;
+      default: return str;
     }
 
-    return str;
+    return str.replace(at, end - at + 1, ss.str());
   }
 
   /// disassembly line (1-based) -> bytes it covers
