@@ -20,7 +20,14 @@ public:
   //   vim.Load(lines = dst); vim.Process(Int2Type<olc::Key::G>(), Int2Type<olc::Key::G>());
   // }
 
-  void Select(DimensionT dimensions) override { ::Window::Window::Select(dimensions); window->Select({ dimensions.first, olc::vi2d()}); }
+  void Select(DimensionT dimensions) override {
+    const auto absolute = dimensions.first + vOffset;
+    const auto size = dimensions.second - vOffset;
+
+    ::Window::Window::Select({ absolute, size });
+    window->Select({ absolute, olc::vi2d()});
+  }
+
   void Focus(bool state) override {
     ::Window::KeyboardEvent::Focus(state); window->Focus(state);
 
@@ -34,9 +41,15 @@ public:
   void Draw() override {
     if (!window->size.x || !window->size.y) return;
 
-    GameEngine->FillRect(absolute, size, Color::BLACK);
-    // TODO: impl popup style ....
+    constexpr auto STEP = 5;
+    const auto width = olc::vi2d(size.x, 0);
+    const auto height = olc::vi2d(0, size.y);
 
+    GameEngine->DrawRect(absolute, absolute + size, Color::DARK_GREY);
+    GameEngine->DrawRect(absolute + olc::vi2d(STEP, 0),         height + olc::vi2d(2, absolute.y), Color::BLACK);
+    GameEngine->DrawRect(absolute + olc::vi2d(STEP, 0) + width, height + olc::vi2d(2, absolute.y), Color::BLACK);
+    GameEngine->DrawRect(absolute + olc::vi2d(0, STEP),         width +  olc::vi2d(absolute.x, 2), Color::BLACK);
+    GameEngine->DrawRect(absolute + olc::vi2d(0,    0) + height,width +  olc::vi2d(absolute.x, 2), Color::BLACK);
 
     window->Draw();
   }
@@ -45,8 +58,8 @@ public:
   std::shared_ptr<::Window::Window> window;
 
 private:
-  const olc::vi2d vStep = olc::vi2d(8, 12);
-  const olc::vi2d vOffset = olc::vi2d(0, 0);
+  const olc::vi2d vStep = olc::vi2d(4, 4);
+  const olc::vi2d vOffset = olc::vi2d(12, 8);
 
   std::vector<std::string> lines;
 };

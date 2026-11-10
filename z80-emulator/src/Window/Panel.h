@@ -37,7 +37,7 @@ public:
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto...) { return this->Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::OEM_2>()); } }
     });
 
-    Push(WindowInitT(std::move(popup), HIDDEN, std::pair(olc::vi2d(0, 0), olc::vi2d(engine->ScreenWidth(), engine->ScreenHeight()))));
+    Push(WindowInitT(std::move(popup), HIDDEN, std::pair(olc::vi2d(0, 0), olc::vi2d(engine->ScreenWidth() - 24, engine->ScreenHeight() - 40))));
   }
 
   // void Initialize() {
@@ -77,7 +77,7 @@ public:
 
     for (auto& w : windows) {
       if (!(EXIST(w) && DEPTH(w))) continue;
-      GameEngine->FillRect(PTR(w)->absolute, PTR(w)->size, Color::BLACK);
+      GameEngine->FillRect(PTR(w)->absolute, PTR(w)->absolute + PTR(w)->size, Color::BLACK);
       PTR(w)->Draw();
     }
 

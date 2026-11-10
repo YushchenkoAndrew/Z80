@@ -51,7 +51,7 @@ public:
     const auto nEndX = nStartX + size.x;
     const auto nEndY = nStartY + size.y;
 
-    const auto offset = (mouse - absolute - vOffset) / vStep + this->offset - pos - olc::vi2d(1 , 1);
+    const auto offset = (mouse - absolute - vOffset) / vStep + this->offset - pos - olc::vi2d(1 , 0);
 
     if (mouse.x > nStartX && mouse.y > nStartY && mouse.x < nEndX   && mouse.y < nEndY) MoveTo(offset);
     if (mouse.x > nZeroX  && mouse.y > nStartY && mouse.x < nStartX && mouse.y < nEndY) GameEngine->Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>(), olc::vi2d(std::max(pos.x + offset.x, 0), std::max(pos.y + offset.y, 0))); 
@@ -73,7 +73,7 @@ public:
   }
 
   void Draw() override {
-    olc::vi2d zero = olc::vi2d(absolute.x + vOffset.x, absolute.y + (pos.y + 1 - offset.y) * vStep.y + vOffset.y);
+    olc::vi2d zero = olc::vi2d(absolute.x + vOffset.x, absolute.y + (pos.y - offset.y) * vStep.y + vOffset.y);
     GameEngine->FillRect(zero, { size.x, 8 }, Color::VERY_DARK_GREY);
 
     DrawCursor(); DrawText(); DrawCommand();
@@ -83,7 +83,7 @@ public:
     const auto nHeight = size.y - vStep.y;
     for (int32_t i = 0, max = nHeight / vStep.y; i < max; i++) {
       auto str = std::to_string(offset.y + i + 1);
-      auto pos = olc::vi2d(absolute.x + vOffset.x - (int32_t)str.size() * vStep.x, absolute.y + (i + 1) * vStep.y + vOffset.y);
+      auto pos = olc::vi2d(absolute.x + vOffset.x - (int32_t)str.size() * vStep.x, absolute.y + i * vStep.y + vOffset.y);
       auto color =
         IsBreakpoint(offset.y + i) ? Color::RED : 
         (this->pos.y - offset.y == i ? Color::GREY : Color::DARK_GREY);
@@ -93,7 +93,7 @@ public:
 
     if (fBlink > 0.6f) return;
     auto size = olc::vi2d(1, 1);
-    auto pos = absolute + (this->pos + olc::vi2d(1, 1) - offset) * vStep + vOffset - olc::vi2d(1, 2);
+    auto pos = absolute + (this->pos + olc::vi2d(1, 0) - offset) * vStep + vOffset - olc::vi2d(1, 2);
 
     switch (mode) {
       case NORMAL:  size *= olc::vi2d(8, 10); break;
@@ -131,7 +131,7 @@ public:
     if (const auto* t = TokenUnderCursor()) { hover = definitionOf(t->lexeme); hoverAt = { t->col - 1, t->line - 1 }; }
 
     for (int32_t i = offset.y; i < lines.size(); i++) {
-      olc::vi2d pos = absolute + (olc::vi2d(1, i + 1) - offset) * vStep + vOffset;
+      olc::vi2d pos = absolute + (olc::vi2d(1, i) - offset) * vStep + vOffset;
 
       if (pos.x > absolute.x + vOffset.x + size.x + vStep.x) continue;
       if (pos.y > absolute.y + vOffset.y + nHeight) break;
@@ -159,8 +159,8 @@ public:
 
   void DrawCommand() {
     const auto nHeight = size.y - vStep.y;
-    auto pos = olc::vi2d(absolute.x, absolute.y + nHeight + vOffset.y);
-    GameEngine->FillRect(pos - olc::vi2d(0, 2), { size.x + vOffset.x, 10 }, Color::VERY_DARK_GREY);
+    auto pos = olc::vi2d(absolute.x, absolute.y + nHeight + vOffset.y + 3);
+    GameEngine->FillRect(pos + olc::vi2d(1, -2), { size.x + vOffset.x, 10 }, Color::VERY_DARK_GREY);
     GameEngine->DrawString(pos + olc::vi2d(vStep.x, 0), GetMode(), Color::DARK_GREY);
 
     auto humanizedPos = GetHumanizedPos();
@@ -772,7 +772,7 @@ private:
   std::list<int32_t> breakpoints;
 
   const olc::vi2d vStep = olc::vi2d(8, 12);
-  const olc::vi2d vOffset = olc::vi2d(24, 16);
+  const olc::vi2d vOffset = olc::vi2d(24, 8);
 
   static const ::Window::StrokeT<> commands;
 };
