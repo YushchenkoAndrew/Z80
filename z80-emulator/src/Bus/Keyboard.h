@@ -2,14 +2,15 @@
 
 #include "src/Bus/Device.h"
 #include "src/Utils/Utils.h"
-#include "src/Window/Event/KeyboardEvent.h"
+#include "src/Window/KeyEventListener.h"
 #include "src/Window/Window.h"
 #include <cstdint>
+#include <mutex>
 
 namespace Bus {
-class Keyboard : public Window::KeyboardEvent, public Window::Window, public Device {
+class Keyboard : public Window::KeyEventListener, public Window::Window, public Device {
 public:
-  Keyboard(PixelGameEngine* engine, std::string id): ::Window::Base(engine), ::Window::Window(engine, std::move(id)), ::Window::KeyboardEvent(engine) {}
+  Keyboard(PixelGameEngine* engine, std::string id): ::Window::Base(engine), ::Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {}
 
   void Process() override {
     const auto mouse = GameEngine->GetMousePos();

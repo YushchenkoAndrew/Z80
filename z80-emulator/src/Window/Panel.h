@@ -6,7 +6,7 @@
 #include "src/Utils/Utils.h"
 #include "src/Window/Popup.h"
 #include "src/Window/Window.h"
-#include "src/Window/Event/KeyboardEvent.h"
+#include "src/Window/KeyEventListener.h"
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -27,11 +27,11 @@ using WindowInitT = std::tuple<std::shared_ptr<::Window::Window>, uint8_t, ::Win
 // #define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
 #define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
         
-class Panel : public Window::KeyboardEvent, public Window::Window {
+class Panel : public Window::KeyEventListener, public Window::Window {
   enum DepthT { HIDDEN, NORMAL, ZOOMED = 0xFF };
 
 public:
-  Panel(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {
+  Panel(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyEventListener(engine) {
     auto popup = std::make_shared<::Window::Popup>(engine, "bindings", std::move(std::make_shared<Editor::Vim>(engine)));
     popup->bindings = ::Window::StrokeT<>::Init({
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto...) { return this->Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::OEM_2>()); } }

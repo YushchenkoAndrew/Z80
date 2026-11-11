@@ -7,7 +7,7 @@
 #include "src/Interpreter/Disassembler.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
-#include "src/Window/Event/KeyboardEvent.h"
+#include "src/Window/KeyEventListener.h"
 #include <algorithm>
 #include <cstdint>
 
@@ -26,16 +26,16 @@ namespace Bus {
  *  adverb      -> 'dd' | 'yy' | 'p' | 'P' | 'x'
  *  phrase      -> 'C' | ' ' | 'i' | 'a' | 'u' | 'U'
  */
-class Memory : public Window::KeyboardEvent, public Window::Window, public Device {
+class Memory : public Window::KeyEventListener, public Window::Window, public Device {
 public:
   enum ModeT { NORMAL, CHARACTER, DISASSEMBLE };
 
-  // Memory(): mode(NORMAL), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
-  // Memory(ModeT m): mode(m), bus(nullptr), Window::Window(nullptr), ::Window::KeyboardEvent(nullptr) {}
+  // Memory(): mode(NORMAL), bus(nullptr), Window::Window(nullptr), ::Window::KeyEventListener(nullptr) {}
+  // Memory(ModeT m): mode(m), bus(nullptr), Window::Window(nullptr), ::Window::KeyEventListener(nullptr) {}
   // Memory(int32_t s): pages(s, 0), bus(nullptr) {}
 
   // Memory(Bus* b): bus(b), Window::Window(nullptr),{}
-  Memory(PixelGameEngine* engine, std::string id, uint32_t size, bool bAllowGoto = false): Window::Base(engine), Window::Window(engine, id), ::Window::KeyboardEvent(engine), memory(size, 0), disassembler(memory), vim(GameEngine), bAllowGoto(bAllowGoto) {
+  Memory(PixelGameEngine* engine, std::string id, uint32_t size, bool bAllowGoto = false): Window::Base(engine), Window::Window(engine, id), ::Window::KeyEventListener(engine), memory(size, 0), disassembler(memory), vim(GameEngine), bAllowGoto(bAllowGoto) {
     vim.bindings = ::Window::StrokeT<>::Init({
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto... keys) { return this->Process(keys...); } }
     });
@@ -52,9 +52,9 @@ public:
 
   void Focus(bool state) override { 
     if (state) {
-      if (mode != DISASSEMBLE) ::Window::KeyboardEvent::Focus(true), vim.Focus(false);
-      else ::Window::KeyboardEvent::Focus(false), vim.Focus(true);
-    } else ::Window::KeyboardEvent::Focus(false), vim.Focus(false);
+      if (mode != DISASSEMBLE) ::Window::KeyEventListener::Focus(true), vim.Focus(false);
+      else ::Window::KeyEventListener::Focus(false), vim.Focus(true);
+    } else ::Window::KeyEventListener::Focus(false), vim.Focus(false);
   }
 
   // TODO: Maybe add ability to set local state with initialization

@@ -2,7 +2,7 @@
 
 #include "src/Defs.h"
 #include "src/Window/Base.h"
-#include "src/Window/Event/StrokeAction.h"
+#include "src/Window/Types/StrokeAction.h"
 
 namespace Window {
   typedef std::pair<olc::vi2d, olc::vi2d> DimensionT;

@@ -4,7 +4,7 @@
 #include "src/Interpreter/Lexer.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/Base.h"
-#include "src/Window/Event/KeyboardEvent.h"
+#include "src/Window/KeyEventListener.h"
 #include "src/Window/Window.h"
 #include <algorithm>
 #include <optional>
@@ -25,11 +25,11 @@ namespace Editor {
  *  adverb      -> 'dd' | 'cc' | 'yy' | 'p' | 'P'
  *  phrase      -> 'i' | 'I' | 'a' | 'A' | 'o' | 'O' | 'C' | 'D' | 'R' | ' ' | 'u' | 'U'
  */
-class Vim : public Window::KeyboardEvent, public Window::Window {
+class Vim : public Window::KeyEventListener, public Window::Window {
 public:
   enum ModeT { NORMAL, INSERT, REPLACE };
 
-  Vim(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyboardEvent(engine) {}
+  Vim(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyEventListener(engine) {}
 
   void Preprocess() override {
     auto nWheel = GameEngine->GetMouseWheel();

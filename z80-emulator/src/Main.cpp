@@ -173,8 +173,8 @@ public:
   void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) override { Registry::Z80->Normal(); }
   void Event(Int2Type<DEBUG_RESET_CALLBACK>)       override { Registry::Z80->Restart(Bus::Z80::CPU::DEBUG);  }
 
-  void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override { this->vKeyEventListeners.insert(static_cast<Window::KeyboardEvent*>(ptr)); }
-  void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,void* ptr) override { this->vKeyEventListeners.erase(static_cast<Window::KeyboardEvent*>(ptr)); }
+  void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override { this->vKeyEventListeners.insert(static_cast<Window::KeyEventListener*>(ptr)); }
+  void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,void* ptr) override { this->vKeyEventListeners.erase(static_cast<Window::KeyEventListener*>(ptr)); }
 
   void Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>) override {
     #ifdef DEBUG_MODE 
@@ -357,7 +357,7 @@ private:
   std::string Command() {
     std::string result = "";
     for (size_t i = 0; i < vKeyCombination.size(); i++, result += "+") {
-      result += Window::KeyboardEvent::GetKeycode(vKeyCombination[i]);
+      result += Window::KeyEventListener::GetKeycode(vKeyCombination[i]);
     }
 
     return result;
@@ -376,7 +376,7 @@ private:
 
   std::vector<olc::Key> vKeyCombination;
   std::unordered_set<olc::Key> vKeyCombinationHeld;
-  std::unordered_set<Window::KeyboardEvent*> vKeyEventListeners;
+  std::unordered_set<Window::KeyEventListener*> vKeyEventListeners;
   std::function<bool(olc::Key, int32_t)> fnStrokeAction = nullptr;
   int32_t nStrokeIndex = 0;
 
