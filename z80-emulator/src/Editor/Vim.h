@@ -73,13 +73,13 @@ public:
   }
 
   void Draw() override {
-    olc::vi2d zero = olc::vi2d(absolute.x + vOffset.x, absolute.y + (pos.y - offset.y) * vStep.y + vOffset.y);
-    GameEngine->FillRect(zero, { size.x, 8 }, Color::VERY_DARK_GREY);
-
     DrawCursor(); DrawText(); DrawCommand();
   }
     
   void DrawCursor() {
+    // olc::vi2d zero = olc::vi2d(absolute.x + vOffset.x, absolute.y + (pos.y - offset.y) * vStep.y + vOffset.y);
+    // GameEngine->FillRect(zero, { size.x, 8 }, Color::VERY_DARK_GREY);
+
     const auto nHeight = size.y - vStep.y;
     for (int32_t i = 0, max = nHeight / vStep.y; i < max; i++) {
       auto str = std::to_string(offset.y + i + 1);
@@ -91,17 +91,17 @@ public:
       GameEngine->DrawString(pos, str, color);
     }
 
-    if (fBlink > 0.6f) return;
     auto size = olc::vi2d(1, 1);
     auto pos = absolute + (this->pos + olc::vi2d(1, 0) - offset) * vStep + vOffset - olc::vi2d(1, 2);
 
     switch (mode) {
-      case NORMAL:  size *= olc::vi2d(8, 10); break;
-      case INSERT:  size *= olc::vi2d(2, 10); break;
+      case NORMAL:  size *= olc::vi2d(8, 11); break;
+      case INSERT:  size *= olc::vi2d(2, 11); break;
       case REPLACE: size *= olc::vi2d(8,  2); pos += olc::vi2d(0, 10); break;
     }
 
-    GameEngine->FillRect(pos, size, Color::GREY);
+    GameEngine->FillRect(olc::vi2d(absolute.x + vOffset.x, pos.y), { this->size.x, 11 }, Color::VERY_DARK_GREY);
+    if (fBlink <= 0.6f) GameEngine->FillRect(pos, size, Color::GREY);
   }
 
   const Interpreter::Token* TokenUnderCursor() {

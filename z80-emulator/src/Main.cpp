@@ -48,6 +48,22 @@ public:
       }
     }
 
+    Registry::Menu = std::make_shared<Window::Menu>(this, "Menu", 
+     ::Window::MenuT::Init({
+      { "test", [](void* self) { return nullptr; } },
+      { "Hello world", [](void* self) { return nullptr; } },
+      { "Options", {
+        { "Quit", {
+          { "YES", [](void* self) { return nullptr; } },
+          { "NO", [](void* self) { return nullptr; } },
+        
+        },
+      }}
+    }}));
+
+
+    panels[panel]->Push(WindowInitT(Registry::Menu, 1, std::pair(olc::vi2d(20, 20), olc::vi2d(50, 50))));
+
     panels[panel]->Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
     panels[panel]->Focus(true);
 

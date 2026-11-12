@@ -17,6 +17,7 @@
 #include "src/Defs.h"
 #include "src/Editor/Editor.h"
 #include "src/Interpreter/Interpreter.h"
+#include "src/Window/Menu.h"
 #include "src/Window/Window.h"
 #include <memory>
 #include <unordered_set>
@@ -88,6 +89,7 @@ public:
 
   // inline static std::shared_ptr<Editor::Popup>   Bindings;
   inline static std::shared_ptr<Editor::Editor>  Editor;
+  inline static std::shared_ptr<Window::Menu>      Menu;
 
   // inline static std::shared_ptr<Interpreter::Interpreter> Syntax;
   inline static std::shared_ptr<Interpreter::Interpreter> Interpreter;

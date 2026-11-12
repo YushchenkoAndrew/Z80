@@ -41,15 +41,15 @@ public:
   void Draw() override {
     if (!window->size.x || !window->size.y) return;
 
-    constexpr auto STEP = 5;
-    const auto width = olc::vi2d(size.x, 0);
-    const auto height = olc::vi2d(0, size.y);
+    constexpr int32_t STEP = 5;
+    constexpr int32_t GAP  = 2;
 
-    GameEngine->DrawRect(absolute, absolute + size, Color::DARK_GREY);
-    GameEngine->DrawRect(absolute + olc::vi2d(STEP, 0),         height + olc::vi2d(2, absolute.y), Color::BLACK);
-    GameEngine->DrawRect(absolute + olc::vi2d(STEP, 0) + width, height + olc::vi2d(2, absolute.y), Color::BLACK);
-    GameEngine->DrawRect(absolute + olc::vi2d(0, STEP),         width +  olc::vi2d(absolute.x, 2), Color::BLACK);
-    GameEngine->DrawRect(absolute + olc::vi2d(0,    0) + height,width +  olc::vi2d(absolute.x, 2), Color::BLACK);
+    GameEngine->DrawRect(absolute, size - olc::vi2d(1, 1), Color::DARK_GREY);
+
+    GameEngine->FillRect({ absolute.x + STEP,                absolute.y },                       { GAP, size.y }, Color::BLACK);  // left
+    GameEngine->FillRect({ absolute.x + size.x - STEP - GAP, absolute.y },                       { GAP, size.y }, Color::BLACK);  // right
+    GameEngine->FillRect({ absolute.x,                       absolute.y + STEP },                { size.x, GAP }, Color::BLACK);  // top
+    GameEngine->FillRect({ absolute.x,                       absolute.y + size.y - STEP - GAP }, { size.x, GAP }, Color::BLACK); // bottom
 
     window->Draw();
   }
