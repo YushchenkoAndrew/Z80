@@ -62,7 +62,7 @@ public:
     }}));
 
 
-    panels[panel]->Push(WindowInitT(Registry::Menu, 1, std::pair(olc::vi2d(20, 20), olc::vi2d(50, 50))));
+    panels[panel]->Push(WindowInitT(Registry::Menu, 1, std::pair(olc::vi2d(20, 20), olc::vi2d(150, 150))));
 
     panels[panel]->Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
     panels[panel]->Focus(true);

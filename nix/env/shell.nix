@@ -21,6 +21,6 @@ pkgs.mkShell {
     # --preload-file assets/ fails hard if the dir is missing
     make init >/dev/null 2>&1 || true
 
-    echo "C++ Go development environment!"
+    echo "C++ development environment!"
   '';
 }

@@ -20,9 +20,9 @@ PANELS = {
     IMS1423  = { x = WIDTH - 210, y = 392,           width = 210, height = 84 },
   },
   {
-    led      = { x = 10,          y = 15,            width = 490, height = 15 },
-    switch   = { x = 10,          y = 30,            width = 490, height = 15 },
-    hex      = { x = 10,          y = 45,            width = 490, height = 40 },
+    led      = { x = 10,          y = 15,            width = 50,  height = 15 },
+    switch   = { x = 10,          y = 30,            width = 50,  height = 15 },
+    hex      = { x = 10,          y = 45,            width = 50,  height = 40 },
     lcd      = { x = 10,          y = 85,            width = 350, height = HEIGHT - 104 },
     Z80      = { x = WIDTH - 350, y = 25,            width = 140, height = 140 },
     irq      = { x = WIDTH - 350, y = 165,           width = 140, height = 39 },
