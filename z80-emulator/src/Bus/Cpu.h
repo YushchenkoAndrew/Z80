@@ -4,8 +4,11 @@
 #include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
 #include "src/Utils/Utils.h"
+#include "src/Window/Types/MenuAction.h"
 #include "src/Window/Window.h"
+#include "src/Window/Menu.h"
 #include <condition_variable>
+#include <memory>
 #include <string>
 
 namespace Bus {
@@ -25,7 +28,7 @@ namespace Z80 {
 
   #define SIGN(byte) ((byte) & 0x80)
 
-class CPU : public Window::Window, public Device {
+class CPU : public Window::KeyEventListener, public Window::Window, public Device {
 private:
   /**
    * Flags annotation
@@ -46,7 +49,35 @@ private:
 public:
   enum ModeT { NORMAL, DEBUG, FREEZE };
 
-  CPU(PixelGameEngine* engine, std::string id, int32_t c = 1000): Window::Base(engine), Window::Window(engine, std::move(id)), clock(c), runtime(std::thread(&CPU::Runtime, this)) { Reset(); }
+  CPU(PixelGameEngine* engine, std::string id, int32_t c): Window::Base(engine), Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine), hz(c), runtime(std::thread(&CPU::Runtime, this)) {
+    Reset();
+    menu = std::make_unique<::Window::Menu>(
+      engine,
+      ::Window::MenuT::Init({
+      { "Run", {
+        { "Continue / Pause", [this](void*) { return this->IsDebug() ? this->Normal() : this->Debug(), nullptr; } },
+        { "Restart", [this](void*) { return this->Restart(), nullptr; } },
+      } },
+      { "Clock", {
+        { "Max",    [this](void*) { return this->hz = 0,       nullptr; } },
+        { "4 MHz",  [this](void*) { return this->hz = 4000000, nullptr; } },
+        { "1 MHz",  [this](void*) { return this->hz = 1000000, nullptr; } },
+        { "100 kHz",[this](void*) { return this->hz = 100000,  nullptr; } },
+        { "10 kHz", [this](void*) { return this->hz = 10000,   nullptr; } },
+        { "1 kHz",  [this](void*) { return this->hz = 1000,    nullptr; } },
+        { "100 Hz", [this](void*) { return this->hz = 100,     nullptr; } },
+        { "10 Hz",  [this](void*) { return this->hz = 10,      nullptr; } },
+      } },
+      { "Breakpoints", {
+        { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return nullptr; } },
+      } },
+      { "Memory", {
+        { "Reload ROM", [this](void*) { return nullptr; } },
+        { "Clear RAM",  [this](void*) { return nullptr; } },
+      } },
+    }));
+  }
+
   ~CPU() {
     bExec = false;
     for (auto* p : { &sync, &callback, &halt }) { { std::lock_guard<std::mutex> l(p->first); } p->second.notify_all(); }
@@ -54,6 +85,9 @@ public:
   }
 
   inline void Reset() { cycles = 1; interrupt.first = IM0; interrupt.second = false; for (auto& r : reg) r = 0; regSP() = 0xFFFF; regPC() = 0x0000; }
+
+  void Preprocess() override { menu->Preprocess(); }
+  void Process() override { menu->Process(); }
 
   void Draw() override {
     int32_t index = 0;
@@ -74,6 +108,13 @@ public:
       pos.x += vStep.x * 3;
     };
 
+    auto freq = "[" + Frequency() + "]";
+
+    GameEngine->DrawString(pos, "Z80", Color::DARK_GREY);
+    GameEngine->FillRect(pos + olc::vi2d(vStep.x * 4, 0) - olc::vi2d(1, 1), GameEngine->GetTextSize(freq) + olc::vi2d(1, 1), Color::DARK_GREY);
+    GameEngine->DrawString(pos + olc::vi2d(vStep.x * 4, 0), freq, Color::BLACK);
+    pos.y += vStep.y;
+
     DrawReg("AF", regAF()); DrawReg("AF'", regALT(REG::AF));
     DrawReg("BC", regBC()); DrawReg("BC'", regALT(REG::BC));
     DrawReg("DE", regDE()); DrawReg("DE'", regALT(REG::DE));
@@ -87,7 +128,10 @@ public:
     pos = olc::vi2d(absolute.x, pos.y + vStep.y);
     DrawFlag("C", flagC()); DrawFlag("N", flagN()); DrawFlag("PV", flagPV());
     DrawFlag("H", flagH()); DrawFlag("Z", flagZ()); DrawFlag("S", flagS());
+
+    menu->Draw();
   }
+
 
   uint8_t Acknowledge();
   void Interrupt(bool level) {
@@ -97,18 +141,28 @@ public:
   
 private:
   void Runtime() {
+    using Clock = std::chrono::steady_clock;
     Wait();
+
+    auto slice = Clock::now(); double owed = 0; // cycles still available this 1 ms slice
+    auto park = [&](bool hit) {
+      { std::lock_guard<std::mutex> l(sync.first); frozen = true; resume = false; } // visible BEFORE anyone is told
+      if (hit) mode = DEBUG; // FREEZE is no longer needed
+      stopped = true; Wait();
+    };
 
     while (bExec) {
       if (restart.exchange(false)) {
         Reset();
         const bool hit = mode == NORMAL && HasBreakpoint(regPC());   // a breakpoint on 0x0000 works too
-        if (mode != NORMAL || hit) { Park(hit); continue; }
+        if (mode != NORMAL || hit) { park(hit); continue; }
       }
 
-      std::this_thread::sleep_for(std::chrono::nanoseconds(clock));
-      if (cycles > 1) { --cycles; continue; }
-      cycles = 1;
+      if (hz && owed <= 0) {
+        slice = std::max(slice + std::chrono::milliseconds(1), Clock::now());   // never burst after a park
+        std::this_thread::sleep_until(slice);
+        owed += hz / 1000.0;
+      }
 
       if (IFF.first && interrupt.second) {
         IFF.first = IFF.second = false; 
@@ -117,20 +171,15 @@ private:
           case IM_T::IM1: ImProcess(Int2Type<IM_T::IM1>()); continue;
           case IM_T::IM2: ImProcess(Int2Type<IM_T::IM2>()); continue;
         }
-      }
+      } 
 
       foreach<Instructions, void>::Process(this, Read());
+      owed -= cycles; cycles = 1;
       if (restart) continue; // handle it at the top, don't park first
 
       const bool hit = mode == NORMAL && HasBreakpoint(regPC());
-      if (mode != NORMAL || hit) Park(hit); 
+      if (mode != NORMAL || hit) park(hit); 
     }
-  }
-
-  void Park(bool hit) {
-    { std::lock_guard<std::mutex> l(sync.first); frozen = true; resume = false; } // visible BEFORE anyone is told
-    if (hit) mode = DEBUG; // FREEZE is no longer needed
-    stopped = true; Wait();
   }
 
 private:
@@ -1325,6 +1374,15 @@ private:
     return false;
   }
 
+  inline std::string Frequency() {
+    char buf[24];
+    if (hz <= 0) return "MAX";
+    if (hz >= 1000000) std::snprintf(buf, sizeof buf, "%g MHz", hz / 1e6);
+    else if (hz >= 1000) std::snprintf(buf, sizeof buf, "%g kHz", hz / 1e3);
+    else std::snprintf(buf, sizeof buf, "%lld Hz", (long long)hz);
+    return buf;
+  }
+
 public:
   inline void Restart(ModeT m = NORMAL) {
     { std::lock_guard<std::mutex> l(halt.first); restart = true; mode = m; }
@@ -1332,6 +1390,7 @@ public:
     Continue(); // wake a parked CPU
   }
 
+  inline void ResetBreakpoints() { Utils::Lock l(mutex); breakpoints.clear(); }
   inline bool HasBreakpoint(uint16_t addr) { Utils::Lock l(mutex); return IsBreakpoint(addr); }
   inline void Breakpoint(uint16_t addr) {
     Utils::Lock l(mutex);
@@ -1352,6 +1411,8 @@ public:
   inline void Normal() { mode = NORMAL; Continue(); }
   inline ModeT GetMode() { return mode; }
 
+  const ::Window::StrokeT<>& GetCommands() const override { return CPU::commands; }
+
   inline uint16_t Addr()  { return regPC(); }
   inline uint16_t Stack() { return regSP(); }
 
@@ -1359,7 +1420,7 @@ private:
   const olc::vi2d vStep = olc::vi2d(8, 12);
   const olc::vi2d vOffset = olc::vi2d(24, 0);
 
-  int32_t clock;
+  std::atomic<uint32_t> hz;
   uint32_t cycles = 1; // Show how many clock cycles are required to run specific command
   std::atomic<ModeT> mode = NORMAL;
   std::pair<bool, bool> IFF;
@@ -1384,7 +1445,14 @@ private:
   std::list<uint16_t> breakpoints;
 
   std::thread runtime;
+  static const ::Window::StrokeT<> commands;
 };
+
+inline const Window::StrokeT<> CPU::commands = ::Window::StrokeT<>::Init({
+  { Int2Type<olc::Key::SHIFT>(), {
+    { Int2Type<olc::Key::OEM_2>(), [](void* self, auto... keys) { return static_cast<CPU*>(self)->Menu(), nullptr; } },
+  }}
+});
 
 };
 };

@@ -113,6 +113,7 @@ public:
 
   inline std::string File() { return file; }
   inline void Breakpoint(int32_t line) { files[file]->Breakpoint(line); }
+  inline void ResetBreakpoints() { files[file]->ResetBreakpoints(); }
 
 private:
   const olc::vi2d vStep = olc::vi2d(8, 12);

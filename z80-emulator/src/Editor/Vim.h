@@ -720,6 +720,7 @@ public:
     return false;
   }
 
+  inline void ResetBreakpoints() { breakpoints.clear(); }
   inline void Breakpoint(int32_t line) {
     if (IsBreakpoint(line)) breakpoints.remove(line);
     else breakpoints.push_back(line);

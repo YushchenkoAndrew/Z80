@@ -6,4 +6,6 @@ namespace Window {
     this->absolute = dimensions.first; this->size = dimensions.second;
     if (menu != nullptr) menu->Select({ dimensions.first, olc::vi2d(0, 0) });
   }
+
+  void Window::Menu() { if (menu == nullptr) return; menu->bEnabled ^= true; }
 };

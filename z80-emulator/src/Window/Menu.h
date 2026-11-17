@@ -21,7 +21,7 @@ private:
   };
 
 public:
-  Menu(PixelGameEngine* engine, std::string id, MenuT menu): ::Window::Base(engine), ::Window::Window(engine, id), ::Window::KeyEventListener(engine), menu(std::move(menu)) {}
+  Menu(PixelGameEngine* engine, MenuT menu): ::Window::Base(engine), ::Window::Window(engine, ""), ::Window::KeyEventListener(engine), menu(std::move(menu)) {}
 
   void Reset() { path.clear(); line = 0; }
 
@@ -36,6 +36,7 @@ public:
   }
 
   void Preprocess() override {
+    if (!bEnabled) return;
     if (!IsMouseOver()) return;
 
     const auto mouse = GameEngine->GetMousePos();
@@ -44,10 +45,13 @@ public:
   }
 
   void Process() override {
+    if (!bEnabled) return;
     if (GameEngine->GetMouse(0).bPressed && IsMouseOver()) Process(Int2Type<olc::Key::L>());
   }
 
   void Draw() override {
+    if (!bEnabled) return;
+
     for (int32_t depth = 0; depth <= (int32_t)path.size(); depth++) {
       const auto v = View(depth);
       if (!v.items || !v.rows) break;
@@ -145,6 +149,9 @@ public:
   }
 
   const ::Window::StrokeT<>& GetCommands() const override { return Menu::commands; }
+
+public:
+  bool bEnabled = false;
 
 private:
   uint8_t line = 0;

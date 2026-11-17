@@ -3,7 +3,8 @@
 WIDTH = 840; HEIGHT = 512; PIXELS = 2;
 -- WINDOW = { width = WIDTH, height = HEIGHT - 24 }
 
-CLOCK = 2; -- nano seconds = 4MHz
+CLOCK = 0; -- Max
+-- CLOCK = 4000000; -- nano seconds = 4MHz
 SOURCE = "assets/src/DoS/Main.z80";
 -- SOURCE = "assets/test/Test.z80";
 -- src = "assets/test/Timer/Test.z80",

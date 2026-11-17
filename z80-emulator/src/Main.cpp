@@ -48,7 +48,7 @@ public:
       }
     }
 
-    Registry::Menu = std::make_shared<Window::Menu>(this, "Menu", 
+    Registry::Menu = std::make_shared<Window::Menu>(this,
      ::Window::MenuT::Init({
       { "test", [](void* self) { return nullptr; } },
       { "Hello world", [](void* self) { return nullptr; } },
@@ -216,6 +216,13 @@ public:
     for (auto& e : Registry::Interpreter->toMemory(Registry::Editor->File(), cursor)) {
       Registry::W27C512->Move2Addr(e.address);
     }
+  }
+
+  void Event(Int2Type<RESET_BREAKPOINT_CALLBACK>) override {
+    Registry::Z80->ResetBreakpoints();
+    Registry::Editor->ResetBreakpoints();
+
+    if (Registry::Z80->IsDebug()) Registry::Z80->Normal(); // run on to the new breakpoint
   }
 
   void Event(Int2Type<EDITOR_BREAKPOINT_CALLBACK>, olc::vi2d cursor) override {

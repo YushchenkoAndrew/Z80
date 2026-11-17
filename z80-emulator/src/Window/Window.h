@@ -20,6 +20,8 @@ public:
   virtual void Process() {};
   virtual void Draw() {};
 
+  virtual void Menu();
+
   virtual const StrokeT<>& GetCommands() const {
     static const StrokeT<> empty = ::Window::StrokeT<>::Init({});
     return empty;
