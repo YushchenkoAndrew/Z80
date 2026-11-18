@@ -12,6 +12,8 @@ class Keyboard : public Window::KeyEventListener, public Window::Window, public 
 public:
   Keyboard(PixelGameEngine* engine, std::string id): ::Window::Base(engine), ::Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {}
 
+  void Clear() { std::lock_guard<std::mutex> l(mutex); buffer.clear(); }
+
   void Process() override {
     const auto mouse = GameEngine->GetMousePos();
     const bool bPressed = GameEngine->GetMouse(0).bPressed;

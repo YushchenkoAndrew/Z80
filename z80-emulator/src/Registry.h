@@ -33,17 +33,17 @@ public:
     windows.insert(Hex = std::make_shared<Bus::Hex>(engine, "hex"));
     windows.insert(IRQ = std::make_shared<Bus::IRQ>(engine, "irq"));
 
-    windows.insert(KR580VV55 = std::make_shared<Bus::PPI>(engine, "KR580VV55"));
-    windows.insert(Switch = std::make_shared<Bus::Switch>(engine, "switch"));
+    windows.insert(KR580VV55 = std::make_shared<Bus::PPI>(engine,     "KR580VV55"));
+    windows.insert(Switch = std::make_shared<Bus::Switch>(engine,     "switch"));
     windows.insert(Keyboard = std::make_shared<Bus::Keyboard>(engine, "keyboard"));
-
-    windows.insert(Z80 = std::make_shared<Bus::Z80::CPU>(engine, "Z80", clock));
-    windows.insert(KR580VI53 = std::make_shared<Bus::PIT>(engine, "KR580VI53", clock * 8));
 
     windows.insert(MC146818 = std::make_shared<Bus::RTC>   (engine, "MC146818"));
     windows.insert(W27C512  = std::make_shared<Bus::Memory>(engine, "W27C512", W27C512_SIZE, true));
     windows.insert(IMS1423  = std::make_shared<Bus::Memory>(engine, "IMS1423", IMS1423_SIZE));
     windows.insert(HY62256A = std::make_shared<Bus::Memory>(engine, "HY62256A",HY62256A_SIZE));
+
+    windows.insert(KR580VI53 = std::make_shared<Bus::PIT>(engine, "KR580VI53", clock * 8));
+    windows.insert(Z80 = std::make_shared<Bus::Z80::CPU>(engine, "Z80",        clock));
 
     windows.insert(Editor = std::make_shared<Editor::Editor>(engine, "editor"));
     // windows.insert(Bindings = std::make_shared<Window::Popup>(engine, "bindings"));
@@ -83,13 +83,13 @@ public:
   inline static std::shared_ptr<Bus::Keyboard>   Keyboard;
   inline static std::shared_ptr<Bus::Z80::CPU>   Z80;
 
-  inline static std::shared_ptr<Bus::Memory>       W27C512;
-  inline static std::shared_ptr<Bus::Memory>       IMS1423;
+  inline static std::shared_ptr<Bus::Memory>      W27C512;
+  inline static std::shared_ptr<Bus::Memory>      IMS1423;
   inline static std::shared_ptr<Bus::Memory>      HY62256A;
 
   // inline static std::shared_ptr<Editor::Popup>   Bindings;
   inline static std::shared_ptr<Editor::Editor>  Editor;
-  inline static std::shared_ptr<Window::Menu>      Menu;
+  inline static std::shared_ptr<Window::Menu>    Menu;
 
   // inline static std::shared_ptr<Interpreter::Interpreter> Syntax;
   inline static std::shared_ptr<Interpreter::Interpreter> Interpreter;

@@ -7,5 +7,10 @@ namespace Window {
     if (menu != nullptr) menu->Select({ dimensions.first, olc::vi2d(0, 0) });
   }
 
-  void Window::Menu() { if (menu == nullptr) return; menu->bEnabled ^= true; }
+  void Window::Menu() {
+    if (menu == nullptr) return;
+
+    if (menu->bEnabled) menu->Reset();
+    else menu->bEnabled = true;
+  }
 };

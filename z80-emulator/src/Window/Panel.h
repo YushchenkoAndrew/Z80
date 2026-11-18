@@ -25,7 +25,7 @@ using WindowInitT = std::tuple<std::shared_ptr<::Window::Window>, uint8_t, ::Win
 #define EXIST(p) PTR(p) != nullptr
 #define IS_NULL(p) PTR(p) == nullptr
 // #define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
-#define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
+// #define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
         
 class Panel : public Window::KeyEventListener, public Window::Window {
   enum DepthT { HIDDEN, NORMAL, ZOOMED = 0xFF };
@@ -37,28 +37,41 @@ public:
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto...) { return this->Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::OEM_2>()); } }
     });
 
-    Push(WindowInitT(std::move(popup), HIDDEN, std::pair(olc::vi2d(0, 0), olc::vi2d(engine->ScreenWidth() - 24, engine->ScreenHeight() - 40))));
+    Push(WindowInitT(std::move(popup), HIDDEN, std::pair(olc::vi2d(12, 8), olc::vi2d(engine->ScreenWidth() - 24, engine->ScreenHeight() - 40))));
   }
-
-  // void Initialize() {
-  //   for (auto& w : windows) if (EXIST(w)) PTR(w)->Initialize();
-  // }
 
   void Select(::Window::DimensionT dimensions) override {
     ::Window::Window::Select(dimensions);
     for (auto& w : windows) if (EXIST(w)) PTR(w)->Select(DIMENSION(w));
   }
 
-  void Process() override {
+  inline bool IsMouseOver(WindowT& w) {
     const auto mouse = GameEngine->GetMousePos();
+    auto pos = PTR(w)->GetAbsolute(); auto size = PTR(w)->GetSize();
+
+    return mouse.x > pos.x && mouse.y > pos.y && mouse.x < pos.x + size.x && mouse.y < pos.y + size.y;
+  }
+
+  bool IsMouseOverWindow(WindowT& window) {
+    if (!IsMouseOver(window)) return false;
+    if (!DEPTH(window)) return false;
+
+    for (auto& w : windows) {
+      if (IsMouseOver(w) && DEPTH(w) > DEPTH(window)) return false;
+    }
+
+    return true;
+  }
+
+  void Process() override {
     const auto bPressed = GameEngine->GetMouse(0).bPressed;
     std::pair<uint8_t, std::shared_ptr<::Window::Window>> window = std::pair(HIDDEN, nullptr);
 
     for (auto& w : windows) {
       if (!(EXIST(w))) continue;
 
-      if (IS_INSIDE(w, mouse)) PTR(w)->Preprocess();
-      if (bPressed && DEPTH(w)) PTR(w)->Focus(SELECTED(w) = IS_INSIDE(w, mouse));
+      if (IsMouseOverWindow(w)) PTR(w)->Preprocess();
+      if (bPressed) PTR(w)->Focus(SELECTED(w) = IsMouseOverWindow(w));
       if (SELECTED(w) && DEPTH(w) >= window.first) window = std::pair(DEPTH(w), PTR(w));
     }
 
@@ -77,7 +90,7 @@ public:
 
     for (auto& w : windows) {
       if (!(EXIST(w) && DEPTH(w))) continue;
-      GameEngine->FillRect(PTR(w)->absolute, PTR(w)->absolute + PTR(w)->size, Color::BLACK);
+      GameEngine->FillRect(PTR(w)->GetAbsolute(), PTR(w)->GetSize(), Color::BLACK);
       PTR(w)->Draw();
     }
 
@@ -311,12 +324,9 @@ public:
   inline void Push(WindowInitT b) { windows.push_back(WindowT(false, std::get<1>(b), std::get<0>(b), std::get<2>(b), windows.size() + 1)); }
 
 public:
-  // inline bool IsActive() { return mode == COMMAND; }
-  // inline bool IsActive() { return false; } // FIXME:?????????
-  inline olc::vi2d GetSize() { return olc::vi2d(size.x, size.y); }
   inline std::string GetName() {
     for (const auto& w: windows) if (EXIST(w) && SELECTED(w)) return PTR(w)->windowId;
-    return windows.size() ? PTR(windows.front())->windowId : "unknown";
+    return "unknown";
   }
 
   // static LuaScript& GetConfig() { static LuaScript config; return config; }

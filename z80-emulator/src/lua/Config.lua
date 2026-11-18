@@ -1,6 +1,6 @@
 -- WIDTH = 260 * 2; HIGHT = 300; PIXELS = 2
 -- WIDTH = 700; HEIGHT = 412; PIXELS = 2;
-WIDTH = 840; HEIGHT = 512; PIXELS = 2;
+WIDTH = 840; HEIGHT = 512; PIXELS = 1;
 -- WINDOW = { width = WIDTH, height = HEIGHT - 24 }
 
 CLOCK = 0; -- Max
@@ -16,16 +16,16 @@ SOURCE = "assets/src/DoS/Main.z80";
 
 PANELS = {
   {
-    editor   = { x = WIDTH - 700, y = 0,             width = 490, height = HEIGHT - 24 },
+    editor   = { x = WIDTH - 700, y = 0,             width = 490, height = HEIGHT - 35 },
     W27C512  = { x = WIDTH - 210, y = 12,            width = 210, height = 374 },
     IMS1423  = { x = WIDTH - 210, y = 392,           width = 210, height = 84 },
   },
   {
-    led      = { x = 10,          y = 15,            width = 50,  height = 15 },
-    switch   = { x = 10,          y = 30,            width = 50,  height = 15 },
-    hex      = { x = 10,          y = 45,            width = 50,  height = 40 },
+    led      = { x = 10,          y = 15,            width = 100, height = 15 },
+    switch   = { x = 10,          y = 30,            width = 100, height = 15 },
+    hex      = { x = 10,          y = 45,            width = 100, height = 40 },
     lcd      = { x = 10,          y = 85,            width = 350, height = HEIGHT - 104 },
-    Z80      = { x = WIDTH - 350, y = 25,            width = 140, height = 140 },
+    Z80      = { x = WIDTH - 350, y = 12,            width = 140, height = 140 },
     irq      = { x = WIDTH - 350, y = 165,           width = 140, height = 39 },
     keyboard = { x = WIDTH - 350, y = 204,           width = 140, height = 22 },
     KR580VV55= { x = WIDTH - 350, y = 226,           width = 140, height = 22 },

@@ -124,7 +124,8 @@ enum Events {
   EDITOR_DEFINE_CALLBACK, EDITOR_GOTO_CALLBACK,
   MEMORY_GOTO_CALLBACK, PANEL_SELECT_CALLBACK,
   
-  CMD_UPDATE_CALLBACK, CMD_EXEC_CALLBACK, PROGRAM_EXIT
+  // CMD_UPDATE_CALLBACK, CMD_EXEC_CALLBACK,
+  BOARD_RESET, COMPILE_CALLBACK, PROGRAM_EXIT
 };
 
 struct LocationT { std::filesystem::path file; olc::vi2d pos; };
@@ -149,8 +150,10 @@ class PixelGameEngine : public olc::PixelGameEngine {
   virtual void Event(Int2Type<PANEL_SELECT_CALLBACK>, int32_t) = 0;
   virtual void Event(Int2Type<MEMORY_GOTO_CALLBACK>, int32_t) = 0;
 
-  virtual void Event(Int2Type<CMD_EXEC_CALLBACK>) = 0;
-  virtual void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string) = 0;
+  // virtual void Event(Int2Type<CMD_EXEC_CALLBACK>) = 0;
+  // virtual void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string) = 0;
+  virtual void Event(Int2Type<BOARD_RESET>) = 0;
+  virtual void Event(Int2Type<COMPILE_CALLBACK>) = 0;
   virtual void Event(Int2Type<PROGRAM_EXIT>) = 0;
 
   virtual uint32_t GetMode() = 0;

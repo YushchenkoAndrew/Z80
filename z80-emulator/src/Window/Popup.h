@@ -21,17 +21,14 @@ public:
   // }
 
   void Select(DimensionT dimensions) override {
-    const auto absolute = dimensions.first + vOffset;
-    const auto size = dimensions.second - vOffset;
-
-    ::Window::Window::Select({ absolute, size });
+    ::Window::Window::Select(dimensions);
     window->Select({ absolute, olc::vi2d()});
   }
 
   void Focus(bool state) override {
     ::Window::KeyEventListener::Focus(state); window->Focus(state);
 
-    if (state) window->Select({ absolute, size });
+    if (state) window->Select({ absolute, size - vOffset });
     else window->Select({ absolute, olc::vi2d() });
   }
 
@@ -39,7 +36,7 @@ public:
   void Process()    override { window->Process();    }
 
   void Draw() override {
-    if (!window->size.x || !window->size.y) return;
+    if (!IsEnabled()) return;
 
     constexpr int32_t STEP = 5;
     constexpr int32_t GAP  = 2;
@@ -53,6 +50,9 @@ public:
 
     window->Draw();
   }
+
+  bool IsEnabled() { const auto size = window->GetSize(); return size.x && size.y; }
+  olc::vi2d GetSize() override { return IsEnabled() ? size : olc::vi2d(); }
 
 public:
   std::shared_ptr<::Window::Window> window;

@@ -20,6 +20,8 @@ public:
 
   PPI(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
 
+  void Clear() { regs = { 0, 0, 0 }; }
+
   void Draw() override {
     int32_t index = 0;
     olc::vi2d pos = absolute;

@@ -31,6 +31,8 @@ public:
 
   Vim(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyEventListener(engine) {}
 
+  inline void Select(::Window::DimensionT dimensions) override { ::Window::Window::Select({ dimensions.first, olc::vi2d(std::max(dimensions.second.x - 14, 0), dimensions.second.y) }); }
+
   void Preprocess() override {
     auto nWheel = GameEngine->GetMouseWheel();
     if (nWheel > 0) MoveTo({ 0, -1 });
@@ -738,7 +740,11 @@ private:
   inline bool hasCharacter() const { return hasLine() && pos.x >= 0 && pos.x < static_cast<int32_t>(lines[pos.y].size()); }
 
   inline int32_t endAt() { return std::max((int32_t)line().size() - 1, 0); }
-  inline std::string& line() { return lines[pos.y]; }
+  inline std::string& line() { 
+    if (pos.y < lines.size()) return lines[pos.y];
+    static std::string empty = ""; return empty;
+  }
+
   inline char symbol() const { return hasCharacter() ? lines[pos.y][pos.x] : '\0'; }
 
 public:

@@ -22,7 +22,7 @@ class PIT : public Window::Window, public Device {
 typedef std::tuple<uint16_t, uint16_t, uint16_t> RegT;
 
 public:
-  PIT(PixelGameEngine* engine, std::string id, int32_t c): Window::Base(engine), Window::Window(engine, std::move(id)), clock(std::pair(c, 1.0E9F / c)), runtime(std::thread(std::thread(&PIT::Runtime, this))) {
+  PIT(PixelGameEngine* engine, std::string id, int32_t c): Window::Base(engine), Window::Window(engine, std::move(id)), clock(std::pair(c, c)), runtime(std::thread(std::thread(&PIT::Runtime, this))) {
     // olc::SOUND::InitialiseAudio();
     // olc::SOUND::SetUserSynthFunction([&](int nChannel, float fGlobalTime, float) { return Sound(fGlobalTime); });
   }
@@ -34,6 +34,7 @@ public:
     if (runtime.joinable()) runtime.join();
   }
 
+  void Clear() { counter = { 0, 0, 0 }; gate = { 0x00, 0x00, 0x00 }; output = { 0x01, 0x01, 0x01 }; }
 
   void Process() override {}
   void Draw() override {

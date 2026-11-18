@@ -1,4 +1,5 @@
 #pragma once
+#include "include/Typelist.h"
 #include "src/Bus/Cpu.h"
 #include "src/Registry.h"
 #include <cstdint>
@@ -25,13 +26,7 @@ public:
   ~App() { if (sync.second != nullptr && sync.second->joinable()) sync.second->join(); Registry::Shutdown(); }
 
   bool OnUserCreate() override {
-    Registry::Initialize(this, lua);
-
-    if (const auto success = Compile(lua.GetOr("SOURCE", ""))) {
-      Registry::W27C512->Load(Registry::Interpreter->memory); Registry::Z80->Continue();
-    }
-
-    for (auto f : Registry::Interpreter->files()) Registry::Editor->Open(f);
+    Registry::Initialize(this, lua); Event(Int2Type<COMPILE_CALLBACK>());
 
     const size_t groups = lua.Length("PANELS");
     for (size_t i = 1; i <= groups; ++i) {
@@ -48,26 +43,9 @@ public:
       }
     }
 
-    Registry::Menu = std::make_shared<Window::Menu>(this,
-     ::Window::MenuT::Init({
-      { "test", [](void* self) { return nullptr; } },
-      { "Hello world", [](void* self) { return nullptr; } },
-      { "Options", {
-        { "Quit", {
-          { "YES", [](void* self) { return nullptr; } },
-          { "NO", [](void* self) { return nullptr; } },
-        
-        },
-      }}
-    }}));
-
-
-    panels[panel]->Push(WindowInitT(Registry::Menu, 1, std::pair(olc::vi2d(20, 20), olc::vi2d(150, 150))));
-
     panels[panel]->Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
     panels[panel]->Focus(true);
 
-    sync = std::pair(true, std::make_unique<std::thread>([&]() { Registry::W27C512->Disassemble(); sync.first = false; }));
     return true;
   }
 
@@ -192,6 +170,25 @@ public:
   void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>,  void* ptr) override { this->vKeyEventListeners.insert(static_cast<Window::KeyEventListener*>(ptr)); }
   void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>,void* ptr) override { this->vKeyEventListeners.erase(static_cast<Window::KeyEventListener*>(ptr)); }
 
+  void Event(Int2Type<BOARD_RESET>) override {
+    Registry::IMS1423->Clear();   Registry::HY62256A->Clear();  Registry::MC146818->Clear();
+    Registry::KR580VI53->Clear(); Registry::KR580VV55->Clear(); Registry::Keyboard->Clear();
+  }
+
+  void Event(Int2Type<COMPILE_CALLBACK>) override {
+    if (const auto success = Compile(lua.GetOr("SOURCE", ""))) {
+      Registry::W27C512->Load(Registry::Interpreter->memory); Registry::Z80->Continue();
+    }
+
+    Registry::Editor->Reset();
+    for (auto f : Registry::Interpreter->files()) Registry::Editor->Open(f);
+
+    if (sync.second && sync.second->joinable()) sync.second->join();
+    sync.first = true; sync.second = std::make_unique<std::thread>([&]() { Registry::W27C512->Disassemble(); sync.first = false; });
+
+    Registry::Z80->Reset();
+  }
+
   void Event(Int2Type<NEXT_DEBUG_STEP_CALLBACK>) override {
     #ifdef DEBUG_MODE 
     std::cout << "NEXT_DEBUG_STEP_CALLBACK\n";
@@ -262,23 +259,23 @@ public:
     panels[panel]->Focus(true);
   }
 
-  void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string cmd) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "CMD_UPDATE_CALLBACK '" << cmd << "'" << std::endl;
-    #endif
+  // void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string cmd) override {
+  //   #ifdef DEBUG_MODE 
+  //   std::cout << "CMD_UPDATE_CALLBACK '" << cmd << "'" << std::endl;
+  //   #endif
 
-    // nCurr = 0; this->cmd = cmd;
-  }
+  //   // nCurr = 0; this->cmd = cmd;
+  // }
 
-  void Event(Int2Type<CMD_EXEC_CALLBACK>) override {
-    #ifdef DEBUG_MODE 
-    std::cout << "CMD_EXEC_CALLBACK\n";
-    #endif
+  // void Event(Int2Type<CMD_EXEC_CALLBACK>) override {
+  //   #ifdef DEBUG_MODE 
+  //   std::cout << "CMD_EXEC_CALLBACK\n";
+  //   #endif
 
-    // advance(); // Consume ':'
+  //   // advance(); // Consume ':'
 
-    // Cmd2Action(); nCurr = 0; cmd = "";
-  }
+  //   // Cmd2Action(); nCurr = 0; cmd = "";
+  // }
 
 private:
   inline void Cmd2Action() {

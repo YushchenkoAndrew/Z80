@@ -40,10 +40,12 @@ public:
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto... keys) { return this->Process(keys...); } }
     });
   }
+
+  void Clear() { memory.assign(memory.size(), 0); }
   void Disassemble() { vim.Load(disassembler.scan()); }
 
   void Load(std::vector<uint8_t>& code) {
-    memory.assign(memory.size(), 0); const auto size = std::min(code.size(), memory.size());
+    Clear(); const auto size = std::min(code.size(), memory.size());
     std::copy(code.begin(), code.begin() + size, memory.begin());
   }
 

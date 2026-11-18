@@ -8,7 +8,7 @@
 namespace Window {
   typedef std::pair<olc::vi2d, olc::vi2d> DimensionT;
 
-  class Menu;
+class Menu;
 
 class Window : virtual public Base {
 public:
@@ -22,6 +22,9 @@ public:
 
   virtual void Menu();
 
+  virtual olc::vi2d GetSize() { return size; }
+  virtual olc::vi2d GetAbsolute() { return absolute; }
+
   virtual const StrokeT<>& GetCommands() const {
     static const StrokeT<> empty = ::Window::StrokeT<>::Init({});
     return empty;
@@ -29,6 +32,8 @@ public:
 
 public:
   const std::string windowId;
+
+protected:
   olc::vi2d size = olc::vi2d(0, 0);
   olc::vi2d absolute = olc::vi2d(0, 0);
   std::unique_ptr<::Window::Menu> menu = nullptr;

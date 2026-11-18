@@ -2,7 +2,9 @@
 
 #include "src/Defs.h"
 #include "src/Editor/Vim.h"
+#include "src/Window/Types/MenuAction.h"
 #include "src/Window/Window.h"
+#include "src/Window/Menu.h"
 #include <memory>
 #include <unordered_map>
 
@@ -10,12 +12,33 @@ namespace Editor {
 // #define PATH(e)     e.first
 // #define VIM(e)      e.second
 
-class Editor : public Window::Window {
+class Editor : public Window::KeyEventListener, public Window::Window {
 public:
   typedef std::pair<std::filesystem::path, Vim> FileT;
 
-  Editor(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)) {}
+  Editor(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {
+    bindings = ::Window::StrokeT<>::Init({
+      { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return static_cast<Editor*>(self)->menu->Reset(), nullptr; } },
+      { Int2Type<olc::Key::SHIFT>(), {
+        { Int2Type<olc::Key::OEM_2>(), [](void* self, auto... keys) { return static_cast<Editor*>(self)->Menu(), nullptr; } },
+      }}
+    });
 
+    menu = std::make_unique<::Window::Menu>(
+      engine,
+      ::Window::MenuT::Init({
+      { "File", {
+        { "Save",     [this](void*) { return Save(this->file), nullptr; } },
+        { "Save all", [this](void*) { return Save(), nullptr; } },
+      } },
+      { "Build", [this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>()); return nullptr; } },
+      { "Breakpoints", {
+        { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return nullptr; } },
+      } },
+    }));
+  }
+
+  void Reset() { files.clear(); file = ""; }
   Editor* Open(std::filesystem::path path) { 
     if (files.count(path)) return file = path, Select(file), this;
 
@@ -28,25 +51,19 @@ public:
     return files[path]->Load(buf.str()), this;
   }
 
-  inline void Save() { 
-    // for (auto& tab : files) { std::ofstream f(PATH(tab)); f << VIM(tab).Text(); f.close(); } 
-  }
-  // inline void SaveFile() { std::ofstream f(PATH(files[nFile])); f << VIM(files[nFile]).Text(); f.close(); }
+  inline void Save() { for (auto& path : files) Save(path.first); }
+  inline void Save(std::string path) { std::ofstream f(path); f << files[path]->Text(); f.close(); }
 
-  inline void Focus(bool state) override { files[file]->Focus(state); }
-  inline void Select(std::string path) { files[path]->Select({ absolute, size }); }
-  inline void Select(::Window::DimensionT dimensions) override { ::Window::Window::Select({ dimensions.first, dimensions.second - vOffset }); Select(file); }
+  inline void Focus(bool state) override { ::Window::KeyEventListener::Focus(state); menu->Focus(state); files[file]->Focus(state); }
+  inline void Select(std::string path) { const auto offset = olc::vi2d(0, vOffset.y); files[path]->Select({ absolute + offset, size - offset - olc::vi2d(10, 0) }); }
+  inline void Select(::Window::DimensionT dimensions) override { ::Window::Window::Select(dimensions); Select(file); }
 
   const ::Window::StrokeT<>& GetCommands() const override {
     auto it = files.find(file);
     if (it != files.end() && it->second) return it->second->GetCommands();
-    
-    // Fallback if the path doesn't exist or unique_ptr is null
-    static const ::Window::StrokeT<> emptyCommands{};
-    return emptyCommands; 
   }
 
-  void Preprocess() override { files[file]->Preprocess(); }
+  void Preprocess() override { menu->Preprocess(); files[file]->Preprocess(); }
   void Process() override {
     const auto mouse = GameEngine->GetMousePos();
     const bool bPressed = GameEngine->GetMouse(0).bPressed;
@@ -64,24 +81,9 @@ public:
       return;
     }
 
-    files[file]->Process();
+    if (menu->bEnabled) menu->Process(); 
+    else files[file]->Process();
   }
-
-  // void Highlight(PixelGameEngine* GameEngine) {
-  //   Utils::Lock l(mutex);
-
-  //   auto pos = olc::vi2d(absolute.x, absolute.y + vOffset.y + vStep.y);
-  //   for (int32_t i = 0; i < tabs.size(); i++) {
-  //     auto filename = GetTabName(tabs[i], 1);
-  //     auto offset = olc::vi2d((filename.size() + 1) * vStep.x, 14);
-
-  //     pos.x += 2;
-  //     const auto& color = nTab == i ? Color::BLUE : Color::RED;
-  //     GameEngine->DrawString(pos, std::string(1, '0' + i + 1), color, 3);
-
-  //     pos.x += offset.x;
-  //   }
-  // }
 
   void Draw() override {
     files[file]->Draw();
@@ -99,6 +101,8 @@ public:
 
       pos.x += offset.x;
     }
+
+    menu->Draw();
   }
 
 public:

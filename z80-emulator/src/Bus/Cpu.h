@@ -1,9 +1,12 @@
 #pragma once
 
 #include "include/Foreach.h"
+#include "include/Typelist.h"
 #include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
+#include "src/Defs.h"
 #include "src/Utils/Utils.h"
+#include "src/Window/KeyEventListener.h"
 #include "src/Window/Types/MenuAction.h"
 #include "src/Window/Window.h"
 #include "src/Window/Menu.h"
@@ -72,8 +75,8 @@ public:
         { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return nullptr; } },
       } },
       { "Memory", {
-        { "Reload ROM", [this](void*) { return nullptr; } },
-        { "Clear RAM",  [this](void*) { return nullptr; } },
+        { "Reload ROM", [this](void*) { return this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>()), nullptr; } },
+        { "Clear RAM",  [this](void*) { return Reset(), nullptr; } },
       } },
     }));
   }
@@ -84,10 +87,11 @@ public:
     if (runtime.joinable()) runtime.join();
   }
 
-  inline void Reset() { cycles = 1; interrupt.first = IM0; interrupt.second = false; for (auto& r : reg) r = 0; regSP() = 0xFFFF; regPC() = 0x0000; }
+  inline void Reset() { cycles = 1; interrupt.first = IM0; interrupt.second = false; for (auto& r : reg) r = 0; regSP() = 0xFFFF; regPC() = 0x0000; GameEngine->Event(Int2Type<BOARD_RESET>()); }
 
+  void Focus(bool state) override { ::Window::KeyEventListener::Focus(state); menu->Focus(state); }
   void Preprocess() override { menu->Preprocess(); }
-  void Process() override { menu->Process(); }
+  void Process()    override { menu->Process(); }
 
   void Draw() override {
     int32_t index = 0;
@@ -1449,6 +1453,7 @@ private:
 };
 
 inline const Window::StrokeT<> CPU::commands = ::Window::StrokeT<>::Init({
+  { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return static_cast<CPU*>(self)->menu->Reset(), nullptr; } },
   { Int2Type<olc::Key::SHIFT>(), {
     { Int2Type<olc::Key::OEM_2>(), [](void* self, auto... keys) { return static_cast<CPU*>(self)->Menu(), nullptr; } },
   }}

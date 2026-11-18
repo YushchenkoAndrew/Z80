@@ -23,7 +23,7 @@ private:
 public:
   Menu(PixelGameEngine* engine, MenuT menu): ::Window::Base(engine), ::Window::Window(engine, ""), ::Window::KeyEventListener(engine), menu(std::move(menu)) {}
 
-  void Reset() { path.clear(); line = 0; }
+  void Reset() { path.clear(); line = 0; bEnabled = false; }
 
   bool IsMouseOver() const {
     auto mouse = GameEngine->GetMousePos();
@@ -46,7 +46,10 @@ public:
 
   void Process() override {
     if (!bEnabled) return;
-    if (GameEngine->GetMouse(0).bPressed && IsMouseOver()) Process(Int2Type<olc::Key::L>());
+    if (GameEngine->GetMouse(0).bPressed) {
+      if (IsMouseOver()) Process(Int2Type<olc::Key::L>());
+      else Reset();
+    }
   }
 
   void Draw() override {
@@ -104,6 +107,7 @@ public:
     return nullptr;
   }
 
+  ::Window::StrokeAction Process(Int2Type<olc::Key::ENTER>) { return Process(Int2Type<olc::Key::L>()); }
   ::Window::StrokeAction Process(Int2Type<olc::Key::L>) {
     const auto* items = Level(path.size());
     if (!items || line < 0 || line >= (int32_t)items->children.size()) return nullptr;
@@ -172,7 +176,8 @@ inline const ::Window::StrokeT<> Menu::commands = ::Window::StrokeT<>::Init({
   { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
   { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::ESCAPE>(),[](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::ENTER>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
 });
 };
 
