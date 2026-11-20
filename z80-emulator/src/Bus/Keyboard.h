@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/Bus/Device.h"
+#include "src/Defs.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/KeyEventListener.h"
 #include "src/Window/Window.h"
@@ -17,9 +18,10 @@ public:
   void Process() override {
     const auto mouse = GameEngine->GetMousePos();
     const bool bPressed = GameEngine->GetMouse(0).bPressed;
+    const auto name = bEnabled ? "ENABLED" : "DISABLED";
 
-    olc::vi2d pos = absolute - olc::vi2d(1, 1);
-    olc::vi2d size = name.second + olc::vi2d(2, 2);
+    olc::vi2d pos = absolute + olc::vi2d(vStep.x * 4, 0) - olc::vi2d(1, 1);
+    auto size = GameEngine->GetTextSize(name) + olc::vi2d(2, 2);
 
     if (bPressed && mouse.x > pos.x && mouse.y > pos.y && mouse.x < pos.x + size.x && mouse.y < pos.y + size.y) {
       bEnabled = bEnabled ^ true;
@@ -30,24 +32,24 @@ public:
   }
 
   void Draw() override {
-    std::vector<uint8_t> buff; { std::lock_guard<std::mutex> l(mutex); for (auto v : buffer) { buff.push_back(v); if (buff.size() >= 4) break; } }
+    std::vector<uint8_t> buff; { std::lock_guard<std::mutex> l(mutex); for (auto v : buffer) { buff.push_back(v); if (buff.size() >= 5) break; } }
     olc::vi2d pos = absolute;
 
     const auto& fg = bEnabled ? Color::DARK_GREY : Color::BLACK;
     const auto& bg = bEnabled ? Color::BLACK     : Color::DARK_GREY;
 
-    GameEngine->FillRect(pos - olc::vi2d(1, 1), name.second + olc::vi2d(2, 2), bg);
-    GameEngine->DrawString(pos, name.first, fg);
+    const auto name = bEnabled ? "ENABLED" : "DISABLED";
+    auto size = GameEngine->GetTextSize(name);
 
-    int32_t index = 0;
-    const olc::vi2d vOffset = olc::vi2d(name.second.x, 0) + vStep;
+    GameEngine->DrawString(pos, "I2c", Color::DARK_GREY);
 
-    for (auto& val : buff) {
-      GameEngine->DrawString(pos + vOffset, Utils::Int2Hex(val), Color::GREY);
+    GameEngine->FillRect(pos + olc::vi2d(vStep.x * 4, 0) - olc::vi2d(1, 1), size + olc::vi2d(1, 1), bg);
+    GameEngine->DrawString(pos + olc::vi2d(vStep.x * 4, 0), name, fg);
 
-      if (++index > 3) break;
-      else pos.x += vStep.x * 3;
-    }
+    GameEngine->DrawString(pos + olc::vi2d(0, vStep.y), ">", Color::DARK_GREY);
+
+    int32_t index = 0; pos += olc::vi2d(vStep.x, 0); 
+    for (auto& val : buff) GameEngine->DrawString(pos + olc::vi2d(vStep.x * 3 * index++, vStep.y), Utils::Int2Hex(val), Color::GREY);
   }
 
   void Interrupt();
@@ -73,16 +75,16 @@ public:
   }
 
 private:
-  const olc::vi2d vStep = olc::vi2d(8, 0);
+  const olc::vi2d vStep = olc::vi2d(8, 12);
 
   std::atomic<bool> bEnabled = false;
-  std::pair<const char*, olc::vi2d> name = std::pair("buf", olc::vi2d(8 * 3, 8));
 
   std::mutex mutex;
   std::list<uint8_t> buffer;
   static const ::Window::StrokeT<> commands;
 };
 
+// inline const char* Keyboard::name = "";
 inline const Window::StrokeT<> Keyboard::commands = ::Window::StrokeT<>::Init({
   { Int2Type<olc::Key::Q>(), [](void* self, auto... keys) { return static_cast<Keyboard*>(self)->Process(0x15); } },
   { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Keyboard*>(self)->Process(0x1D); } },

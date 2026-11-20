@@ -740,10 +740,7 @@ private:
   inline bool hasCharacter() const { return hasLine() && pos.x >= 0 && pos.x < static_cast<int32_t>(lines[pos.y].size()); }
 
   inline int32_t endAt() { return std::max((int32_t)line().size() - 1, 0); }
-  inline std::string& line() { 
-    if (pos.y < lines.size()) return lines[pos.y];
-    static std::string empty = ""; return empty;
-  }
+  inline std::string& line() { static std::string empty; return hasLine() ? lines[pos.y] : empty; }
 
   inline char symbol() const { return hasCharacter() ? lines[pos.y][pos.x] : '\0'; }
 
@@ -785,65 +782,65 @@ private:
 };
 
 inline const Window::StrokeT<> Vim::commands = ::Window::StrokeT<>::Init({
-  { Int2Type<olc::Key::K0>(),     [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::K0>(),     [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
 
-  { Int2Type<olc::Key::I>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::A>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::O>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::X>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::R>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::I>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::A>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::O>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::X>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::R>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
   { Int2Type<olc::Key::Y>(), {
-    { Int2Type<olc::Key::Y>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::Y>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::D>(), {
-    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::C>(), {
-    { Int2Type<olc::Key::C>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::C>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::G>(), {
-    { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::SHIFT>(), {
-    { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::I>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::A>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::R>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::O>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::C>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::Y>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::I>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::A>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::R>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::O>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::C>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::Y>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::W>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::E>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::B>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::P>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
 
-    { Int2Type<olc::Key::K4>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::K6>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::OEM_3>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::MINUS>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::K4>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::K6>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::OEM_3>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::MINUS>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
   }},
   { Int2Type<olc::Key::CTRL>(), {
-    { Int2Type<olc::Key::U>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
-    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return static_cast<Vim*>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::U>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
+    { Int2Type<olc::Key::D>(), [](void* self, auto... keys) { return Self<Vim>(self)->Process(keys...); } },
   }}
 
   //   { Int2Type<olc::Key::SPACE>(), {

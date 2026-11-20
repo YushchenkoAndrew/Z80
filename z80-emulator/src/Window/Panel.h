@@ -63,6 +63,11 @@ public:
     return true;
   }
 
+  void Focus(bool state) override {
+    ::Window::KeyEventListener::Focus(state);
+    for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(state && SELECTED(w));
+  }
+
   void Process() override {
     const auto bPressed = GameEngine->GetMouse(0).bPressed;
     std::pair<uint8_t, std::shared_ptr<::Window::Window>> window = std::pair(HIDDEN, nullptr);

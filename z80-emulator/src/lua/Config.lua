@@ -1,15 +1,15 @@
 -- WIDTH = 260 * 2; HIGHT = 300; PIXELS = 2
 -- WIDTH = 700; HEIGHT = 412; PIXELS = 2;
-WIDTH = 840; HEIGHT = 512; PIXELS = 1;
+WIDTH = 840; HEIGHT = 514; PIXELS = 1;
 -- WINDOW = { width = WIDTH, height = HEIGHT - 24 }
 
 CLOCK = 0; -- Max
 -- CLOCK = 4000000; -- nano seconds = 4MHz
-SOURCE = "assets/src/DoS/Main.z80";
+-- SOURCE = "assets/src/DoS/Main.z80";
 -- SOURCE = "assets/test/Test.z80";
 -- src = "assets/test/Timer/Test.z80",
 -- src = "assets/test/RTC/Test.z80",
--- SOURCE = "assets/test/LCD/Test.z80";
+SOURCE = "assets/test/LCD/Test.z80";
 
 -- step   = { x = 8, y = 12 };
 -- WINDOW = {  }
@@ -27,9 +27,9 @@ PANELS = {
     lcd      = { x = 10,          y = 85,            width = 350, height = HEIGHT - 104 },
     Z80      = { x = WIDTH - 350, y = 12,            width = 140, height = 140 },
     irq      = { x = WIDTH - 350, y = 165,           width = 140, height = 39 },
-    keyboard = { x = WIDTH - 350, y = 204,           width = 140, height = 22 },
-    KR580VV55= { x = WIDTH - 350, y = 226,           width = 140, height = 22 },
-    KR580VI53= { x = WIDTH - 350, y = 248,           width = 140, height = 66 },
+    keyboard = { x = WIDTH - 350, y = 205,           width = 140, height = 33 },
+    KR580VV55= { x = WIDTH - 350, y = 237,           width = 140, height = 22 },
+    KR580VI53= { x = WIDTH - 350, y = 259,           width = 140, height = 66 },
 
     HY62256A = { x = WIDTH - 210, y = 12,            width = 210, height = 374 },
     MC146818 = { x = WIDTH - 210, y = 392,           width = 210, height = 84 },

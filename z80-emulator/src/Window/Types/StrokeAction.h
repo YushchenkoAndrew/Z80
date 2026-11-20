@@ -32,7 +32,7 @@ struct StrokeT {
         runtimeNode.func = std::move(item.func);         // Safely transfer the function ownership
         runtimeNode.children = std::move(item.children); // Safely transfer children maps
 
-        children.insert({ item.key, std::move(runtimeNode) });
+        children.emplace(item.key, std::move(runtimeNode));
     }
   }
 

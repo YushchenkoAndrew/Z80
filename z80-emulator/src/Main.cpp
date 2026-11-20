@@ -2,6 +2,7 @@
 #include "include/Typelist.h"
 #include "src/Bus/Cpu.h"
 #include "src/Registry.h"
+#include "src/Window/Types/StrokeAction.h"
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -19,11 +20,15 @@
 
 class App : public PixelGameEngine {
 private:
-  // typedef std::pair<uint32_t, Interpreter::RelativeToken> RelativeAddr;
+  struct OperationT {
+    std::string name = "";
+    std::atomic<bool> exec = false;
+    std::unique_ptr<std::thread> thread = nullptr;
+  };
 
 public:
   App(LuaScript lua): lua(std::move(lua)) { sAppName = "Z80 Emulator"; }
-  ~App() { if (sync.second != nullptr && sync.second->joinable()) sync.second->join(); Registry::Shutdown(); }
+  ~App() { if (op.thread != nullptr && op.thread->joinable()) op.thread->join(); Registry::Shutdown(); }
 
   bool OnUserCreate() override {
     Registry::Initialize(this, lua); Event(Int2Type<COMPILE_CALLBACK>());
@@ -152,11 +157,10 @@ public:
     FillRect(pos - olc::vi2d(vStep.x / 2, 2), GetTextSize(name) + olc::vi2d(vStep.x, 2), color);
     DrawString(pos, name, Color::DARK_GREY);
 
-    if (!sync.first) return;
+    if (!op.exec) return;
 
-    const std::string synchronizing = "Synchronizing... ";
-    pos.x = nWidth - synchronizing.size() * vStep.x; pos.y += vStep.y;
-    DrawString(pos, synchronizing, Color::DARK_GREY);
+    pos.x = nWidth - op.name.size() * vStep.x; pos.y += vStep.y;
+    DrawString(pos, op.name, Color::DARK_GREY);
   }
 
   uint32_t GetMode() override { return Registry::Z80->GetMode(); }
@@ -183,8 +187,8 @@ public:
     Registry::Editor->Reset();
     for (auto f : Registry::Interpreter->files()) Registry::Editor->Open(f);
 
-    if (sync.second && sync.second->joinable()) sync.second->join();
-    sync.first = true; sync.second = std::make_unique<std::thread>([&]() { Registry::W27C512->Disassemble(); sync.first = false; });
+    if (op.thread && op.thread->joinable()) op.thread->join();
+    op.exec = true; op.name = "Synchronizing... "; op.thread = std::make_unique<std::thread>([&]() { Registry::W27C512->Disassemble(); op.exec = false; });
 
     Registry::Z80->Reset();
   }
@@ -397,10 +401,10 @@ private:
   std::vector<olc::Key> vKeyCombination;
   std::unordered_set<olc::Key> vKeyCombinationHeld;
   std::unordered_set<Window::KeyEventListener*> vKeyEventListeners;
-  std::function<bool(olc::Key, int32_t)> fnStrokeAction = nullptr;
+  Window::StrokeAction fnStrokeAction = nullptr;
   int32_t nStrokeIndex = 0;
 
-  std::pair<std::atomic<bool>, std::unique_ptr<std::thread>> sync = std::pair(false, nullptr);
+  OperationT op = {};
   static inline const std::string keybindings = "Ctrl-Space ?    Open/Close list of key bindings";
 };
 

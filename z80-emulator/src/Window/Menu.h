@@ -172,12 +172,12 @@ private:
 };
 
 inline const ::Window::StrokeT<> Menu::commands = ::Window::StrokeT<>::Init({
-  { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::ESCAPE>(),[](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
-  { Int2Type<olc::Key::ENTER>(), [](void* self, auto... keys) { return static_cast<Menu*>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::K>(), [](void* self, auto... keys) { return Self<Menu>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return Self<Menu>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return Self<Menu>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return Self<Menu>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::ESCAPE>(),[](void* self, auto... keys) { return Self<Menu>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::ENTER>(), [](void* self, auto... keys) { return Self<Menu>(self)->Process(keys...); } },
 });
 };
 

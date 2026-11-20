@@ -1453,9 +1453,9 @@ private:
 };
 
 inline const Window::StrokeT<> CPU::commands = ::Window::StrokeT<>::Init({
-  { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return static_cast<CPU*>(self)->menu->Reset(), nullptr; } },
+  { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return Self<CPU>(self)->menu->Reset(), nullptr; } },
   { Int2Type<olc::Key::SHIFT>(), {
-    { Int2Type<olc::Key::OEM_2>(), [](void* self, auto... keys) { return static_cast<CPU*>(self)->Menu(), nullptr; } },
+    { Int2Type<olc::Key::OEM_2>(), [](void* self, auto... keys) { return Self<CPU>(self)->Menu(), nullptr; } },
   }}
 });
 

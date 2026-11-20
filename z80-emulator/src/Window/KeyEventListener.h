@@ -124,6 +124,9 @@ protected:
     return empty;
   };
 
+  template<class T>
+  static inline T* Self(void* self) { return static_cast<T*>(self); }
+
 protected:
   int32_t nStart = 0; // index of the cmd, which is pointing to first char in the lexeme
   int32_t nCurr = 0; // index of the cmd, which is pointing to the curr char
