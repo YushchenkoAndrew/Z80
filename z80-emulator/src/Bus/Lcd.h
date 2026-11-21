@@ -3,14 +3,12 @@
 #include "src/Bus/Defs.h"
 #include "src/Bus/Device.h"
 #include "src/Defs.h"
+#include "src/Utils/Utils.h"
 #include "src/Window/Window.h"
 #include <array>
 #include <cstdint>
 
 namespace Bus {
-
-#define BIT_M(flag, n) (((uint8_t)flag) << n)
-#define IS_BIT(byte, n) (byte & (0x01 << n))
 
 class LCD : public Window::Window, public Device {
   enum { CLEAR=1, RETURN=2, MODE=4, DISPLAY=8, CURSOR=16, FUNCTION=32, CGRAM=64, DDRAM=128 };
@@ -36,14 +34,14 @@ public:
   uint8_t Read(uint32_t addr, bool) override { return 0; }
   uint8_t Write(uint32_t addr, uint8_t data, bool bDataRegister) override {
     if (!bDataRegister) {
-      if (IS_BIT(data, 7)) return Instruction(Int2Type<DDRAM>(),   data);
-      if (IS_BIT(data, 6)) return Instruction(Int2Type<CGRAM>(),   data);
-      if (IS_BIT(data, 5)) return Instruction(Int2Type<FUNCTION>(),data);
-      if (IS_BIT(data, 4)) return Instruction(Int2Type<CURSOR>(),  data);
-      if (IS_BIT(data, 3)) return Instruction(Int2Type<DISPLAY>(), data);
-      if (IS_BIT(data, 2)) return Instruction(Int2Type<MODE>(),    data);
-      if (IS_BIT(data, 1)) return Instruction(Int2Type<RETURN>(),  data);
-      if (IS_BIT(data, 0)) return Instruction(Int2Type<CLEAR>(),   data);
+      if (Utils::Bit(data, 7)) return Instruction(Int2Type<DDRAM>(),   data);
+      if (Utils::Bit(data, 6)) return Instruction(Int2Type<CGRAM>(),   data);
+      if (Utils::Bit(data, 5)) return Instruction(Int2Type<FUNCTION>(),data);
+      if (Utils::Bit(data, 4)) return Instruction(Int2Type<CURSOR>(),  data);
+      if (Utils::Bit(data, 3)) return Instruction(Int2Type<DISPLAY>(), data);
+      if (Utils::Bit(data, 2)) return Instruction(Int2Type<MODE>(),    data);
+      if (Utils::Bit(data, 1)) return Instruction(Int2Type<RETURN>(),  data);
+      if (Utils::Bit(data, 0)) return Instruction(Int2Type<CLEAR>(),   data);
 
       return 0x00;
     }
@@ -53,7 +51,7 @@ public:
 
     // TODO: Impl shift
     // Instruction(Int2Type<CURSOR>(), BIT_M(shift, 3) | BIT_M(inc, 2));
-    Instruction(Int2Type<CURSOR>(), BIT_M(inc, 2));
+    Instruction(Int2Type<CURSOR>(), Utils::Shift(2, (uint8_t)inc));
     return data;
   }
 
@@ -88,18 +86,18 @@ public:
   }
 
   inline uint8_t Instruction(Int2Type<RETURN>, uint8_t data) { cursor.second = 0x00; return data; }
-  inline uint8_t Instruction(Int2Type<MODE>, uint8_t data) { inc = IS_BIT(data, 1); shift = IS_BIT(data, 0); return data; }
+  inline uint8_t Instruction(Int2Type<MODE>, uint8_t data) { inc = Utils::Bit(data, 1); shift = Utils::Bit(data, 0); return data; }
 
   inline uint8_t Instruction(Int2Type<DISPLAY>, uint8_t data) {
-    bg = IS_BIT(data, 2) ? Color::DARK_GREY : Color::VERY_DARK_GREY;
-    cursor.first = IS_BIT(data, 1);
-    fBlink.first = IS_BIT(data, 0);
+    bg = Utils::Bit(data, 2) ? Color::DARK_GREY : Color::VERY_DARK_GREY;
+    cursor.first = Utils::Bit(data, 1);
+    fBlink.first = Utils::Bit(data, 0);
     return data;
   }
 
   uint8_t Instruction(Int2Type<CURSOR>, uint8_t data) {
-    const bool right = IS_BIT(data, 2);
-    if (!IS_BIT(data, 3)) { cursor.second = (cursor.second + (right ? 1 : buffer.size() - 1)) % buffer.size(); return data; }
+    const bool right = Utils::Bit(data, 2);
+    if (!Utils::Bit(data, 3)) { cursor.second = (cursor.second + (right ? 1 : buffer.size() - 1)) % buffer.size(); return data; }
     if (right) { for (size_t i = buffer.size() - 1; i > 0; i--) buffer[i] = buffer[i - 1]; buffer[0] = SegmentT{}; }
     else       { for (size_t i = 0; i + 1 < buffer.size(); i++) buffer[i] = buffer[i + 1]; buffer.back() = SegmentT{}; }
 
@@ -387,7 +385,4 @@ private:
     { 0xFF,{ 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111 } },
   };
 };
-
-#undef BIT_M
-#undef IS_BIT
 };

@@ -6,10 +6,6 @@
 
 namespace Bus {
 
-
-#define BIT(word, pos) ((word >> pos) & 0x01)
-#define MASK(pos) (1 << (pos))
-
 class PPI : public Window::Window, public Device {
   enum ModeT { MODE0, MODE1, MODE2 };
   enum CtrlSign { INTR_B, IBF_B, STB_B, INTR_A, STB_A, IBF_A, ACK_A, OBF_A };
@@ -57,15 +53,15 @@ public:
 
 
     // Mode set
-    if (BIT(data, 7)) {
-      options[REG::CL].first = options[REG::B].first = BIT(data, 2) ? MODE1 : MODE0;
-      options[REG::CH].first = options[REG::A].first = BIT(data, 6) ? MODE2 : BIT(data, 5) ? MODE1 : MODE0;
+    if (Utils::Bit(data, 7)) {
+      options[REG::CL].first = options[REG::B].first = Utils::Bit(data, 2) ? MODE1 : MODE0;
+      options[REG::CH].first = options[REG::A].first = Utils::Bit(data, 6) ? MODE2 : Utils::Bit(data, 5) ? MODE1 : MODE0;
 
-      options[REG::CL].second = BIT(data, 0); options[REG::B].second = BIT(data, 1);
-      options[REG::CH].second = BIT(data, 3);  options[REG::A].second = BIT(data, 4);
+      options[REG::CL].second = Utils::Bit(data, 0); options[REG::B].second = Utils::Bit(data, 1);
+      options[REG::CH].second = Utils::Bit(data, 3);  options[REG::A].second = Utils::Bit(data, 4);
     } else {
-      uint8_t mask = MASK((data >> 1) & 0x07);
-      regC() = regC() & (mask ^ 0xFF) | (BIT(data, 0) ? mask : 0x00);
+      uint8_t mask = Utils::Shift((data >> 1) & 0x07);
+      regC() = regC() & (mask ^ 0xFF) | (Utils::Bit(data, 0) ? mask : 0x00);
     }
 
     return data;
@@ -73,49 +69,49 @@ public:
 
 public:
   inline uint8_t regA(Int2Type<REG2DATA>) {
-    if (options[REG::A].first == MODE1) regC() = (regC() | MASK(STB_A)) & ((MASK(IBF_A) | MASK(INTR_A)) ^ 0xFF);
+    if (options[REG::A].first == MODE1) regC() = (regC() | Utils::Shift(STB_A)) & ((Utils::Shift(IBF_A) | Utils::Shift(INTR_A)) ^ 0xFF);
     return regA();
   }
 
   inline uint8_t regA(Int2Type<DATA2REG>, uint8_t v) {
-    if (options[REG::A].first == MODE1) regC() = regC() & ((MASK(OBF_A) | MASK(ACK_A) | MASK(INTR_A)) ^ 0xFF);
+    if (options[REG::A].first == MODE1) regC() = regC() & ((Utils::Shift(OBF_A) | Utils::Shift(ACK_A) | Utils::Shift(INTR_A)) ^ 0xFF);
     return (regA() = v);
   }
 
   inline uint8_t regA(Int2Type<PORT2REG>, uint8_t v) {
     if (!options[REG::A].second) return 0x00;
-    if (options[REG::A].first == MODE1) regC() = (regC() & (MASK(STB_A) ^ 0xFF)) | MASK(IBF_A) | MASK(INTR_A);
+    if (options[REG::A].first == MODE1) regC() = (regC() & (Utils::Shift(STB_A) ^ 0xFF)) | Utils::Shift(IBF_A) | Utils::Shift(INTR_A);
 
     return (regs[REG::A] = v);
   }
 
   inline uint8_t regA(Int2Type<REG2PORT>) {
     if (options[REG::A].second) return 0x00;
-    if (options[REG::A].first == MODE1) regC() = regC() | MASK(OBF_A) | MASK(ACK_A) | MASK(INTR_A);
+    if (options[REG::A].first == MODE1) regC() = regC() | Utils::Shift(OBF_A) | Utils::Shift(ACK_A) | Utils::Shift(INTR_A);
     return regs[REG::A];
   }
 
 
   inline uint8_t regB(Int2Type<REG2DATA>) { 
-    if (options[REG::B].first == MODE1) regC() = (regC() | MASK(STB_B)) & ((MASK(IBF_B) | MASK(INTR_B)) ^ 0xFF);
+    if (options[REG::B].first == MODE1) regC() = (regC() | Utils::Shift(STB_B)) & ((Utils::Shift(IBF_B) | Utils::Shift(INTR_B)) ^ 0xFF);
     return regB();
   }
 
   inline uint8_t regB(Int2Type<DATA2REG>, uint8_t v) { 
-    if (options[REG::B].first == MODE1) regC() = regC() & ((MASK(IBF_B) | MASK(STB_B) | MASK(INTR_B)) ^ 0xFF);
+    if (options[REG::B].first == MODE1) regC() = regC() & ((Utils::Shift(IBF_B) | Utils::Shift(STB_B) | Utils::Shift(INTR_B)) ^ 0xFF);
     return (regB() = v);
   }
 
   inline uint8_t regB(Int2Type<PORT2REG>, uint8_t v) {
     if (!options[REG::B].second) return 0x00;
-    if (options[REG::B].first == MODE1) regC() = (regC() & (MASK(STB_B) ^ 0xFF)) | MASK(IBF_B) | MASK(INTR_B);
+    if (options[REG::B].first == MODE1) regC() = (regC() & (Utils::Shift(STB_B) ^ 0xFF)) | Utils::Shift(IBF_B) | Utils::Shift(INTR_B);
 
     return (regs[REG::B] = v);
   }
 
   inline uint8_t regB(Int2Type<REG2PORT>) { 
     if (options[REG::B].second) return 0x00;
-    if (options[REG::B].first == MODE1) regC() = regC() | MASK(IBF_B) | MASK(STB_B) | MASK(INTR_B);
+    if (options[REG::B].first == MODE1) regC() = regC() | Utils::Shift(IBF_B) | Utils::Shift(STB_B) | Utils::Shift(INTR_B);
     return options[REG::B].second ? 0x00 : regs[REG::B];
   }
 
@@ -150,8 +146,5 @@ private:
   std::array<uint8_t, 3> regs = {};
   std::array<std::pair<ModeT, bool>, 4> options = {};
 };
-
-#undef BIT
-#undef MASK
 
 };

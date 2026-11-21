@@ -7,19 +7,12 @@
 
 namespace Bus {
 
-#define CT0(p)  std::get<0>(p)
-#define CT1(p)  std::get<1>(p)
-#define CT2(p)  std::get<2>(p)
-
-#define ENABLE_OUTPUT  0x01
-#define KEEP_OUTPUT    0x02
-
 /**
  * @brief Programmable Interval Timer
  */
 class PIT : public Window::Window, public Device {
-
-typedef std::tuple<uint16_t, uint16_t, uint16_t> RegT;
+  enum { ENABLE_OUTPUT = 0x01, KEEP_OUTPUT = 0x02 };
+  struct RegT { uint16_t CT0; uint16_t CT1; uint16_t CT2; };
 
 public:
   PIT(PixelGameEngine* engine, std::string id, int32_t c): Window::Base(engine), Window::Window(engine, std::move(id)), clock(std::pair(c, c)), runtime(std::thread(std::thread(&PIT::Runtime, this))) {
@@ -157,9 +150,9 @@ public:
 private:
   uint16_t& GetValue(RegT& reg, uint8_t addr) {
     switch (addr & 0xFF) {
-      case 0x00: return CT0(reg);
-      case 0x01: return CT1(reg);
-      case 0x02: return CT2(reg);
+      case 0x00: return reg.CT0;
+      case 0x01: return reg.CT1;
+      case 0x02: return reg.CT2;
     }
 
     static uint16_t none;
@@ -184,11 +177,4 @@ private:
 
   std::thread runtime;
 };
-
-#undef CT0
-#undef CT1
-#undef CT2
-
-#undef ENABLE_OUTPUT
-#undef KEEP_OUTPUT
 };

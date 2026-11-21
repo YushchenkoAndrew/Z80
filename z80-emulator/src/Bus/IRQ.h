@@ -7,7 +7,6 @@
 namespace Bus {
 
 class IRQ : public Window::Window, public Device {
-
 public:
   struct BIT {
     enum { NONE1, NONE2, CT2, CT1, RTC, TxRDT, RxRDY, KEYBOARD };

@@ -3,10 +3,9 @@
 #include "src/Bus/Defs.h"
 #include "src/Bus/Memory.h"
 #include "src/Defs.h"
+#include "src/Utils/Utils.h"
 
 namespace Bus {
-
-#define MASK(pos) (1 << (pos))
 
 class RTC : public Memory {
   struct ADDR {
@@ -30,20 +29,20 @@ public:
   ~RTC() { bExec = false; if (runtime.joinable()) runtime.join(); }
 
   void Interrupt();
-  inline void IRQF() { memory[ADDR::REG::C] |= MASK(FLAG::REG_C::IRQF); }
+  inline void IRQF() { memory[ADDR::REG::C] |= Utils::Shift(FLAG::REG_C::IRQF); }
 
   void Runtime() {
     while (bExec) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
       const uint8_t regB = memory[ADDR::REG::B];
-      const uint8_t bBIN = regB & MASK(FLAG::REG_B::DM);
-      const uint8_t iHour = (regB & MASK(FLAG::REG_B::h24)) ? 24 : 12;
+      const uint8_t bBIN = regB & Utils::Shift(FLAG::REG_B::DM);
+      const uint8_t iHour = (regB & Utils::Shift(FLAG::REG_B::h24)) ? 24 : 12;
 
-      if (regB & MASK(FLAG::REG_B::SET)) continue;
+      if (regB & Utils::Shift(FLAG::REG_B::SET)) continue;
 
       time++;
-      memory[ADDR::REG::A] |= MASK(FLAG::REG_A::UIP);
-      memory[ADDR::REG::C] &= ~(MASK(FLAG::REG_C::UF) | MASK(FLAG::REG_C::IRQF));
+      memory[ADDR::REG::A] |= Utils::Shift(FLAG::REG_A::UIP);
+      memory[ADDR::REG::C] &= ~(Utils::Shift(FLAG::REG_C::UF) | Utils::Shift(FLAG::REG_C::IRQF));
 
       auto get = [&](int r) -> uint8_t { return bBIN ? memory[r] : FromBCD(memory[r]); };
       auto set = [&](int r, uint8_t v)  { memory[r] = bBIN ? v : ToBCD(v); };
@@ -60,7 +59,7 @@ public:
         set(ADDR::CALENDAR::DATE_OF_MONTH, date); set(ADDR::CALENDAR::MONTH, month); set(ADDR::CALENDAR::YEAR, year);
       }
 
-      memory[ADDR::REG::A] &= ~MASK(FLAG::REG_A::UIP);
+      memory[ADDR::REG::A] &= ~Utils::Shift(FLAG::REG_A::UIP);
 
       const uint8_t bAFSec  = memory[ADDR::CLOCK::SECONDS] == memory[ADDR::ALARM::SECONDS] || memory[ADDR::ALARM::SECONDS] >= 0xC0;
       const uint8_t bAFMin  = memory[ADDR::CLOCK::MINUTES] == memory[ADDR::ALARM::MINUTES] || memory[ADDR::ALARM::MINUTES] >= 0xC0;
@@ -68,12 +67,12 @@ public:
 
 
       if (bAFSec && bAFMin && bAFHour) {
-        memory[ADDR::REG::C] |= MASK(FLAG::REG_C::AF);
-        if (memory[ADDR::REG::B] & MASK(FLAG::REG_B::AIE)) Interrupt();
+        memory[ADDR::REG::C] |= Utils::Shift(FLAG::REG_C::AF);
+        if (memory[ADDR::REG::B] & Utils::Shift(FLAG::REG_B::AIE)) Interrupt();
       }
 
-      memory[ADDR::REG::C] |= MASK(FLAG::REG_C::UF);
-      if (memory[ADDR::REG::B] & MASK(FLAG::REG_B::UIE)) Interrupt();
+      memory[ADDR::REG::C] |= Utils::Shift(FLAG::REG_C::UF);
+      if (memory[ADDR::REG::B] & Utils::Shift(FLAG::REG_B::UIE)) Interrupt();
 
 
       // TODO: PIE interrupt
@@ -92,7 +91,7 @@ public:
 
   uint8_t Write(uint32_t addr, uint8_t data, bool) override {
     addr &= memory.size() - 1;
-    const bool bin = memory[ADDR::REG::B] & MASK(FLAG::REG_B::DM);
+    const bool bin = memory[ADDR::REG::B] & Utils::Shift(FLAG::REG_B::DM);
     const uint64_t v = bin ? data : FromBCD(data);
 
     switch (addr) {
@@ -119,6 +118,4 @@ private:
 
   std::thread runtime;
 };
-
-#undef MASK
 };

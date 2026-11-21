@@ -75,6 +75,19 @@ namespace Utils {
     return 0;
   }
 
+  template<typename T>
+  inline constexpr bool Bit(T word, uint32_t pos) noexcept {
+    using U = std::make_unsigned_t<T>;
+    constexpr auto width = std::numeric_limits<U>::digits;
+    return pos < width ?(static_cast<U>(word) & (U{1} << pos)) != 0 : false;
+  }
+
+  template<typename T = uint8_t>
+  constexpr T Shift(uint32_t pos, T flag = 1) noexcept {
+    using U = std::make_unsigned_t<T>;
+    constexpr auto width = std::numeric_limits<U>::digits;
+    return pos < width ? static_cast<T>(static_cast<U>(flag) << pos) : T{0};
+  }
 
 class Lock {
 public:
@@ -84,4 +97,5 @@ public:
 private:
   std::mutex& mut;
 };
+
 };

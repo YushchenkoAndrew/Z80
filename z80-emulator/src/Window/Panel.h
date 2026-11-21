@@ -11,24 +11,24 @@
 #include <memory>
 #include <utility>
 
-using WindowT = std::tuple<bool, uint8_t, std::shared_ptr<::Window::Window>, ::Window::DimensionT, int32_t>;
-using WindowInitT = std::tuple<std::shared_ptr<::Window::Window>, uint8_t, ::Window::DimensionT>;
 
-#define SELECTED(p)  std::get<0>(p)
-#define DEPTH(p)     std::get<1>(p)
-#define PTR(p)       std::get<2>(p)
-#define DIMENSION(p) std::get<3>(p)
-#define WINDOW(p)    std::get<4>(p)
-
-#define POS(p) DIMENSION(p).first
-#define SIZE(p) DIMENSION(p).second
-#define EXIST(p) PTR(p) != nullptr
-#define IS_NULL(p) PTR(p) == nullptr
-// #define SHOULD_DRAW(flag, p) (!flag || (flag && ZOOMED(p)))
-// #define IS_INSIDE(rect, pos) (POS(rect).x < pos.x && POS(rect).y < pos.y && pos.x < POS(rect).x + SIZE(rect).x && pos.y < POS(rect).y + SIZE(rect).y)
-        
 class Panel : public Window::KeyEventListener, public Window::Window {
-  enum DepthT { HIDDEN, NORMAL, ZOOMED = 0xFF };
+public:
+  enum { HIDDEN, NORMAL, ZOOMED = 0xFF };
+
+  struct WindowT {
+    WindowT(std::shared_ptr<::Window::Window> instance, olc::vi2d absolute = {}, olc::vi2d size = {}, uint8_t depth = NORMAL)
+      : instance(std::move(instance)), absolute(absolute), size(size), depth(depth), selected(false) {}
+
+    bool selected;
+
+    olc::vi2d absolute;
+    olc::vi2d size;
+
+    uint8_t depth = 0;
+    uint8_t index = 0;
+    std::shared_ptr<::Window::Window> instance;
+};
 
 public:
   Panel(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyEventListener(engine) {
@@ -37,27 +37,26 @@ public:
       { Int2Type<olc::Key::ESCAPE>(), [this](void*, auto...) { return this->Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::SHIFT>(), Int2Type<olc::Key::OEM_2>()); } }
     });
 
-    Push(WindowInitT(std::move(popup), HIDDEN, std::pair(olc::vi2d(12, 8), olc::vi2d(engine->ScreenWidth() - 24, engine->ScreenHeight() - 40))));
+    Push(WindowT(std::move(popup), olc::vi2d(12, 8), olc::vi2d(engine->ScreenWidth() - 24, engine->ScreenHeight() - 40), HIDDEN));
   }
 
   void Select(::Window::DimensionT dimensions) override {
     ::Window::Window::Select(dimensions);
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Select(DIMENSION(w));
+    for (auto& w : windows) if (EXIST(w)) w.instance->Select({ w.absolute, w.size });
   }
-
   inline bool IsMouseOver(WindowT& w) {
     const auto mouse = GameEngine->GetMousePos();
-    auto pos = PTR(w)->GetAbsolute(); auto size = PTR(w)->GetSize();
+    auto pos = w.instance->GetAbsolute(); auto size = w.instance->GetSize();
 
     return mouse.x > pos.x && mouse.y > pos.y && mouse.x < pos.x + size.x && mouse.y < pos.y + size.y;
   }
 
   bool IsMouseOverWindow(WindowT& window) {
     if (!IsMouseOver(window)) return false;
-    if (!DEPTH(window)) return false;
+    if (!window.depth) return false;
 
     for (auto& w : windows) {
-      if (IsMouseOver(w) && DEPTH(w) > DEPTH(window)) return false;
+      if (IsMouseOver(w) && w.depth > window.depth) return false;
     }
 
     return true;
@@ -65,7 +64,7 @@ public:
 
   void Focus(bool state) override {
     ::Window::KeyEventListener::Focus(state);
-    for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(state && SELECTED(w));
+    for (auto& w : windows) if (EXIST(w)) w.instance->Focus(state && w.selected);
   }
 
   void Process() override {
@@ -75,9 +74,9 @@ public:
     for (auto& w : windows) {
       if (!(EXIST(w))) continue;
 
-      if (IsMouseOverWindow(w)) PTR(w)->Preprocess();
-      if (bPressed) PTR(w)->Focus(SELECTED(w) = IsMouseOverWindow(w));
-      if (SELECTED(w) && DEPTH(w) >= window.first) window = std::pair(DEPTH(w), PTR(w));
+      if (IsMouseOverWindow(w)) w.instance->Preprocess();
+      if (bPressed) w.instance->Focus(w.selected = IsMouseOverWindow(w));
+      if (w.selected && w.depth >= window.first) window = std::pair(w.depth, w.instance);
     }
 
     if (window.second != nullptr) window.second->Process();
@@ -91,22 +90,22 @@ public:
     // if (editor.first != nullptr) vFuture.push_back(std::async(&Editor::Editor::Draw, editor.first, GameEngine)); 
 
     // for(auto& future : vFuture) future.wait();
-    windows.sort([](const auto& a, const auto& b) { return DEPTH(a) < DEPTH(b); });
+    windows.sort([](WindowT& a, WindowT& b) { return a.depth < b.depth; });
 
     for (auto& w : windows) {
-      if (!(EXIST(w) && DEPTH(w))) continue;
-      GameEngine->FillRect(PTR(w)->GetAbsolute(), PTR(w)->GetSize(), Color::BLACK);
-      PTR(w)->Draw();
+      if (!(EXIST(w) && w.depth)) continue;
+      GameEngine->FillRect(w.instance->GetAbsolute(), w.instance->GetSize(), Color::BLACK);
+      w.instance->Draw();
     }
 
     // if (mode == NORMAL) return;
     // if (cmd.size() && cmd.back() == 'q' && !search.bEnabled)
     if (!bDrawWindowIndex) return;
     for (auto& w : windows) {
-      if (IS_NULL(w) || !SIZE(w).x || !SIZE(w).y) continue;
+      if (!EXIST(w) || !w.size.x || !w.size.y) continue;
 
-      const auto& color = SELECTED(w) ? Color::BLUE : Color::RED;
-      GameEngine->DrawString(POS(w), std::string(1, '0' + WINDOW(w)), color, 3);
+      const auto& color = w.selected ? Color::BLUE : Color::RED;
+      GameEngine->DrawString(w.absolute, std::string(1, '0' + w.index), color, 3);
     }
     // if (cmd.size() && cmd.back() == 'w' && !search.bEnabled) Highlight(GameEngine);
   }
@@ -129,9 +128,9 @@ public:
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::CTRL>, Int2Type<olc::Key::SPACE>, Int2Type<olc::Key::Z>) { 
     for (auto& w : windows) {
-      if (!(EXIST(w) && SELECTED(w))) continue;;
-      PTR(w)->Select(DEPTH(w) == ZOOMED ? std::pair(absolute, size) : DIMENSION(w));
-      DEPTH(w) = DEPTH(w) == ZOOMED ? NORMAL : ZOOMED; 
+      if (!(EXIST(w) && w.selected)) continue;
+      w.instance->Select(w.depth == ZOOMED ? ::Window::DimensionT{ absolute, size } : ::Window::DimensionT{ w.absolute, w.size });
+      w.depth = w.depth == ZOOMED ? NORMAL : ZOOMED; 
     }
     return nullptr;
   }
@@ -146,9 +145,9 @@ public:
     // int32_t selected = 0;
     // auto popup = std::dynamic_pointer_cast<>(PTR(*bindings));
 
-    if (SELECTED(*window)) {
-      for (auto& w : windows) if (nWindow == WINDOW(w)) PTR(w)->Focus(SELECTED(w) = true);
-      PTR(*window)->Focus(SELECTED(*window) = false); DEPTH(*window) = HIDDEN;
+    if (window->selected) {
+      for (auto& w : windows) if (nWindow == w.index) w.instance->Focus(w.selected = true);
+      window->instance->Focus(window->selected = false); window->depth = HIDDEN;
       return nullptr;
     }
 
@@ -165,10 +164,10 @@ public:
     std::vector<std::string> commands = this->Combinations(&GetCommands());
 
     for (auto& w : windows) {
-      if (!SELECTED(w)) continue;
-      else nWindow = WINDOW(w), PTR(w)->Focus(SELECTED(w) = false);
+      if (!w.selected) continue;
+      else nWindow = w.index, w.instance->Focus(w.selected = false);
 
-      const auto combinations = this->Combinations(&PTR(w)->GetCommands());
+      const auto combinations = this->Combinations(&w.instance->GetCommands());
       commands.insert(commands.end(), combinations.begin(), combinations.end());
     }
     // cmd.push_back('0'); Command(Int2Type<Editor::VimT::CMD_q>()); cmd.pop_back();
@@ -177,10 +176,10 @@ public:
     // bindings.insert(bindings.end(), panel.begin(), panel.end());
 
     
-    auto popup = Utils::Cast<::Window::Popup>(PTR(*window));
+    auto popup = Utils::Cast<::Window::Popup>(window->instance);
     auto vim = Utils::Cast<Editor::Vim>(popup->window);
 
-    vim->Load(commands); popup->Focus(SELECTED(*window) = true); DEPTH(*window) = 2;
+    vim->Load(commands); popup->Focus(window->selected = true); window->depth = 2;
     
     // NOTE: Temp solution
     // Process(Int2Type<olc::Key::CTRL>(), Int2Type<olc::Key::SPACE>(), Int2Type<olc::Key::Z>());
@@ -223,7 +222,7 @@ public:
 
     return [&](olc::Key k, int32_t) {
       int32_t digit = k - olc::Key::K0; bDrawWindowIndex = false;
-      for (auto& w : windows) if (EXIST(w)) PTR(w)->Focus(SELECTED(w) = WINDOW(w) == digit);
+      for (auto& w : windows) if (EXIST(w)) w.instance->Focus(w.selected = w.index == digit);
       return false;
     };
   }
@@ -317,25 +316,22 @@ public:
 
 public:
   WindowT* Find(std::string id) {
-    for (auto& w : windows) if (EXIST(w) && PTR(w)->windowId == id) return &w;
+    for (auto& w : windows) if (EXIST(w) && w.instance->windowId == id) return &w;
     return nullptr;
   }
 
-  template<typename T, typename... Args>
-  inline void Push(T ref, Args ...args) { Push(ref); Push(args...); }
+  inline void Push(WindowT w) { windows.push_back((w.index = (uint8_t)windows.size() + 1, std::move(w))); }
 
-  inline void Push() {}
-  
-  inline void Push(WindowInitT b) { windows.push_back(WindowT(false, std::get<1>(b), std::get<0>(b), std::get<2>(b), windows.size() + 1)); }
-
-public:
   inline std::string GetName() {
-    for (const auto& w: windows) if (EXIST(w) && SELECTED(w)) return PTR(w)->windowId;
+    for (auto& w: windows) if (EXIST(w) && w.selected) return w.instance->windowId;
     return "unknown";
   }
 
   // static LuaScript& GetConfig() { static LuaScript config; return config; }
   const ::Window::StrokeT<>& GetCommands() const override { return Panel::commands; }
+
+private:
+  inline static bool EXIST(const WindowT& w) noexcept { return w.instance != nullptr; }
 
 private:
   bool bDrawWindowIndex = false;
@@ -368,16 +364,3 @@ inline const Window::StrokeT<> Panel::commands = ::Window::StrokeT<>::Init({
     }}
   }}
 });
-
-
-#undef SELECTED
-#undef DISPLAYED
-#undef PTR
-#undef DIMENSION
-#undef WINDOW
-
-#undef POS
-#undef SIZE
-#undef EXIST
-#undef SHOULD_DRAW
-#undef IS_INSIDE

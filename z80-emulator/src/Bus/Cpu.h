@@ -11,25 +11,13 @@
 #include "src/Window/Window.h"
 #include "src/Window/Menu.h"
 #include <condition_variable>
+#include <cstdint>
 #include <memory>
 #include <string>
 
 namespace Bus {
 
 namespace Z80 {
-  #define LOW_M(word) (word & 0x00FF)
-  #define HIGH_M(word) (word & 0xFF00)
-  #define BIT_M(pos, state) ((uint8_t)state << pos)
-
-  #define LOW(word) ((uint8_t)(LOW_M(word)))
-  #define HIGH(word) ((uint8_t)(HIGH_M(word) >> 8))
-  #define BIT(word, pos) ((word >> pos) & 0x01)
-
-  #define LOW_SET(word, byte) (HIGH_M(word) | LOW_M(byte))
-  #define HIGH_SET(word, byte) (LOW_M(word) | HIGH_M((byte << 8)))
-  #define BIT_SET(word, pos, state) ((word & ~BIT_M(pos, 1)) | BIT_M(pos, state))
-
-  #define SIGN(byte) ((byte) & 0x80)
 
 class CPU : public Window::KeyEventListener, public Window::Window, public Device {
 private:
@@ -255,8 +243,8 @@ public:
   inline void Process(Int2Type<Instruction::DI>) { cycles = 1; IFF.first = IFF.second = false; }
   inline void Process(Int2Type<Instruction::EI>) { cycles = 1; IFF.first = IFF.second = true; }
 
-  inline void Process(Int2Type<Instruction::IN_A_n>) { cycles = 11; regA(Read(HIGH_SET(Read(), regA()), false)); }
-  inline void Process(Int2Type<Instruction::OUT_n_A>) { cycles = 11; Write(HIGH_SET(Read(), regA()), regA(), false); }
+  inline void Process(Int2Type<Instruction::IN_A_n>) { cycles = 11; regA(Read(LOW<uint16_t>(Read()) | ((uint16_t)regA() << 8), false)); }
+  inline void Process(Int2Type<Instruction::OUT_n_A>) { cycles = 11; Write(LOW<uint16_t>(Read()) | ((uint16_t)regA() << 8), regA(), false); }
 
 
   inline void Process(Int2Type<Instruction::RST_00h>) { cycles = 11; Call(true, 0x00); }
@@ -536,11 +524,11 @@ public:
   inline void Process(Int2Type<Instruction::LD_hl_L>) { cycles = 7; Write(regHL(), regL()); }
   inline void Process(Int2Type<Instruction::LD_hl_n>) { cycles = 7; Write(regHL(), Read()); }
 
-  inline void Process(Int2Type<Instruction::RLCA>) { cycles = 4; auto flags = regF(); regA(Rlc8(regA())); regF(BIT_SET(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
-  inline void Process(Int2Type<Instruction::RRCA>) { cycles = 4; auto flags = regF(); regA(Rrc8(regA())); regF(BIT_SET(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
+  inline void Process(Int2Type<Instruction::RLCA>) { cycles = 4; auto flags = regF(); regA(Rlc8(regA())); regF(BIT(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
+  inline void Process(Int2Type<Instruction::RRCA>) { cycles = 4; auto flags = regF(); regA(Rrc8(regA())); regF(BIT(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
 
-  inline void Process(Int2Type<Instruction::RLA>) { cycles = 4; auto flags = regF(); regA(Rlc8(regA(), true)); regF(BIT_SET(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
-  inline void Process(Int2Type<Instruction::RRA>) { cycles = 4; auto flags = regF(); regA(Rrc8(regA(), true)); regF(BIT_SET(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
+  inline void Process(Int2Type<Instruction::RLA>) { cycles = 4; auto flags = regF(); regA(Rlc8(regA(), true)); regF(BIT(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
+  inline void Process(Int2Type<Instruction::RRA>) { cycles = 4; auto flags = regF(); regA(Rrc8(regA(), true)); regF(BIT(flags, FLAG::C, flagC()))->flagH(false)->flagN(false); }
 
   inline void Process(Int2Type<Instruction::CPL>) { cycles = 4; regA(regA() ^ 0xFF)->flagN(true)->flagH(true); }
   inline void Process(Int2Type<Instruction::SCF>) { cycles = 4; flagC(true)->flagN(false)->flagH(false); }
@@ -1251,7 +1239,7 @@ private:
   inline uint8_t Xor8(uint8_t a, uint8_t b) { return BitOperation(a, b, a ^ b); }
   inline uint8_t And8(uint8_t a, uint8_t b) { auto res = BitOperation(a, b, a & b); flagH(true); return res; }
   inline uint8_t In8() { 
-   auto acc = Read(HIGH_SET(regC(), regB()), false);
+   auto acc = Read(LOW<uint16_t>(regC()) | ((uint16_t)regB() << 8), false);
 
    flagS(SIGN(acc))->flagZ(!acc)->flagH(false)->flagN(false)->flagPV(IsParity(acc));
 
@@ -1341,32 +1329,32 @@ private:
   inline uint8_t regR() { return LOW(reg[REG::IR]); }
 
 
-  inline CPU* regA(uint8_t b) { reg[REG::AF] = HIGH_SET(reg[REG::AF], b); return this; }
-  inline CPU* regB(uint8_t b) { reg[REG::BC] = HIGH_SET(reg[REG::BC], b); return this; }
-  inline CPU* regD(uint8_t b) { reg[REG::DE] = HIGH_SET(reg[REG::DE], b); return this; }
-  inline CPU* regH(uint8_t b) { reg[REG::HL] = HIGH_SET(reg[REG::HL], b); return this; }
-  inline CPU* regI(uint8_t b) { reg[REG::IR] = HIGH_SET(reg[REG::IR], b); return this; }
+  inline CPU* regA(uint8_t b) { reg[REG::AF] = LOW<uint16_t>(reg[REG::AF]) | ((uint16_t)b << 8); return this; }
+  inline CPU* regB(uint8_t b) { reg[REG::BC] = LOW<uint16_t>(reg[REG::BC]) | ((uint16_t)b << 8); return this; }
+  inline CPU* regD(uint8_t b) { reg[REG::DE] = LOW<uint16_t>(reg[REG::DE]) | ((uint16_t)b << 8); return this; }
+  inline CPU* regH(uint8_t b) { reg[REG::HL] = LOW<uint16_t>(reg[REG::HL]) | ((uint16_t)b << 8); return this; }
+  inline CPU* regI(uint8_t b) { reg[REG::IR] = LOW<uint16_t>(reg[REG::IR]) | ((uint16_t)b << 8); return this; }
 
-  inline CPU* regF(uint8_t b) { reg[REG::AF] = LOW_SET(reg[REG::AF], b); return this; }
-  inline CPU* regC(uint8_t b) { reg[REG::BC] = LOW_SET(reg[REG::BC], b); return this; }
-  inline CPU* regE(uint8_t b) { reg[REG::DE] = LOW_SET(reg[REG::DE], b); return this; }
-  inline CPU* regL(uint8_t b) { reg[REG::HL] = LOW_SET(reg[REG::HL], b); return this; }
-  inline CPU* regR(uint8_t b) { reg[REG::IR] = LOW_SET(reg[REG::IR], b); return this; }
+  inline CPU* regF(uint8_t b) { reg[REG::AF] = (reg[REG::AF] & 0xFF00) | LOW(b); return this; }
+  inline CPU* regC(uint8_t b) { reg[REG::BC] = (reg[REG::BC] & 0xFF00) | LOW(b); return this; }
+  inline CPU* regE(uint8_t b) { reg[REG::DE] = (reg[REG::DE] & 0xFF00) | LOW(b); return this; }
+  inline CPU* regL(uint8_t b) { reg[REG::HL] = (reg[REG::HL] & 0xFF00) | LOW(b); return this; }
+  inline CPU* regR(uint8_t b) { reg[REG::IR] = (reg[REG::IR] & 0xFF00) | LOW(b); return this; }
 
 
-  inline bool flagC()  { return BIT(regF(), FLAG::C); }
-  inline bool flagN()  { return BIT(regF(), FLAG::N); }
-  inline bool flagPV() { return BIT(regF(), FLAG::PV); }
-  inline bool flagH()  { return BIT(regF(), FLAG::H); }
-  inline bool flagZ()  { return BIT(regF(), FLAG::Z); }
-  inline bool flagS()  { return BIT(regF(), FLAG::S); }
+  inline bool flagC()  { return Utils::Bit(regF(), FLAG::C); }
+  inline bool flagN()  { return Utils::Bit(regF(), FLAG::N); }
+  inline bool flagPV() { return Utils::Bit(regF(), FLAG::PV); }
+  inline bool flagH()  { return Utils::Bit(regF(), FLAG::H); }
+  inline bool flagZ()  { return Utils::Bit(regF(), FLAG::Z); }
+  inline bool flagS()  { return Utils::Bit(regF(), FLAG::S); }
 
-  inline CPU* flagC(bool f)  { regF(BIT_SET(regF(), FLAG::C, f)); return this; }
-  inline CPU* flagN(bool f)  { regF(BIT_SET(regF(), FLAG::N, f)); return this; }
-  inline CPU* flagPV(bool f) { regF(BIT_SET(regF(), FLAG::PV,f)); return this; }
-  inline CPU* flagH(bool f)  { regF(BIT_SET(regF(), FLAG::H, f)); return this; }
-  inline CPU* flagZ(bool f)  { regF(BIT_SET(regF(), FLAG::Z, f)); return this; }
-  inline CPU* flagS(bool f)  { regF(BIT_SET(regF(), FLAG::S, f)); return this; }
+  inline CPU* flagC(bool f)  { regF(BIT(regF(), FLAG::C, f)); return this; }
+  inline CPU* flagN(bool f)  { regF(BIT(regF(), FLAG::N, f)); return this; }
+  inline CPU* flagPV(bool f) { regF(BIT(regF(), FLAG::PV,f)); return this; }
+  inline CPU* flagH(bool f)  { regF(BIT(regF(), FLAG::H, f)); return this; }
+  inline CPU* flagZ(bool f)  { regF(BIT(regF(), FLAG::Z, f)); return this; }
+  inline CPU* flagS(bool f)  { regF(BIT(regF(), FLAG::S, f)); return this; }
 
   /**
    * Returns true if one's is even
@@ -1386,6 +1374,12 @@ private:
     else std::snprintf(buf, sizeof buf, "%lld Hz", (long long)hz);
     return buf;
   }
+
+  inline static constexpr bool SIGN(uint8_t byte) noexcept { return (byte & 0x80) != 0; }
+  inline static constexpr uint16_t BIT(uint16_t word, uint32_t pos, bool state) noexcept { return state ? word | Utils::Shift(pos): word & ~Utils::Shift(pos); }
+
+  template<typename T = uint8_t> inline static constexpr T LOW (uint16_t word) noexcept { return static_cast<T>(word & 0x00FF); }
+  template<typename T = uint8_t> inline static constexpr T HIGH(uint16_t word) noexcept { return static_cast<T>((word >> 8) & 0x00FF); }
 
 public:
   inline void Restart(ModeT m = NORMAL) {

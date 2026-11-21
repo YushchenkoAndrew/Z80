@@ -1,4 +1,3 @@
-#pragma once
 #include "include/Typelist.h"
 #include "src/Bus/Cpu.h"
 #include "src/Registry.h"
@@ -44,11 +43,11 @@ public:
 
         auto instance = Registry::GetInstance(name);
         if (!instance) fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
-        else panels[index]->Push(WindowInitT(instance, lua.GetOr(p + ".depth", 1), std::pair(olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)))));
+        else panels[index]->Push(Panel::WindowT(instance, olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)), lua.GetOr(p + ".depth", (uint8_t)Panel::NORMAL)));
       }
     }
 
-    panels[panel]->Select(std::pair(olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y)));
+    panels[panel]->Select({ olc::vi2d(0, 0), olc::vi2d(ScreenWidth(), ScreenHeight() - vStep.y - vOffset.y) });
     panels[panel]->Focus(true);
 
     return true;

@@ -31,7 +31,7 @@ public:
 
   Vim(PixelGameEngine* engine): Window::Base(engine), Window::Window(engine, ""), ::Window::KeyEventListener(engine) {}
 
-  inline void Select(::Window::DimensionT dimensions) override { ::Window::Window::Select({ dimensions.first, olc::vi2d(std::max(dimensions.second.x - 14, 0), dimensions.second.y) }); }
+  inline void Select(::Window::DimensionT dimensions) override { ::Window::Window::Select({ dimensions.absolute, olc::vi2d(std::max(dimensions.size.x - 14, 0), dimensions.size.y) }); }
 
   void Preprocess() override {
     auto nWheel = GameEngine->GetMouseWheel();

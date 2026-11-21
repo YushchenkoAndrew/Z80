@@ -2,9 +2,11 @@
 #include "src/Window/Menu.h"
 
 namespace Window {
+  Window::Window(PixelGameEngine* engine, std::string id): Base(engine), windowId(std::move(id)) {}
+
   void Window::Select(DimensionT dimensions) {
-    this->absolute = dimensions.first; this->size = dimensions.second;
-    if (menu != nullptr) menu->Select({ dimensions.first, olc::vi2d(0, 0) });
+    this->absolute = dimensions.absolute; this->size = dimensions.size;
+    if (menu != nullptr) menu->Select({ dimensions.absolute, olc::vi2d(0, 0) });
   }
 
   void Window::Menu() {

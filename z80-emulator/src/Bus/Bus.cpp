@@ -4,8 +4,6 @@
 #include "src/Registry.h"
 
 namespace Bus {
-  #define BIT(word, pos) ((word >> pos) & 0x01)
-
   void Keyboard::Interrupt() { Registry::IRQ->ResetFlag(IRQ::BIT::KEYBOARD); }
   void RTC::Interrupt() { IRQF(); Registry::IRQ->ResetFlag(IRQ::BIT::RTC); }
   void PIT::Interrupt(int32_t ct) { Registry::IRQ->ResetFlag(IRQ::BIT::CT1 - ct + 1); }
@@ -95,15 +93,15 @@ namespace Bus {
         const uint8_t ctrl = Registry::KR580VV55->regC(Int2Type<PPI::REG2PORT>());
         const uint8_t prev = this->ctrl; this->ctrl = ctrl;
 
-        Registry::KR580VI53->SetGate(0, BIT(ctrl, MUX::PPI_CS::CS0));
-        Registry::KR580VI53->SetGate(1, BIT(ctrl, MUX::PPI_CS::CS1));
+        Registry::KR580VI53->SetGate(0, Utils::Bit(ctrl, MUX::PPI_CS::CS0));
+        Registry::KR580VI53->SetGate(1, Utils::Bit(ctrl, MUX::PPI_CS::CS1));
 
         const bool now = ((ctrl >> MUX::PPI_CS::CS3) & 7) == MUX::PPI_IO::LCD_PORT;
         const bool was = ((prev >> MUX::PPI_CS::CS3) & 7) == MUX::PPI_IO::LCD_PORT;
 
         if (was && !now) {            // RS/RW as they were while the LCD was selected
-          const bool rs = BIT(prev, MUX::PPI_CS::CSA);
-          if (BIT(prev, MUX::PPI_CS::CSW)) Registry::Lcd->Read(addr, rs);
+          const bool rs = Utils::Bit(prev, MUX::PPI_CS::CSA);
+          if (Utils::Bit(prev, MUX::PPI_CS::CSW)) Registry::Lcd->Read(addr, rs);
           else Registry::Lcd->Write(addr, Registry::KR580VV55->regA(Int2Type<PPI::REG2PORT>()), rs);
         }
         return data;

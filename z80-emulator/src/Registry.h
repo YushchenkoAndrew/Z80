@@ -2,6 +2,7 @@
 
 #include "include/LuaScript.h"
 #include "include/Typelist.h"
+#include "src/Bus/Bus.h"
 #include "src/Bus/Cpu.h"
 #include "src/Bus/Defs.h"
 #include "src/Bus/Hex.h"

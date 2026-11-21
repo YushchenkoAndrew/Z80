@@ -6,14 +6,14 @@
 #include <memory>
 
 namespace Window {
-  typedef std::pair<olc::vi2d, olc::vi2d> DimensionT;
+  struct DimensionT { olc::vi2d absolute; olc::vi2d size; };
 
 class Menu;
 
 class Window : virtual public Base {
 public:
 
-  Window(PixelGameEngine* engine, std::string id): Base(engine), windowId(std::move(id)) {}
+  Window(PixelGameEngine* engine, std::string id);
 
   virtual void Select(DimensionT dimensions);
   virtual void Preprocess() {};

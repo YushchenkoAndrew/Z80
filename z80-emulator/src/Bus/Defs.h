@@ -1,7 +1,6 @@
 #pragma once
 
 #include "include/Typelist.h"
-#include "src/Defs.h"
 
 namespace Bus {
 

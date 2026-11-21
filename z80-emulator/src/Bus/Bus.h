@@ -6,7 +6,6 @@
 
 namespace Bus {
 
-#define BIT(word, pos) ((word >> pos) & 0x01)
 class Bus : public Window::Window, public Device {
 private:
   struct MUX { 
@@ -33,9 +32,7 @@ private:
 
 private:
   uint8_t ctrl = 0;
-  std::list<std::pair<olc::vi2d, olc::vi2d>> grid;
+  // std::list<std::pair<olc::vi2d, olc::vi2d>> grid;
 };
-
-#undef BIT
 
 };
