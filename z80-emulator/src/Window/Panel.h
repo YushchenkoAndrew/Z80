@@ -17,8 +17,8 @@ public:
   enum { HIDDEN, NORMAL, ZOOMED = 0xFF };
 
   struct WindowT {
-    WindowT(std::shared_ptr<::Window::Window> instance, olc::vi2d absolute = {}, olc::vi2d size = {}, uint8_t depth = NORMAL)
-      : instance(std::move(instance)), absolute(absolute), size(size), depth(depth), selected(false) {}
+    WindowT(std::shared_ptr<::Window::Window> instance, olc::vi2d absolute = {}, olc::vi2d size = {}, uint8_t depth = NORMAL, bool selected = false)
+      : instance(std::move(instance)), absolute(absolute), size(size), depth(depth), selected(selected) {}
 
     bool selected;
 
@@ -102,7 +102,7 @@ public:
     // if (cmd.size() && cmd.back() == 'q' && !search.bEnabled)
     if (!bDrawWindowIndex) return;
     for (auto& w : windows) {
-      if (!EXIST(w) || !w.size.x || !w.size.y) continue;
+      if (!EXIST(w) || w.depth == HIDDEN) continue;
 
       const auto& color = w.selected ? Color::BLUE : Color::RED;
       GameEngine->DrawString(w.absolute, std::string(1, '0' + w.index), color, 3);

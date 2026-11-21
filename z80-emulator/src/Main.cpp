@@ -43,7 +43,7 @@ public:
 
         auto instance = Registry::GetInstance(name);
         if (!instance) fprintf(stderr, "panel '%s' in group %zu is invalid\n", name.c_str(), i);
-        else panels[index]->Push(Panel::WindowT(instance, olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)), lua.GetOr(p + ".depth", (uint8_t)Panel::NORMAL)));
+        else panels[index]->Push(Panel::WindowT(instance, olc::vi2d(lua.GetOr(p + ".x", 0), lua.GetOr(p + ".y", 0)), olc::vi2d(lua.GetOr(p + ".width", 0), lua.GetOr(p + ".height", 0)), lua.GetOr(p + ".depth", (uint8_t)Panel::NORMAL), lua.GetOr(p + ".selected", false)));
       }
     }
 
@@ -183,8 +183,10 @@ public:
       Registry::W27C512->Load(Registry::Interpreter->memory); Registry::Z80->Continue();
     }
 
-    Registry::Editor->Reset();
-    for (auto f : Registry::Interpreter->files()) Registry::Editor->Open(f);
+    Registry::Filesystem->Reset(); Registry::Editor->Reset();
+    for (auto f : Registry::Interpreter->files()) {
+      Registry::Filesystem->Open(f); Registry::Editor->Open(f);
+    }
 
     if (op.thread && op.thread->joinable()) op.thread->join();
     op.exec = true; op.name = "Synchronizing... "; op.thread = std::make_unique<std::thread>([&]() { Registry::W27C512->Disassemble(); op.exec = false; });
@@ -204,11 +206,13 @@ public:
     Registry::IMS1423->Move2Addr(Registry::Z80->Stack());
 
     if (auto e = Registry::Interpreter->toSource(addr)) {
+      Registry::Filesystem->Open(e->file);
       Registry::Editor->Open(e->file)->JumpTo(e->pos);
     }
   }
 
   void Event(Int2Type<EDITOR_DEFINE_CALLBACK>, LocationT e) override {
+    Registry::Filesystem->Open(e.file);
     Registry::Editor->Open(e.file)->JumpTo(e.pos);
   }
 
@@ -249,6 +253,7 @@ public:
 
   void Event(Int2Type<MEMORY_GOTO_CALLBACK>, int32_t index) override { 
     if (auto e = Registry::Interpreter->toSource(index)) {
+      Registry::Filesystem->Open(e->file);
       Registry::Editor->Open(e->file)->JumpTo(e->pos);
     }
   }

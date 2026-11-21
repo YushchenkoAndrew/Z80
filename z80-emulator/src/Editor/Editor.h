@@ -14,8 +14,6 @@ namespace Editor {
 
 class Editor : public Window::KeyEventListener, public Window::Window {
 public:
-  typedef std::pair<std::filesystem::path, Vim> FileT;
-
   Editor(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {
     menu = std::make_unique<::Window::Menu>(
       engine,
