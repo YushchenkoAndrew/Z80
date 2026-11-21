@@ -121,6 +121,8 @@ enum Events {
 
   RESET_BREAKPOINT_CALLBACK, EDITOR_BREAKPOINT_CALLBACK,
 
+  EDITOR_OPEN_CALLBACK,
+
   EDITOR_DEFINE_CALLBACK, EDITOR_GOTO_CALLBACK,
   MEMORY_GOTO_CALLBACK, PANEL_SELECT_CALLBACK,
   
@@ -141,6 +143,7 @@ class PixelGameEngine : public olc::PixelGameEngine {
   virtual void Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>, void*) = 0;
   virtual void Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>, void*) = 0;
 
+  virtual void Event(Int2Type<EDITOR_OPEN_CALLBACK>, std::filesystem::path) = 0;
   virtual void Event(Int2Type<EDITOR_DEFINE_CALLBACK>, LocationT) = 0;
   virtual void Event(Int2Type<EDITOR_GOTO_CALLBACK>, olc::vi2d) = 0;
 
