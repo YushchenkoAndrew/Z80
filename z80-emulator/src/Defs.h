@@ -156,7 +156,7 @@ class PixelGameEngine : public olc::PixelGameEngine {
   // virtual void Event(Int2Type<CMD_EXEC_CALLBACK>) = 0;
   // virtual void Event(Int2Type<CMD_UPDATE_CALLBACK>, std::string) = 0;
   virtual void Event(Int2Type<BOARD_RESET>) = 0;
-  virtual void Event(Int2Type<COMPILE_CALLBACK>) = 0;
+  virtual void Event(Int2Type<COMPILE_CALLBACK>, std::filesystem::path) = 0;
   virtual void Event(Int2Type<PROGRAM_EXIT>) = 0;
 
   virtual uint32_t GetMode() = 0;

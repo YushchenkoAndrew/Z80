@@ -30,7 +30,7 @@ public:
   ~App() { if (op.thread != nullptr && op.thread->joinable()) op.thread->join(); Registry::Shutdown(); }
 
   bool OnUserCreate() override {
-    Registry::Initialize(this, lua); Event(Int2Type<COMPILE_CALLBACK>());
+    Registry::Initialize(this, lua); Event(Int2Type<COMPILE_CALLBACK>(), "");
 
     const size_t groups = lua.Length("PANELS");
     for (size_t i = 1; i <= groups; ++i) {
@@ -182,8 +182,10 @@ public:
     Registry::Filesystem->Open(f); Registry::Editor->Open(f);
   }
 
-  void Event(Int2Type<COMPILE_CALLBACK>) override {
-    if (const auto success = Compile(lua.GetOr("SOURCE", ""))) {
+  void Event(Int2Type<COMPILE_CALLBACK>, std::filesystem::path file) override {
+    auto src = file.empty() ? lua.GetOr("SOURCE", "") : file.string();
+
+    if (const auto success = Compile(src)) {
       Registry::W27C512->Load(Registry::Interpreter->memory); Registry::Z80->Continue();
     }
 

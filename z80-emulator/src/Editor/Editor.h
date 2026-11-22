@@ -22,7 +22,7 @@ public:
         { "Save",     [this](void*) { return Save(this->file), Focus(true), nullptr; } },
         { "Save all", [this](void*) { return Save(), Focus(true), nullptr; } },
       } },
-      { "Build", [this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>()); return Focus(true), nullptr; } },
+      { "Build", [this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>(), file); return Focus(true), nullptr; } },
       { "Breakpoints", {
         { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return Focus(true), nullptr; } },
       } },

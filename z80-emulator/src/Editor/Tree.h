@@ -4,6 +4,7 @@
 #include "src/Defs.h"
 #include "src/Window/KeyEventListener.h"
 #include "src/Window/Window.h"
+#include <cstdint>
 
 namespace Editor {
 
@@ -53,35 +54,44 @@ public:
       fs = it == nullptr ? &fs->children.back() : it;
     }
     
-    return Select(*fs), this;
+    return Focus(Select(fs)), this;
   }
 
   bool IsMouseOver() const {
     auto mouse = GameEngine->GetMousePos();
+    const auto pos = absolute + vOffset;
 
-    // ?? need to know the size of children recursively so could figure out the lines available
-    // // const auto item = View(path.size());
-    // if (!item.items || !item.rows) return false;
-    // if (mouse.x < item.position.x || mouse.y < item.position.y || mouse.x >= item.position.x + item.size.x || mouse.y >= item.position.y + item.size.y) return false;
-
-    return false;
+    if (mouse.x < pos.x || mouse.y < pos.y || mouse.x >= pos.x + size.x || mouse.y >= pos.y + size.y) return false;
+    return true;
   }
 
   void Preprocess() override {
     if (!IsMouseOver()) return;
 
+    // TODO: Make it better ??
     const auto mouse = GameEngine->GetMousePos();
-    // const auto item = View(path.size());
+    auto line = std::max((mouse.y - absolute.y - vOffset.y) / vStep.y, 0) + 1;
 
-    // TODO: Make the line focused somehow ???
-    // line = (mouse.y - item.position.y) / vStep.y;
+    auto index = 0;
+    auto item = View(&filesystem, line, index);
+    if (item) Focus(item);
   }
 
-  void Select(NodeT& file) {
-    if (focused != nullptr)  focused  = (focused->focused   = false, nullptr);
-    if (selected != nullptr) selected = (selected->selected = false, nullptr);
+  void Process() override {
+    const auto bPressed = GameEngine->GetMouse(0).bPressed;
+    if (IsMouseOver() && bPressed && focused && focused->children.empty()) {
+      GameEngine->Event(Int2Type<EDITOR_OPEN_CALLBACK>(), Path(Select(focused)));
+    }
+  }
 
-    selected = focused = (file.focused = file.selected = true, &file);
+  NodeT* Focus(NodeT* file) {
+    if (focused != nullptr)  focused  = (focused->focused = false, nullptr);
+    return focused = (file->focused = true, file);
+  }
+
+  NodeT* Select(NodeT* file) {
+    if (selected != nullptr) selected = (selected->selected = false, nullptr);
+    return selected = (file->selected = true, file);
   }
 
   inline void Select(::Window::DimensionT dimensions) override { ::Window::Window::Select(dimensions); }
@@ -155,11 +165,12 @@ public:
   }
 
   // Fix issue that when file is opend the vim is focused
+  // Fix me when the file is changed the Editor has a Segmentation error on menu open through Shift+?
   ::Window::StrokeAction Process(Int2Type<olc::Key::L>) {
     if (focused == nullptr) return nullptr;
-    if (focused->children.empty()) GameEngine->Event(Int2Type<EDITOR_OPEN_CALLBACK>(), Path(focused));
+    if (focused->children.empty()) GameEngine->Event(Int2Type<EDITOR_OPEN_CALLBACK>(), Path(Select(focused)));
 
-    return focused->opened = true, nullptr;
+    return  focused->opened = true, nullptr;
   }
 
 public:
@@ -167,6 +178,16 @@ public:
   const ::Window::StrokeT<>& GetCommands() const override { return Tree::commands; }
 
 private:
+  NodeT* View(NodeT* fs, int32_t depth, int32_t& index) {
+    if (depth == index) return fs;
+
+    for (auto& node : fs->children) {
+      if (auto n = View(&node, depth, ++index)) return n;
+    }
+
+    return nullptr;
+  }
+
   std::filesystem::path Path(const NodeT* node) const {
     std::filesystem::path path = node->name;
     while ((node = node->parent)) path = node->name / path;

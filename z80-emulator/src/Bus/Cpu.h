@@ -63,7 +63,7 @@ public:
         { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return nullptr; } },
       } },
       { "Memory", {
-        { "Reload ROM", [this](void*) { return this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>()), nullptr; } },
+        { "Reload ROM", [this](void*) { return this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>(), ""), nullptr; } },
         { "Clear RAM",  [this](void*) { return Reset(), nullptr; } },
       } },
     }));
