@@ -7,7 +7,7 @@ namespace Interpreter {
 
 class ExpressionLiteral : public Expression {
 public:
-  ExpressionLiteral(Token& t, uint32_t bytes):
+  ExpressionLiteral(Token t, uint32_t bytes):
     token(std::move(t)), bytes(bytes) {}
 
   Bytes         accept(Visitor<Bytes>*         visitor) override { return visitor->visitExprLiteral(this); }

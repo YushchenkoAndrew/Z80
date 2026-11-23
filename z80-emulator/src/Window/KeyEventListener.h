@@ -27,7 +27,7 @@ public:
   KeyEventListener(PixelGameEngine* engine): Base(engine) {}
 
   void Focus(bool state) override { 
-    if (state) GameEngine->Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>(), this);
+    if ((bFocused = state)) GameEngine->Event(Int2Type<KEYBOARD_EVENT_SUBSCRIBE>(), this);
     else GameEngine->Event(Int2Type<KEYBOARD_EVENT_UNSUBSCRIBE>(), this);
   }
 

@@ -26,7 +26,7 @@ private:
   };
 
 public:
-  App(LuaScript lua): lua(std::move(lua)) { sAppName = "Z80 Emulator"; }
+  App(LuaScript lua): PixelGameEngine(std::move(lua)) { sAppName = "Z80 Emulator"; }
   ~App() { if (op.thread != nullptr && op.thread->joinable()) op.thread->join(); Registry::Shutdown(); }
 
   bool OnUserCreate() override {
@@ -399,7 +399,6 @@ private:
   const olc::vi2d vOffset = olc::vi2d(0, 12);
   const olc::vi2d vStep = olc::vi2d(8, 12);
 
-  LuaScript lua;
   std::vector<std::unique_ptr<Panel>> panels;
 
   int32_t panel = 0;

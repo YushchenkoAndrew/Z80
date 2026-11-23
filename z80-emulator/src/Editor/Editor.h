@@ -1,10 +1,12 @@
 #pragma once
 
 #include "src/Defs.h"
+#include "src/Editor/Reader.h"
 #include "src/Editor/Vim.h"
 #include "src/Window/Types/MenuAction.h"
 #include "src/Window/Window.h"
 #include "src/Window/Menu.h"
+#include <iterator>
 #include <memory>
 #include <unordered_map>
 
@@ -13,6 +15,9 @@ namespace Editor {
 // #define VIM(e)      e.second
 
 class Editor : public Window::KeyEventListener, public Window::Window {
+
+  // inline void Close() { for (auto& path : files) Close(path); }
+  // inline void Close(std::string path) { files.erase(path); }
 public:
   Editor(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {
     menu = std::make_unique<::Window::Menu>(
@@ -21,8 +26,13 @@ public:
       { "File", {
         { "Save",     [this](void*) { return Save(this->file), Focus(true), nullptr; } },
         { "Save all", [this](void*) { return Save(), Focus(true), nullptr; } },
+        { "Close",     [this](void*) { return Close(file), Focus(true), nullptr; } },
+        { "Close all", [this](void*) { return Close(), Focus(true), nullptr; } },
       } },
-      { "Build", [this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>(), file); return Focus(true), nullptr; } },
+      { "Build", {
+        { "Open file",  [this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>(), file); return Focus(true), nullptr; } },
+        { "Main source",[this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>(), "");   return Focus(true), nullptr; } },
+      } },
       { "Breakpoints", {
         { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return Focus(true), nullptr; } },
       } },
@@ -36,14 +46,18 @@ public:
 
   Editor* Open(std::filesystem::path path) { 
     if (files.count(path)) return Select(path.string()), this;
-
-    std::ifstream f(path); std::stringstream buf;
-    if (f.is_open()) { buf<< f.rdbuf(); f.close(); }
-
     files[path] = std::make_unique<Vim>(GameEngine); 
+    return files[path]->Load(Reader::Read(path)), Select(path.string()), this;
+  }
 
-    auto context = buf.str();
-    return files[path]->Load(buf.str()), Select(path.string()), this;
+  inline void Close() { for (auto it = files.begin(); it != files.end();) Close(it++->first); }
+  inline void Close(std::string path) {
+    auto it = files.find(path);
+    if (it == files.end()) return;
+    if (it == files.begin() && std::next(it) == files.end()) return; // TODO: Think about impl
+
+    file = std::next(it)->first;
+    files[path]->Focus(false); files.erase(path); Select(file);
   }
 
   inline void Save() { for (auto& path : files) Save(path.first); }
@@ -54,7 +68,7 @@ public:
     auto it = files.find(file);
     if (it != files.end()) it->second->Focus(false);
 
-    files[file = path]->Focus(!menu->bEnabled);
+    files[file = path]->Focus(bFocused && !menu->bEnabled);
 
     const auto offset = olc::vi2d(0, vOffset.y);
     files[file]->Select({ absolute + offset, size - offset - olc::vi2d(10, 0) });

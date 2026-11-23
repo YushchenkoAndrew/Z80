@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lib/olcPixelGameEngine.h"
+#include "src/Editor/Highlighter/Highlighter.h"
 #include "src/Interpreter/Defs.h"
 #include "src/Interpreter/Token.h"
 #include "src/Utils/Utils.h"
@@ -12,13 +13,13 @@ namespace Interpreter {
  * This code was hardly expired by the book {Creating Interpreters}
  * Check out this link for more info: http://www.craftinginterpreters.com/scanning.html#recognizing-lexemes
  */
-class Lexer {
+class Lexer : public Syntax::Highlighter {
 public:
   Lexer() {}
-  ~Lexer() { reset(); }
+  ~Lexer() { Reset(); }
 
-  std::list<std::string> scan(std::string text) {
-    src = text; reset();
+  std::list<std::string> Scan(std::string text) override {
+    src = text; Reset();
 
     while (!isAtEnd()) {
       prev = curr;
@@ -58,7 +59,7 @@ public:
 
         case ';':
           while (peek() != '\n' && !isAtEnd()) advance();
-          addHighlight(olc::DARK_GREY);
+          Mark(line, col - (curr - prev), curr - prev, olc::DARK_GREY);
           break;
 
 
@@ -81,9 +82,11 @@ public:
 
 
 private:
-  inline void reset() {
+  inline void Reset() {
     prev = 0; curr = 0; col = 0; line = 0;
     tokens.clear(); errors.clear();
+
+    Syntax::Highlighter::Reset();
   }
 
   void string(const char &c) {
@@ -151,14 +154,7 @@ private:
 
     const auto& [_, color] = Token::GetMetadata(type);
     tokens.push_back({ type, src.substr(prev, len), literal,  start + 1, line + 1 });
-    addHighlight(color);
-  }
-
-  void addHighlight(olc::Pixel c) {
-    const int32_t len = curr - prev;
-
-    if (!highlights.count(line)) highlights[line] = {};
-    for (int32_t i = col - len; i < col; i++) highlights[line][i] = c;
+    Mark(line, col - len, len, color);
   }
 
   inline bool isAtEnd() { return curr >= src.length(); }
@@ -181,10 +177,6 @@ private:
   int32_t line = 0; // tracks current line position
 
   std::list<std::string> errors;
-
-public:
-  std::vector<Token> tokens;
-  std::unordered_map<int32_t, std::unordered_map<int32_t, olc::Pixel>> highlights;
 };
 
 };

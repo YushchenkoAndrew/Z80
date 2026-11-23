@@ -1,5 +1,6 @@
 #pragma once
 
+#include "include/LuaScript.h"
 #include "include/Typelist.h"
 #include "lib/olcPixelGameEngine.h"
 
@@ -133,7 +134,9 @@ enum Events {
 struct LocationT { std::filesystem::path file; olc::vi2d pos; };
 
 class PixelGameEngine : public olc::PixelGameEngine {
-  public:
+public:
+  PixelGameEngine(LuaScript lua): lua(std::move(lua)) {}
+
   virtual void Event(Int2Type<NEW_DEBUG_MODE_CALLBACK>) = 0;
   virtual void Event(Int2Type<DETACH_DEBUG_MODE_CALLBACK>) = 0;
 
@@ -168,6 +171,9 @@ class PixelGameEngine : public olc::PixelGameEngine {
       }
     }
   }
+
+public:
+  LuaScript lua;
 };
 
 

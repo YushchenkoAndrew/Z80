@@ -47,7 +47,7 @@ public:
   std::list<std::string> scan(std::string& src) {
     curr = 0; stmt.clear(); errors.clear(); 
 
-    const auto& err = lexer.scan(src);
+    const auto& err = lexer.Scan(src);
     if (err.size()) return err;
 
     return (program(), errors);
@@ -392,7 +392,7 @@ public:
   inline std::unique_ptr<Expression> Process(Int2Type<TokenT::CMD_ADC>) {
     auto cmd = peekPrev();
 
-    Token& reg = advance();
+    const Token& reg = advance();
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     switch (reg.type) {
@@ -420,7 +420,7 @@ public:
 
   inline std::unique_ptr<Expression> Process(Int2Type<TokenT::CMD_ADD>) {
     auto cmd = peekPrev();
-    Token& reg = advance();
+    const Token& reg = advance();
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     const uint32_t mask =
@@ -484,7 +484,7 @@ public:
     auto cmd = peekPrev();
 
     if (match<8>({ TokenT::REG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
-      Token& flag = peekPrev();
+      const Token& flag = peekPrev();
       consume(TokenT::COMMA, "Expect ',' after first expression.");
 
       switch(flag.type) {
@@ -538,7 +538,7 @@ public:
       return nullptr;
     }
 
-    Token& reg = peekPrev();
+    const Token& reg = peekPrev();
     consume(TokenT::COMMA, "Expect ',' after expression.");
     consume(TokenT::LEFT_BRACE, "Expect '(' after expression.");
     if (reg.type == TokenT::REG_A && !check(TokenT::REG_C)) {
@@ -583,7 +583,7 @@ public:
     }
 
     if (match<8>({ TokenT::REG_C, TokenT::FLAG_M, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_P, TokenT::FLAG_PE, TokenT::FLAG_PO, TokenT::FLAG_Z })) {
-      Token& flag = peekPrev();
+      const Token& flag = peekPrev();
       consume(TokenT::COMMA, "Expect ',' after first expression.");
 
       switch(flag.type) {
@@ -607,7 +607,7 @@ public:
     auto command = peekPrev();
 
     if (match<4>({ TokenT::REG_C, TokenT::FLAG_NC, TokenT::FLAG_NZ, TokenT::FLAG_Z })) {
-      Token& flag = peekPrev();
+      const Token& flag = peekPrev();
       consume(TokenT::COMMA, "Expect ',' after first expression.");
 
       // NOTE: Need to do it such way because compiler crashed with internal error (| ~ | `) 
@@ -634,7 +634,7 @@ public:
       switch (peek().type) {
         case TokenT::REG_BC:
         case TokenT::REG_DE: {
-          Token& reg = advance();
+          const Token& reg = advance();
           consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
           consume(TokenT::COMMA, "Expect ',' after expression.");
           consume(TokenT::REG_A, "Expect register 'A' after expression.");
@@ -908,7 +908,7 @@ public:
   inline std::unique_ptr<Expression> Process(Int2Type<TokenT::CMD_SBC>) {
     auto cmd = peekPrev();
 
-    Token& reg = advance();
+    const Token& reg = advance();
     consume(TokenT::COMMA, "Expect ',' after first expression.");
 
     switch (reg.type) {
@@ -957,7 +957,7 @@ public:
   }
 
 private:
-  inline std::unique_ptr<Expression> basicRegisterOperation(uint32_t op0, uint32_t op1, uint32_t op2, Token& cmd) {
+  inline std::unique_ptr<Expression> basicRegisterOperation(uint32_t op0, uint32_t op1, uint32_t op2, const Token& cmd) {
     if (match<1>({ TokenT::LEFT_BRACE })) {
       auto stmt = addressRegisterOperation(op0, cmd);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
@@ -971,7 +971,7 @@ private:
     return std::make_unique<StatementOneArgCommand>(StatementOneArgCommand(op2, cmd, shift(1)));
   }
 
-  inline std::unique_ptr<Expression> basicRegisterOperation(uint32_t op0, uint32_t op1, Token& cmd) {
+  inline std::unique_ptr<Expression> basicRegisterOperation(uint32_t op0, uint32_t op1, const Token& cmd) {
     if (match<1>({ TokenT::LEFT_BRACE })) {
       auto stmt = addressRegisterComplexOperation(op0, cmd);
       consume(TokenT::RIGHT_BRACE, "Expect ')' after expression.");
@@ -986,7 +986,7 @@ private:
     return nullptr;
   }
 
-  inline std::unique_ptr<Expression> addressRegisterOperation(uint32_t opcode, Token& cmd) {
+  inline std::unique_ptr<Expression> addressRegisterOperation(uint32_t opcode, const Token& cmd) {
     switch (advance().type) {
       case TokenT::REG_HL: return std::make_unique<StatementNoArgCommand>(StatementNoArgCommand( 0x0000 | opcode, cmd));
       case TokenT::REG_IX: return std::make_unique<StatementOneArgCommand>(StatementOneArgCommand(0xDD00 | opcode, cmd, offset(1)));
@@ -998,7 +998,7 @@ private:
     return nullptr;
   }
 
-  inline std::unique_ptr<Expression> addressRegisterComplexOperation(uint32_t opcode, Token& cmd) {
+  inline std::unique_ptr<Expression> addressRegisterComplexOperation(uint32_t opcode, const Token& cmd) {
     uint32_t code = opcode & 0x00FF;
     uint32_t command = ((opcode & 0xFF00) << 8);
 
@@ -1055,17 +1055,19 @@ private:
   }
 
 private:
-  inline Token& peek() { return token(curr); }
-  inline Token& peekPrev() { return token(curr - 1); }
+  inline const Token& peek() { return token(curr); }
+  inline const Token& peekPrev() { return token(curr - 1); }
   inline bool isAtEnd() { return peek().type == TokenT::OP_EOF; }
   inline bool check(TokenT type) { return isAtEnd() ? false : peek().type == type; }
 
-  inline Token& token(int32_t index) {
-    if (index >= 0 && index < lexer.tokens.size()) return lexer.tokens[index];
-    return lexer.tokens.back();
+  inline const Token& token(int32_t index) const {
+    const auto& tokens = lexer.GetTokens();
+    if (index >= 0 && index < static_cast<int32_t>(tokens.size())) return tokens[index];
+    return tokens.back();
   }
 
-  inline Token& advance() {
+
+  inline const Token& advance() {
     if (!isAtEnd()) curr++;
     return peekPrev();
   }
@@ -1085,7 +1087,7 @@ private:
     error(advance(), message);
   }
 
-  void error(Token& token, std::string message) {
+  void error(const Token& token, std::string message) {
     std::stringstream ss;
     ss << "[Ln " << token.line << " Col " << token.col << "] Error at '" << token.lexeme << "': " << message << "\n";
     errors.push_back(ss.str());

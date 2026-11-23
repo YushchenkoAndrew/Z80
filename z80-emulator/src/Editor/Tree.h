@@ -3,6 +3,7 @@
 #include "include/Typelist.h"
 #include "src/Defs.h"
 #include "src/Window/KeyEventListener.h"
+#include "src/Window/Menu.h"
 #include "src/Window/Window.h"
 #include <cstdint>
 
@@ -24,18 +25,40 @@ class Tree : public Window::KeyEventListener, public Window::Window {
 
 public:
   Tree(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {
-    // menu = std::make_unique<::Window::Menu>(
-    //   engine,
-    //   ::Window::MenuT::Init({
-    //   { "File", {
-    //     { "Save",     [this](void*) { return Save(this->file), Focus(true), nullptr; } },
-    //     { "Save all", [this](void*) { return Save(), Focus(true), nullptr; } },
-    //   } },
-    //   { "Build", [this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>()); return Focus(true), nullptr; } },
-    //   { "Breakpoints", {
-    //     { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return Focus(true), nullptr; } },
-    //   } },
-    // }));
+    auto src = std::filesystem::path(GameEngine->lua.GetOr("SOURCE", ""));
+
+    menu = std::make_unique<::Window::Menu>(
+      engine,
+      ::Window::MenuT::Init({
+      { "Open", {
+        { "File",     { MenuPopulate(*src.begin()) } },
+        { "File all", [this, src](void*) { for (const auto& e: std::filesystem::recursive_directory_iterator(*src.begin())) if (e.is_regular_file()) Open(e.path()); return nullptr; } },
+      } },
+      { "Reload", [this](void*) { this->GameEngine->Event(Int2Type<COMPILE_CALLBACK>(), ""); return nullptr; } },
+      // { "Breakpoints", {
+      //   { "Clear all", [this](void*) { this->GameEngine->Event(Int2Type<RESET_BREAKPOINT_CALLBACK>()); return Focus(true), nullptr; } },
+      // } },
+    }));
+  }
+
+  ::Window::MenuT MenuPopulate(std::filesystem::path path) {
+    ::Window::MenuT root(path.filename().string(), {});
+
+    for (const auto& entry : std::filesystem::directory_iterator(path)) {
+      if (entry.is_directory()) {
+        auto node = MenuPopulate(entry.path());
+        if (!node.children.empty()) root.children.push_back(std::move(node));
+      }
+
+      if (entry.is_regular_file()) {
+        auto file = entry.path();
+        root.children.push_back(::Window::MenuT(entry.path().filename().string(), [this, file](void*) -> ::Window::MenuAction { GameEngine->Event(Int2Type<EDITOR_OPEN_CALLBACK>(), file); return nullptr; }));
+      } 
+    }
+
+    std::sort(root.children.begin(), root.children.end(), [](const ::Window::MenuT& a, const ::Window::MenuT& b) { return a.name < b.name; });
+
+    return root;
   }
 
   void Reset() { Reset(filesystem); }
@@ -66,18 +89,19 @@ public:
   }
 
   void Preprocess() override {
+    menu->Preprocess();
+
     if (!IsMouseOver()) return;
 
     // TODO: Make it better ??
     const auto mouse = GameEngine->GetMousePos();
-    auto line = std::max((mouse.y - absolute.y - vOffset.y) / vStep.y, 0) + 1;
-
-    auto index = 0;
-    auto item = View(&filesystem, line, index);
-    if (item) Focus(item);
+    auto depth = 0; auto limit = std::max((mouse.y - absolute.y - vOffset.y) / vStep.y, 0) + 1;
+    if (auto item = View(&filesystem, limit, depth)) Focus(item);
   }
 
   void Process() override {
+    menu->Process();
+
     const auto bPressed = GameEngine->GetMouse(0).bPressed;
     if (IsMouseOver() && bPressed && focused && focused->children.empty()) {
       GameEngine->Event(Int2Type<EDITOR_OPEN_CALLBACK>(), Path(Select(focused)));
@@ -89,6 +113,8 @@ public:
     return focused = (file->focused = true, file);
   }
 
+  inline void Focus(bool state) override { ::Window::KeyEventListener::Focus(state); menu->Focus(false); }
+
   NodeT* Select(NodeT* file) {
     if (selected != nullptr) selected = (selected->selected = false, nullptr);
     return selected = (file->selected = true, file);
@@ -98,7 +124,8 @@ public:
 
   void Draw() override {
     auto pos = absolute + vOffset;
-    DrawNode(filesystem, pos);
+    DrawNode(filesystem, pos); menu->Draw();
+
   }
 
   void DrawNode(NodeT& fs, olc::vi2d& pos) {
@@ -122,9 +149,18 @@ public:
     else return Last(&node->children.back());
   };
 
+public:
+  ::Window::StrokeAction Process(Int2Type<olc::Key::ESCAPE>) {
+    return menu->Reset(), menu->Focus(false), nullptr;
+  }
+
+  ::Window::StrokeAction Process(Int2Type<olc::Key::SHIFT>, Int2Type<olc::Key::OEM_2>) {
+    return menu->bEnabled = true, menu->Focus(true), nullptr;
+  }
+
   // TODO: Think about how to use opened flag
   ::Window::StrokeAction Process(Int2Type<olc::Key::K>) {
-    if (focused == nullptr || focused->parent == nullptr || focused->parent->name.empty()) return nullptr;
+    if (menu->bEnabled || focused == nullptr || focused->parent == nullptr || focused->parent->name.empty()) return nullptr;
 
     auto& siblings = focused->parent->children;
     auto it = std::find_if(siblings.begin(), siblings.end(), [&](const NodeT& node) { return node.name == focused->name; });
@@ -139,7 +175,7 @@ public:
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::J>) {
-    if (focused == nullptr) return nullptr;
+    if (menu->bEnabled || focused == nullptr) return nullptr;
 
     NodeT* node = focused;
     focused->focused = false;
@@ -160,14 +196,14 @@ public:
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::H>) {
-    if (focused == nullptr) return nullptr;
+    if (menu->bEnabled || focused == nullptr) return nullptr;
     return focused->opened = false, nullptr;
   }
 
   // Fix issue that when file is opend the vim is focused
   // Fix me when the file is changed the Editor has a Segmentation error on menu open through Shift+?
   ::Window::StrokeAction Process(Int2Type<olc::Key::L>) {
-    if (focused == nullptr) return nullptr;
+    if (menu->bEnabled || focused == nullptr) return nullptr;
     if (focused->children.empty()) GameEngine->Event(Int2Type<EDITOR_OPEN_CALLBACK>(), Path(Select(focused)));
 
     return  focused->opened = true, nullptr;
@@ -178,11 +214,10 @@ public:
   const ::Window::StrokeT<>& GetCommands() const override { return Tree::commands; }
 
 private:
-  NodeT* View(NodeT* fs, int32_t depth, int32_t& index) {
-    if (depth == index) return fs;
+  NodeT* View(NodeT* fs, int32_t limit, int32_t& depth) { if (limit == depth) return fs;
 
     for (auto& node : fs->children) {
-      if (auto n = View(&node, depth, ++index)) return n;
+      if (auto n = View(&node, limit, ++depth)) return n;
     }
 
     return nullptr;
@@ -210,6 +245,10 @@ inline const Window::StrokeT<> Tree::commands = ::Window::StrokeT<>::Init({
   { Int2Type<olc::Key::J>(), [](void* self, auto... keys) { return Self<Tree>(self)->Process(keys...); } },
   { Int2Type<olc::Key::H>(), [](void* self, auto... keys) { return Self<Tree>(self)->Process(keys...); } },
   { Int2Type<olc::Key::L>(), [](void* self, auto... keys) { return Self<Tree>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return Self<Tree>(self)->Process(keys...); } },
+  { Int2Type<olc::Key::SHIFT>(), {
+    { Int2Type<olc::Key::OEM_2>(), [](void* self, auto... keys) { return Self<Tree>(self)->Process(keys...); } },
+  }}
   // { Int2Type<olc::Key::G>(), {
   //   { Int2Type<olc::Key::G>(), [](void* self, auto... keys) { return Self<Tree>(self)->Process(keys...); } },
   // }},
