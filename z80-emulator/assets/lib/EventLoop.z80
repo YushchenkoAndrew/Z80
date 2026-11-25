@@ -63,6 +63,16 @@ INCLUDE "Defs.z80"
 ;;   reg HL -- as defined
 _EVENT_PUSH:
   CALL _INTR_LOCK; Lock interrupt from happening again
+  PUSH AF     ; Temp save task priority
+  LD A, (TASK_BUF); Load amount of task in queue
+  CP 85       ; One 256 byte page = 1 count byte + 85 tasks * 3 bytes
+  JR C, _EVENT_PUSH_room-$
+  POP AF      ; Queue is full: drop the task
+  CALL _INTR_UNLOCK
+  SCF         ; Carry = task was NOT queued
+  RET
+_EVENT_PUSH_room:
+  POP AF
   PUSH BC     ; Save reg BC in stack
   PUSH DE     ; Save reg BC in stack
   PUSH HL     ; Temp save task addr in stack

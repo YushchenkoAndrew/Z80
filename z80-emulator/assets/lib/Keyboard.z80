@@ -79,6 +79,20 @@ _SCAN_CODE_INIT_lp:
   XOR A       ; Reset Acc
 @SCAN_CODE_ASCII_caps_lock_esc:
   LD B, A     ; Save state of caps lock to reg B
+  OR A        ; Caps lock only affects letters
+  JR Z, @SCAN_CODE_ASCII_caps_done-$
+  PUSH HL
+  LD BC, SCAN_CODE_ASCII_VEC_SIZE
+  ADD HL, BC  ; HL -> lowercase char of this key
+  LD A, (HL)
+  POP HL
+  AND 0xDF    ; Fold to upper case
+  SUB "A"
+  CP 26       ; Carry set if char was a letter
+  LD B, 0xFF
+  JR C, @SCAN_CODE_ASCII_caps_done-$
+  LD B, 0     ; Not a letter -> caps lock has no effect
+@SCAN_CODE_ASCII_caps_done:
 
   LD A, (KEY_SHIFT) ; Get shift status
   CALL @IS_KEY_PRESSED;Check if shift key is pressed
@@ -136,9 +150,9 @@ _SCAN_CODE_INIT_lp:
   LD B, 0b101 ; Set state PRESSED if curr == 000
   JR Z, @SCAN_CODE_cmp_st-$
   DEC A       ; Check if state is 001 = Pressed, flag Z will be set
-  LD B, 0b110 ; Set state HOLD if curr == 001
+  LD B, 0b010 ; Set state HOLD if curr == 001 (no lock toggle on auto-repeat)
   JR Z, @SCAN_CODE_cmp_st-$
-  LD B, 0b110 ; Set state HOLD if state is 010 = Hold
+  LD B, 0b010 ; Set state HOLD if state is 010 = Hold (no lock toggle on auto-repeat)
 
 @SCAN_CODE_cmp_st:
   LD A, (PTR_PREV_SCAN_CODE); Get prev value from ptr
@@ -200,4 +214,4 @@ SCAN_CODE_ASCII_VEC_SIZE        EQU  .SCAN_CODE_ASCII_VEC_ED-.SCAN_CODE_ASCII_VE
 ;; Keys alias
 KEY_SHIFT          EQU SCAN_KEY_STATE + 0x12
 KEY_CTRL           EQU SCAN_KEY_STATE + 0x14
-KEY_CAPS_LOCK      EQU SCAN_KEY_STATE + 0x56
+KEY_CAPS_LOCK      EQU SCAN_KEY_STATE + 0x58 ; PS/2 set 2: Caps Lock = 0x58

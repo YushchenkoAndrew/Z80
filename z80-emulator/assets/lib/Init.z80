@@ -58,6 +58,9 @@ RST38:
   IN A, (INT_PORT); Get interrupt vector, 0 is where interrupt occured
   CPL         ; Invert Acc for easier work
   LD C, A     ; Save interrupt vector in reg C
+  LD A, (PTR_INTR_BYTE); IN returns every latched request, also of sources that are masked off
+  AND C       ; Serve only the enabled ones, a stale request must not run a handler
+  LD C, A
   LD B, IM_VEC_SIZE; Load amount of avaliable interrupt exec
 
 RST38_lp:
@@ -108,8 +111,14 @@ RST_INIT:
 
   LD (PTR_STDIN_BUF_BGN), A ; Reset stdin start of offset 
   LD (PTR_STDIN_BUF_END), A ; Reset stdin end of offset 
-  LD (PTR_FILE_INODE), A; Reset interrupt lock counter
-  LD (PTR_DIR_INODE), A; Reset interrupt lock counter
+  LD H, A     ; HL = 0
+  LD L, A     ; HL = 0
+  LD (PTR_FILE_INODE), HL; Reset current file inode (2 bytes)
+  LD (PTR_DIR_INODE), HL ; Reset current dir inode (2 bytes)
+  LD (PTR_INPUT_FUNC), HL; No input handler (2 bytes)
+  LD (PTR_INPUT_FILE), HL; No input file (2 bytes)
+  LD (PTR_PREV_SCAN_CODE), A; No previous scan code
+  CALL _SCAN_CODE_INIT; All keys are released (RAM powers up with garbage)
   LD (PTR_INTR_BYTE), A; Reset interrupt workd
   LD (PTR_INTR_LOCK), A; Reset interrupt lock counter
   LD (TASK_BUF), A; Reset task amount in queue
@@ -213,11 +222,11 @@ _INTR_UNLOCK_end:
 ;;   reg BC -- unaffected
 ;;   reg DE -- unaffected
 ;;   reg HL -- unaffected
-@SCAN_CODE_ACK:
-  LD A, (PTR_STDIN_BUF_END); Load prev buf offset to Acc
-  INC A       ; Inc offset by one
-  LD (PTR_STDIN_BUF_END), A; Restore offset value, but incr it by one
-  CALL _ACK_STDIN; Create task that will process stdin
+; @SCAN_CODE_ACK:
+;   LD A, (PTR_STDIN_BUF_END); Load prev buf offset to Acc
+;   INC A       ; Inc offset by one
+;   LD (PTR_STDIN_BUF_END), A; Restore offset value, but incr it by one
+;   CALL _ACK_STDIN; Create task that will process stdin
 
 
 
@@ -236,7 +245,7 @@ _ACK_STDIN:
 
   ; CP FORM_FEED ; Check if char was Ctrl+L
   CP END_OF_TXT; Check if char was Ctrl+C
-  JR Z, _ACK_STDIN_erase; On Ctrl-C reset stdin buffer index
+  JR Z, _ACK_STDIN_erase-$; On Ctrl-C reset stdin buffer index
   CP LINE_FEED; Check if char was '\n'
 
   PUSH AF     ; Temp save ASCII code in stack
@@ -254,7 +263,7 @@ _ACK_STDIN:
   LD A, EVENT_PRIO_IO; Set task priority as input/output one
   LD HL, _FS_EXEC; Load task to exec comands
   CALL _EVENT_PUSH; Add buffer updates to task queue
-  JR NZ, _ACK_STDIN_end-$; If the ASCII is '/n' the create filesystem proc to exec cmd
+  JR _ACK_STDIN_end-$; Keep the buffer, _FS_EXEC will consume it (do NOT depend on flags left by _EVENT_PUSH)
 
 _ACK_STDIN_erase:
   LD A, (PTR_STDIN_BUF_END); Get the stdin end offset

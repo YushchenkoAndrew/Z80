@@ -27,7 +27,7 @@ public:
     if (runtime.joinable()) runtime.join();
   }
 
-  void Clear() { counter = { 0, 0, 0 }; gate = { 0x00, 0x00, 0x00 }; output = { 0x01, 0x01, 0x01 }; }
+  void Clear() { counter = { 0, 0, 0 }; gate = { 0x00, 0x00, 0x00 }; output = { 0x00, 0x00, 0x00 }; }
 
   void Process() override {}
   void Draw() override {
@@ -81,7 +81,7 @@ public:
       uint16_t& out = GetValue(output, i);
       uint16_t enabled = GetValue(gate, i);
 
-      if (!enabled) return;
+      if (!enabled || !loaded[i]) return;
 
       if (out & ENABLE_OUTPUT) Interrupt(i);
       if (!(out & KEEP_OUTPUT)) out = !ENABLE_OUTPUT;
@@ -132,13 +132,14 @@ public:
       else if (rw == 2) init = (init & 0x00FF) | (uint16_t)data << 8;
       else if (rw == 3) { init = hi[i] ? (init & 0x00FF) | (uint16_t)data << 8 : (init & 0xFF00) | data; hi[i] = !hi[i]; }
 
-      if (rw != 3 || !hi[i]) { value = init; armed[i] = true; }       // counter loads once the count is complete
+      if (rw != 3 || !hi[i]) { value = init; armed[i] = true; loaded[i] = true; } // counter loads once the count is complete
+
       return data;
     }
 
     const uint8_t c = (data & 0xC0) >> 6; if (c > 2) return data;
     if (((data >> 4) & 3) == 0) { GetValue(copy, c) = GetValue(counter, c); latched[c] = true; return data; }   // latch only
-    GetValue(control, c) = data; hi[c] = latched[c] = false;
+    GetValue(control, c) = data; hi[c] = latched[c] = false; loaded[c] = false;
     return data;
   }
 
@@ -164,7 +165,7 @@ private:
 
   std::atomic<bool> bExec = true;
   std::pair<int32_t, int32_t> clock; // nanoseconds, Hz
-  std::array<bool, 3> hi = {}, latched = {}, armed = {};   // new members
+  std::array<bool, 3> hi = {}, latched = {}, armed = {}, loaded = {};   // new members
   
   RegT copy;
   RegT counter = { 0, 0, 0 };

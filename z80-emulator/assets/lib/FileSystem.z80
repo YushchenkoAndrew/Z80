@@ -92,7 +92,7 @@
   CALL @DIV16x8; Check if there are any zones remaning
   OR L        ; Check if the low byte of  is empty
   OR H        ; Check if the high byte is empty
-  JR NZ, @FIND_FILE_lp_zone; If there are still additional zones, then check them
+  JR NZ, @FIND_FILE_lp_zone-$; If there are still additional zones, then check them
 
   LD IX, 0    ; Reset reg HL
   JR @FIND_FILE_esc-$

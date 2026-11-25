@@ -169,8 +169,14 @@ _TIMER_CT2_OFF_bgn:
 @TIMER_OFF:
   PUSH BC    ; Save reg BC in stack
   LD B, 0    ; Do not re-enable counter clock
+  LD A, (CT1_BUF); CT1 and CT2 share ONE clock gate (PPI CS1): stop it only when both queues are empty
+  LD C, A
+  LD A, (CT2_BUF)
+  OR C
+  JR NZ, @TIMER_OFF_mask-$; The other counter still has a task, keep its clock running
   LD C, ~PPI_CS_CS1; Turn off counter clock
   RST 0x08   ; Disable counter output
+@TIMER_OFF_mask:
   LD L, B    ; Restore interrupt mask to Acc
   CALL @INTR_MASK_SET; Send allowed intrrupts to interrupt vector
   POP BC     ; Restore reg BC
@@ -268,6 +274,8 @@ _TIMER_CT2_OFF_bgn:
   LD C, PIT_PORT_CT2; Setup CT1 to create interrupt signal
 
 @TIMER_EXEC:
+  IN A, (C)  ; Acknowledge the CT interrupt: touch the port of THIS counter (reg C = 0x81 / 0x82), LSB first
+  IN A, (C)  ; then MSB, the PIT keeps one shared byte-pointer for reads and writes, so reads must come in pairs
   DEC (HL)   ; Decriment counter
   JR NZ, @TIMER_EXEC_end-$; If not zero then return
   PUSH BC    ; Tempory save interrupt mask & ct port in stack

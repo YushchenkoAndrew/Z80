@@ -37,7 +37,7 @@ public:
   inline uint8_t Vector() const { for (int n = 7; n >= 0; n--) if (Pending() & (1 << n)) return n * 2; return 0; }
 
   inline void SetFlag(uint8_t flag)   { state |= (uint8_t)(1 << flag);  Interrupt(); }   // acknowledge
-  inline void ResetFlag(uint8_t flag) { state &= (uint8_t)~(1 << flag); Interrupt(); }   // request (latched even if masked)
+  inline void ResetFlag(uint8_t flag) { state &= (uint8_t)~(enabled & (1 << flag)); Interrupt(); } // request: only latched if enabled
   // inline void SetFlag(uint8_t flag) { state |= (uint8_t)(1 << flag); }
   // inline void ResetFlag(uint8_t flag) { state &= ~(uint8_t)(enabled & (1 << flag)); Interrupt(); }
 

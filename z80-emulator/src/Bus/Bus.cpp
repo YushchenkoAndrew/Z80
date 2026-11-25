@@ -66,11 +66,10 @@ namespace Bus {
       case MUX::IORQ::UART_PORT:     break; // TODO
       case MUX::IORQ::KEYBOARD_PORT: return Registry::IRQ->SetFlag(IRQ::BIT::KEYBOARD), Registry::Keyboard->Read(addr, true);
       case MUX::IORQ::INT_PORT:      return Registry::IRQ->Read(addr, true);
-      case MUX::IORQ::PIT_PORT: {
-        const int ct = addr & 3; // 0..2 counters, 3 control word
-        if (ct == 1 || ct == 2) Registry::IRQ->SetFlag(IRQ::BIT::CT1 - ct + 1); // same mapping PIT::Interrupt uses
+      case MUX::IORQ::PIT_PORT: 
+        Registry::IRQ->SetFlag(IRQ::BIT::CT1);
+        Registry::IRQ->SetFlag(IRQ::BIT::CT2);
         return Registry::KR580VI53->Read(addr, true);
-      }
     }
 
     return 0x00;
@@ -83,11 +82,11 @@ namespace Bus {
       case MUX::IORQ::UART_PORT:     break; // TODO
       case MUX::IORQ::KEYBOARD_PORT: return 0x00;
       case MUX::IORQ::INT_PORT:      return Registry::IRQ->Write(addr, data, true);
-      case MUX::IORQ::PIT_PORT: {
-        const int ct = addr & 3; // 0..2 counters, 3 control word
-        if (ct == 1 || ct == 2) Registry::IRQ->SetFlag(IRQ::BIT::CT1 - ct + 1); // same mapping PIT::Interrupt uses
+      case MUX::IORQ::PIT_PORT: 
+        Registry::IRQ->SetFlag(IRQ::BIT::CT1);
+        Registry::IRQ->SetFlag(IRQ::BIT::CT2);
         return Registry::KR580VI53->Write(addr, data, true);
-      }
+
       case MUX::IORQ::PPI_PORT: {
         Registry::KR580VV55->Write(addr, data, true);
         const uint8_t ctrl = Registry::KR580VV55->regC(Int2Type<PPI::REG2PORT>());

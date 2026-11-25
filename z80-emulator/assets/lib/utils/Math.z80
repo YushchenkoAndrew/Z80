@@ -47,8 +47,10 @@
 @DIV16x8_lp:
   ADD HL, HL ; Shift reg HL to the left, aka HL << 1
   RLA        ; Load carry bit, aka first bite of reg HL in reg A
+  JR C, @DIV16x8_sub-$   ; 9-bit remainder (divisor >= 128): always >= divisor
   CP C       ; Check if reg A < reg C
   JR C, @DIV16x8_lp_end-$; If reg A < reg C, then jump
+@DIV16x8_sub:
   INC HL     ; Get the result of division
   SUB C      ; Create a remainder in reg A
 @DIV16x8_lp_end:

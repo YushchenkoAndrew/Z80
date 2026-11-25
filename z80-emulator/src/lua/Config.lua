@@ -5,11 +5,11 @@ WIDTH = 840; HEIGHT = 514; PIXELS = 1;
 
 CLOCK = 0; -- Max
 -- CLOCK = 4000000; -- nano seconds = 4MHz
--- SOURCE = "assets/src/DoS/Main.z80";
+SOURCE = "assets/src/DoS/Main.z80";
 -- SOURCE = "assets/test/Test.z80";
 -- src = "assets/test/Timer/Test.z80",
 -- src = "assets/test/RTC/Test.z80",
-SOURCE = "assets/test/LCD/Test.z80";
+-- SOURCE = "assets/test/LCD/Test.z80";
 
 -- step   = { x = 8, y = 12 };
 -- WINDOW = {  }

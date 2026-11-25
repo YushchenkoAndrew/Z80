@@ -12,6 +12,7 @@ INCLUDE "Defs.z80"
 ;;   reg HL -- unaffected
 ;;
 @LCD_EXEC:
+  CALL _INTR_LOCK ; A PPI A/C sequence must never be interleaved with the keyboard-ISR echo
   PUSH AF    ; Save reg AF in stack
   PUSH BC    ; Save reg BC in stack
   LD B, A    ; Save reg A in reg B
@@ -28,7 +29,7 @@ INCLUDE "Defs.z80"
   POP BC     ; Restore reg BC & create small delay in 10 cycles
   OUT (PPI_PORT_C), A ; Disable LCD enable
   POP AF     ; Restore reg A & flags
-  RET
+  JP _INTR_UNLOCK
 
 
 ;;
@@ -43,6 +44,7 @@ INCLUDE "Defs.z80"
 ;;   reg HL -- unaffected
 ;;
 @LCD_WR:
+  CALL _INTR_LOCK ; see @LCD_EXEC
   PUSH AF    ; Save reg AF in stack
   PUSH BC    ; Save reg BC in stack
   LD B, A    ; Save reg A in reg B
@@ -59,7 +61,7 @@ INCLUDE "Defs.z80"
   POP BC     ; Restore reg BC & create small delay in 10 cycles
   OUT (PPI_PORT_C), A ; Disable LCD enable
   POP AF     ; Restore reg A & flags
-  RET
+  JP _INTR_UNLOCK
 
 
 ;;
@@ -75,6 +77,7 @@ INCLUDE "Defs.z80"
 ;;
 @LCD_DELAY:
   PUSH BC    ; Save reg BC in stack
+  LD C, 0x00 ; Always start from a full 256 steps (C used to be whatever the caller left)
 @LCD_DELAY_bg:
   LD B, 0x0F ; Load higher counter byte value
 @LCD_DELAY_lp:
@@ -252,7 +255,7 @@ _LCD_LINE_ST:
   LD HL, PTR_LCD_CURSOR; Load cursor pos ptr
   LD A, (HL) ; Get current cursor pos
   AND 0x0F   ; Get only low byte, aka X axios
-  JR Z, _LCD_LINE_ST_end; If value is 0 aka cursor at the start of new line, do nothing
+  JR Z, _LCD_LINE_ST_end-$; If value is 0 aka cursor at the start of new line, do nothing
   PUSH BC    ; Save reg B in stack
   LD B, A    ; Load counter to the reg B
   LD A, LCD_CURSOR; Move cursor to the left by one

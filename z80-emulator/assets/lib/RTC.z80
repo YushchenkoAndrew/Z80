@@ -57,17 +57,20 @@ _RTC_INIT:
 @RTC_SET_TIME:
   PUSH DE    ; Save reg DE in stack
 
-  LD E, A    ; Move seconds value to the reg E 
-  LD (RTC_REG_B), A ; Load initial settings byte to the RTC's reg B
-  LD D, A    ; Load the original value of RTC's reg B
-  AND RTC_REG_B_SET ; Check if update cycle in RTC has already stoped
-  JR NZ, @RTC_SET_TIME_bgn-$
+  ; LD E, A    ; Move seconds value to the reg E 
+  ; LD (RTC_REG_B), A ; Load initial settings byte to the RTC's reg B
+  ; LD D, A    ; Load the original value of RTC's reg B
+  ; AND RTC_REG_B_SET ; Check if update cycle in RTC has already stoped
+  ; JR NZ, @RTC_SET_TIME_bgn-$
 
-  LD A, D    ; Load into reg A RTC's reg B
+  ; LD A, D    ; Load into reg A RTC's reg B
+  LD E, A    ; Move seconds value to the reg E
+  LD A, (RTC_REG_B) ; Read the RTC's reg B
+  LD D, A    ; Remember the original value of RTC's reg B
   OR RTC_REG_B_SET ; Temporary stop update cycle in RTC
   LD (RTC_REG_B), A ; Load modified RTC's reg B, aka temporary stop update cycle
 
-@RTC_SET_TIME_bgn:
+; @RTC_SET_TIME_bgn:
   LD A, E    ; Load amount of seconds to Acc
   LD (RTC_SECONDS), A ; Intialize second value
 
@@ -77,8 +80,11 @@ _RTC_INIT:
   LD A, C    ; Load amount of hours to Acc
   LD (RTC_HOUR), A ; Intialize hour value
 
-  LD A, D    ; Load into reg A RTC's reg B
-  LD (RTC_REG_B), A ; Restore original value from RTC's reg B
+  ; LD A, D    ; Load into reg A RTC's reg B
+  ; LD (RTC_REG_B), A ; Restore original value from RTC's reg B
+
+  LD A, D    ; Load into reg A the original RTC's reg B
+  LD (RTC_REG_B), A ; Restore it, aka release the update cycle
 
   POP DE     ; Restore reg DE from stack
   RET
@@ -129,42 +135,86 @@ _RTC_INIT:
   PUSH BC    ; Save reg BC in stack
   PUSH DE    ; Save reg DE in stack
 
-  LD (RTC_REG_B), A ; Load initial settings byte to the RTC's reg B
-  LD B, A    ; Load the original value of RTC's reg B
-  AND RTC_REG_B_SET ; Check if update cycle in RTC has already stoped
-  JR NZ, @RTC_SET_ALARM_bgn-$
+  ; LD (RTC_REG_B), A ; Load initial settings byte to the RTC's reg B
+  ; LD B, A    ; Load the original value of RTC's reg B
+  ; AND RTC_REG_B_SET ; Check if update cycle in RTC has already stoped
+  ; JR NZ, @RTC_SET_ALARM_bgn-$
 
-  LD A, B    ; Load into reg A RTC's reg B
+  ; LD A, B    ; Load into reg A RTC's reg B
+
+  LD A, (RTC_REG_B) ; Read the RTC's reg B
+  LD B, A    ; Remember the original value of RTC's reg B
   OR RTC_REG_B_SET ; Temporary stop update cycle in RTC
   LD (RTC_REG_B), A ; Load modified RTC's reg B, aka temporary stop update cycle
 
-@RTC_SET_ALARM_bgn:
-  EX DE, HL  ; Load in reg DE offset in seconds
-  CALL @RTC_CURRENT_TIME ; Get current time in reg HL
-  ADD HL, DE ; Calc next alarm time in seconds
-  LD E, 0    ; Reset reg E
-  ADC A, E   ; Add carry bit to the reg A
-  PUSH AF    ; Save reg A from A:HL (24 bits) in stack
+; @RTC_SET_ALARM_bgn:
+;   EX DE, HL  ; Load in reg DE offset in seconds
+;   CALL @RTC_CURRENT_TIME ; Get current time in reg HL
+;   ADD HL, DE ; Calc next alarm time in seconds
+;   LD E, 0    ; Reset reg E
+;   ADC A, E   ; Add carry bit to the reg A
+;   PUSH AF    ; Save reg A from A:HL (24 bits) in stack
 
-  LD A, 60   ; Load divisior value, aka get amount of seconds
-  CALL @DIV16x8; Divide reg HL / 60 => reg A - seconds & reg HL - minutes
-  LD (RTC_ALARM_SECONDS), A ; Set amount of seconds
+;   LD A, 60   ; Load divisior value, aka get amount of seconds
+;   CALL @DIV16x8; Divide reg HL / 60 => reg A - seconds & reg HL - minutes
+;   LD (RTC_ALARM_SECONDS), A ; Set amount of seconds
 
-  LD A, 60   ; Load divisior value, aka get amount of minutes
-  CALL @DIV16x8; Divide reg HL / 60 => reg A - minutes & reg HL - hours
-  LD (RTC_ALARM_MINUTES), A ; Set amount of minutes
+;   LD A, 60   ; Load divisior value, aka get amount of minutes
+;   CALL @DIV16x8; Divide reg HL / 60 => reg A - minutes & reg HL - hours
+;   LD (RTC_ALARM_MINUTES), A ; Set amount of minutes
 
-  POP AF     ; Restore reg A value from 24 bits of current time
-  OR A       ; Check if the reg is empty
-  LD A, L    ; Load remaning amount of hours in Acc
-  JR Z, @RTC_SET_ALARM_hour-$; If reg doesn't some value, it means then reg HL was not overflowed with hours
-  ADD A, 18  ; Adjust hours overflow, max hours from (2^16 - 1) is 18
+;   POP AF     ; Restore reg A value from 24 bits of current time
+;   OR A       ; Check if the reg is empty
+;   LD A, L    ; Load remaning amount of hours in Acc
+;   JR Z, @RTC_SET_ALARM_hour-$; If reg doesn't some value, it means then reg HL was not overflowed with hours
+;   ADD A, 18  ; Adjust hours overflow, max hours from (2^16 - 1) is 18
+
+  LD A, 60   ; Split delay: HL = delay / 60 (minutes), A = delay % 60 (seconds)
+  CALL @DIV16x8
+  LD C, A    ; C = delay seconds
+  LD A, 60   ; HL = delay / 3600 (hours, max 18), A = minutes
+  CALL @DIV16x8
+  LD D, A    ; D = delay minutes
+  LD E, L    ; E = delay hours
+
+  LD A, (RTC_SECONDS) ; alarm seconds = now + delay (carry into minutes)
+  ADD A, C
+  LD C, 0    ; C = carry to minutes
+  CP 60
+  JR C, @RTC_SET_ALARM_sec-$
+  SUB 60
+  INC C
+@RTC_SET_ALARM_sec:
+  LD (RTC_ALARM_SECONDS), A
+
+  LD A, (RTC_MINUTES) ; alarm minutes = now + delay + carry (carry into hours)
+  ADD A, D
+  ADD A, C
+  LD C, 0    ; C = carry to hours
+  CP 60
+  JR C, @RTC_SET_ALARM_min-$
+  SUB 60
+  INC C
+@RTC_SET_ALARM_min:
+  LD (RTC_ALARM_MINUTES), A
+
+  LD A, (RTC_HOUR)    ; alarm hours = now + delay + carry, wrap at 24h
+  ADD A, E
+  ADD A, C
+  CP 24
+  JR C, @RTC_SET_ALARM_hour-$
+  SUB 24
 
 @RTC_SET_ALARM_hour:
-  LD D, A    ; Load amount hours to set next alarm
-  LD E, 24   ; Load divisior value, aka get amount of hours
-  CALL @DIV8 ; In reg A will return remainder of hours, aka reg D % 24 = reg A
-  LD (RTC_ALARM_HOUR), A ; Set amount of hours
+  ; LD D, A    ; Load amount hours to set next alarm
+  ; LD E, 24   ; Load divisior value, aka get amount of hours
+  ; CALL @DIV8 ; In reg A will return remainder of hours, aka reg D % 24 = reg A
+  ; LD (RTC_ALARM_HOUR), A ; Set amount of hours
+
+  LD (RTC_ALARM_HOUR), A
+
+  LD A, B    ; Restore the original value of RTC's reg B, aka release update cycle
+  LD (RTC_REG_B), A
 
   POP DE     ; Restore reg DE from stack
   POP BC     ; Restore reg BC from stack
