@@ -2,12 +2,12 @@
 
 #include "src/Defs.h"
 #include "src/Editor/Highlighter/Highlighter.h"
-#include "src/Interpreter/Lexer.h"
 #include "src/Utils/Utils.h"
 #include "src/Window/Base.h"
 #include "src/Window/KeyEventListener.h"
 #include "src/Window/Window.h"
 #include <algorithm>
+#include <memory>
 #include <optional>
 
 namespace Editor {
@@ -108,6 +108,7 @@ public:
   }
 
   const Interpreter::Token* TokenUnderCursor() {
+    if (lexer == nullptr) return nullptr;
     for (const auto& t : lexer->GetTokens()) {
       if (t.line - 1 != pos.y) continue;
       const int32_t start = t.col - 1;
@@ -121,7 +122,7 @@ public:
   std::optional<LocationT> definitionLocation(const std::string& name);
 
   void DrawSegment(olc::vi2d pos, int32_t y, int32_t start, int32_t end) {
-    const auto highlights = lexer->GetHighlights();
+    const auto highlights = lexer ? lexer->GetHighlights() : Syntax::HighlightT{};
 
     for (int32_t x = start; x < end; x++) {
       auto color = highlights.count(y) && highlights.at(y).count(x) ? highlights.at(y).at(x) : olc::GREY;
@@ -182,9 +183,9 @@ public:
     lines.clear(); lines.insert(lines.end(), dst.begin(), dst.end());
   }
 
-  void Load(std::string dst, Syntax::Highlighter* lexer = nullptr) {
-    lines.clear(); this->lexer = lexer;
-    if (this->lexer) this->lexer->Scan(dst);
+  void Load(std::string dst, std::unique_ptr<Syntax::Highlighter> highlighter = nullptr) {
+    lines.clear(); lexer = std::move(highlighter);
+    if (lexer) lexer->Scan(dst);
     // TODO: check if lexer is nullptr all over
 
     size_t start = 0; // Current search offset
@@ -274,7 +275,9 @@ public:
 
     Process(Int2Type<olc::Key::Y>(), Int2Type<olc::Key::Y>());
     line().erase(pos.x, line().size()); pos.x = endAt();
-    return lexer->Scan(Text()), nullptr;
+    if (lexer) lexer->Scan(Text());
+
+    return nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::D>) { 
@@ -286,7 +289,9 @@ public:
     if (lines.empty()) lines.emplace_back();
 
     pos.y = std::min(pos.y, static_cast<int32_t>(lines.size()) - 1); pos.x = startAt();
-    return lexer->Scan(Text()), nullptr;
+    if (lexer) lexer->Scan(Text());
+
+    return nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::D>, Int2Type<olc::Key::J>) {
@@ -324,8 +329,9 @@ public:
 
     if (!length) buffer.clear();
     else { buffer = { line().substr(pos.x, length) }; line().erase(copy.x, length); }
+    if (lexer) lexer->Scan(Text());
 
-    return lexer->Scan(Text()), nullptr;
+    return nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::C>, Int2Type<olc::Key::W>) { 
@@ -360,13 +366,19 @@ public:
     line().erase(pos.x, 1);
 
     pos.x = std::min(pos.x, (int)line().size());
-    return lexer->Scan(Text()), nullptr;
+    if (lexer) lexer->Scan(Text());
+
+    return nullptr;
   }
 
   ::Window::StrokeAction Process(Int2Type<olc::Key::R>) { 
     return [this](olc::Key k, int32_t i) {
       if (k == olc::Key::SHIFT) return true; // FIXME: Think about how to impl spec char like SPACE BACKSPACE etc.
-      return line().replace(pos.x, 1, GetKeycode(k, i > 0)), lexer->Scan(Text()), false;
+
+      line().replace(pos.x, 1, GetKeycode(k, i > 0));
+      if (lexer) lexer->Scan(Text());
+
+      return false;
     };
   }
 
@@ -379,7 +391,9 @@ public:
       if (pos.x >= endAt()) line().insert(pos.x, keycode);
       else line().replace(pos.x, 1, keycode);
 
-      return lexer->Scan(Text()), pos.x++, true; // FIXME: Add recolor on text update
+      if (lexer) lexer->Scan(Text());
+
+      return pos.x++, true; // FIXME: Add recolor on text update
     };
   }
 
@@ -388,7 +402,11 @@ public:
     mode = INSERT;
     return [this](olc::Key k, int32_t i) {
       if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x = std::max(0, pos.x - 1), false;
-      return line().insert(pos.x++, GetKeycode(k)), lexer->Scan(Text()), true; // FIXME: Think about how to impl SHIFT ??
+
+      line().insert(pos.x++, GetKeycode(k)); // FIXME: Think about how to impl SHIFT ??
+      if (lexer) lexer->Scan(Text());
+      
+      return true; // FIXME: Think about how to impl SHIFT ??
     };
   }
 
@@ -396,7 +414,11 @@ public:
     mode = INSERT, pos.x = std::min(pos.x + 1, (int32_t)line().size());
     return [this](olc::Key k, int32_t i) {
       if (k == olc::Key::ESCAPE) return mode = NORMAL, pos.x = std::max(0, pos.x - 1), false;
-      return line().insert(pos.x++, GetKeycode(k)), lexer->Scan(Text()), true; // FIXME: Think about how to impl SHIFT ??
+
+      line().insert(pos.x++, GetKeycode(k)); // FIXME: Think about how to impl SHIFT ??
+      if (lexer) lexer->Scan(Text());
+
+      return true;
     };
   }
 
@@ -775,7 +797,7 @@ private:
   olc::vi2d offset = olc::vi2d(0, 0);
 
 private:
-  Syntax::Highlighter* lexer = nullptr;
+  std::unique_ptr<Syntax::Highlighter> lexer = nullptr;
 
   std::vector<std::string> lines;
   std::list<int32_t> breakpoints;

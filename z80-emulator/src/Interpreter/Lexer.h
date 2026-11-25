@@ -59,7 +59,7 @@ public:
 
         case ';':
           while (peek() != '\n' && !isAtEnd()) advance();
-          Mark(line, col - (curr - prev), curr - prev, olc::DARK_GREY);
+          Mark(olc::DARK_GREY);
           break;
 
 
@@ -154,7 +154,7 @@ private:
 
     const auto& [_, color] = Token::GetMetadata(type);
     tokens.push_back({ type, src.substr(prev, len), literal,  start + 1, line + 1 });
-    Mark(line, col - len, len, color);
+    Mark(color);
   }
 
   inline bool isAtEnd() { return curr >= src.length(); }
@@ -168,14 +168,6 @@ private:
 
 
 private:
-  std::string src;
-
-  int32_t prev = 0; // index of the src, which is pointing to first char in the lexeme
-  int32_t curr = 0; // index of the src, which is pointing to the curr char
-
-  int32_t col = 0; // tracks current line position
-  int32_t line = 0; // tracks current line position
-
   std::list<std::string> errors;
 };
 

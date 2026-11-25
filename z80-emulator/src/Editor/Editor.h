@@ -47,7 +47,8 @@ public:
   Editor* Open(std::filesystem::path path) { 
     if (files.count(path)) return Select(path.string()), this;
     files[path] = std::make_unique<Vim>(GameEngine); 
-    return files[path]->Load(Reader::Read(path)), Select(path.string()), this;
+    auto [src, lexer] = Reader::Read(path);
+    return files[path]->Load(src, std::move(lexer)), Select(path.string()), this;
   }
 
   inline void Close() { for (auto it = files.begin(); it != files.end();) Close(it++->first); }
