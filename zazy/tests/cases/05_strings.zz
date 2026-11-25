@@ -1,0 +1,18 @@
+#include "inc/print.zh"
+//> hello
+//> 5
+//> olleh
+//> a=97
+const uint8_t msg[] = "hello";
+uint8_t len(const uint8_t* s) { uint8_t n = 0; while (s[n]) n++; return n; }
+void main() {
+  puts(msg); putc('\n');
+  pu(len(msg));
+  uint8_t buf[8];
+  uint8_t n = len(msg);
+  for (uint8_t i = 0; i < n; i++) buf[i] = msg[n - 1 - i];
+  buf[n] = 0;
+  puts(buf); putc('\n');
+  uint8_t c = "a"[0];
+  puts("a="); pu(c);
+}

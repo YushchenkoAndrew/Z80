@@ -1,0 +1,28 @@
+#include "inc/print.zh"
+//> 0
+//> 1
+//> 1
+//> 2
+//> 7
+//> 77
+//> 4
+typedef uint16_t word;
+enum Color { RED, GREEN = 5, BLUE };
+enum { K = 7 };
+static uint8_t counter = 0;
+uint8_t next() { return ++counter; }
+word twice(word x) { return x + x; }
+void main() {
+  uint8_t a = 4, b = 5;
+  pu(a > b ? a + b : 0);
+  pu(a < b ? 1 : 2);
+  pu(next() + next() - 2 + 0);          // 1 + 2 - 2 + ... evaluated left to right, see below
+  pu(GREEN - BLUE + 3);
+  pu(K);
+  word w = twice(38) + 1; pu(w);
+  uint8_t i = 0;
+  loop:
+  i++;
+  if (i < 4) goto loop;
+  pu(i);
+}

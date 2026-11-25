@@ -1,0 +1,67 @@
+#include "inc/print.zh"
+//> 1
+//> 1
+//> 1
+//> 1
+//> 1
+//> 5
+//> 4
+//> 7
+// `interrupt` handlers restore every register they touch; a function may take a fixed label
+uint16_t rbc, rde, rhl, riy, rix;
+uint8_t ticks;
+
+interrupt void leaf() { ticks++; }                       // touches A and HL only
+interrupt void busy() {                                  // calls, locals, loops: saves everything
+  uint8_t buf[3];
+  for (uint8_t i = 0; i < 3; i++) buf[i] = i * 2;
+  ticks += buf[2] + pu_nothing();
+}
+uint8_t pu_nothing() { return 0; }
+void named() asm("@MYTICK") { ticks += 2; }              // label chosen by you, e.g. for a vector table
+
+void main() {
+  asm {
+    LD IY, 0x1111
+    LD BC, 0x2222
+    LD DE, 0x3333
+    LD HL, 0x4444
+    CALL {leaf}
+    LD ({riy}), IY
+    LD ({rbc}), BC
+    LD ({rde}), DE
+    LD ({rhl}), HL
+  }
+  pu(riy == 0x1111 && rbc == 0x2222 && rde == 0x3333 && rhl == 0x4444);
+  asm {
+    LD IY, 0x1111
+    LD BC, 0x2222
+    LD DE, 0x3333
+    LD HL, 0x4444
+    CALL {busy}
+    LD ({riy}), IY
+    LD ({rbc}), BC
+    LD ({rde}), DE
+    LD ({rhl}), HL
+  }
+  pu(riy == 0x1111 && rbc == 0x2222 && rde == 0x3333 && rhl == 0x4444);
+  pu(ticks == 5);
+  ticks = 0;
+  asm {
+    LD IY, 0x1111
+    LD BC, 0x2222
+    LD DE, 0x3333
+    LD HL, 0x4444
+    CALL {named}
+    LD ({riy}), IY
+    LD ({rbc}), BC
+    LD ({rde}), DE
+    LD ({rhl}), HL
+  }
+  pu(riy == 0x1111 && rbc == 0x2222 && rde == 0x3333 && rhl == 0x4444);
+  pu(1);
+  pu(ticks + 3);
+  asm { CALL @MYTICK }
+  pu(ticks);
+  pu(ticks + 3);
+}

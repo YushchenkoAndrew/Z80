@@ -1,0 +1,26 @@
+#include "inc/print.zh"
+//> 15
+//> 5
+//> 50
+//> 3
+//> 1
+//> 12
+//> 3
+//> 65535
+//> 1
+uint8_t g = 10;
+uint16_t w = 100;
+uint8_t arr[3] = {1, 2, 3};
+void main() {
+  uint8_t a = 10;
+  a += 5; pu(a);
+  a -= 10; pu(a);
+  a *= 10; pu(a);
+  a /= 15; pu(a);
+  a %= 2; pu(a);
+  g <<= 1; g += 2; g -= 10; pu(g);
+  a = 7; a &= 3; pu(a);
+  w = 0; w--; pu(w);
+  w = 0; w |= 1; w ^= 0; pu(w);
+  arr[1] += 5; arr[2]++; 
+}

@@ -1,0 +1,25 @@
+#include "inc/print.zh"
+//> 240
+//> 15
+//> 255
+//> 4660
+//> 4811
+//> 1
+//> 128
+//> 64
+//> 65520
+//> 4095
+uint8_t b = 0x0F;
+void main() {
+  pu(b << 4);
+  pu(b & 0xF0 | 0x0F & b);
+  pu(b | 0xF0);
+  uint16_t v = 0x1234; pu(v);
+  pu(v ^ 0x00FF);
+  uint8_t one = 1;
+  pu(one << 0);
+  pu(one << 7);
+  uint8_t s = 0x80; pu(s >> 1);
+  int16_t n = -16; pu((uint16_t)n);
+  pu(0xFFFF >> 4);
+}

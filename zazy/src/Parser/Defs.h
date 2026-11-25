@@ -1,37 +1,25 @@
 #pragma once
 #include "src/Lexer/Lexer.h"
-
-
+#include "src/Types/Types.h"
+#include "src/Utils/Diag.h"
 
 namespace Zazy {
 
-namespace Obj {
-  enum TypeT {
-    VOID, CHAR, SHORT, INT, PTR, FUNC, RETURN, ERROR
-  };
-
-  class Char;
-  class Short;
-  class Int;
-  class Void;
-  class Ptr;
-  class Func;
-  class Return;
-  class Error;
-};
-
+struct Symbol;     // owned by Sema
+struct FuncInfo;
 
 namespace Expr {
-  #define ENCLOSE(...) printf("("); __VA_ARGS__ printf(")");
-
   class Array;
   class Assign;
   class Binary;
   class Cast;
-  class Get;
+  class Comma;
   class Group;
+  class Index;
   class Invoke;
   class Literal;
+  class Field;
+  class Sizeof;
   class Suffix;
   class Ternary;
   class Unary;
@@ -39,110 +27,107 @@ namespace Expr {
 };
 
 namespace Stmt {
-
+  class Asm;
   class Block;
-  class Expr;
+  class Break;
+  class Case;
+  class Continue;
+  class Do;
+  class ExprStmt;
   class For;
+  class Goto;
   class If;
-  class Switch;
+  class Label;
   class Return;
-  class Until;
+  class Switch;
   class While;
-
-//  *  struct_decl   -> TODO:
-//  *  enum_decl     -> TODO:
-//  *  func_decl     -> type IDENTIFIER '(' ')' block
-//  *  var_decl      -> type IDENTIFIER ( '='  expression )? ';'
-//  *  label_stmt    -> IDENTIFIER ':'
-//  * 
-//  *  statement     -> if_stmt | switch_stmt | for_stmt | while_stmt | do_while_stmt |
-//  *                  return_stmt | goto_stmt | break_stmt | continue_stmt | expr_stmt | block
-//  * 
-//  *  if_stmt       -> 'if' '(' expression ')' statement ( 'else' statement )?
-//  *  switch_stmt   -> 'switch' '(' expression ')' '{' case_stmt* '}'
-//  *  case_stmt     -> ('case' expression ':' | 'default' ':') statement
-//  *  for_stmt      -> 'for' '(' ( var_decl | expr_stmt | ';' ) expression? ';' expression? ')' statement
-//  *  while_stmt    -> 'while' '(' expression ')' statement
-//  *  do_while_stmt -> 'do' block 'while' '(' expression ')' ';'
-
 };
 
 namespace Decl {
-  class Struct;
   class Enum;
   class Func;
+  class Struct;
+  class Typedef;
   class Var;
 };
 
-class Object;
 class Expression;
 class Statement;
 
-typedef std::shared_ptr<Object>     obj_t;
 typedef std::shared_ptr<Expression> expr_t;
 typedef std::shared_ptr<Statement>  stmt_t;
 
+/**
+ * Every pass (Sema, CodeGen, printers) is a Visitor. Same idea as before, but nothing is
+ * evaluated any more: passes annotate the tree or emit code.
+ */
 class Visitor {
 public:
-  virtual obj_t visitDeclStruct(Decl::Struct* decl) { return nullptr; }
-  virtual obj_t visitDeclEnum(Decl::Enum* decl) { return nullptr; }
-  virtual obj_t visitDeclFunc(Decl::Func* decl) { return nullptr; }
-  virtual obj_t visitDeclVar(Decl::Var* decl) { return nullptr; }
+  virtual ~Visitor() {}
 
-  virtual obj_t visitStmtBlock(Stmt::Block* stmt) { return nullptr; }
-  virtual obj_t visitStmtExpr(Stmt::Expr* stmt) { return nullptr; }
-  virtual obj_t visitStmtFor(Stmt::For* stmt) { return nullptr; }
-  virtual obj_t visitStmtIf(Stmt::If* stmt) { return nullptr; }
-  // virtual obj_t visitStmt(Stmt::If* stmt) { return nullptr; }
-  virtual obj_t visitStmtReturn(Stmt::Return* stmt) { return nullptr; }
-  virtual obj_t visitStmtUntil(Stmt::Until* stmt) { return nullptr; }
-  virtual obj_t visitStmtWhile(Stmt::While* stmt) { return nullptr; }
+  virtual void visitDeclStruct(Decl::Struct*) {}
+  virtual void visitDeclEnum(Decl::Enum*) {}
+  virtual void visitDeclTypedef(Decl::Typedef*) {}
+  virtual void visitDeclFunc(Decl::Func*) {}
+  virtual void visitDeclVar(Decl::Var*) {}
 
-  virtual obj_t visitExprArray(Expr::Array* expr) { return nullptr; }
-  virtual obj_t visitExprAssign(Expr::Assign* expr) { return nullptr; }
-  virtual obj_t visitExprBinary(Expr::Binary* expr) { return nullptr; }
-  virtual obj_t visitExprCast(Expr::Cast* expr) { return nullptr; }
-  virtual obj_t visitExprGet(Expr::Get* expr) { return nullptr; }
-  virtual obj_t visitExprGroup(Expr::Group* expr) { return nullptr; }
-  virtual obj_t visitExprInvoke(Expr::Invoke* expr) { return nullptr; }
-  virtual obj_t visitExprLiteral(Expr::Literal* expr) { return nullptr; }
-  virtual obj_t visitExprSuffix(Expr::Suffix* expr) { return nullptr; }
-  virtual obj_t visitExprTernary(Expr::Ternary* expr) { return nullptr; }
-  virtual obj_t visitExprUnary(Expr::Unary* expr) { return nullptr; }
-  virtual obj_t visitExprVar(Expr::Var* expr) { return nullptr; }
+  virtual void visitStmtAsm(Stmt::Asm*) {}
+  virtual void visitStmtBlock(Stmt::Block*) {}
+  virtual void visitStmtBreak(Stmt::Break*) {}
+  virtual void visitStmtCase(Stmt::Case*) {}
+  virtual void visitStmtContinue(Stmt::Continue*) {}
+  virtual void visitStmtDo(Stmt::Do*) {}
+  virtual void visitStmtExpr(Stmt::ExprStmt*) {}
+  virtual void visitStmtFor(Stmt::For*) {}
+  virtual void visitStmtGoto(Stmt::Goto*) {}
+  virtual void visitStmtIf(Stmt::If*) {}
+  virtual void visitStmtLabel(Stmt::Label*) {}
+  virtual void visitStmtReturn(Stmt::Return*) {}
+  virtual void visitStmtSwitch(Stmt::Switch*) {}
+  virtual void visitStmtWhile(Stmt::While*) {}
 
-  virtual obj_t visitExprUnknown(Expression* expr) { return nullptr; }
-  virtual obj_t visitStmtUnknown(Statement*  stmt) { return nullptr; }
-};
-
-class Object {
-public:
-  Object(uint32_t value, uint8_t size, Obj::TypeT type = Obj::TypeT::VOID):
-    value(value), size(size), type(type) {}
-
-  virtual std::string string() { return ""; }
-
-public:
-  uint8_t size;
-  uint32_t value;
-  Obj::TypeT type;
+  virtual void visitExprArray(Expr::Array*) {}
+  virtual void visitExprAssign(Expr::Assign*) {}
+  virtual void visitExprBinary(Expr::Binary*) {}
+  virtual void visitExprCast(Expr::Cast*) {}
+  virtual void visitExprComma(Expr::Comma*) {}
+  virtual void visitExprGroup(Expr::Group*) {}
+  virtual void visitExprIndex(Expr::Index*) {}
+  virtual void visitExprInvoke(Expr::Invoke*) {}
+  virtual void visitExprLiteral(Expr::Literal*) {}
+  virtual void visitExprField(Expr::Field*) {}
+  virtual void visitExprSizeof(Expr::Sizeof*) {}
+  virtual void visitExprSuffix(Expr::Suffix*) {}
+  virtual void visitExprTernary(Expr::Ternary*) {}
+  virtual void visitExprUnary(Expr::Unary*) {}
+  virtual void visitExprVar(Expr::Var*) {}
 };
 
 class Expression {
 public:
-  virtual obj_t accept(Visitor* visitor) {
-    return visitor->visitExprUnknown(this);
-  }
-  
+  virtual ~Expression() {}
+  virtual void accept(Visitor* visitor) = 0;
   virtual void print() {}
+
+public:
+  token_t tok = nullptr;     // for diagnostics
+
+  // filled by Sema
+  Type* ty = nullptr;
+  bool lval = false;
+  bool isConst = false;      // folded compile time constant
+  int32_t cv = 0;
+  bool typedConst = false;   // constant with an explicit type (cast): does not adopt the type of the other operand
+  bool exact = true;         // false: narrow arithmetic that may overflow its width (see Sema::needFull)
 };
 
 class Statement {
 public:
-  virtual obj_t accept(Visitor* visitor) {
-    return visitor->visitStmtUnknown(this);
-  }
-  
+  virtual ~Statement() {}
+  virtual void accept(Visitor* visitor) = 0;
   virtual void print() {}
+
+public:
+  token_t tok = nullptr;
 };
 };

@@ -1,0 +1,16 @@
+#include "inc/print.zh"
+//> 7
+//> 65535
+//> -5
+//> 1
+//> 0
+uint8_t a = 3;
+uint16_t big = 0xFFFF;
+int8_t neg = -5;
+void main() {
+  pu(a + 4);
+  pu(big);
+  ps(neg);
+  pu(a == 3);
+  pu(a != 3);
+}

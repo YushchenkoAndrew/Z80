@@ -1,0 +1,10 @@
+;; test helper written in the user's style
+;; func TRIPLE() -> reg HL;  in: A
+@TRIPLE:
+  LD L, A
+  LD H, 0
+  LD D, H
+  LD E, L
+  ADD HL, HL
+  ADD HL, DE
+  RET

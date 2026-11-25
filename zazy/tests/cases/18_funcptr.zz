@@ -1,0 +1,51 @@
+#include "inc/print.zh"
+//> 7
+//> 12
+//> 12
+//> 106
+//> 33
+//> 2
+//> 1
+//> 0
+//> 44
+//> 9
+//> 5
+typedef uint8_t (*binop_t)(uint8_t, uint8_t);
+typedef void (*action_t)(void);
+
+uint8_t add(uint8_t a, uint8_t b) { return a + b; }
+uint8_t mul(uint8_t a, uint8_t b) { return a * b; }
+uint16_t mix(uint16_t a, uint8_t b, uint16_t c) { return a + b + c; }
+uint8_t hits;
+void hit() { hits++; }
+void hit10() { hits += 10; }
+
+binop_t ops[2] = { add, mul };                 // global table of function addresses
+uint16_t (*gmix)(uint16_t, uint8_t, uint16_t) = mix;
+
+struct Cmd { uint8_t key; binop_t fn; };
+struct Cmd cmds[2] = { {1, add}, {2, mul} };
+
+uint8_t apply(binop_t f, uint8_t x, uint8_t y) { return f(x, y); }
+uint8_t twice(uint8_t (*f)(uint8_t, uint8_t), uint8_t v) { return (*f)(v, v); }
+
+void main() {
+  binop_t f = add;
+  pu(f(3, 4));
+  f = &mul;
+  pu(f(3, 4));
+  pu(apply(ops[1], 3, 4));
+  pu(gmix(100, 5, 1));                          // 3 parameters through a pointer
+  pu(cmds[1].fn(11, 3));
+  action_t a = hit; a(); a();
+  pu(hits);
+  pu(a == hit);
+  pu(a == 0);
+  pu(twice(ops[0], 150));                       // add() returns uint8_t: 300 wraps to 44
+  uint8_t (*local)(uint8_t, uint8_t) = add;
+  pu(local(4, 5));
+  action_t table[2] = { hit, hit10 };
+  hits = 0;
+  for (uint8_t i = 0; i < 2; i++) table[i]();
+  pu(hits - 6);
+}

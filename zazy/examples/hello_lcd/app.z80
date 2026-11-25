@@ -1,0 +1,15 @@
+;; configuration + libraries that Init.z80 needs (written once, shared by every zazy program)
+ALLOWED_INTERUPTS EQU IM_RTC
+INCLUDE "../../lib/EventLoop.z80"
+INCLUDE "../../lib/Lcd.z80"
+INCLUDE "../../lib/Timer.z80"
+INCLUDE "../../lib/Utils.z80"
+INCLUDE "../../lib/Hex.z80"
+INCLUDE "../../lib/utils/String.z80"
+INCLUDE "../../lib/utils/Adapter.z80"
+_RTC_INIT:
+  RET
+;; Init.z80 hooks that a zazy program does not use (replace by INCLUDE of Keyboard.z80 / FileSystem.z80)
+_FS_EXEC:
+@SCAN_CODE_IM:
+  RET

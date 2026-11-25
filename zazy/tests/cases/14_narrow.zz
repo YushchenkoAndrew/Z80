@@ -1,0 +1,23 @@
+#include "inc/print.zh"
+//> 44
+//> 300
+//> 44
+//> 300
+//> 65535
+//> 255
+//> 1
+//> -2
+//> 0
+// width rules: ops use the wider operand; narrow sums keep the carry when stored in a wider type
+void main() {
+  uint8_t a = 200, b = 100;
+  uint8_t c = a + b;  pu(c);               // 8 bit result wraps
+  uint16_t d = a + b; pu(d);               // retyped to 16 bit: carry kept
+  pu((uint8_t)(a + b) + 0);                // explicit cast truncates
+  pu(a + (uint16_t)b);
+  uint8_t z = 0; pu(z - 1 + (uint16_t)0 + 0);
+  int8_t s = -1; pu((uint8_t)s);
+  pu(a > b);
+  int8_t m = -3; int8_t n = 1; ps(m + n);
+  uint8_t u = 255; u++; pu(u);
+}

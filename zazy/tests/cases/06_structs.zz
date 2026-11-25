@@ -1,0 +1,24 @@
+#include "inc/print.zh"
+//> 3
+//> 4
+//> 7
+//> 300
+//> 9
+//> 2
+struct Point { uint8_t x; uint8_t y; };
+struct Rect { struct Point a; struct Point b; uint16_t area; };
+struct Point origin = {3, 4};
+uint8_t manh(struct Point* p) { return p->x + p->y; }
+void main() {
+  pu(origin.x); pu(origin.y);
+  pu(manh(&origin));
+  struct Rect r;
+  r.a.x = 1; r.a.y = 1; r.b.x = 10; r.b.y = 3;
+  r.area = 300;
+  pu(r.area);
+  struct Point q = origin;
+  q.x = 9;
+  pu(q.x);
+  struct Point* pp = &r.b;
+  pu(pp->y - r.a.y);
+}

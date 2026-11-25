@@ -1,0 +1,23 @@
+#include "app.z80"
+
+uint8_t seconds;
+
+// runs from the event loop (queued by the alarm handler below)
+void show() {
+  hex_display(seconds);
+}
+
+// The vector table in Init.z80 points at @RTC_ALARM_EXEC. `interrupt` saves and restores every
+// register the body touches, `asm("...")` gives the function that exact label.
+interrupt void on_alarm() asm("@RTC_ALARM_EXEC") {
+  seconds++;
+  event_push(0, show);
+}
+
+void setup() {
+  lcd_init();
+  puts("Hello zazy!");
+}
+
+void main() {
+}

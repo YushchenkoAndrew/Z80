@@ -1,0 +1,19 @@
+#include "inc/print.zh"
+//> 12
+//> 7
+//> 1
+//> 36
+#define N 3
+#define SQR(x) ((x) * (x))
+#define ADD(a, b) ((a) + (b))
+#ifdef N
+#define HAS 1
+#else
+#define HAS 0
+#endif
+void main() {
+  pu(N * 4);
+  pu(ADD(3, 4));
+  pu(HAS);
+  pu(SQR(N + 3));
+}

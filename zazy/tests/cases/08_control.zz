@@ -1,0 +1,24 @@
+#include "inc/print.zh"
+//> 10
+//> 3
+//> 6
+//> 20
+//> 2
+//> 99
+void main() {
+  uint8_t s = 0;
+  for (uint8_t i = 1; i <= 4; i++) s += i;
+  pu(s);
+  uint8_t i = 0;
+  while (1) { if (++i == 3) break; }
+  pu(i);
+  uint8_t t = 0;
+  for (uint8_t k = 0; k < 10; k++) { if (k & 1) continue; if (k > 4) break; t += k; }
+  pu(t + 0);
+  uint8_t d = 0; do { d += 5; } while (d < 20); pu(d);
+  uint8_t sw = 2; uint8_t r;
+  switch (sw) { case 1: r = 1; break; case 2: r = 2; break; default: r = 9; }
+  pu(r);
+  switch (7) { case 1: r = 1; break; default: r = 99; }
+  pu(r);
+}

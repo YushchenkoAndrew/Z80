@@ -1,0 +1,19 @@
+#include "inc/print.zh"
+//> 15
+//> 3
+//> 40
+//> 5
+//> 2
+uint8_t g[5] = {1, 2, 3, 4, 5};
+uint16_t w[3] = {10, 20, 30};
+uint8_t sum8(uint8_t* p, uint8_t n) { uint8_t s = 0; while (n--) s += *p++; return s; }
+void main() {
+  uint8_t loc[4];
+  for (uint8_t i = 0; i < 4; i++) loc[i] = i * 2;
+  pu(sum8(g, 5));
+  pu(g[2]);
+  pu(w[0] + w[2]);
+  pu(sizeof(g));
+  uint8_t* e = &g[3]; uint8_t* s = &g[1];
+  pu(e - s);
+}

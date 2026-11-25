@@ -1,0 +1,21 @@
+#include "inc/print.zh"
+#include "asm/helper.z80"
+//> 99
+//> 42
+//> 7
+//> 1
+extern uint16_t triple(uint8_t v) asm("@TRIPLE", in(A), out(HL), clobber(AF, DE));
+uint8_t gv = 40;
+void main() {
+  pu(triple(33));
+  uint8_t x = 2;
+  asm {
+    LD A, ({gv})
+    ADD A, ({x})
+    LD ({x}), A
+  }
+  pu(x);
+  asm { NOP }
+  pu(inb(0x7F) - 0xF8);
+  outb(0x00, '1'); putc('\n');
+}
