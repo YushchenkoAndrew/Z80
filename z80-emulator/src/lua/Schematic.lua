@@ -33,8 +33,6 @@
   PS/2 receiver gates, a few memory chip enables, polarity of INTx into the INT line gates.
 =========================================================================== ]]
 
-SCHEMATIC = {}      -- what C++ reads: parts, nets, notes (filled by build())
-
 --==========================================================================
 -- TOOLBOX
 --==========================================================================
@@ -86,33 +84,6 @@ local function tags(chip, spec)                          -- tags("D7", "RES=RESE
   end
 end
 
--- the tables C++ reads (see Schematic.h):
---   SCHEMATIC.parts = { { id, type, title, x, y, bx, by } }   x,y = where the chip is now, bx,by = where this file put it
---   SCHEMATIC.nets  = { RD = { pins = { "D1.RD", ... }, routes = { { from = "D1.RD", to = "D2.OE", dx = 150 }, ... } } }
---   SCHEMATIC.notes = { { x, y, text } }
--- positions: SCHEMATIC_LAYOUT (pasted from Layout > Print moved parts) over at(); a chip with neither is parked in a column to the right
-function SCHEMATIC.build()
-  local override, size = SCHEMATIC_LAYOUT or {}, {}
-  for _, p in ipairs(parts) do size[p.type] = size[p.type] or chip_size(p.type) end   -- { w, h } from the datasheet (empty if there is none)
-
-  local park_x, park_y = 200, 0
-  for _, p in ipairs(parts) do
-    local b = placed[p.id]
-    if b then park_x = math.max(park_x, b.x + (size[p.type].w or 0) + 200) end
-  end
-
-  SCHEMATIC.parts = {}
-  for _, p in ipairs(parts) do
-    local b = placed[p.id]
-    if not b then b = { x = park_x, y = park_y }; park_y = park_y + (size[p.type].h or 0) + 40 end
-    local o = override[p.id] or b
-    SCHEMATIC.parts[#SCHEMATIC.parts + 1] = {
-      id = p.id, type = p.type, title = p.id .. " " .. p.type .. (p.label ~= "" and " " .. p.label or ""),
-      x = o.x, y = o.y, bx = b.x, by = b.y,
-    }
-  end
-  SCHEMATIC.nets, SCHEMATIC.notes = nets, notes
-end
 
 --==========================================================================
 -- 1. RESET + CLOCK
@@ -300,6 +271,21 @@ wire("INT_RD", "INTR.Y", "D31.1OE", { dx = 40 }); wire("INT_RD", "INTR.Y", "D31.
 tags("D31", "1A1=INT7 1A2=INT6 1A3=INT5 1A4=INT4 2A1=INT3 2A2=INT2 2A3=INT1 2A4=INT0 1Y1=D7 1Y2=D6 1Y3=D5 1Y4=D4 2Y1=D3 2Y2=D2 2Y3=D1 2Y4=D0")
 note(4000, 440, "INT status and INT line are NOT gated by the mask")
 
+-- the tables C++ reads (see Schematic.h):
+--   SCHEMATIC.parts = { { id, type, title, x, y, bx, by } }   x,y = where the chip is now, bx,by = where this file put it (both nil: not placed)
+--   SCHEMATIC.nets  = { RD = { pins = { "D1.RD", ... }, routes = { { from = "D1.RD", to = "D2.OE", dx = 150 }, ... } } }
+--   SCHEMATIC.notes = { { x, y, text } }
+-- positions: SCHEMATIC_LAYOUT (pasted from Layout > Print moved parts) over at(). A chip with no position at all has no x, y: C++ parks it
+-- in a column to the right (it knows the sizes), and a chip that is only in SCHEMATIC_LAYOUT has x, y but no bx, by.
+SCHEMATIC = { parts = {}, nets = nets, notes = notes }
+
+for _, p in ipairs(parts) do
+  local now = placed[p.id]
+  SCHEMATIC.parts[#SCHEMATIC.parts + 1] = {
+    id = p.id, type = p.type, title = p.id .. " " .. p.type .. (p.label ~= "" and " " .. p.label or ""),
+    x = now and now.x, y = now and now.y, bx = b and b.x, by = b and b.y,
+  }
+end
 
 --==========================================================================
 -- Dragged parts: paste the block printed by  Layout > Print moved parts  here

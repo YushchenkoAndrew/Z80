@@ -901,6 +901,8 @@ namespace olc
 		int32_t GetMouseY() const;
 		// Get Mouse Wheel Delta
 		int32_t GetMouseWheel() const;
+ 		// Get Horizontal Mouse Wheel Delta (touchpad swipe left/right): positive = right, 120 per notch like GetMouseWheel()
+ 		int32_t GetMouseWheelH() const;
 		// Get the mouse in window space
 		const olc::vi2d& GetWindowMouse() const;
 		// Gets the mouse as a vector to keep Tarriest happy
@@ -1056,9 +1058,11 @@ namespace olc
 		olc::vi2d	vMousePos = { 0, 0 };
 		olc::vi2d	vLockedMousePos = { 0, 0 };
 		int32_t		nMouseWheelDelta = 0;
+		int32_t		nMouseWheelHDelta = 0;
 		olc::vi2d	vMousePosCache = { 0, 0 };
 		olc::vi2d   vMouseWindowPos = { 0, 0 };
 		int32_t		nMouseWheelDeltaCache = 0;
+		int32_t		nMouseWheelHDeltaCache = 0;
 		olc::vi2d	vWindowSize = { 0, 0 };
 		olc::vi2d	vViewPos = { 0, 0 };
 		olc::vi2d	vViewSize = { 0,0 };
@@ -1105,6 +1109,7 @@ namespace olc
 		void olc_UpdateMouse(int32_t x, int32_t y);
 		void olc_UpdateLockedMouse(int32_t x, int32_t y);
 		void olc_UpdateMouseWheel(int32_t delta);
+		void olc_UpdateMouseWheelH(int32_t delta);
 		void olc_UpdateWindowSize(int32_t x, int32_t y);
 		void olc_UpdateViewport();
 		void olc_ConstructFontSheet();
@@ -1981,6 +1986,13 @@ namespace olc
 	{
 		return nMouseWheelDelta;
 	}
+
+ 
+	int32_t PixelGameEngine::GetMouseWheelH() const
+	{
+		return nMouseWheelHDelta;
+	}
+
 
 	int32_t PixelGameEngine::ScreenWidth() const
 	{
@@ -3036,6 +3048,11 @@ namespace olc
 		nMouseWheelDeltaCache += delta;
 	}
 
+	void PixelGameEngine::olc_UpdateMouseWheelH(int32_t delta)
+	{
+		nMouseWheelHDeltaCache += delta;
+	}
+
 	void PixelGameEngine::olc_UpdateMouse(int32_t x, int32_t y)
 	{
 		// Mouse coords come in screen space
@@ -3200,6 +3217,8 @@ namespace olc
 		vMousePos = vMousePosCache;
 		nMouseWheelDelta = nMouseWheelDeltaCache;
 		nMouseWheelDeltaCache = 0;
+		nMouseWheelHDelta = nMouseWheelHDeltaCache;
+		nMouseWheelHDeltaCache = 0;
 
 		//	renderer->ClearBuffer(olc::BLACK, true);
 
@@ -4716,21 +4735,22 @@ namespace olc
 			}
 			case WM_SIZE:       ptrPGE->olc_UpdateWindowSize(lParam & 0xFFFF, (lParam >> 16) & 0xFFFF);	return 0;
 			case WM_MOUSEWHEEL:	ptrPGE->olc_UpdateMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam));           return 0;
+			case WM_MOUSEHWHEEL: ptrPGE->olc_UpdateMouseWheelH(GET_WHEEL_DELTA_WPARAM(wParam));         return 0;
 			case WM_MOUSELEAVE: ptrPGE->olc_UpdateMouseFocus(false);                                    return 0;
-			case WM_SETFOCUS:	ptrPGE->olc_UpdateKeyFocus(true);                                       return 0;
+			case WM_SETFOCUS:	ptrPGE->olc_UpdateKeyFocus(true);                                         return 0;
 			case WM_KILLFOCUS:	ptrPGE->olc_UpdateKeyFocus(false);                                      return 0;
-			case WM_KEYDOWN:	ptrPGE->olc_UpdateKeyState(mapKeys[wParam], true);                      return 0;
-			case WM_KEYUP:		ptrPGE->olc_UpdateKeyState(mapKeys[wParam], false);                     return 0;
-			case WM_SYSKEYDOWN: ptrPGE->olc_UpdateKeyState(mapKeys[wParam], true);						return 0;
-			case WM_SYSKEYUP:	ptrPGE->olc_UpdateKeyState(mapKeys[wParam], false);						return 0;
+			case WM_KEYDOWN:	ptrPGE->olc_UpdateKeyState(mapKeys[wParam], true);                        return 0;
+			case WM_KEYUP:		ptrPGE->olc_UpdateKeyState(mapKeys[wParam], false);                       return 0;
+			case WM_SYSKEYDOWN: ptrPGE->olc_UpdateKeyState(mapKeys[wParam], true);                      return 0;
+			case WM_SYSKEYUP:	ptrPGE->olc_UpdateKeyState(mapKeys[wParam], false);                       return 0;
 			case WM_LBUTTONDOWN:ptrPGE->olc_UpdateMouseState(0, true);                                  return 0;
 			case WM_LBUTTONUP:	ptrPGE->olc_UpdateMouseState(0, false);                                 return 0;
 			case WM_RBUTTONDOWN:ptrPGE->olc_UpdateMouseState(1, true);                                  return 0;
 			case WM_RBUTTONUP:	ptrPGE->olc_UpdateMouseState(1, false);                                 return 0;
 			case WM_MBUTTONDOWN:ptrPGE->olc_UpdateMouseState(2, true);                                  return 0;
 			case WM_MBUTTONUP:	ptrPGE->olc_UpdateMouseState(2, false);                                 return 0;
-			case WM_CLOSE:		ptrPGE->olc_Terminate();                                                return 0;
-			case WM_DESTROY:	PostQuitMessage(0); DestroyWindow(hWnd);								return 0;
+			case WM_CLOSE:		ptrPGE->olc_Terminate();                                                	return 0;
+			case WM_DESTROY:	PostQuitMessage(0); DestroyWindow(hWnd);                                  return 0;
 			}
 			return DefWindowProc(hWnd, uMsg, wParam, lParam);
 		}
@@ -4960,6 +4980,8 @@ namespace olc
 					case 3:	ptrPGE->olc_UpdateMouseState(1, true); break;
 					case 4:	ptrPGE->olc_UpdateMouseWheel(120); break;
 					case 5:	ptrPGE->olc_UpdateMouseWheel(-120); break;
+					case 6:	ptrPGE->olc_UpdateMouseWheelH(-120); break;   // touchpad swipe left
+					case 7:	ptrPGE->olc_UpdateMouseWheelH(120); break;    // touchpad swipe right
 					default: break;
 					}
 				}
@@ -5588,6 +5610,7 @@ namespace olc
 		{
 			if (eventType == EMSCRIPTEN_EVENT_WHEEL)
 				ptrPGE->olc_UpdateMouseWheel(-1 * e->deltaY);
+				ptrPGE->olc_UpdateMouseWheelH(e->deltaX);
 
 			return EM_TRUE;
 		}

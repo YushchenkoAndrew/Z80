@@ -24,13 +24,14 @@ namespace Bus {
 // What the schematic draws: chips (one Datasheet each, from Library) placed on a sheet and wired together.
 // The Lua file lists parts, nets and notes and merges SCHEMATIC_LAYOUT; Load() calls SCHEMATIC.build() and reads what it left:
 //   parts  { id = "D5", type = "AND", title = "D5 AND", x =, y =, bx =, by = }   type = name of a datasheet (Library::Find);
-//                                                          x,y = position now, bx,by = position written in the Lua file ("Reset moves")
+//                                                          x,y = position now, bx,by = position written in the Lua file ("Reset moves");
+//                                                          a part with no bx,by was not placed there: Load() parks it in a column to the right
 //   nets   a map: net name -> { pins = { "D1.RD", "D2.OE", ... }, routes = { { from = "D1.RD", to = "D2.OE", dx = 150 }, ... } }
 //            * the name is the wire id used by Set / Bind / Hit; every pin of a net carries the same signal
 //            * a route is drawn from its `from` pin to its `to` pin (dx = distance of the vertical leg from `from`, optional)
 //            * a pin that is in no route is drawn as a tag: a short stub with the net name next to it
 //   notes  { x =, y =, text = "..." }
-// Routing is done here, not in Lua, so wires follow a chip that is dragged. C++ gives Lua chip_size(type) -> { w, h }.
+// Routing and parking are done here, not in Lua: C++ knows the symbol sizes, and wires follow a chip that is dragged.
 class Schematic : public Window::KeyEventListener, public Window::Window {
   struct PinPos { std::string name; bool right; olc::vi2d inner, outer; };      // relative to the top-left corner of the box; wires attach at `outer`
   struct PartT  { std::string id, title; Datasheet sheet; olc::vf2d pos; olc::vi2d size; std::vector<PinPos> pins; };   // sheet = a copy of the Library's, named `title`
@@ -47,9 +48,6 @@ class Schematic : public Window::KeyEventListener, public Window::Window {
 
 public:
   Schematic(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {
-    // what Lua may ask C++: the size of a datasheet's symbol (to park chips that have no position)
-    lua.Register("chip_size", [this](std::string type) { return ChipSize(type); });
-
     auto src = GameEngine->lua.GetOr("SCHEMATIC", "");
     if (lua.DoFile(src)) Load();
 
@@ -97,12 +95,9 @@ public:
   bool Load(const std::string& root = "SCHEMATIC") {
     if (lua.TypeOf(root) != "table") return false;
 
-    // Lua has done the heavy part (SCHEMATIC.build): wires are routed, ids expanded, positions merged with SCHEMATIC_LAYOUT.
-    // All that is left here is to read the finished tables, see the header comment for their shape.
-    if (!lua.Has(root + ".build") || !lua.Call(root + ".build")) return false;
-
     std::vector<PartT> newParts; std::vector<NetT> newNets; std::vector<NoteT> newNotes;
     std::map<std::string, olc::vf2d> newBase;
+    std::vector<std::pair<size_t, bool>> unplaced;                                // (part index, has no position at all)
     std::map<std::string, std::set<std::string>> newPins;
 
     for (size_t i = 1, n = lua.Length(root + ".parts"); i <= n; i++) {
@@ -115,9 +110,20 @@ public:
       part.title = lua.GetOr(p + ".title", id);
       part.sheet = *ds; part.sheet.name = part.title;                              // the symbol writes the datasheet name above the box: make it "D5 AND"
       part.size = SymbolSize(part.sheet); part.pins = PinsOf(part.sheet);
-      part.pos = { lua.GetOr(p + ".x", 0.f), lua.GetOr(p + ".y", 0.f) };
-      newBase[id] = { lua.GetOr(p + ".bx", part.pos.x), lua.GetOr(p + ".by", part.pos.y) };
+      const auto x = lua.Get<float>(p + ".x"), y = lua.Get<float>(p + ".y"), bx = lua.Get<float>(p + ".bx"), by = lua.Get<float>(p + ".by");
+      if (x && y) part.pos = { *x, *y };
+      if (bx && by) newBase[id] = { *bx, *by };                                   // placed in the Lua file
+      else unplaced.push_back({ newParts.size(), !(x && y) });                    // ... or not: parked below, once every size is known
       newParts.push_back(std::move(part));
+    }
+
+    float parkX = 200.f, parkY = 0.f;                                             // chips with no position: a column to the right of the placed ones
+    for (const auto& p : newParts) if (const auto b = newBase.find(p.id); b != newBase.end()) parkX = std::max(parkX, b->second.x + p.size.x + 200.f);
+    for (const auto& [i, noPos] : unplaced) {
+      auto& p = newParts[i];
+      newBase[p.id] = { parkX, parkY };
+      if (noPos) p.pos = newBase[p.id];                                           // (a chip that is only in SCHEMATIC_LAYOUT keeps that position)
+      parkY += p.size.y + 40.f;
     }
 
     // "ID.PIN" -> (part, pin), the same key as a net uses (marks stripped)
@@ -209,7 +215,14 @@ public:
   inline void Focus(bool state) override { ::Window::KeyEventListener::Focus(state); menu->Focus(false); }
 
   // ---------------------------------------------------------------- frame
-  void Preprocess() override { menu->Preprocess(); }
+  void Preprocess() override {
+    if (IsMouseOver()) {
+      if (const int wheel = GameEngine->GetMouseWheelH()) offset.x -= wheel / 120.f * kWheelPx;   // swipe right = view moves right
+      if (const int wheel = GameEngine->GetMouseWheel()) offset.y += wheel / 120.f * kWheelPx;
+    }
+
+    menu->Preprocess();
+  }
 
   void Process() override {
     menu->Process();
@@ -232,11 +245,8 @@ public:
     }
 
     if (IsMouseOver() && drag < 0) {
-      if (const int wheel = GameEngine->GetMouseWheel()) {                        // two fingers on the touchpad = the wheel; Shift turns it sideways (olc reports no horizontal wheel)
-        const float step = wheel / 120.f * kWheelPx;
-        (GameEngine->GetKey(olc::Key::SHIFT).bHeld ? offset.x : offset.y) += step;
-      }
-      if (GameEngine->GetMouse(1).bHeld || GameEngine->GetMouse(1).bHeld) offset += mouse - prevMouse;
+
+      if (GameEngine->GetMouse(0).bHeld || GameEngine->GetMouse(2).bHeld) offset += mouse - prevMouse;
 
       hoverNet.clear(); hoverPart = -1;
       for (int i = (int)parts.size() - 1; i >= 0; i--) {                          // last drawn = on top
@@ -267,10 +277,6 @@ public:
     const olc::vi2d lo = absolute + vOffset, hi = absolute + size - olc::vi2d(1, 1);
     const olc::vi2d view = olc::vi2d(Area());
     const olc::vi2d scene(std::max(1, view.x), std::max(1, view.y - kStatusH));
-    // if (!layer || layer->width != scene.x || layer->height != scene.y) layer = std::make_unique<olc::Sprite>(scene.x, scene.y);
-
-    // GameEngine->SetDrawTarget(layer.get());
-    // GameEngine->Clear(olc::Pixel(16, 16, 18));
 
     for (size_t i = 0; i < parts.size(); i++) {
       auto& p = parts[i];
@@ -303,9 +309,6 @@ public:
       }
     }
 
-    // GameEngine->SetDrawTarget(nullptr);
-    // GameEngine->DrawSprite(lo, layer.get());
-
     // status bar
     const int rows = (int)((size.x - vOffset.x) / 8);
     std::string line; olc::Pixel lineCol(200, 200, 200);
@@ -319,7 +322,6 @@ public:
       line = p.title + pos;
     }
     if ((int)line.size() > rows) line.resize(rows);
-    // GameEngine->FillRect(olc::vi2d(lo.x, hi.y - 11), olc::vi2d(hi.x - lo.x, 11), olc::Pixel(8, 8, 10));
     GameEngine->DrawString(olc::vi2d(lo.x + 2, hi.y - 9), line, lineCol);
     if (edit) GameEngine->DrawString(olc::vi2d(hi.x - 8 * 4 - 4, lo.y + 2), "EDIT", olc::Pixel(220, 160, 60));
 
@@ -375,11 +377,6 @@ private:
     return out;
   }
 
-  std::map<std::string, double> ChipSize(const std::string& type) {              // { w =, h = }, empty if there is no such datasheet
-    const Datasheet* ds = Library::Find(type); if (!ds) return {};
-    const auto sz = SymbolSize(*ds);
-    return { { "w", (double)sz.x }, { "h", (double)sz.y } };
-  }
   struct PinAtT { olc::vf2d pos; bool right; };                                   // where a pin's wire attaches, and which way the stub points
   PinAtT PinAt(const std::string& key) const {
     const auto it = pinIndex.find(key); if (it == pinIndex.end()) return { { 0.f, 0.f }, true };
