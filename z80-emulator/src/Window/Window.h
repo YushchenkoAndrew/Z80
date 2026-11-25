@@ -10,7 +10,7 @@ namespace Window {
 
 class Menu;
 
-class Window : virtual public Base {
+class Window : public virtual Base {
 public:
 
   Window(PixelGameEngine* engine, std::string id);

@@ -172,6 +172,27 @@ public:
     }
   }
 
+  // Arrow from pos1 to pos2, the head is at pos2.
+  //   pattern  dash pattern for the shaft only (same as DrawLine)
+  //   head     length of the arrow head in pixels (never longer than the line itself)
+  //   filled   true = solid triangle, false = open "V"
+  void DrawArrow(const olc::vi2d& pos1, const olc::vi2d& pos2, olc::Pixel p = olc::WHITE, uint32_t pattern = 0xFFFFFFFF, int32_t head = 8) {
+    DrawLine(pos1, pos2, p, pattern);                                             // shaft (dashed if pattern says so)
+  
+    const olc::vf2d d = olc::vf2d(pos2 - pos1);
+    const float len = d.mag();
+    if (len < 1.f) return;                                                        // zero length: nothing to point
+  
+    const olc::vf2d u = d / len;                                                  // unit vector pos1 -> pos2
+    const olc::vf2d n = olc::vf2d(-u.y, u.x);                                // perpendicular
+    const float h = std::min((float)head, len);                                      // head length, never longer than the shaft
+    const olc::vf2d base = olc::vf2d(pos2) - u * h;                               // where the head starts
+  
+    const olc::vf2d l = base + n * (h * 0.3f), r = base - n * (h * 0.3f);         // the two back corners
+    // DrawLine(pos2, {(int32_t)std::lround(l.x), (int32_t)std::lround(l.y) }, p), DrawLine(pos2, { (int32_t)std::lround(r.x), (int32_t)std::lround(r.y) }, p);
+    DrawTriangle(pos2, {(int32_t)std::lround(l.x), (int32_t)std::lround(l.y) }, { (int32_t)std::lround(r.x), (int32_t)std::lround(r.y) }, p);
+  }
+
 public:
   LuaScript lua;
 };

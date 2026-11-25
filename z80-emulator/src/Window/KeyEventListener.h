@@ -22,7 +22,7 @@ struct SearchT {
 };
 
 
-class KeyEventListener : virtual public Base {
+class KeyEventListener : public virtual Base {
 public:
   KeyEventListener(PixelGameEngine* engine): Base(engine) {}
 

@@ -74,5 +74,6 @@
     "future": "cpp",
     "mutex": "cpp",
     "*.asm": "z80-asm"
-  }
+  },
+  "cSpell.words": ["Datasheets"]
 }

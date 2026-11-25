@@ -14,11 +14,13 @@
 #include "src/Bus/PIT.h"
 #include "src/Bus/PPI.h"
 #include "src/Bus/RTC.h"
+#include "src/Bus/Schematic.h"
 #include "src/Bus/Switch.h"
 #include "src/Defs.h"
 #include "src/Editor/Editor.h"
 #include "src/Editor/Tree.h"
 #include "src/Interpreter/Interpreter.h"
+#include "src/Bus/Library.h"
 #include "src/Window/Window.h"
 #include <memory>
 #include <unordered_set>
@@ -26,6 +28,8 @@
 class Registry {
 public:
   static void Initialize(PixelGameEngine* engine, LuaScript& lua) {
+    Library::Initialize();
+
     const auto clock = lua.GetOr("CLOCK", 1);
 
     windows.insert(Bus = std::make_shared<Bus::Bus>(engine, "bus"));
@@ -48,6 +52,7 @@ public:
 
     windows.insert(Editor     = std::make_shared<Editor::Editor>(engine, "editor"));
     windows.insert(Filesystem = std::make_shared<Editor::Tree>  (engine, "filesystem"));
+    windows.insert(Schematic  = std::make_shared<Bus::Schematic>(engine, "schematic"));
     // windows.insert(Bindings = std::make_shared<Window::Popup>(engine, "bindings"));
 
     // Syntax = std::make_shared<Interpreter::Interpreter>();
@@ -89,9 +94,11 @@ public:
   inline static std::shared_ptr<Bus::Memory>      IMS1423;
   inline static std::shared_ptr<Bus::Memory>      HY62256A;
 
+
   // inline static std::shared_ptr<Editor::Popup>   Bindings;
   inline static std::shared_ptr<Editor::Editor>  Editor;
   inline static std::shared_ptr<Editor::Tree>    Filesystem;
+  inline static std::shared_ptr<Bus::Schematic>  Schematic;
 
   // inline static std::shared_ptr<Interpreter::Interpreter> Syntax;
   inline static std::shared_ptr<Interpreter::Interpreter> Interpreter;

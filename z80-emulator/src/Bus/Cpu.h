@@ -136,41 +136,51 @@ private:
     using Clock = std::chrono::steady_clock;
     Wait();
 
-    auto slice = Clock::now(); double owed = 0; // cycles still available this 1 ms slice
+    auto slice = Clock::now(); double owed = 0;                  // cycles that may still be spent (negative = spent ahead of time)
+    uint32_t last = hz;               // the clock this pacing is running at
     auto park = [&](bool hit) {
-      { std::lock_guard<std::mutex> l(sync.first); frozen = true; resume = false; } // visible BEFORE anyone is told
-      if (hit) mode = DEBUG; // FREEZE is no longer needed
+      { std::lock_guard<std::mutex> l(sync.first); frozen = true; resume = false; }
+      if (hit) mode = DEBUG;
       stopped = true; Wait();
     };
 
     while (bExec) {
       if (restart.exchange(false)) {
         Reset();
-        const bool hit = mode == NORMAL && HasBreakpoint(regPC());   // a breakpoint on 0x0000 works too
+        const bool hit = mode == NORMAL && HasBreakpoint(regPC());
         if (mode != NORMAL || hit) { park(hit); continue; }
       }
 
-      if (hz && owed <= 0) {
+      if (const uint32_t f = hz; f != last) { last = f; owed = 0; slice = Clock::now(); }   // a new clock starts from zero
+
+      // Every 1 ms slice pays last/1000 cycles. Wait until there is something to spend:
+      // `while`, because at 1 kHz one slice pays 1 cycle and an instruction needs 4-23.
+      while (last && owed <= 0 && bExec && !restart && hz == last) {
         slice = std::max(slice + std::chrono::milliseconds(1), Clock::now());   // never burst after a park
         std::this_thread::sleep_until(slice);
-        owed += hz / 1000.0;
+        owed += last / 1000.0;
       }
 
       if (IFF.first && interrupt.second) {
-        IFF.first = IFF.second = false; 
+        IFF.first = IFF.second = false;
         switch (interrupt.first) {
-          case IM_T::IM0: ImProcess(Int2Type<IM_T::IM0>()); continue;
-          case IM_T::IM1: ImProcess(Int2Type<IM_T::IM1>()); continue;
-          case IM_T::IM2: ImProcess(Int2Type<IM_T::IM2>()); continue;
+          case IM_T::IM0: ImProcess(Int2Type<IM_T::IM0>()); break;
+          case IM_T::IM1: ImProcess(Int2Type<IM_T::IM1>()); break;
+          case IM_T::IM2: ImProcess(Int2Type<IM_T::IM2>()); break;
         }
-      } 
+        if (last) owed -= cycles;     // the acknowledge cycles cost time too
+        cycles = 1;
+        continue;
+      }
 
       foreach<Instructions, void>::Process(this, Read());
-      owed -= cycles; cycles = 1;
-      if (restart) continue; // handle it at the top, don't park first
+      if (last) owed -= cycles;       // at MAX nothing pays it back, so don't let it pile up
+      cycles = 1;
+
+      if (restart) continue;
 
       const bool hit = mode == NORMAL && HasBreakpoint(regPC());
-      if (mode != NORMAL || hit) park(hit); 
+      if (mode != NORMAL || hit) park(hit);
     }
   }
 
@@ -1443,8 +1453,10 @@ private:
   std::list<uint16_t> breakpoints;
 
   std::thread runtime;
+
   static const ::Window::StrokeT<> commands;
 };
+
 
 inline const Window::StrokeT<> CPU::commands = ::Window::StrokeT<>::Init({
   { Int2Type<olc::Key::ESCAPE>(), [](void* self, auto... keys) { return Self<CPU>(self)->menu->Reset(), nullptr; } },
