@@ -5608,9 +5608,10 @@ namespace olc
 		//TY Moros
 		static EM_BOOL wheel_callback(int eventType, const EmscriptenWheelEvent* e, void* userData)
 		{
-			if (eventType == EMSCRIPTEN_EVENT_WHEEL)
-				ptrPGE->olc_UpdateMouseWheel(-1 * e->deltaY);
+			if (eventType == EMSCRIPTEN_EVENT_WHEEL) {
 				ptrPGE->olc_UpdateMouseWheelH(e->deltaX);
+				ptrPGE->olc_UpdateMouseWheel(-1 * e->deltaY);
+			}
 
 			return EM_TRUE;
 		}

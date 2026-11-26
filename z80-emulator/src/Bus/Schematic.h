@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <functional>
 #include <map>
@@ -33,18 +34,19 @@ namespace Bus {
 //   notes  { x =, y =, text = "..." }
 // Routing and parking are done here, not in Lua: C++ knows the symbol sizes, and wires follow a chip that is dragged.
 class Schematic : public Window::KeyEventListener, public Window::Window {
-  struct PinPos { std::string name; bool right; olc::vi2d inner, outer; };      // relative to the top-left corner of the box; wires attach at `outer`
-  struct PartT  { std::string id, title; Datasheet sheet; olc::vf2d pos; olc::vi2d size; std::vector<PinPos> pins; };   // sheet = a copy of the Library's, named `title`
-  struct RouteT { std::string from, to; bool hasDx = false; float dx = 0; };      // pin keys "D1.RD"
-  struct LineT  { std::vector<olc::vf2d> pts; bool tag = false; };                // one drawn polyline (a route, or the stub of a tag)
-  struct LabelT { std::string text; olc::vf2d pos; };
-  struct NetT   {
+  struct Net;
+  struct Node { size_t chip, pin; };
+  struct Route { std::string from, to; float dx = 0; };
+  struct Chip { std::string id; olc::vf2d pos; const Datasheet* datasheet; std::vector<const Net*> tags; };
+  // struct LineT  { std::vector<olc::vf2d> pts; bool tag = false; };                // one drawn polyline (a route, or the stub of a tag)
+  // struct LabelT { std::string text; olc::vf2d pos; };
+  struct Net   {
     std::string name;
     std::vector<std::string> pins, tags;                                          // all pins / the pins that are in no route
-    std::vector<RouteT> routes;
-    std::vector<LineT> lines; std::vector<LabelT> labels;                         // filled by Resolve()
+    std::vector<Route> routes;
   };
-  struct NoteT  { olc::vf2d pos; std::string text; };
+
+  struct Note  { olc::vf2d pos; std::string text; olc::Pixel color; };
 
 public:
   Schematic(PixelGameEngine* engine, std::string id): Window::Base(engine), Window::Window(engine, std::move(id)), ::Window::KeyEventListener(engine) {
@@ -95,7 +97,8 @@ public:
   bool Load(const std::string& root = "SCHEMATIC") {
     if (lua.TypeOf(root) != "table") return false;
 
-    std::vector<PartT> newParts; std::vector<NetT> newNets; std::vector<NoteT> newNotes;
+    chips.clear(); notes.clear(); nets.clear(); nodes.clear();
+
     std::map<std::string, olc::vf2d> newBase;
     std::vector<std::pair<size_t, bool>> unplaced;                                // (part index, has no position at all)
     std::map<std::string, std::set<std::string>> newPins;
@@ -103,33 +106,41 @@ public:
     for (size_t i = 1, n = lua.Length(root + ".parts"); i <= n; i++) {
       const std::string p = root + ".parts." + std::to_string(i);
       const std::string id = lua.GetOr(p + ".id", ""), type = lua.GetOr(p + ".type", "");
+      const auto x = lua.Get<float>(p + ".x"), y = lua.Get<float>(p + ".y");
+
       const Datasheet* ds = Library::Find(type);
       if (!ds) { Warn("unknown part type \"" + type + "\""); continue; }
 
-      PartT part; part.id = id;
-      part.title = lua.GetOr(p + ".title", id);
-      part.sheet = *ds; part.sheet.name = part.title;                              // the symbol writes the datasheet name above the box: make it "D5 AND"
-      part.size = SymbolSize(part.sheet); part.pins = PinsOf(part.sheet);
-      const auto x = lua.Get<float>(p + ".x"), y = lua.Get<float>(p + ".y"), bx = lua.Get<float>(p + ".bx"), by = lua.Get<float>(p + ".by");
-      if (x && y) part.pos = { *x, *y };
-      if (bx && by) newBase[id] = { *bx, *by };                                   // placed in the Lua file
-      else unplaced.push_back({ newParts.size(), !(x && y) });                    // ... or not: parked below, once every size is known
-      newParts.push_back(std::move(part));
+      Chip chip; chip.id = id; chip.datasheet = ds;
+      chip.tags.assign(ds->pins.size(), nullptr); 
+
+      if (x && y) chip.pos = { *x, *y };
+      chips.push_back(std::move(chip));
+
+      for (size_t k = 0; k < ds->pins.size(); k++) {
+        if (ds->pins[k].name == "_") continue;
+        nodes.emplace(id + "." + ds->pins[k].name, Node{ chips.size() - 1, k });
+      }
     }
 
-    float parkX = 200.f, parkY = 0.f;                                             // chips with no position: a column to the right of the placed ones
-    for (const auto& p : newParts) if (const auto b = newBase.find(p.id); b != newBase.end()) parkX = std::max(parkX, b->second.x + p.size.x + 200.f);
-    for (const auto& [i, noPos] : unplaced) {
-      auto& p = newParts[i];
-      newBase[p.id] = { parkX, parkY };
-      if (noPos) p.pos = newBase[p.id];                                           // (a chip that is only in SCHEMATIC_LAYOUT keeps that position)
-      parkY += p.size.y + 40.f;
-    }
+    // for (auto& c : chips) {
+    // }
+
+    // const size_t ci = chips.size();
+
+    // float parkX = 200.f, parkY = 0.f;                                             // chips with no position: a column to the right of the placed ones
+    // for (const auto& p : newParts) if (const auto b = newBase.find(p.id); b != newBase.end()) parkX = std::max(parkX, b->second.x + p.size.x + 200.f);
+    // for (const auto& [i, noPos] : unplaced) {
+    //   auto& p = newParts[i];
+    //   newBase[p.id] = { parkX, parkY };
+    //   if (noPos) p.pos = newBase[p.id];                                           // (a chip that is only in SCHEMATIC_LAYOUT keeps that position)
+    //   parkY += p.size.y + 40.f;
+    // }
 
     // "ID.PIN" -> (part, pin), the same key as a net uses (marks stripped)
-    std::map<std::string, std::pair<size_t, size_t>> newIndex;
-    for (size_t i = 0; i < newParts.size(); i++) for (size_t k = 0; k < newParts[i].pins.size(); k++)
-      newIndex.emplace(newParts[i].id + "." + StripMarks(newParts[i].pins[k].name), std::make_pair(i, k));
+    // std::map<std::string, std::pair<size_t, size_t>> newIndex;
+    // for (size_t i = 0; i < newParts.size(); i++) for (size_t k = 0; k < newParts[i].pins.size(); k++)
+    //   newIndex.emplace(newParts[i].id + "." + StripMarks(newParts[i].pins[k].name), std::make_pair(i, k));
 
     std::set<std::string> reported;                                               // each bad pin is reported once
     std::map<std::string, std::string> owner;                                     // pin key -> the net it is in (a pin is in one net)
@@ -137,12 +148,12 @@ public:
     std::sort(names.begin(), names.end());                                        // Lua's table order is arbitrary, the drawing should not be
     for (const auto& name : names) {
       const std::string p = root + ".nets." + name;
-      NetT net; net.name = name;
+      Net net; net.name = name;
 
       const auto pinOf = [&](const std::string& ref) -> std::string {            // "D5.<A" -> "D5.A", added to the net once; "" if there is no such pin
         const auto dot = ref.find('.');
         const std::string key = dot == std::string::npos ? "" : ref.substr(0, dot) + "." + StripMarks(ref.substr(dot + 1));
-        if (!newIndex.count(key)) { if (reported.insert(name + " " + key).second) Warn("net " + name + ": no pin \"" + ref + "\""); return ""; }
+        if (!nodes.count(key)) { if (reported.insert(name + " " + key).second) Warn("net " + name + ": no pin \"" + ref + "\""); return ""; }
         if (newPins[name].insert(key).second) {
           if (const auto o = owner.emplace(key, name); !o.second) Warn("pin " + key + " is in two nets: " + o.first->second + " and " + name);
           net.pins.push_back(key);
@@ -154,24 +165,34 @@ public:
       std::set<std::string> routed;
       for (size_t j = 1, m = lua.Length(p + ".routes"); j <= m; j++) {
         const std::string rp = p + ".routes." + std::to_string(j);
-        RouteT r; r.from = pinOf(lua.GetOr(rp + ".from", "")); r.to = pinOf(lua.GetOr(rp + ".to", ""));
+        Route r; r.from = pinOf(lua.GetOr(rp + ".from", "")); r.to = pinOf(lua.GetOr(rp + ".to", ""));
         if (r.from.empty() || r.to.empty() || r.from == r.to) continue;
-        if (const auto dx = lua.Get<float>(rp + ".dx")) r.hasDx = true, r.dx = *dx;
+        if (const auto dx = lua.Get<float>(rp + ".dx")) r.dx = *dx;
         routed.insert(r.from); routed.insert(r.to);
         net.routes.push_back(std::move(r));
       }
       for (const auto& key : net.pins) if (!routed.count(key)) net.tags.push_back(key);
-      newNets.push_back(std::move(net));
+      nets.push_back(std::move(net));
     }
 
     for (size_t i = 1, n = lua.Length(root + ".notes"); i <= n; i++) {
       const std::string p = root + ".notes." + std::to_string(i);
-      NoteT note; note.text = lua.GetOr(p + ".text", ""); note.pos = { lua.GetOr(p + ".x", 0.f), lua.GetOr(p + ".y", 0.f) };
-      newNotes.push_back(std::move(note));
+      auto text = lua.GetOr(p + ".text", "");
+
+      Note note; note.color = Color::DARK_GREY; note.pos = { lua.GetOr(p + ".x", 0.f), lua.GetOr(p + ".y", 0.f) };
+
+      if (!text.empty() && text.front() == '?') text.erase(0, 1), note.color = Color::BLUE;
+      if (!text.empty() && text.front() == '!') text.erase(0, 1), note.color = Color::RED;
+      if (!text.empty() && text.front() == '^') text.erase(0, 1), note.color = Color::DARK_YELLOW;
+      if (!text.empty() && text.front() == '*') text.erase(0, 1), note.color = Color::GREEN;
+
+      note.text = text; notes.push_back(std::move(note));
     }
 
-    parts = std::move(newParts); nets = std::move(newNets); notes = std::move(newNotes); netPins = std::move(newPins);
-    base = std::move(newBase); pinIndex = std::move(newIndex);
+    netPins = std::move(newPins);
+    base = std::move(newBase); 
+    for (const auto& n : nets) for (const auto& key : n.tags) { const auto& r = nodes.at(key); chips[r.chip].tags[r.pin] = &n; }
+
     hoverNet.clear(); hoverPart = -1; drag = -1; if (!netPins.count(selectedNet)) selectedNet.clear();
     for (const auto& [wire, pins] : netPins) states.try_emplace(wire).first->second.store(kUnset);   // (a reload must not run while another thread calls Set)
     Resolve();
@@ -181,7 +202,7 @@ public:
   // ---------------------------------------------------------------- layout (what you paste into Lua)
   std::vector<std::string> LayoutLines(bool all) const {
     std::vector<std::string> out; int count = 0;
-    for (const auto& p : parts) {
+    for (const auto& p : chips) {
       const auto b = base.find(p.id);
       if (!all && b != base.end() && b->second == p.pos) continue;
       char buf[160]; const std::string key = IsIdent(p.id) ? p.id : "[\"" + p.id + "\"]";
@@ -196,14 +217,14 @@ public:
 
   void PrintLayout(bool all) { for (const auto& l : LayoutLines(all)) std::puts(l.c_str()); std::fflush(stdout); }
 
-  void ResetMoves() { for (auto& p : parts) if (auto b = base.find(p.id); b != base.end()) p.pos = b->second; Resolve(); }
+  void ResetMoves() { for (auto& p : chips) if (auto b = base.find(p.id); b != base.end()) p.pos = b->second; Resolve(); }
 
   // ---------------------------------------------------------------- view
   // the view is only panned (pixels): drag, two-finger scroll (wheel), Shift + wheel for sideways, H J K L
   void Fit() {
-    if (parts.empty()) return;
-    olc::vf2d lo = parts[0].pos;
-    for (const auto& p : parts) lo = { std::min(lo.x, p.pos.x), std::min(lo.y, p.pos.y) };
+    if (chips.empty()) return;
+    olc::vf2d lo = chips[0].pos;
+    for (const auto& p : chips) lo = { std::min(lo.x, p.pos.x), std::min(lo.y, p.pos.y) };
     offset = olc::vf2d(kStub + 24.f, 36.f) - lo;
   }
 
@@ -218,7 +239,7 @@ public:
   void Preprocess() override {
     if (IsMouseOver()) {
       if (const int wheel = GameEngine->GetMouseWheelH()) offset.x -= wheel / 120.f * kWheelPx;   // swipe right = view moves right
-      if (const int wheel = GameEngine->GetMouseWheel()) offset.y += wheel / 120.f * kWheelPx;
+      if (const int wheel = GameEngine->GetMouseWheel())  offset.y += wheel / 120.f * kWheelPx;
     }
 
     menu->Preprocess();
@@ -240,31 +261,31 @@ public:
     if (drag >= 0) {                                                              // moving a part (keeps working outside the window)
       if (GameEngine->GetMouse(0).bHeld) {
         const olc::vf2d want = Snap(world - grab);
-        if (want != parts[drag].pos) parts[drag].pos = want, Resolve();
+        if (want != chips[drag].pos) chips[drag].pos = want, Resolve();
       } else drag = -1;
     }
 
     if (IsMouseOver() && drag < 0) {
 
-      if (GameEngine->GetMouse(0).bHeld || GameEngine->GetMouse(2).bHeld) offset += mouse - prevMouse;
+      // if (GameEngine->GetMouse(0).bHeld || GameEngine->GetMouse(2).bHeld) offset += mouse - prevMouse;
 
-      hoverNet.clear(); hoverPart = -1;
-      for (int i = (int)parts.size() - 1; i >= 0; i--) {                          // last drawn = on top
-        const auto& p = parts[i];
-        if (world.x >= p.pos.x && world.y >= p.pos.y && world.x < p.pos.x + p.size.x && world.y < p.pos.y + p.size.y) { hoverPart = i; break; }
-      }
-      if (hoverPart < 0) {
-        float best = 5.f;                                                          // 5 pixels
-        for (const auto& n : nets) for (const auto& l : n.lines) for (size_t i = 1; i < l.pts.size(); i++) {
-          const float d = DistSeg(world, l.pts[i - 1], l.pts[i]);
-          if (d < best) best = d, hoverNet = n.name;
-        }
-      }
+      // hoverNet.clear(); hoverPart = -1;
+      // for (int i = (int)parts.size() - 1; i >= 0; i--) {                          // last drawn = on top
+      //   const auto& p = parts[i];
+      //   if (world.x >= p.pos.x && world.y >= p.pos.y && world.x < p.pos.x + p.size.x && world.y < p.pos.y + p.size.y) { hoverPart = i; break; }
+      // }
+      // if (hoverPart < 0) {
+      //   float best = 5.f;                                                          // 5 pixels
+      //   for (const auto& n : nets) for (const auto& l : n.lines) for (size_t i = 1; i < l.pts.size(); i++) {
+      //     const float d = DistSeg(world, l.pts[i - 1], l.pts[i]);
+      //     if (d < best) best = d, hoverNet = n.name;
+      //   }
+      // }
 
-      if (GameEngine->GetMouse(0).bPressed) {
-        if (hoverPart >= 0 && edit) drag = hoverPart, grab = world - parts[hoverPart].pos;
-        else selectedNet = hoverNet;                                              // click empty space -> clear
-      }
+    //   if (GameEngine->GetMouse(0).bPressed) {
+    //     if (hoverPart >= 0 && edit) drag = hoverPart, grab = world - parts[hoverPart].pos;
+    //     else selectedNet = hoverNet;                                              // click empty space -> clear
+    //   }
     } else if (drag < 0) {
       hoverNet.clear(); hoverPart = -1;
     }
@@ -278,54 +299,97 @@ public:
     const olc::vi2d view = olc::vi2d(Area());
     const olc::vi2d scene(std::max(1, view.x), std::max(1, view.y - kStatusH));
 
-    for (size_t i = 0; i < parts.size(); i++) {
-      auto& p = parts[i];
-      const bool moved = base.count(p.id) && base.at(p.id) != p.pos;
-      const olc::Pixel col = (int)i == drag ? olc::WHITE : (int)i == hoverPart ? olc::YELLOW : moved ? olc::Pixel(220, 160, 60) : Color::GREY;
-      p.sheet.Symbol(GameEngine, I(p.pos + offset), col);
+    for (const auto chip : chips) {
+      DrawSymbol(chip, I(chip.pos + offset), Color::GREY);
     }
+
+    for (const auto& note : notes) GameEngine->DrawString(I(note.pos + offset), note.text, note.color);
 
     // nets: normal first, highlighted on top
-    for (int pass = 0; pass < 2; pass++) for (const auto& n : nets) {
-      const bool lit = n.name == hoverNet || n.name == selectedNet;
-      if (lit != (pass == 1)) continue;
-      const olc::Pixel col = NetColor(n.name);
-      for (const auto& l : n.lines) for (size_t i = 1; i < l.pts.size(); i++) GameEngine->DrawLine(I(l.pts[i - 1] + offset), I(l.pts[i] + offset), col);
-    }
+    // for (int pass = 0; pass < 2; pass++) for (const auto& n : nets) {
+    //   const bool lit = n.name == hoverNet || n.name == selectedNet;
+    //   if (lit != (pass == 1)) continue;
+    //   const olc::Pixel col = NetColor(n.name);
+    //   // for (const auto& l : n.lines) for (size_t i = 1; i < l.pts.size(); i++) GameEngine->DrawLine(I(l.pts[i - 1] + offset), I(l.pts[i] + offset), col);
+    // }
 
-    for (const auto& t : notes) GameEngine->DrawString(I(t.pos + offset), t.text, olc::Pixel(230, 220, 100));
-    for (const auto& n : nets) for (const auto& l : n.labels) GameEngine->DrawString(I(l.pos + offset), l.text, olc::Pixel(230, 220, 100));
+    // for (const auto& n : nets) for (const auto& l : n.labels) GameEngine->DrawString(I(l.pos + offset), l.text, olc::Pixel(230, 220, 100));
 
     // the 0 / 1 is written only for the hovered or selected wire (that wire is drawn yellow / white, so the digit carries the level):
     // at both ends of a routed wire, at the pin of a tag
-    for (const auto& n : nets) {
-      if (n.name != hoverNet && n.name != selectedNet) continue;
-      const auto v = values.find(n.name);
-      if (v == values.end()) continue;
-      for (const auto& l : n.lines) {
-        const auto& pts = l.pts; const size_t last = pts.size() - 1;
-        DrawLevel(pts[0], pts[1].x - pts[0].x, v->second);
-        if (!l.tag) DrawLevel(pts[last], pts[last - 1].x - pts[last].x, v->second);
-      }
-    }
+    // for (const auto& n : nets) {
+    //   if (n.name != hoverNet && n.name != selectedNet) continue;
+    //   const auto v = values.find(n.name);
+    //   if (v == values.end()) continue;
+    //   for (const auto& l : n.lines) {
+    //     const auto& pts = l.pts; const size_t last = pts.size() - 1;
+    //     DrawLevel(pts[0], pts[1].x - pts[0].x, v->second);
+    //     if (!l.tag) DrawLevel(pts[last], pts[last - 1].x - pts[last].x, v->second);
+    //   }
+    // }
 
-    // status bar
-    const int rows = (int)((size.x - vOffset.x) / 8);
-    std::string line; olc::Pixel lineCol(200, 200, 200);
-    if (!hoverNet.empty() || !selectedNet.empty()) {
-      const std::string& n = hoverNet.empty() ? selectedNet : hoverNet;
-      const auto v = values.find(n);
-      line = n + (v == values.end() ? "" : v->second ? " = 1" : " = 0") + "  |";
-      if (auto it = netPins.find(n); it != netPins.end()) for (const auto& pin : it->second) line += " " + pin;
-    } else if (hoverPart >= 0 || drag >= 0) {
-      const auto& p = parts[drag >= 0 ? drag : hoverPart]; char pos[48]; std::snprintf(pos, sizeof pos, "  (%g, %g)", p.pos.x, p.pos.y);
-      line = p.title + pos;
-    }
-    if ((int)line.size() > rows) line.resize(rows);
-    GameEngine->DrawString(olc::vi2d(lo.x + 2, hi.y - 9), line, lineCol);
-    if (edit) GameEngine->DrawString(olc::vi2d(hi.x - 8 * 4 - 4, lo.y + 2), "EDIT", olc::Pixel(220, 160, 60));
+    // // status bar
+    // const int rows = (int)((size.x - vOffset.x) / 8);
+    // std::string line; olc::Pixel lineCol(200, 200, 200);
+    // if (!hoverNet.empty() || !selectedNet.empty()) {
+    //   const std::string& n = hoverNet.empty() ? selectedNet : hoverNet;
+    //   const auto v = values.find(n);
+    //   line = n + (v == values.end() ? "" : v->second ? " = 1" : " = 0") + "  |";
+    //   if (auto it = netPins.find(n); it != netPins.end()) for (const auto& pin : it->second) line += " " + pin;
+    // } else if (hoverPart >= 0 || drag >= 0) {
+    //   const auto& p = chips[drag >= 0 ? drag : hoverPart]; char pos[48]; std::snprintf(pos, sizeof pos, "  (%g, %g)", p.pos.x, p.pos.y);
+    //   // line = p.title + pos;
+    // }
+    // if ((int)line.size() > rows) line.resize(rows);
+    // GameEngine->DrawString(olc::vi2d(lo.x + 2, hi.y - 9), line, lineCol);
+    // if (edit) GameEngine->DrawString(olc::vi2d(hi.x - 8 * 4 - 4, lo.y + 2), "EDIT", olc::Pixel(220, 160, 60));
 
     menu->Draw();
+  }
+
+  void DrawSymbol(const Chip& chip, olc::vi2d absolute, olc::Pixel color = Color::GREY) {
+    const auto size = chip.datasheet->GetSize();
+    auto pos = absolute - olc::vi2d(0, vStep.y);
+ 
+    GameEngine->DrawRect(absolute, size, color);
+    GameEngine->DrawString(pos, chip.datasheet->name, Color::WHITE);
+
+    pos.x += (chip.datasheet->name.size() + 1) * vStep.x;
+    GameEngine->DrawString(pos, "[" + chip.id + "]", Color::VERY_DARK_YELLOW);
+
+    for (int32_t i = 0; i < chip.datasheet->pins.size(); ++i) {
+      const auto& pin = chip.datasheet->pins[i];
+      if (pin.name == "_") continue;
+
+      const auto a = chip.datasheet->AnchorOf(pin, absolute);
+      const auto p = std::to_string(pin.pin);
+
+      const int32_t y = a.inner.y - 3;
+      const int32_t w = (int32_t)pin.name.size() * vStep.x;
+      const int32_t tx = pin.side ? absolute.x + size.x - w - 8 : absolute.x + 8 ;
+      const int32_t px = pin.side ? absolute.x + size.x + 4 : absolute.x - p.size() * vStep.x - 2;
+
+      GameEngine->DrawString(olc::vi2d(tx, y), pin.name, olc::DARK_GREY);
+      if (pin.pin) GameEngine->DrawString(olc::vi2d(px, y - 7), p, olc::VERY_DARK_GREY);
+      if (pin.inverted) GameEngine->DrawLine(olc::vi2d(tx, y - 2), olc::vi2d(tx + w - 2, y - 2), olc::DARK_GREY);
+
+      const olc::vi2d start = pin.side ? a.inner : a.outer;
+      const olc::vi2d end   = pin.side ? a.outer : a.inner;
+ 
+      if (pin.inverted) GameEngine->DrawCircle(a.inner + olc::vi2d(pin.side ? -1 : 1, 0), 3, color);
+      if (pin.state & Datasheet::State::INPUT)  GameEngine->DrawArrow(end, start, color);
+      if (pin.state & Datasheet::State::OUTPUT) GameEngine->DrawArrow(start, end, color);
+
+
+
+      if (const Net* n = chip.tags[i]) {
+        const int32_t w = n->name.size() * vStep.x;
+        const int32_t x = pin.side ? a.outer.x + 4 : a.outer.x - 4 - w;
+
+        GameEngine->DrawString(olc::vi2d(x, y), n->name, Color(n));
+        if (pin.inverted) GameEngine->DrawLine(olc::vi2d(x, y - 2), olc::vi2d(x + w - 2, y - 2), Color(n));
+      }
+    }
   }
 
 public:
@@ -360,52 +424,52 @@ private:
 
   // Geometry of Datasheet::Symbol (8x12 px cells, 40 px pins, one spare row, each side centred): the symbol draws itself, but the schematic also needs the box size
   // and where each pin ends to hang wires on it. Keep these numbers equal to the ones in Datasheet::Symbol.
-  static constexpr int kCharW = 8, kRowH = 12, kStub = 40;
-  static olc::vi2d SymbolSize(const Datasheet& d) { return (d.GetSize() + olc::vi2d(1, 1)) * olc::vi2d(kCharW, kRowH); }
-  static std::vector<PinPos> PinsOf(const Datasheet& d) {                         // "_" takes a row but has no pin
-    const olc::vi2d size = SymbolSize(d);
-    int rows[2] = { 0, 0 }, row[2] = { 0, 0 };
-    for (const auto& pin : d.pins) rows[pin.orientation]++;                       // each side is centred in the box, like Datasheet::Symbol does
-    std::vector<PinPos> out;
-    for (const auto& pin : d.pins) {
-      const int r = row[pin.orientation]++;
-      if (pin.name == "_") continue;
-      const bool right = pin.orientation == Datasheet::RIGHT;
-      const olc::vi2d inner(right ? size.x + 1 : -1, (size.y - rows[pin.orientation] * kRowH) / 2 + kRowH * r + 2 + 3);
-      out.push_back({ pin.name, right, inner, olc::vi2d(inner.x + (right ? kStub : -kStub), inner.y) });
-    }
-    return out;
-  }
+  static constexpr int kStub = 40;
+  // static olc::vi2d SymbolSize(const Datasheet& d) { return d.GetSize() * olc::vi2d(kCharW, kRowH); }
+  // static std::vector<PinPos> PinsOf(const Datasheet& d) {                         // "_" takes a row but has no pin
+  //   const olc::vi2d size = d.GetSize();
+  //   int rows[2] = { 0, 0 }, row[2] = { 0, 0 };
+  //   for (const auto& pin : d.pins) rows[pin.location]++;                       // each side is centred in the box, like Datasheet::Symbol does
+  //   std::vector<PinPos> out;
+  //   for (const auto& pin : d.pins) {
+  //     const int r = row[pin.location]++;
+  //     if (pin.name == "_") continue;
+  //     const bool right = pin.location == Datasheet::RIGHT;
+  //     const olc::vi2d inner(right ? size.x + 1 : -1, (size.y - rows[pin.location] * kRowH) / 2 + kRowH * r + 2 + 3);
+  //     out.push_back({ pin.name, right, inner, olc::vi2d(inner.x + (right ? kStub : -kStub), inner.y) });
+  //   }
+  //   return out;
+  // }
 
-  struct PinAtT { olc::vf2d pos; bool right; };                                   // where a pin's wire attaches, and which way the stub points
-  PinAtT PinAt(const std::string& key) const {
-    const auto it = pinIndex.find(key); if (it == pinIndex.end()) return { { 0.f, 0.f }, true };
-    const auto& p = parts[it->second.first]; const auto& pp = p.pins[it->second.second];
-    return { p.pos + olc::vf2d(pp.outer), pp.right };
-  }
+  // struct PinAtT { olc::vf2d pos; bool right; };                                   // where a pin's wire attaches, and which way the stub points
+  // PinAtT PinAt(const std::string& key) const {
+  //   const auto it = pinIndex.find(key); if (it == pinIndex.end()) return { { 0.f, 0.f }, true };
+  //   const auto& p = parts[it->second.first]; const auto& pp = p.pins[it->second.second];
+  //   return { p.pos + olc::vf2d(pp.outer), pp.right };
+  // }
 
   void Resolve() {                                                                // after load or after a part moved: route every net
-    for (auto& n : nets) {
-      n.lines.clear(); n.labels.clear();
-      for (const auto& r : n.routes) {                                            // out of the pin, a vertical leg, into the other pin
-        const auto a = PinAt(r.from), b = PinAt(r.to);
-        LineT l; l.pts.push_back(a.pos);
-        if (a.pos.y != b.pos.y) {
-          float leg = (a.pos.x + b.pos.x) / 2.f;                                  // default: half way
-          if (a.right && b.right) leg = std::max(a.pos.x, b.pos.x) + kLeg;       // both stubs point right
-          else if (!a.right && !b.right) leg = std::min(a.pos.x, b.pos.x) - kLeg;   // both point left
-          if (r.hasDx) leg = a.pos.x + r.dx;                                      // explicit: distance from the first pin
-          l.pts.push_back({ leg, a.pos.y }); l.pts.push_back({ leg, b.pos.y });
-        }
-        l.pts.push_back(b.pos);
-        n.lines.push_back(std::move(l));
-      }
-      for (const auto& key : n.tags) {                                            // tag: a stub with the net name at its end
-        const auto a = PinAt(key);
-        n.lines.push_back({ { a.pos, a.pos + olc::vf2d(a.right ? kTagLen : -kTagLen, 0.f) }, true });
-        n.labels.push_back({ n.name, a.pos + olc::vf2d(a.right ? kTagLen + 3.f : -kTagLen - 3.f - 8.f * (float)n.name.size(), -4.f) });
-      }
-    }
+    // for (auto& n : nets) {
+    //   n.lines.clear(); n.labels.clear();
+    //   for (const auto& r : n.routes) {                                            // out of the pin, a vertical leg, into the other pin
+    //     const auto a = PinAt(r.from), b = PinAt(r.to);
+    //     LineT l; l.pts.push_back(a.pos);
+    //     if (a.pos.y != b.pos.y) {
+    //       float leg = (a.pos.x + b.pos.x) / 2.f;                                  // default: half way
+    //       if (a.right && b.right) leg = std::max(a.pos.x, b.pos.x) + kLeg;       // both stubs point right
+    //       else if (!a.right && !b.right) leg = std::min(a.pos.x, b.pos.x) - kLeg;   // both point left
+    //       if (r.hasDx) leg = a.pos.x + r.dx;                                      // explicit: distance from the first pin
+    //       l.pts.push_back({ leg, a.pos.y }); l.pts.push_back({ leg, b.pos.y });
+    //     }
+    //     l.pts.push_back(b.pos);
+    //     n.lines.push_back(std::move(l));
+    //   }
+    //   for (const auto& key : n.tags) {                                            // tag: a stub with the net name at its end
+    //     const auto a = PinAt(key);
+    //     n.lines.push_back({ { a.pos, a.pos + olc::vf2d(a.right ? kTagLen : -kTagLen, 0.f) }, true });
+    //     n.labels.push_back({ n.name, a.pos + olc::vf2d(a.right ? kTagLen + 3.f : -kTagLen - 3.f - 8.f * (float)n.name.size(), -4.f) });
+    //   }
+    // }
   }
 
   static float DistSeg(olc::vf2d p, olc::vf2d a, olc::vf2d b) {
@@ -422,14 +486,18 @@ private:
     GameEngine->DrawString(I(pos + offset), level ? "1" : "0", LevelColor(level));
   }
 
-  olc::Pixel NetColor(const std::string& n) const {
-    if (n == selectedNet) return olc::WHITE;
-    if (n == hoverNet) return olc::YELLOW;
-    if (tintWires) if (auto it = values.find(n); it != values.end()) return LevelColor(it->second);   // 1 = green, 0 = red
-    return olc::Pixel(60, 150, 140);                                              // no level (never Set / Bound): plain teal
+  olc::Pixel Color(const Net* net) const {
+    // if (net->name == selectedNet) return olc::WHITE;
+    // if (net->name == hoverNet) return olc::YELLOW;
+    // if (tintWires) if (auto it = values.find(net->name); it != values.end()) return LevelColor(it->second);   // 1 = green, 0 = red
+    // return olc::Pixel(60, 150, 140);                                              // no level (never Set / Bound): plain teal
+
+    return Color::YELLOW;
   }
 
 private:
+  const olc::vi2d vStep = olc::vi2d(8, 14);
+
   static constexpr float kPanStep = 48.f, kWheelPx = 30.f, kTagLen = 12.f, kLeg = 16.f;   // tag stub length / how far a leg sticks out beyond two pins that face the same way
   static constexpr int kUnset = -1;
   static constexpr int kStatusH = 12;                               // bottom 12 px belong to the status bar
@@ -437,10 +505,10 @@ private:
 
   LuaScript lua;
 
-  std::vector<PartT> parts; std::vector<NetT> nets; std::vector<NoteT> notes;
+  std::vector<Chip> chips; std::vector<Net> nets; std::vector<Note> notes;
   std::map<std::string, std::set<std::string>> netPins;
   std::map<std::string, olc::vf2d> base;                                          // positions as written in SCHEMATIC.layout
-  std::map<std::string, std::pair<size_t, size_t>> pinIndex;                      // "ID.PIN" -> (part, pin)
+  std::unordered_map<std::string, Node> nodes;
 
   std::unordered_map<std::string, std::function<bool()>> signals;
   std::unordered_map<std::string, std::atomic<int>> strobes;

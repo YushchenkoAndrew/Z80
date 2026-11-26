@@ -57,17 +57,6 @@ local function net(name, spec)                           -- net("RD", { pins = {
 end
 
 local auto = 0
-local function wire(...)                                 -- wire("RD", "D1.RD", "D2.OE", "D3.OE", { dx = 150 })
-  local args = { ... }
-  local opts = type(args[#args]) == "table" and table.remove(args) or {}
-  local name                                             -- a net name has no dot, a pin "CHIP.PIN" has
-  if not args[1]:find(".", 1, true) then name = table.remove(args, 1) end
-  if not name then repeat auto = auto + 1 until not nets["N" .. auto]; name = "N" .. auto end
-  local routes = {}
-  for i = 2, #args do routes[#routes + 1] = { from = args[1], to = args[i], dx = opts.dx } end
-  net(name, { pins = args, routes = routes })
-end
-
 local function expand(token)                             -- "A0..15" -> A0 ... A15, "D3" -> D3
   local base, lo, hi = token:match("^(.-)(%d+)%.%.(%d+)$")
   if not base then return { token } end
@@ -76,14 +65,42 @@ local function expand(token)                             -- "A0..15" -> A0 ... A
   return out
 end
 
+local function isPin(s) return (s:gsub("%.%.%d+", "")):find(".", 1, true) ~= nil end   -- "D1.A0..15" is a pin range, "A0..15" is a net name
+
+local function wire(...)
+  local args = { ... }
+  local opts = type(args[#args]) == "table" and table.remove(args) or {}
+  local names                                            -- optional first argument: the net name ("A0..15" = one name per route)
+  if args[1] and not args[1]:find("=", 1, true) and not isPin(args[1]) then names = expand(table.remove(args, 1)) end
+
+  local k = 0
+  local function connect(a, b)                           -- one route a -> b, in the named net or in a net of its own
+    k = k + 1
+    local name = names and (names[k] or names[1])
+    if not name then repeat auto = auto + 1 until not nets["N" .. auto]; name = "N" .. auto end
+    net(name, { pins = { a, b }, routes = { { from = a, to = b, dx = opts.dx } } })
+  end
+
+  local first                                            -- old form: the first pin to each of the others
+  for _, arg in ipairs(args) do
+    for token in arg:gmatch("%S+") do
+      local l, r = token:match("^([^=]+)=(.+)$")
+      if l then
+        local from, to = expand(l), expand(r)
+        for i = 1, math.max(#from, #to) do connect(from[i] or from[1], to[i] or to[1]) end
+      elseif not first then first = token
+      else connect(first, token) end
+    end
+  end
+end
+
 local function tags(chip, spec)                          -- tags("D7", "RES=RESET WR RD Q0..7=IE0..7")
   for token in spec:gmatch("%S+") do
     local pin, netname = token:match("^([^=]+)=(.+)$")
     local pins, names = expand(pin or token), expand(netname or pin or token)
-    for i, p in ipairs(pins) do wire(names[i] or names[1], chip .. "." .. p) end
+    for i, p in ipairs(pins) do net(names[i] or names[1], { pins = { chip .. "." .. p } }) end
   end
 end
-
 
 --==========================================================================
 -- 1. RESET + CLOCK
@@ -102,10 +119,8 @@ note(120, 400, "QC = 4MHz CLK;  CLK/8 = 500kHz  (which Q gives /8: ?)")
 --==========================================================================
 -- 2. CPU
 --==========================================================================
-note(760, 32, "CPU")
-part("Z80", "D1")
-at("D1", 760, 60)
-tags("D1", "RESET CLK RD WR MREQ IORQ WAIT INT NMI=VCC_pullup A0..15 D0..7")
+note(760, 32, "^CPU")
+part("Z80", "D1") at("D1", 760, 60) tags("D1", "RESET CLK RD WR MREQ IORQ WAIT INT NMI=VCC_pullup A0..15 D0..7")
 
 --==========================================================================
 -- 3. IO DECODE   D9 / D10 (K155ID4 as 3-to-8):  A4..A6 pick the 16-port block, A7 picks the half
@@ -113,52 +128,61 @@ tags("D1", "RESET CLK RD WR MREQ IORQ WAIT INT NMI=VCC_pullup A0..15 D0..7")
 --      enable (1G+2G) = OR(IORQ, A7)  for D9,   OR(IORQ, not A7)  for D10
 --      outputs 0-3 are 2Y0..2Y3, outputs 4-7 are 1Y0..1Y3
 --==========================================================================
-note(120, 440, "IO DECODE (A4..A6 pick the 16-port block, A7 the half)")
-part("OR", "D16a", "D16b");  part("NOT", "D20");  part("K155ID4", "D9=IO0-7", "D10=IO8-F")
+-- note(120, 440, "IO DECODE (A4..A6 pick the 16-port block, A7 the half)")
+
+part("OR", "D16a", "D16b");  part("NOT", "D20"); 
+
+part("K155ID4", "D9");  at("D9",  400, 400); tags("D9",  "A=A4 B=A5 1C=A6 2C=A6 2Y0=IO0 2Y1=IO1 2Y2=IO2 2Y3=IO3 1Y0=IO4 1Y1=IO5 1Y2=IO6 1Y3=IO7")
+part("K155ID4", "D10"); at("D10", 400, 570); tags("D10", "A=A4 B=A5 1C=A6 2C=A6 2Y0=IO8 2Y1=IO9 2Y2=IOA 2Y3=IOB 1Y0=IOC 1Y1=IOD 1Y2=IOE 1Y3=IOF")
+
 at("D16a", 200, 480);  at("D20", 200, 580);  at("D16b", 200, 640)
 tags("D16a", "A=IORQ B=A7"); tags("D20", "A=A7"); tags("D16b", "A=IORQ")
 wire("A7_N", "D20.Y", "D16b.B", { dx = -150 })
 
-at("D9", 480, 460);  at("D10", 480, 660)
 wire("D9_EN", "D16a.Y", "D9.1G", { dx = 70 });   wire("D9_EN", "D16a.Y", "D9.2G", { dx = 90 })
 wire("D10_EN", "D16b.Y", "D10.1G", { dx = 70 }); wire("D10_EN", "D16b.Y", "D10.2G", { dx = 90 })
-tags("D9",  "A=A4 B=A5 1C=A6 2C=A6 2Y0=IO0 2Y1=IO1 2Y2=IO2 2Y3=IO3 1Y0=IO4 1Y1=IO5 1Y2=IO6 1Y3=IO7")
-tags("D10", "A=A4 B=A5 1C=A6 2C=A6 2Y0=IO8 2Y1=IO9 2Y2=IOA 2Y3=IOB 1Y0=IOC 1Y1=IOD 1Y2=IOE 1Y3=IOF")
 
 --==========================================================================
 -- 4. MEMORY DECODE   D11 (74LS139)
 --      1 :  A15:A14 -> MEM0..MEM3   (enabled by MREQ)
 --      2 :  A13:A12 -> MEM10..MEM13 (only inside MEM1 = 4000-7FFF)
 --==========================================================================
-note(760, 420, "MEMORY DECODE")
-part("74LS139", "D11");  part("W27C512", "D2=0000");  part("IMS1423", "D5", "D6");  part("HY62256A", "D3=8000");  part("KM28C17", "D4=C000")
-at("D11", 760, 460)
-tags("D11", "1A=A14 1B=A15 1G=MREQ 1Y1=MEM1  2A=A12 2B=A13 2G=MEM1 2Y2=MEM12 2Y3=MEM13")
-tags("D5", "A0..11 IO0..3=D0..3")
-tags("D6", "A0..11 IO0..3=D4..7")
+note(1150, 32, "^ADDR=0000")
+part("W27C512", "D2");    at("D2",    1150, 60); tags("D2", "A0..13 Q0..7=D0..7 OE=RD CE=MEM0 A14=AA0 A15=AA1"); 
+part("74LS139", "D11");   at("D11",   1150,350); tags("D11", "1A=A14 1B=A15 1G=MREQ 1Y0=MEM0 1Y1=MEM1 1Y2=MEM2 1Y3=MEM3 2A=A12 2B=A13 2G=MEM1 2Y1=MEM11 2Y2=MEM12 2Y3=MEM13")
 
-at("D2", 1250, 60);  at("D5", 1250, 360);  at("D6", 1250, 590);  at("D3", 1250, 820);  at("D4", 1250, 1100)
-wire("MEM0", "D11.1Y0", "D2.CE", { dx = 150 });   wire("MEM10", "D11.2Y0", "D5.E", { dx = 180 })
-wire("MEM11", "D11.2Y1", "D6.E", { dx = 210 });   wire("MEM2", "D11.1Y2", "D3.CS", { dx = 240 })
-wire("MEM3", "D11.1Y3", "D4.CE", { dx = 270 })
-tags("D2", "OE=RD"); tags("D4", "OE=RD")
-note(760, 600, "? D5/D6/D3/D4 enable lines partly cut off in photo")
+note(1450, 32, "^ADDR=4000")
+part("IMS1423", "D5(1)"); at("D5(1)", 1450, 60); tags("D5(1)", "A0..11 IO0..3=D0..3 W=WR E=MEM11");
+part("IMS1423", "D5(2)"); at("D5(2)", 1450,280); tags("D5(2)", "A0..11 IO0..3=D4..7 W=WR E=MEM11")
+
+note(1750, 32, "^ADDR=5000")
+part("IMS1423", "D12(1)");at("D12(1)",1750, 60); tags("D12(1)","A0..11 IO0..3=D0..3 W=WR E=MEM12");
+part("IMS1423", "D12(2)");at("D12(2)",1750,280); tags("D12(2)","A0..11 IO0..3=D4..7 W=WR E=MEM12")
+
+note(2050, 32, "^ADDR=8000")
+part("HY62256A","D3");   at("D3",    2050, 60); tags("D3", "A0..11 IO1..8=D0..7 CS=MEM12 OE=RD WE=WR");
+
+note(2050,318, "^ADDR=C000")
+part("KM28C17", "D4");   at("D4",    2050, 350);tags("D4", "A0..10 IO0..7=D0..7 CE=MEM13 OE=RD WE=WR");
 
 --==========================================================================
 -- 5. PPI  D7 (KR580VV55A), port 20-23 = IO2.   Port C bits are the board's control lines:
 --      C0 CS0 (PIT gate 0)   C1 CS1 (PIT gate 1+2)   C2 CSA   C3 CSW   C7 CSB
 --      C4..C6 go through D14 (decoder) -> CE1..CE7   (C4 alone = LCD enable)
 --==========================================================================
-note(1650, 32, "PPI  (port 0x20..0x23 = IO2)")
-part("KR580VV55", "D7=IO2");  part("K155ID4", "D14=C4..C6")
-at("D7", 1650, 60)
-tags("D7", "RES=RESET WR RD CS=IO2 A0 A1 PC0=CS0 PC1=CS1 PC2=CSA PC3=CSW PC7=CSB")
+note(760, 32, "^CPU")
+part("Z80", "D1") at("D1", 760, 60) tags("D1", "RESET CLK RD WR MREQ IORQ WAIT INT NMI=VCC_pullup A0..15 D0..7")
 
-at("D14", 2000, 60)
-wire("C4", "D7.PC4", "D14.A", { dx = 30 });  wire("C5", "D7.PC5", "D14.B", { dx = 50 })
-wire("C6", "D7.PC6", "D14.1C", { dx = 70 }); wire("C6", "D7.PC6", "D14.2C", { dx = 90 })
-tags("D14", "1G=CE_EN? 2G=CE_EN? 2Y1=CE1 2Y2=CE2 2Y3=CE3 1Y0=CE4 1Y1=CE5 1Y2=CE6 1Y3=CE7")
-note(2000, 200, "C4 alone = LCD enable (CE1)")
+-- note(760, 32, "PPI  (port 0x20..0x23 = IO2)")
+
+part("KR580VV55", "D7"); at("D7", 760, 480); tags("D7", "RES=RESET WR RD CS=IO2 A0 A1 PC0=CS0 PC1=CS1 PC2=CSA PC3=CSW PC7=CSB")
+
+part("K155ID4", "D14")   at("D14",1000,700)
+
+-- wire("C4", "D7.PC4", "D14.A", { dx = 30 });  wire("C5", "D7.PC5", "D14.B", { dx = 50 })
+-- wire("C6", "D7.PC6", "D14.1C", { dx = 70 }); wire("C6", "D7.PC6", "D14.2C", { dx = 90 })
+-- tags("D14", "1G=CE_EN? 2G=CE_EN? 2Y1=CE1 2Y2=CE2 2Y3=CE3 1Y0=CE4 1Y1=CE5 1Y2=CE6 1Y3=CE7")
+-- note(2000, 200, "C4 alone = LCD enable (CE1)")
 
 --==========================================================================
 -- 6. PIT  D54 (KR580VI53), port 80-83 = IO8.  All three CLK inputs = CLK8 (500 kHz).
@@ -175,24 +199,24 @@ note(1650, 640, "OUT0 = speaker? (drawn label unclear)")
 --==========================================================================
 -- 7. RTC  D42 (MC146818) at MEM12 = 6000, with a wait-state machine (only a sketch in the drawing)
 --==========================================================================
-note(1650, 672, "RTC  (MEM12 = 0x6000)")
-part("MC146818", "D42=MEM12");  part("RTC_SM", "RTC_SM")
-at("D42", 1650, 700);  at("RTC_SM", 2000, 700)
-tags("D42", "CE=MEM12 DS=RLT_R RW=RLT_W AS AD0..7 RESET IRQ=IRLT")
-tags("RTC_SM", "MEM12 RD WR CLK AS RLT_R RLT_W WAIT")
-note(2000, 780, "? gate-level detail not transcribed (74HC00/32, K155IE5 counter,")
-note(2000, 792, "? 74HC157 muxes for address/data) - 'useless, breaks the system' note on D45")
+-- note(1650, 672, "RTC  (MEM12 = 0x6000)")
+-- part("MC146818", "D42=MEM12");  part("RTC_SM", "RTC_SM")
+-- at("D42", 1650, 700);  at("RTC_SM", 2000, 700)
+-- tags("D42", "CE=MEM12 DS=RLT_R RW=RLT_W AS AD0..7 RESET IRQ=IRLT")
+-- tags("RTC_SM", "MEM12 RD WR CLK AS RLT_R RLT_W WAIT")
+-- note(2000, 780, "? gate-level detail not transcribed (74HC00/32, K155IE5 counter,")
+-- note(2000, 792, "? 74HC157 muxes for address/data) - 'useless, breaks the system' note on D45")
 
 --==========================================================================
 -- 8. KEYBOARD   PS/2 receiver (one byte, interrupt INT_PS2)  +  IN 0x40 strobe
 --==========================================================================
-note(2000, 272, "KEYBOARD  (PS/2, set 2)")
-part("PS/2", "PS2");  part("NOR", "KB=IN 0x40")
-at("PS2", 2000, 300);  at("KB", 2000, 460)              -- KB: RD + IO4 -> KEYBOARD (also the INT7 ack)
-tags("PS2", "PS2C PS2D KEYBOARD INT_PS2 DATA=D[7:0]")
-tags("KB", "A=RD B=IO4 Y=KEYBOARD")
-note(2000, 520, "? 74HC595 + counter + SR-edge logic")
-note(2000, 532, "  (CNT=11) collapsed into this block")
+-- note(2000, 272, "KEYBOARD  (PS/2, set 2)")
+-- part("PS/2", "PS2");  part("NOR", "KB=IN 0x40")
+-- at("PS2", 2000, 300);  at("KB", 2000, 460)              -- KB: RD + IO4 -> KEYBOARD (also the INT7 ack)
+-- tags("PS2", "PS2C PS2D KEYBOARD INT_PS2 DATA=D[7:0]")
+-- tags("KB", "A=RD B=IO4 Y=KEYBOARD")
+-- note(2000, 520, "? 74HC595 + counter + SR-edge logic")
+-- note(2000, 532, "  (CNT=11) collapsed into this block")
 
 --==========================================================================
 -- 9. INTERRUPT LATCHES  (74LS00 SR latches, one row per interrupt)

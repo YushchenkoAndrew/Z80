@@ -27,7 +27,7 @@ PANELS = {
     switch     = { x = 10,          y = 30,            width = 100,   height = 15 },
     hex        = { x = 10,          y = 45,            width = 100,   height = 40 },
     lcd        = { x = 10,          y = 85,            width = 350,   height = HEIGHT - 104 },
-    Z80        = { x = WIDTH - 350, y = 12,            width = 140,   height = 140 },
+    Z80        = { x = WIDTH - 350, y = 12,            width = 140,   height = 140, selected = true  },
     irq        = { x = WIDTH - 350, y = 165,           width = 140,   height = 39 },
     keyboard   = { x = WIDTH - 350, y = 205,           width = 140,   height = 33 },
     KR580VV55  = { x = WIDTH - 350, y = 237,           width = 140,   height = 22 },
@@ -37,7 +37,7 @@ PANELS = {
     MC146818   = { x = WIDTH - 210, y = 392,           width = 210,   height = 84 },
   },
   {
-    schematic  = { x = 0,           y = 0,             width = WIDTH, height = HEIGHT - 35 },
+    schematic  = { x = 0,           y = 0,             width = WIDTH, height = HEIGHT - 35, selected = true },
   }
 };
 -- }

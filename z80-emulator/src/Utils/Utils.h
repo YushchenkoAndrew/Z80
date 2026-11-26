@@ -15,6 +15,11 @@ namespace Utils {
   template<class T, class U>
   inline std::shared_ptr<T> Cast(std::shared_ptr<U> ptr) { return std::dynamic_pointer_cast<T>(ptr); }
 
+  inline std::string Int2Str(int32_t i, int32_t width = 2) { 
+    std::stringstream ss; ss << std::setfill('0') << std::setw(width) << +i;
+    return ss.str();
+  }
+
   inline std::string Int2Hex(int32_t i, int32_t width = 2) { 
     std::stringstream ss; ss << std::setfill('0') << std::setw(width) << std::hex << std::uppercase << +i;
     return ss.str();
