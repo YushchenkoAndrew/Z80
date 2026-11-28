@@ -77,7 +77,7 @@ local function wire(...)
   local function connect(a, b)                           -- one route a -> b, in the named net or in a net of its own
     k = k + 1
     local name = names and (names[k] or names[1])
-    if not name then repeat auto = auto + 1 until not nets["N" .. auto]; name = "N" .. auto end
+    if not name then repeat auto = auto + 1 until not nets["_" .. auto]; name = "_" .. auto end
     net(name, { pins = { a, b }, routes = { { from = a, to = b, dx = opts.dx } } })
   end
 
@@ -105,22 +105,24 @@ end
 --==========================================================================
 -- 1. RESET + CLOCK
 --==========================================================================
-note(120, 20, "RESET / CLOCK")
-part("NOT", "D13a", "D13b");  part("CLK", "X1=32MHz");  part("CNT", "D12=K555IE2 /8", "D27=K155IE5 /8")
-at("D13a", 200, 80);  at("D13b", 380, 80)               -- Schmitt inverter pair: button + RC -> clean RESET
-tags("D13a", "A=RESET_BTN"); wire("RESET_N", "D13a.Y", "D13b.A"); tags("D13b", "Y=RESET")
-note(200, 112, "button + RC (27k / 220pF) on D13a.A")
+note(295, 180, "[32MHz]")
+part("CLK", "X1"); at("X1", 245, 180); wire("_W1", "X1.OUT", "D12.A");
 
-at("X1", 200, 200);  at("D12", 420, 180);  at("D27", 420, 300)
-wire("CLK32", "X1.OUT", "D12.A"); tags("D12", "QC=CLK"); note(120, 150, "32MHz crystal oscillator")
-tags("D27", "A=CLK QD=CLK8")                            -- CLK8 = clock for the PIT counters
-note(120, 400, "QC = 4MHz CLK;  CLK/8 = 500kHz  (which Q gives /8: ?)")
+note(515, 150, "[16MHz]"); note(580, 231, "[4MHz]")
+part("K555IE2", "D12"); at("D12", 420, 180); tags("D12", "QC=CLK R9(1)=GND R9(2)=GND"); wire("_W12_1", "D12.R0(1)=D12.R0(2) D12.R0(2)=D12.QD"); wire("D12.B=D12.QA");
+
+part("K555IE2", "D27"); at("D27", 1300,  900); tags("D27", "R9(1)=GND R9(2)=GND A=CLK");wire("_W27_1", "D27.R0(1)=D27.R0(2) D27.R0(2)=D27.QD"); wire("D27.B=D27.QA");
+part("K555IE2", "D25"); at("D25", 1570,  942); tags("D25", "R9(1)=GND R9(2)=GND");      wire("_W25_1", "D25.R0(1)=D25.R0(2) D25.R0(2)=D25.QD"); wire("D25.B=D25.QA"); wire("D27.QC=D25.A");
+part("K555IE2", "D24"); at("D24", 1830,  984); tags("D24", "R9(1)=GND R9(2)=GND");      wire("_W24_1", "D24.R0(1)=D24.R0(2) D24.R0(2)=D24.QD"); wire("D24.B=D24.QA"); wire("D25.QC=D24.A");
+part("K155LN1", "D21a");at("D21a",2030, 1012); wire("_W21a_1","D24.QC=D21a.A");
+
+-- TODO: Impl K555IR23
 
 --==========================================================================
 -- 2. CPU
 --==========================================================================
 note(760, 32, "^CPU")
-part("Z80", "D1") at("D1", 760, 60) tags("D1", "RESET CLK RD WR MREQ IORQ WAIT INT NMI=VCC_pullup A0..15 D0..7")
+part("Z80", "D1") at("D1", 760, 60) tags("D1", "RESET CLK RD WR MREQ IORQ INT WAIT=Vcc BUSREQ=Vcc NMI=Vcc A0..15 D0..7")
 
 --==========================================================================
 -- 3. IO DECODE   D9 / D10 (K155ID4 as 3-to-8):  A4..A6 pick the 16-port block, A7 picks the half
@@ -128,19 +130,15 @@ part("Z80", "D1") at("D1", 760, 60) tags("D1", "RESET CLK RD WR MREQ IORQ WAIT I
 --      enable (1G+2G) = OR(IORQ, A7)  for D9,   OR(IORQ, not A7)  for D10
 --      outputs 0-3 are 2Y0..2Y3, outputs 4-7 are 1Y0..1Y3
 --==========================================================================
--- note(120, 440, "IO DECODE (A4..A6 pick the 16-port block, A7 the half)")
+note(190,380, "^IO DECODE")
+note(270,720, "A4..A6 pick the IOn, A7 picks the chip")
+part("K155LL1", "D16d"); at("D16d", 215, 470); tags("D16d", "A=IORQ B=A7"); wire("_W16d", "D16d.Y=D9.S1 D9.S1=D9.S2");
+part("K155LL1", "D16c"); at("D16c", 215, 640); tags("D16c", "A=IORQ"); wire("_W16c", "D16c.Y=D10.S1 D10.S1=D10.S2");
+part("K155LN1", "D20a"); at("D20a", 50,  654); tags("D20a", "A=A7"); wire("_W20a", "D20a.Y=D16c.B");
+  -- part("NOT", "D20"); 
 
-part("OR", "D16a", "D16b");  part("NOT", "D20"); 
-
-part("K155ID4", "D9");  at("D9",  400, 400); tags("D9",  "A=A4 B=A5 1C=A6 2C=A6 2Y0=IO0 2Y1=IO1 2Y2=IO2 2Y3=IO3 1Y0=IO4 1Y1=IO5 1Y2=IO6 1Y3=IO7")
-part("K155ID4", "D10"); at("D10", 400, 570); tags("D10", "A=A4 B=A5 1C=A6 2C=A6 2Y0=IO8 2Y1=IO9 2Y2=IOA 2Y3=IOB 1Y0=IOC 1Y1=IOD 1Y2=IOE 1Y3=IOF")
-
-at("D16a", 200, 480);  at("D20", 200, 580);  at("D16b", 200, 640)
-tags("D16a", "A=IORQ B=A7"); tags("D20", "A=A7"); tags("D16b", "A=IORQ")
-wire("A7_N", "D20.Y", "D16b.B", { dx = -150 })
-
-wire("D9_EN", "D16a.Y", "D9.1G", { dx = 70 });   wire("D9_EN", "D16a.Y", "D9.2G", { dx = 90 })
-wire("D10_EN", "D16b.Y", "D10.1G", { dx = 70 }); wire("D10_EN", "D16b.Y", "D10.2G", { dx = 90 })
+part("K155ID4", "D9");  at("D9",  400, 400); tags("D9",  "A=A4 B=A5 D=A6 D0=IO0 D1=IO1 D2=IO2  D3=IO3  E0=IO4  E1=IO5  E2=IO6  E3=IO7");  wire("_W9", "D9.D=D9.E")
+part("K155ID4", "D10"); at("D10", 400, 570); tags("D10", "A=A4 B=A5 D=A6 D0=IO8 D1=IO9 D2=IO10 D3=IO11 E0=IO12 E1=IO13 E2=IO14 E3=IO15"); wire("_W10","D10.D=D10.E")
 
 --==========================================================================
 -- 4. MEMORY DECODE   D11 (74LS139)
@@ -175,26 +173,20 @@ part("Z80", "D1") at("D1", 760, 60) tags("D1", "RESET CLK RD WR MREQ IORQ WAIT I
 
 -- note(760, 32, "PPI  (port 0x20..0x23 = IO2)")
 
-part("KR580VV55", "D7"); at("D7", 760, 480); tags("D7", "RES=RESET WR RD CS=IO2 A0 A1 PC0=CS0 PC1=CS1 PC2=CSA PC3=CSW PC7=CSB")
-
-part("K155ID4", "D14")   at("D14",1000,700)
-
--- wire("C4", "D7.PC4", "D14.A", { dx = 30 });  wire("C5", "D7.PC5", "D14.B", { dx = 50 })
--- wire("C6", "D7.PC6", "D14.1C", { dx = 70 }); wire("C6", "D7.PC6", "D14.2C", { dx = 90 })
--- tags("D14", "1G=CE_EN? 2G=CE_EN? 2Y1=CE1 2Y2=CE2 2Y3=CE3 1Y0=CE4 1Y1=CE5 1Y2=CE6 1Y3=CE7")
--- note(2000, 200, "C4 alone = LCD enable (CE1)")
+part("KR580VV55", "D7"); at("D7", 760, 480); tags("D7", "RES=RESET WR RD CS=IO2 A0 A1 D0..7 PA0..7=DA0..7 PB0..7=AA0..7 PC0=CS0 PC1=CS1 PC2=CSA PC3=CSW PC7=CSB")
+part("K155ID4",   "D14");at("D14",1050,774); wire("_W14_1", "D14.D=D14.E D14.D=D7.PC6"); wire("D14.A=D7.PC4 D14.B=D7.PC5"); tags("D14", "S1=GND S2=GND");
 
 --==========================================================================
 -- 6. PIT  D54 (KR580VI53), port 80-83 = IO8.  All three CLK inputs = CLK8 (500 kHz).
 --      GATE0 = CS0,  GATE1 and GATE2 BOTH = CS1  (one gate for both timers!)
 --      OUT1 / OUT2 are the timer interrupt requests (CT_IRQ1 / CT_IRQ2)
 --==========================================================================
-note(1650, 412, "PIT  (0x80 = IO8)")
-part("KR580VI53", "D54=IO8")
-at("D54", 1650, 440)
-tags("D54", "CS=IO8 RD WR A0 A1 CLK0=CLK8 CLK1=CLK8 CLK2=CLK8 GATE0=CS0 GATE1=CS1 GATE2=CS1 OUT0=CT_OUT0 OUT1=CT_IRQ1 OUT2=CT_IRQ2")
-note(1650, 628, "GATE1 and GATE2 share CS1 (one gate for both timers)")
-note(1650, 640, "OUT0 = speaker? (drawn label unclear)")
+-- note(1650, 412, "PIT  (0x80 = IO8)")
+-- part("KR580VI53", "D54=IO8")
+-- at("D54", 1650, 440)
+-- tags("D54", "CS=IO8 RD WR A0 A1 CLK0=CLK8 CLK1=CLK8 CLK2=CLK8 GATE0=CS0 GATE1=CS1 GATE2=CS1 OUT0=CT_OUT0 OUT1=CT_IRQ1 OUT2=CT_IRQ2")
+-- note(1650, 628, "GATE1 and GATE2 share CS1 (one gate for both timers)")
+-- note(1650, 640, "OUT0 = speaker? (drawn label unclear)")
 
 --==========================================================================
 -- 7. RTC  D42 (MC146818) at MEM12 = 6000, with a wait-state machine (only a sketch in the drawing)
@@ -234,37 +226,37 @@ note(1650, 640, "OUT0 = speaker? (drawn label unclear)")
 --==========================================================================
 note(2500, 20, "INTERRUPT LATCHES (74LS00 SR latches).  IEn = mask bit, ack = strobe that clears the request")
 
--- interrupt_channel(n, x, y, { title = text, source = net, ack = net, inverted = true if the source is active-low })
-local function interrupt_channel(n, x, y, c)
-  local sg, rg, lt = "SG" .. n, "RG" .. n, "L" .. n
-  part("NAND", sg .. "=S", rg .. "=R"); part("SR", lt .. "=INT" .. n .. " " .. c.title)
-  if c.inverted then part("NOT", "IV" .. n) end
-  at(sg, x + 220, y); at(rg, x + 220, y + 60); at(lt, x + 460, y + 30)
-  tags(sg, "A=RESET B=" .. c.ack)
-  wire("S" .. n, sg .. ".Y", lt .. ".S")
-  wire("R" .. n, rg .. ".Y", lt .. ".R")
-  tags(rg, "B=IE" .. n)
-  if c.inverted then
-    at("IV" .. n, x, y + 60)
-    tags("IV" .. n, "A=" .. c.source)
-    wire(c.source .. "_N", "IV" .. n .. ".Y", rg .. ".A")
-  else
-    tags(rg, "A=" .. c.source)
-  end
-  tags(lt, "Q=INT" .. n .. " QN=nINT" .. n)
-end
+-- -- interrupt_channel(n, x, y, { title = text, source = net, ack = net, inverted = true if the source is active-low })
+-- local function interrupt_channel(n, x, y, c)
+--   local sg, rg, lt = "SG" .. n, "RG" .. n, "L" .. n
+--   part("NAND", sg .. "=S", rg .. "=R"); part("SR", lt .. "=INT" .. n .. " " .. c.title)
+--   if c.inverted then part("NOT", "IV" .. n) end
+--   at(sg, x + 220, y); at(rg, x + 220, y + 60); at(lt, x + 460, y + 30)
+--   tags(sg, "A=RESET B=" .. c.ack)
+--   wire("S" .. n, sg .. ".Y", lt .. ".S")
+--   wire("R" .. n, rg .. ".Y", lt .. ".R")
+--   tags(rg, "B=IE" .. n)
+--   if c.inverted then
+--     at("IV" .. n, x, y + 60)
+--     tags("IV" .. n, "A=" .. c.source)
+--     wire(c.source .. "_N", "IV" .. n .. ".Y", rg .. ".A")
+--   else
+--     tags(rg, "A=" .. c.source)
+--   end
+--   tags(lt, "Q=INT" .. n .. " QN=nINT" .. n)
+-- end
 
---                    n   x     y    source / ack net
-interrupt_channel(7, 2500,  60, { title = "KEYBOARD", source = "INT_PS2", ack = "KEYBOARD" })
-interrupt_channel(6, 2500, 190, { title = "RxRDY", source = "RxRDY",   ack = "RxRST" })
-interrupt_channel(5, 2500, 320, { title = "TxRDY", source = "TxRDY",   ack = "TxRST" })
-interrupt_channel(4, 2500, 450, { title = "RTC", source = "IRLT",    ack = "RTC_ACK?", inverted = true })
-interrupt_channel(3, 3250,  60, { title = "CT1", source = "CT_IRQ1", ack = "IO8",      inverted = true })
-interrupt_channel(2, 3250, 190, { title = "CT2", source = "CT_IRQ2", ack = "IO8",      inverted = true })
-interrupt_channel(1, 3250, 320, { title = "?", source = "SRC1?",   ack = "ACK1?" })
-interrupt_channel(0, 3250, 450, { title = "?", source = "SRC0?",   ack = "ACK0?" })
-note(3250, 580, "INT3/INT2 share one S gate fed by IO8: any access to 0x80-0x8F acks BOTH timers")
-note(2500, 580, "RTC ack path (RTC_ACK?) and INT1/INT0 sources were not legible")
+-- --                    n   x     y    source / ack net
+-- interrupt_channel(7, 2500,  60, { title = "KEYBOARD", source = "INT_PS2", ack = "KEYBOARD" })
+-- interrupt_channel(6, 2500, 190, { title = "RxRDY", source = "RxRDY",   ack = "RxRST" })
+-- interrupt_channel(5, 2500, 320, { title = "TxRDY", source = "TxRDY",   ack = "TxRST" })
+-- interrupt_channel(4, 2500, 450, { title = "RTC", source = "IRLT",    ack = "RTC_ACK?", inverted = true })
+-- interrupt_channel(3, 3250,  60, { title = "CT1", source = "CT_IRQ1", ack = "IO8",      inverted = true })
+-- interrupt_channel(2, 3250, 190, { title = "CT2", source = "CT_IRQ2", ack = "IO8",      inverted = true })
+-- interrupt_channel(1, 3250, 320, { title = "?", source = "SRC1?",   ack = "ACK1?" })
+-- interrupt_channel(0, 3250, 450, { title = "?", source = "SRC0?",   ack = "ACK0?" })
+-- note(3250, 580, "INT3/INT2 share one S gate fed by IO8: any access to 0x80-0x8F acks BOTH timers")
+-- note(2500, 580, "RTC ack path (RTC_ACK?) and INT1/INT0 sources were not legible")
 
 --==========================================================================
 -- 10. IE register D30 (OUT 0x50)  -  the interrupt MASK bits IE0..IE7
@@ -294,6 +286,15 @@ tags("INTR", "A=RD B=IO5")
 wire("INT_RD", "INTR.Y", "D31.1OE", { dx = 40 }); wire("INT_RD", "INTR.Y", "D31.2OE", { dx = 40 })
 tags("D31", "1A1=INT7 1A2=INT6 1A3=INT5 1A4=INT4 2A1=INT3 2A2=INT2 2A3=INT1 2A4=INT0 1Y1=D7 1Y2=D6 1Y3=D5 1Y4=D4 2Y1=D3 2Y2=D2 2Y3=D1 2Y4=D0")
 note(4000, 440, "INT status and INT line are NOT gated by the mask")
+
+--==========================================================================
+-- 12. UART interface over USB
+--==========================================================================
+note(1320, 780, "4.9152MHz")
+part("CLK", "X2");            at("X2",  1270,760); wire("_W2", "X2.OUT=D8.CLK");
+part("SCN2661AC1N28", "D8");  at("D8",  1450,550); tags("D8", "A0..1 D0..7 RD CS=IO3 SR=RESET RxD TxD DTR RTS DSR CTS DCD");
+part("K155LN1",       "D20b");at("D20b",1680,578); tags("D20b", "Y=/RxRDY"); wire("_W20b", "D20b.A=D8.RxRDY");
+part("K155LN1",       "D20f");at("D20f",1680,654); tags("D20f", "Y=/TxRDY"); wire("_W20f", "D20f.A=D8.TxRDY");
 
 -- the tables C++ reads (see Schematic.h):
 --   SCHEMATIC.parts = { { id, type, title, x, y, bx, by } }   x,y = where the chip is now, bx,by = where this file put it (both nil: not placed)

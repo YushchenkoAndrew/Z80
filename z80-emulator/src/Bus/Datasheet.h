@@ -22,6 +22,7 @@ public:
   Datasheet() = default;
   Datasheet(std::string device): name(std::move(device)) {}
  
+  Datasheet& LABEL(std::string name) { return label = std::move(name),  *this; }
   Datasheet& W(const int32_t width)  { return size.x = width,  *this; }
   Datasheet& H(const int32_t height) { return size.y = height, *this; }
   Datasheet& L(const std::string& name, uint8_t pin = 0) { return Add(LEFT, name, pin); }
@@ -70,6 +71,7 @@ public:
 
 public:
   std::string name;
+  std::string label;
   std::vector<Pin> pins;
 
 private:
